@@ -1,0 +1,15 @@
+{
+  "name": "journalier-v64-graph-test",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@azure/msal-browser": "5.22.0",
+    "vite": "7.1.5"
+  }
+}

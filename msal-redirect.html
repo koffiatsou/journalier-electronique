@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Microsoft – Redirection</title>
+</head>
+<body>
+  <p>Connexion Microsoft en cours…</p>
+  <script type="module">
+    import { broadcastResponseToMainFrame } from "@azure/msal-browser/redirect-bridge";
+    broadcastResponseToMainFrame().catch((error) => {
+      console.error("Erreur du pont de redirection MSAL :", error);
+    });
+  </script>
+</body>
+</html>
