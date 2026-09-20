@@ -2318,6 +2318,9 @@ function updateIndicatorDiagnosticPanel(){
         <div style=\"font-weight:750\">Moteur Q3</div>
         <div style=\"margin-top:4px\">${ok?'✓ Actif':'⚠ Bloqué : bibliothèque non chargée'}</div>
         ${q3.objective?`<div style=\"margin-top:5px;color:#555\">Objectif : ${escapeHtml(q3.objective)}</div>`:''}
+        ${q3.subject?`<div style=\"margin-top:3px;color:#555\">Matière : ${escapeHtml(q3.subject)}</div>`:''}
+        ${q3.level?`<div style=\"margin-top:3px;color:#555\">Niveau : ${escapeHtml(q3.level)}</div>`:''}
+        ${q3.form?`<div style=\"margin-top:3px;color:#555\">Forme : ${escapeHtml(q3.form)}</div>`:''}
         <div style=\"margin-top:3px;color:#555\">Suggestions : ${Number(q3.suggestions||0)}</div>
       </div>`;
 }
@@ -2806,8 +2809,11 @@ loadIndicatorLibrary();
     }
 
     function savePrevisionnel(prev) {
-        DataStore.saveAgenda(prev || {});
+        const candidate = normalizePrevisionnel(prev || {});
+        DataStore.saveAgenda(candidate);
+        const persisted = normalizePrevisionnel(DataStore.getAgenda());
         renderAgenda();
+        return persisted;
     }
 
     function updateStudentDropdowns() {
@@ -3544,7 +3550,7 @@ loadIndicatorLibrary();
         const endPeriod = document.getElementById('modal-slot-period-end').value;
         const mode = agendaModalState.mode || document.getElementById('modal-slot-edit-mode').value || 'create';
         const duplicateTargetDate = document.getElementById('modal-duplicate-date').value;
-        const dateIso = mode==='duplicate' ? duplicateTargetDate : sourceDateIso;
+        const dateIso = mode === 'duplicate' ? duplicateTargetDate : sourceDateIso;
         const dayIdx = getDayIndexFromISO(dateIso);
         const startIdx = periodIndex(startPeriod), endIdx = periodIndex(endPeriod);
 
@@ -3567,43 +3573,103 @@ loadIndicatorLibrary();
         prev.__uniqueEvents = Array.isArray(prev.__uniqueEvents) ? prev.__uniqueEvents : [];
         prev.__exceptions = prev.__exceptions || {};
 
-        // Évite deux événements uniques qui se chevauchent sur la même date.
-        if (mode !== 'duplicate') removeUniqueOverlaps(prev, dateIso, startIdx, endIdx, mode==='edit' ? agendaModalState.eventId : null);
+        const editingEventId = mode === 'edit' ? agendaModalState.eventId : null;
+        const editingRecurrence = mode === 'edit' ? agendaModalState.recurrence : null;
 
-        // En création/édition normale, retirer l'ancien événement avant de le recréer.
-        if (mode === 'edit' && agendaModalState.eventId) {
-            if (agendaModalState.recurrence === 'unique') removeUniqueEvent(prev, agendaModalState.eventId);
-            else removeRecurringSeries(prev, agendaModalState.eventId);
+        // Une édition unique ne doit supprimer que cet événement.
+        // Une édition récurrente conserve le comportement de série existant.
+        if (mode === 'edit' && editingEventId) {
+            if (editingRecurrence === 'unique') {
+                removeUniqueEvent(prev, editingEventId);
+            } else {
+                removeRecurringSeries(prev, editingEventId);
+            }
         }
 
-        const base = buildAgendaActivityFromModal(type,startPeriod,endPeriod);
-        const eventId = (mode === 'edit' && agendaModalState.eventId) ? agendaModalState.eventId : `evt_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
-        base.eventId=eventId;
-        base.startPeriod=startPeriod;
-        base.endPeriod=endPeriod;
-        base.recurrence=recurrence;
+        // Empêche les chevauchements entre événements uniques sur la même date.
+        removeUniqueOverlaps(prev, dateIso, startIdx, endIdx, mode === 'edit' ? editingEventId : null);
+
+        const base = buildAgendaActivityFromModal(type, startPeriod, endPeriod);
+        const eventId = editingEventId || `evt_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+        base.eventId = eventId;
+        base.startPeriod = startPeriod;
+        base.endPeriod = endPeriod;
 
         if (recurrence === 'unique' || mode === 'duplicate') {
-            base.recurrence='unique';
-            base.date=dateIso;
+            // ÉVÉNEMENT UNIQUE : il possède toujours sa propre date ISO.
+            base.recurrence = 'unique';
+            base.date = dateIso;
+            base.seriesId = null;
             prev.__uniqueEvents.push(base);
         } else {
-            base.recurrence='weekly';
-            base.seriesId=eventId;
-            for (let i=startIdx;i<=endIdx;i++) prev[getSlotKey(dayIdx,periods[i])] = {...base};
+            // PLANIFICATION RÉCURRENTE : stockage par jour/période.
+            base.recurrence = 'weekly';
+            base.seriesId = eventId;
+            for (let i = startIdx; i <= endIdx; i++) {
+                prev[getSlotKey(dayIdx, periods[i])] = { ...base };
+            }
         }
 
-        // La duplication rapide crée toujours une occurrence unique : elle ne crée pas une seconde série hebdomadaire.
+        // La duplication rapide crée toujours une occurrence unique supplémentaire.
         const duplicateEnabled = document.getElementById('modal-duplicate-enabled').checked;
         const duplicateDate = document.getElementById('modal-duplicate-date').value;
         if (mode !== 'duplicate' && duplicateEnabled && duplicateDate) {
-            const duplicate = {...base, eventId:`evt_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, recurrence:'unique', date:duplicateDate};
+            const duplicate = {
+                ...base,
+                eventId: `evt_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+                recurrence: 'unique',
+                seriesId: null,
+                date: duplicateDate
+            };
+            const dupStart = periodIndex(startPeriod), dupEnd = periodIndex(endPeriod);
+            removeUniqueOverlaps(prev, duplicateDate, dupStart, dupEnd, null);
             prev.__uniqueEvents.push(duplicate);
         }
 
-        savePrevisionnel(prev);
-        closeSlotModal();
-        showAppToast(mode==='duplicate' ? 'Activité dupliquée.' : 'Activité enregistrée.', 'success');
+        // Vérification explicite avant fermeture : l'événement doit être présent
+        // dans la structure qui sera réellement persistée.
+        const expectedId = base.eventId;
+        const persistedCandidate = recurrence === 'unique' || mode === 'duplicate'
+            ? prev.__uniqueEvents.find(ev => ev?.eventId === expectedId && ev?.date === dateIso)
+            : Object.values(prev).find(ev => ev?.eventId === expectedId && ev?.recurrence === 'weekly');
+        if (!persistedCandidate) {
+            showAppToast('Échec : l’activité n’a pas été préparée pour l’enregistrement.', 'error');
+            console.error('Agenda — événement absent avant sauvegarde', { mode, recurrence, dateIso, expectedId, prev });
+            return;
+        }
+
+        try {
+            const persisted = savePrevisionnel(prev);
+            const after = persisted || getPrevisionnel();
+            const verified = (recurrence === 'unique' || mode === 'duplicate')
+                ? after.__uniqueEvents?.find(ev => ev?.eventId === expectedId && ev?.date === dateIso)
+                : Object.values(after).find(ev => ev?.eventId === expectedId && ev?.recurrence === 'weekly');
+
+            if (!verified) {
+                throw new Error(
+                    recurrence === 'unique' || mode === 'duplicate'
+                        ? 'L’événement unique n’a pas été retrouvé après sauvegarde.'
+                        : 'L’activité récurrente n’a pas été retrouvée après sauvegarde.'
+                );
+            }
+
+            console.log('✓ Agenda — sauvegarde vérifiée', {
+                mode,
+                recurrence: verified.recurrence,
+                eventId: verified.eventId,
+                date: verified.date || dateIso,
+                startPeriod: verified.startPeriod,
+                endPeriod: verified.endPeriod
+            });
+
+            closeSlotModal();
+            renderAgenda();
+            renderHome();
+            showAppToast(mode === 'duplicate' ? 'Activité dupliquée.' : 'Activité enregistrée.', 'success');
+        } catch (error) {
+            console.error('Agenda — erreur lors de l’enregistrement', error);
+            showAppToast(`Échec de l’enregistrement : ${error?.message || error}`, 'error');
+        }
     }
 
     function openEventDeleteModal(event) {
@@ -5644,7 +5710,8 @@ function chooseSessionSubject(subject){
      par le formulaire Q2-Q6.
    - Les conflits bloquent toute écriture automatique.
    ========================================================= */
-const MS_CONFIG={clientId:"65c3db78-9bad-4a08-8eac-404b83e368cb",tenantId:"96c46ef2-21cc-480d-92df-0bf9fd599a97",redirectUri:"http://localhost:8000/msal-redirect.html",postLogoutRedirectUri:"http://localhost:8000/msal-redirect.html",scopes:["openid","profile","User.Read","Files.ReadWrite"]};
+const MSAL_REDIRECT_URI = new URL('msal-redirect.html', document.baseURI).href;
+const MS_CONFIG={clientId:"65c3db78-9bad-4a08-8eac-404b83e368cb",tenantId:"96c46ef2-21cc-480d-92df-0bf9fd599a97",redirectUri:MSAL_REDIRECT_URI,postLogoutRedirectUri:MSAL_REDIRECT_URI,scopes:["openid","profile","User.Read","Files.ReadWrite"]};
 const GRAPH_SCOPES=["Files.ReadWrite"], GRAPH_BASE="https://graph.microsoft.com/v1.0", GRAPH_ROOT_FOLDER="Journalier";
 let msalInstance=null, msAccount=null, msalReadyPromise=null;
 function msConfigReady(){return Boolean(MS_CONFIG.clientId&&MS_CONFIG.tenantId&&MS_CONFIG.redirectUri);}
