@@ -2095,6 +2095,19 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
 
 </div>
 
+<!-- MODAL CONFLIT AGENDA -->
+<div id="agendaConflictModal" class="modal-overlay hidden">
+  <div class="modal-card" style="max-width:560px;">
+    <h3 style="margin-top:0;">Conflit de planification</h3>
+    <div id="agenda-conflict-summary" style="font-size:.84rem;line-height:1.55;color:var(--text-sub);margin-bottom:16px;"></div>
+    <div style="display:grid;gap:9px;">
+      <button id="agenda-conflict-replace" class="btn-primary" type="button"></button>
+      <button id="agenda-conflict-both" class="btn-secondary" type="button">Conserver les 2 événements</button>
+      <button id="agenda-conflict-cancel" class="btn-secondary" type="button">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL CRENEAU -->
 <div id="slotModal" class="modal-overlay hidden">
     <div class="modal-card">
@@ -2136,7 +2149,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
         <select id="modal-slot-type" onchange="toggleModalSlotFields()">
             <option value="ELEVE">Accompagnement Élève (En classe)</option>
             <option value="COLLAB">Concertation / Travail Collaboratif (Équipe, Titulaire, PMS, Parents)</option>
-            <option value="FORMATION">Formation / GTPE / Projets TICE</option>
+            <option value="FORMATION">Formation / GTPE / Projets</option>
             <option value="ADMIN">Tâches Administratives / Préparation Bureau</option>
             <option value="LIBRE">Créneau Libre</option>
         </select>
@@ -2158,7 +2171,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
 
         <div id="modal-fields-autre" class="hidden">
             <label>Intitulé exact de l'activité ou réunion :</label>
-            <input type="text" id="modal-slot-admin-title" placeholder="Ex: GTPE, Bureau Pôle, Formation TICE, Concertation PMS...">
+            <input type="text" id="modal-slot-admin-title" placeholder="Ex: GTPE, Bureau Pôle, Formation, Concertation PMS...">
             <label>Détails ou participants :</label>
             <input type="text" id="modal-slot-admin-detail" placeholder="Ex: Titulaires 3e / Logopède / CPMS">
         </div>
@@ -2758,6 +2771,10 @@ loadIndicatorLibrary();
         });
         const groups = {};
         Object.entries(out).forEach(([key, value]) => {
+            // Les espaces techniques ne sont pas des créneaux legacy :
+            // ne jamais les faire passer dans le regroupement des événements.
+            if (key === '__uniqueEvents' || key === '__exceptions') return;
+            if (!value || typeof value !== 'object' || Array.isArray(value)) return;
             if (value.eventId) return;
             const base = `${value.type || ''}|${value.eleve || ''}|${value.matiere || ''}|${value.title || ''}|${value.detail || ''}|${value.local || ''}`;
             groups[base] ||= [];
@@ -2795,7 +2812,7 @@ loadIndicatorLibrary();
             "1_1e H": { type: "ELEVE", eleve: "Mohamed", matiere: "Mathématiques", local: "E29" },
             "1_5e H": { type: "ELEVE", eleve: "Ghizela Séfora Dorot", matiere: "Mathématiques", local: "C28" },
             "1_6e H": { type: "FORMATION", title: "GTPE", detail: "Concertation Pôle" },
-            "1_7e H": { type: "FORMATION", title: "NUMÉRIQUE", detail: "Projet TICE" },
+            "1_7e H": { type: "FORMATION", title: "NUMÉRIQUE", detail: "Projet numérique" },
             
             "2_1e H": { type: "ELEVE", eleve: "Matéo", matiere: "Mathématiques", local: "B08" },
             
@@ -2836,11 +2853,7 @@ loadIndicatorLibrary();
         return iso;
     }
 
-    function getEventForDatePeriod(iso, period, prev=getPrevisionnel()) {
-        const uniqueEvents = Array.isArray(prev.__uniqueEvents) ? prev.__uniqueEvents : [];
-        const pIdx = periodIndex(period);
-        const unique = uniqueEvents.find(ev => ev && ev.date === iso && pIdx >= periodIndex(ev.startPeriod) && pIdx <= periodIndex(ev.endPeriod));
-        if (unique) return { ...unique, recurrence:'unique', occurrenceDate:iso, startIndex:periodIndex(unique.startPeriod), endIndex:periodIndex(unique.endPeriod) };
+    function getWeeklyEventForDatePeriod(iso, period, prev=getPrevisionnel()) {
         const dayIdx = getDayIndexFromISO(iso);
         if (dayIdx < 0 || dayIdx > 4) return null;
         const event = getEventForCell(dayIdx, period, prev);
@@ -2850,6 +2863,84 @@ loadIndicatorLibrary();
         if (exceptions.includes(iso)) return null;
         return { ...event, recurrence:'weekly', seriesId, occurrenceDate:iso };
     }
+
+    function getUniqueEventsForDate(iso, prev=getPrevisionnel()) {
+        return (Array.isArray(prev.__uniqueEvents) ? prev.__uniqueEvents : [])
+            .filter(ev => ev && ev.date === iso)
+            .map(ev => ({ ...ev, recurrence:'unique', occurrenceDate:iso, startIndex:periodIndex(ev.startPeriod), endIndex:periodIndex(ev.endPeriod) }));
+    }
+
+    // Retourne tous les événements visibles sur une cellule. Par défaut, l'unique
+    // remplace l'affichage du récurrent. Si l'unique porte displayMode:'both',
+    // les deux sont rendus ensemble. Une occurrence récurrente supprimée par
+    // exception reste naturellement absente.
+    function getEventsForDatePeriod(iso, period, prev=getPrevisionnel()) {
+        const pIdx = periodIndex(period);
+        const weekly = getWeeklyEventForDatePeriod(iso, period, prev);
+        const uniques = getUniqueEventsForDate(iso, prev)
+            .filter(ev => pIdx >= ev.startIndex && pIdx <= ev.endIndex);
+        if (uniques.length) {
+            const withBoth = uniques.filter(ev => ev.displayMode === 'both');
+            const visible = withBoth.length ? withBoth : [uniques[0]];
+            return weekly && withBoth.length ? [weekly, ...visible] : visible;
+        }
+        return weekly ? [weekly] : [];
+    }
+
+    function getEventForDatePeriod(iso, period, prev=getPrevisionnel()) {
+        return getEventsForDatePeriod(iso, period, prev)[0] || null;
+    }
+
+    function findWeeklyOverlap(iso, startIdx, endIdx, prev, excludeSeriesId=null) {
+        const dayIdx = getDayIndexFromISO(iso);
+        if (dayIdx < 0 || dayIdx > 4) return null;
+        for (let i=startIdx; i<=endIdx; i++) {
+            const ev = getWeeklyEventForDatePeriod(iso, periods[i], prev);
+            if (ev && ev.seriesId !== excludeSeriesId) return ev;
+        }
+        return null;
+    }
+
+    function findUniqueOverlaps(iso, startIdx, endIdx, prev, excludeEventId=null) {
+        return getUniqueEventsForDate(iso, prev).filter(ev => {
+            if (excludeEventId && ev.eventId === excludeEventId) return false;
+            return !(ev.endIndex < startIdx || ev.startIndex > endIdx);
+        });
+    }
+
+    let agendaConflictState = null;
+
+    function closeAgendaConflictModal() {
+        document.getElementById('agendaConflictModal')?.classList.add('hidden');
+        agendaConflictState = null;
+    }
+
+    function openAgendaConflictModal(state) {
+        agendaConflictState = state;
+        const summary = document.getElementById('agenda-conflict-summary');
+        const replace = document.getElementById('agenda-conflict-replace');
+        if (!summary || !replace) return;
+        const existing = state.existing;
+        const existingLabel = getEventLabel(existing);
+        const newLabel = getEventLabel(state.draft);
+        summary.innerHTML = `<strong>${escapeHtml(newLabel)}</strong> entre en conflit avec <strong>${escapeHtml(existingLabel)}</strong> le ${escapeHtml(state.dateIso)} (${escapeHtml(state.draft.startPeriod)}${state.draft.endPeriod!==state.draft.startPeriod?' → '+escapeHtml(state.draft.endPeriod):''}).<br><br>Tu peux remplacer l'événement existant ou conserver les deux. Aucun événement n'est supprimé avant ton choix.`;
+        replace.textContent = `Remplacer « ${existingLabel} »`;
+        document.getElementById('agendaConflictModal').classList.remove('hidden');
+    }
+
+    document.getElementById('agenda-conflict-replace')?.addEventListener('click', () => {
+        const state = agendaConflictState;
+        if (!state) return;
+        closeAgendaConflictModal();
+        persistAgendaDraft(state, 'replace');
+    });
+    document.getElementById('agenda-conflict-both')?.addEventListener('click', () => {
+        const state = agendaConflictState;
+        if (!state) return;
+        closeAgendaConflictModal();
+        persistAgendaDraft(state, 'both');
+    });
+    document.getElementById('agenda-conflict-cancel')?.addEventListener('click', closeAgendaConflictModal);
 
     function renderHome() {
         const iso = getTodayInApp();
@@ -3048,21 +3139,22 @@ loadIndicatorLibrary();
         let html = weekend ? `<div style="padding:10px 0 14px;color:#64748b;font-size:.78rem;">Week-end : seuls les événements uniques sont affichés.</div>` : '';
         const seen=new Set();
         periods.forEach(p=>{
-            const ev=getEventForDatePeriod(selectedDateISO,p,prev);
-            if(ev && seen.has(ev.eventId)) return;
-            if(ev) seen.add(ev.eventId);
-            if(ev){
-                const enc=getEncodedForEvent(dayIdx,selectedDateISO,ev,db);
-                const status=enc?'Séance enregistrée':'Planifié';
-                const badge=enc?'badge-encoded':'badge-prev';
-                html+=`<div class="day-slot-row" style="align-items:stretch;"><div class="period-badge-col">${escapeHtml(ev.startPeriod)}${ev.startPeriod!==ev.endPeriod?'<br>↓<br>'+escapeHtml(ev.endPeriod):''}</div><div class="slot-content-card"><div class="slot-info-main"><span class="status-badge ${badge}">${status}</span><div class="slot-title">${escapeHtml(getEventLabel(ev))}</div><div class="slot-meta">${escapeHtml(getEventMeta(ev)||'Mission Pôle Territorial')}${ev.type==='ELEVE'&&enc?' · Séance enregistrée':''}</div></div><div class="slot-actions" style="margin-top:8px;"><button class="btn-secondary focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;" onclick="openEventActionModal('${selectedDateISO}','${ev.startPeriod}',${dayIdx},'${ev.eventId}')">Voir / agir</button>${ev.type==='ELEVE'&&!enc?`<button class="btn-primary focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;" onclick="quickFormForSlot('${selectedDateISO}','${ev.startPeriod}','${escapeHtml(ev.eleve)}','${escapeHtml(ev.matiere||'')}')">Encoder</button>`:''}</div></div></div>`;
+            const events=getEventsForDatePeriod(selectedDateISO,p,prev);
+            const visible=events.filter(ev=>!seen.has(ev.eventId));
+            visible.forEach(ev=>seen.add(ev.eventId));
+            if(visible.length){
+                visible.forEach(ev=>{
+                    const enc=getEncodedForEvent(dayIdx,selectedDateISO,ev,db);
+                    const status=enc?'Séance enregistrée':'Planifié';
+                    const badge=enc?'badge-encoded':'badge-prev';
+                    html+=`<div class="day-slot-row" style="align-items:stretch;"><div class="period-badge-col">${escapeHtml(ev.startPeriod)}${ev.startPeriod!==ev.endPeriod?'<br>↓<br>'+escapeHtml(ev.endPeriod):''}</div><div class="slot-content-card"><div class="slot-info-main"><span class="status-badge ${badge}">${status}</span><div class="slot-title">${escapeHtml(getEventLabel(ev))}</div><div class="slot-meta">${escapeHtml(getEventMeta(ev)||'Mission Pôle Territorial')}${ev.type==='ELEVE'&&enc?' · Séance enregistrée':''} · ${ev.recurrence==='unique'?'Unique':'Récurrent'}</div></div><div class="slot-actions" style="margin-top:8px;"><button class="btn-secondary focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;" onclick="openEventActionModal('${selectedDateISO}','${ev.startPeriod}',${dayIdx},'${ev.eventId}')">Voir / agir</button>${ev.type==='ELEVE'&&!enc?`<button class="btn-primary focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;" onclick="quickFormForSlot('${selectedDateISO}','${ev.startPeriod}','${escapeHtml(ev.eleve)}','${escapeHtml(ev.matiere||'')}')">Encoder</button>`:''}</div></div></div>`;
+                });
             } else {
                 html+=`<div class="day-slot-row"><div class="period-badge-col">${escapeHtml(p)}</div><div class="slot-content-card"><div class="slot-info-main"><span style="color:#94a3b8;font-size:.78rem;">Créneau libre</span><div class="slot-meta">Aucune activité planifiée</div></div><div class="slot-actions"><button class="btn-secondary focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;" onclick="openSlotModal('${selectedDateISO}','${p}',${dayIdx})">Programmer</button></div></div></div>`;
             }
         });
         dayView.innerHTML=html;
     }
-
 
     function periodIndex(period) {
         return periods.indexOf(period);
@@ -3197,48 +3289,44 @@ loadIndicatorLibrary();
         const monday = getMonday(parseISODate(selectedDateISO));
         const weekDates = [];
         for (let i = 0; i < 5; i++) weekDates.push(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i));
-
         const startStr = weekDates[0].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
         const endStr = weekDates[4].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
         document.getElementById('agenda-date-label').innerText = `Semaine du ${startStr} au ${endStr}`;
-
         const weekView = document.getElementById('agenda-view-week');
-        const db = getDB();
-        const prev = getPrevisionnel();
+        const db = getDB(), prev = getPrevisionnel();
         let html = '<div class="agenda-header-week">Période</div>';
-
         weekDates.forEach((d, idx) => {
             const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
             const iso = formatISO(d);
             const isSelected = iso === selectedDateISO;
             html += `<div class="agenda-header-week ${isSelected ? 'today-column' : ''}" style="grid-column:${idx + 2};grid-row:1;" onclick="jumpToDayView('${iso}')">${days[idx]}<br><span style="font-weight:600;font-size:0.78rem;color:var(--primary);">${dateStr}</span></div>`;
         });
-
-        // Les 8 périodes restent des lignes fixes. Les événements multi-périodes utilisent un placement CSS explicite :
-        // ils ne perturbent donc pas l’auto-placement de la grille.
         periods.forEach((p, periodIdx) => {
             html += `<div class="period-col-week ${periodIdx === 0 ? 'week-current-period' : ''}" style="grid-column:1;grid-row:${periodIdx + 2};"><strong>${p}</strong></div>`;
         });
-
         weekDates.forEach((d, dayIdx) => {
             const isoDate = formatISO(d);
             let periodIdx = 0;
+            const rendered = new Set();
             while (periodIdx < periods.length) {
                 const p = periods[periodIdx];
-                const event = getEventForDatePeriod(isoDate, p, prev);
-                if (event && event.startIndex === periodIdx) {
-                    const encoded = getEncodedForEvent(dayIdx, isoDate, event, db);
-                    const span = Math.max(1, Math.min(periods.length - periodIdx, event.endIndex - event.startIndex + 1));
-                    const title = getEventLabel(event);
-                    const meta = getEventMeta(event);
-                    const cls = getEventClass(event, encoded);
-                    html += `<div class="slot-cell-week week-event-cell" style="grid-column:${dayIdx + 2};grid-row:${periodIdx + 2} / span ${span};" onclick="openEventActionModal('${isoDate}', '${event.startPeriod}', ${dayIdx}, '${event.eventId}')"><div class="week-event ${cls}"><div class="week-event-title">${encoded ? '✓ ' : ''}${escapeHtml(title)}</div>${meta ? `<div class="week-event-meta">${escapeHtml(meta)}</div>` : ''}<div class="week-event-range">${escapeHtml(event.startPeriod)}${span > 1 ? ' → ' + escapeHtml(event.endPeriod) : ''}</div></div></div>`;
+                const allEvents = getEventsForDatePeriod(isoDate,p,prev);
+                const events = allEvents.filter(ev => !rendered.has(ev.eventId) && ev.startIndex <= periodIdx && ev.endIndex >= periodIdx);
+                if (events.length) {
+                    events.forEach(ev => rendered.add(ev.eventId));
+                    const maxEnd=Math.max(...events.map(ev=>ev.endIndex));
+                    const span=Math.max(1,Math.min(periods.length-periodIdx,maxEnd-periodIdx+1));
+                    const cards=events.map(event=>{
+                        const encoded=getEncodedForEvent(dayIdx,isoDate,event,db);
+                        const cls=getEventClass(event,encoded);
+                        const title=getEventLabel(event), meta=getEventMeta(event);
+                        return `<div class="week-event ${cls}" style="margin-bottom:5px;" onclick="event.stopPropagation();openEventActionModal('${isoDate}','${event.startPeriod}',${dayIdx},'${event.eventId}')"><div class="week-event-title">${encoded?'✓ ':''}${escapeHtml(title)}</div>${meta?`<div class="week-event-meta">${escapeHtml(meta)}</div>`:''}<div class="week-event-range">${escapeHtml(event.startPeriod)}${event.endPeriod!==event.startPeriod?' → '+escapeHtml(event.endPeriod):''} · ${event.recurrence==='unique'?'Unique':'Récurrent'}</div></div>`;
+                    }).join('');
+                    html += `<div class="slot-cell-week week-event-cell" style="grid-column:${dayIdx+2};grid-row:${periodIdx+2} / span ${span};"><div>${cards}</div></div>`;
                     periodIdx += span;
                     continue;
                 }
-                if (!event) {
-                    html += `<div class="slot-cell-week week-event-cell" style="grid-column:${dayIdx + 2};grid-row:${periodIdx + 2};" onclick="openSlotModal('${isoDate}', '${p}', ${dayIdx})"><div class="week-slot-free">+ Ajouter</div></div>`;
-                }
+                if (!allEvents.length) html += `<div class="slot-cell-week week-event-cell" style="grid-column:${dayIdx+2};grid-row:${periodIdx+2};" onclick="openSlotModal('${isoDate}','${p}',${dayIdx})"><div class="week-slot-free">+ Ajouter</div></div>`;
                 periodIdx++;
             }
         });
@@ -3339,10 +3427,11 @@ loadIndicatorLibrary();
             const plannedEvents = [];
             const seenEvents = new Set();
             periods.forEach(period => {
-                const event = getEventForDatePeriod(iso, period, prev);
-                if (!event || seenEvents.has(event.eventId)) return;
-                seenEvents.add(event.eventId);
-                plannedEvents.push(event);
+                getEventsForDatePeriod(iso, period, prev).forEach(event => {
+                    if (!event || seenEvents.has(event.eventId)) return;
+                    seenEvents.add(event.eventId);
+                    plannedEvents.push(event);
+                });
             });
 
             const pills = [];
@@ -3417,6 +3506,23 @@ loadIndicatorLibrary();
         end.innerHTML = options;
         start.value = startValue || periods[0];
         end.value = endValue || startValue || periods[0];
+        syncAgendaEndPeriod();
+        start.onchange = syncAgendaStartPeriod;
+        end.onchange = syncAgendaEndPeriod;
+    }
+
+    function syncAgendaEndPeriod() {
+        const start = document.getElementById('modal-slot-period-start');
+        const end = document.getElementById('modal-slot-period-end');
+        if (!start || !end) return;
+        const startIdx = periodIndex(start.value);
+        const endIdx = periodIndex(end.value);
+        if (endIdx < startIdx) end.value = start.value;
+        [...end.options].forEach((opt, idx) => { opt.disabled = idx < startIdx; });
+    }
+
+    function syncAgendaStartPeriod() {
+        syncAgendaEndPeriod();
     }
 
     function toggleDuplicateFields() {
@@ -3462,6 +3568,16 @@ loadIndicatorLibrary();
                 matiere:document.getElementById('modal-slot-matiere').value,
                 local:document.getElementById('modal-slot-local').value
             };
+        }
+        if (type === 'LIBRE') {
+            return {
+                type:'LIBRE',
+                title:'Créneau libre',
+                detail:''
+            };
+        }
+        if (type === 'LIBRE') {
+            return { type:'LIBRE', title:'Créneau libre', detail:'' };
         }
         return {
             type,
@@ -3542,134 +3658,125 @@ loadIndicatorLibrary();
 
     function closeSlotModal() { closeAllChoiceMenus(); document.getElementById('slotModal').classList.add('hidden'); }
 
-    function saveSlotModification() {
-        const sourceDateIso = document.getElementById('modal-slot-date-visible').value || document.getElementById('modal-slot-date').value;
-        const type = document.getElementById('modal-slot-type').value;
-        const recurrence = document.getElementById('modal-slot-recurrence').value || 'weekly';
-        const startPeriod = document.getElementById('modal-slot-period-start').value;
-        const endPeriod = document.getElementById('modal-slot-period-end').value;
-        const mode = agendaModalState.mode || document.getElementById('modal-slot-edit-mode').value || 'create';
-        const duplicateTargetDate = document.getElementById('modal-duplicate-date').value;
-        const dateIso = mode === 'duplicate' ? duplicateTargetDate : sourceDateIso;
-        const dayIdx = getDayIndexFromISO(dateIso);
-        const startIdx = periodIndex(startPeriod), endIdx = periodIndex(endPeriod);
+    function persistAgendaDraft(state, conflictMode=null) {
+        const prev = state.prev;
+        const { dateIso, startIdx, endIdx, recurrence, mode, editingEventId, editingRecurrence, draft } = state;
 
-        if (!dateIso) { alert('Choisissez une date.'); return; }
-        if (recurrence === 'weekly' && (dayIdx < 0 || dayIdx > 4)) {
-            alert('Une planification récurrente hebdomadaire doit être placée du lundi au vendredi. Pour le week-end, choisissez « Événement unique ».');
-            return;
-        }
-        if (startIdx < 0 || endIdx < 0 || endIdx < startIdx) {
-            alert('La période de fin doit être identique ou postérieure à la période de début.');
-            return;
-        }
-        if (type === 'ELEVE' && !document.getElementById('modal-slot-eleve').value) {
-            alert('Sélectionnez un élève pour une activité de type Accompagnement Élève.');
-            return;
-        }
-        if (type === 'LIBRE') { alert('Choisissez un type d’activité pour enregistrer un événement.'); return; }
-
-        const prev = getPrevisionnel();
-        prev.__uniqueEvents = Array.isArray(prev.__uniqueEvents) ? prev.__uniqueEvents : [];
-        prev.__exceptions = prev.__exceptions || {};
-
-        const editingEventId = mode === 'edit' ? agendaModalState.eventId : null;
-        const editingRecurrence = mode === 'edit' ? agendaModalState.recurrence : null;
-
-        // Une édition unique ne doit supprimer que cet événement.
-        // Une édition récurrente conserve le comportement de série existant.
+        // L'édition retire d'abord l'ancien objet, jamais le nouvel objet en cours.
         if (mode === 'edit' && editingEventId) {
-            if (editingRecurrence === 'unique') {
-                removeUniqueEvent(prev, editingEventId);
-            } else {
-                removeRecurringSeries(prev, editingEventId);
+            if (editingRecurrence === 'unique') removeUniqueEvent(prev, editingEventId);
+            else removeRecurringSeries(prev, editingEventId);
+        }
+
+        const weeklyConflict = recurrence === 'unique'
+            ? findWeeklyOverlap(dateIso, startIdx, endIdx, prev, null)
+            : null;
+        const uniqueConflicts = recurrence === 'weekly'
+            ? findUniqueOverlaps(dateIso, startIdx, endIdx, prev, null)
+            : [];
+
+        if (conflictMode === 'replace') {
+            if (recurrence === 'unique' && weeklyConflict) {
+                const id = weeklyConflict.seriesId || weeklyConflict.eventId;
+                prev.__exceptions = prev.__exceptions || {};
+                const dates = new Set(prev.__exceptions[id] || []);
+                dates.add(dateIso);
+                prev.__exceptions[id] = [...dates];
+            }
+            if (recurrence === 'weekly' && uniqueConflicts.length) {
+                const ids = new Set(uniqueConflicts.map(ev=>ev.eventId));
+                prev.__uniqueEvents = (prev.__uniqueEvents || []).filter(ev=>!ids.has(ev?.eventId));
             }
         }
-
-        // Empêche les chevauchements entre événements uniques sur la même date.
-        removeUniqueOverlaps(prev, dateIso, startIdx, endIdx, mode === 'edit' ? editingEventId : null);
-
-        const base = buildAgendaActivityFromModal(type, startPeriod, endPeriod);
-        const eventId = editingEventId || `evt_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
-        base.eventId = eventId;
-        base.startPeriod = startPeriod;
-        base.endPeriod = endPeriod;
 
         if (recurrence === 'unique' || mode === 'duplicate') {
-            // ÉVÉNEMENT UNIQUE : il possède toujours sa propre date ISO.
-            base.recurrence = 'unique';
-            base.date = dateIso;
-            base.seriesId = null;
-            prev.__uniqueEvents.push(base);
+            draft.recurrence = 'unique';
+            draft.date = dateIso;
+            draft.seriesId = null;
+            draft.displayMode = conflictMode === 'both' ? 'both' : 'unique';
+            prev.__uniqueEvents = Array.isArray(prev.__uniqueEvents) ? prev.__uniqueEvents : [];
+            prev.__uniqueEvents.push(draft);
         } else {
-            // PLANIFICATION RÉCURRENTE : stockage par jour/période.
-            base.recurrence = 'weekly';
-            base.seriesId = eventId;
-            for (let i = startIdx; i <= endIdx; i++) {
-                prev[getSlotKey(dayIdx, periods[i])] = { ...base };
+            draft.recurrence = 'weekly';
+            draft.seriesId = draft.eventId;
+            for (let i=startIdx;i<=endIdx;i++) {
+                prev[getSlotKey(getDayIndexFromISO(dateIso),periods[i])] = {...draft};
+            }
+            if (conflictMode === 'both' && uniqueConflicts.length) {
+                const conflictIds = new Set(uniqueConflicts.map(ev => ev.eventId));
+                (prev.__uniqueEvents || []).forEach(ev => {
+                    if (conflictIds.has(ev?.eventId)) ev.displayMode = 'both';
+                });
             }
         }
 
-        // La duplication rapide crée toujours une occurrence unique supplémentaire.
         const duplicateEnabled = document.getElementById('modal-duplicate-enabled').checked;
         const duplicateDate = document.getElementById('modal-duplicate-date').value;
         if (mode !== 'duplicate' && duplicateEnabled && duplicateDate) {
-            const duplicate = {
-                ...base,
-                eventId: `evt_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
-                recurrence: 'unique',
-                seriesId: null,
-                date: duplicateDate
-            };
-            const dupStart = periodIndex(startPeriod), dupEnd = periodIndex(endPeriod);
-            removeUniqueOverlaps(prev, duplicateDate, dupStart, dupEnd, null);
+            const duplicate = {...draft, eventId:`evt_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, recurrence:'unique', seriesId:null, date:duplicateDate, displayMode:'unique'};
+            const dupStart=periodIndex(draft.startPeriod), dupEnd=periodIndex(draft.endPeriod);
+            removeUniqueOverlaps(prev,duplicateDate,dupStart,dupEnd,null);
             prev.__uniqueEvents.push(duplicate);
         }
 
-        // Vérification explicite avant fermeture : l'événement doit être présent
-        // dans la structure qui sera réellement persistée.
-        const expectedId = base.eventId;
-        const persistedCandidate = recurrence === 'unique' || mode === 'duplicate'
-            ? prev.__uniqueEvents.find(ev => ev?.eventId === expectedId && ev?.date === dateIso)
-            : Object.values(prev).find(ev => ev?.eventId === expectedId && ev?.recurrence === 'weekly');
-        if (!persistedCandidate) {
-            showAppToast('Échec : l’activité n’a pas été préparée pour l’enregistrement.', 'error');
-            console.error('Agenda — événement absent avant sauvegarde', { mode, recurrence, dateIso, expectedId, prev });
-            return;
-        }
-
         try {
-            const persisted = savePrevisionnel(prev);
-            const after = persisted || getPrevisionnel();
-            const verified = (recurrence === 'unique' || mode === 'duplicate')
-                ? after.__uniqueEvents?.find(ev => ev?.eventId === expectedId && ev?.date === dateIso)
-                : Object.values(after).find(ev => ev?.eventId === expectedId && ev?.recurrence === 'weekly');
-
-            if (!verified) {
-                throw new Error(
-                    recurrence === 'unique' || mode === 'duplicate'
-                        ? 'L’événement unique n’a pas été retrouvé après sauvegarde.'
-                        : 'L’activité récurrente n’a pas été retrouvée après sauvegarde.'
-                );
-            }
-
-            console.log('✓ Agenda — sauvegarde vérifiée', {
-                mode,
-                recurrence: verified.recurrence,
-                eventId: verified.eventId,
-                date: verified.date || dateIso,
-                startPeriod: verified.startPeriod,
-                endPeriod: verified.endPeriod
-            });
-
+            const persisted=savePrevisionnel(prev);
+            const after=persisted||getPrevisionnel();
+            const isUnique=recurrence==='unique'||mode==='duplicate';
+            const verified=isUnique
+                ? (Array.isArray(after?.__uniqueEvents)?after.__uniqueEvents:[]).find(ev=>ev?.eventId===draft.eventId&&ev?.date===dateIso)
+                : Object.values(after).find(ev=>ev?.eventId===draft.eventId&&ev?.recurrence==='weekly');
+            if(!verified) throw new Error(isUnique ? `L’événement unique n’a pas été retrouvé après sauvegarde (${dateIso}, ${draft.startPeriod} → ${draft.endPeriod}).` : 'L’activité récurrente n’a pas été retrouvée après sauvegarde.');
             closeSlotModal();
             renderAgenda();
             renderHome();
-            showAppToast(mode === 'duplicate' ? 'Activité dupliquée.' : 'Activité enregistrée.', 'success');
-        } catch (error) {
-            console.error('Agenda — erreur lors de l’enregistrement', error);
-            showAppToast(`Échec de l’enregistrement : ${error?.message || error}`, 'error');
+            showAppToast(mode==='duplicate'?'Activité dupliquée.':'Activité enregistrée.','success');
+        } catch(error) {
+            console.error('Agenda — erreur lors de l’enregistrement',error);
+            closeSlotModal(); renderAgenda(); renderHome();
+            showAppToast(`Échec de l’enregistrement : ${error?.message||error}`,'error',5000);
         }
+    }
+
+    function saveSlotModification() {
+        const sourceDateIso=document.getElementById('modal-slot-date-visible').value||document.getElementById('modal-slot-date').value;
+        const type=document.getElementById('modal-slot-type').value;
+        const recurrence=document.getElementById('modal-slot-recurrence').value||'weekly';
+        const startPeriod=document.getElementById('modal-slot-period-start').value;
+        const endPeriod=document.getElementById('modal-slot-period-end').value;
+        const mode=agendaModalState.mode||document.getElementById('modal-slot-edit-mode').value||'create';
+        const duplicateTargetDate=document.getElementById('modal-duplicate-date').value;
+        const dateIso=mode==='duplicate'?duplicateTargetDate:sourceDateIso;
+        const dayIdx=getDayIndexFromISO(dateIso);
+        const startIdx=periodIndex(startPeriod), endIdx=periodIndex(endPeriod);
+        if(!dateIso){alert('Choisissez une date.');return;}
+        if(recurrence==='weekly'&&(dayIdx<0||dayIdx>4)){alert('Une planification récurrente hebdomadaire doit être placée du lundi au vendredi. Pour le week-end, choisissez « Événement unique ».');return;}
+        if(startIdx<0||endIdx<0||endIdx<startIdx){alert('La période de fin doit être identique ou postérieure à la période de début.');return;}
+        if(type==='ELEVE'&&!document.getElementById('modal-slot-eleve').value){alert('Sélectionnez un élève pour une activité de type Accompagnement Élève.');return;}
+
+        const prev=getPrevisionnel();
+        prev.__uniqueEvents=Array.isArray(prev.__uniqueEvents)?prev.__uniqueEvents:[];
+        prev.__exceptions=prev.__exceptions||{};
+        const editingEventId=mode==='edit'?agendaModalState.eventId:null;
+        const editingRecurrence=mode==='edit'?agendaModalState.recurrence:null;
+        const working=JSON.parse(JSON.stringify(prev));
+        if(mode==='edit'&&editingEventId){
+            if(editingRecurrence==='unique') removeUniqueEvent(working,editingEventId);
+            else removeRecurringSeries(working,editingEventId);
+        }
+        const draft=buildAgendaActivityFromModal(type,startPeriod,endPeriod);
+        draft.eventId=editingEventId||`evt_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+        draft.startPeriod=startPeriod; draft.endPeriod=endPeriod;
+
+        const weeklyConflict=recurrence==='unique'?findWeeklyOverlap(dateIso,startIdx,endIdx,working,null):null;
+        const uniqueConflicts=recurrence==='weekly'?findUniqueOverlaps(dateIso,startIdx,endIdx,working,null):[];
+        const conflicts=weeklyConflict||uniqueConflicts.length;
+        const conflictExisting=weeklyConflict||uniqueConflicts[0]||null;
+        if(conflicts && mode!=='duplicate'){
+            openAgendaConflictModal({prev:working,dateIso,startIdx,endIdx,recurrence,mode,editingEventId,editingRecurrence,draft,existing:conflictExisting,uniqueConflicts});
+            return;
+        }
+        persistAgendaDraft({prev:working,dateIso,startIdx,endIdx,recurrence,mode,editingEventId,editingRecurrence,draft,uniqueConflicts},null);
     }
 
     function openEventDeleteModal(event) {
