@@ -5,11 +5,14 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  base: '/journalier-electronique/',
+
   server: {
     port: 8000,
     strictPort: true,
     host: 'localhost'
   },
+
   build: {
     rollupOptions: {
       input: {
