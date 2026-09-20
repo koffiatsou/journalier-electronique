@@ -396,6 +396,10 @@
             cursor: pointer;
         }
 
+        .event-action-btn.danger{border-color:#fecaca;background:#fff1f2;color:#b91c1c}
+        .event-action-btn.danger:hover{background:#ffe4e6;border-color:#fca5a5}
+        .agenda-recurrence-box{margin:4px 0 14px;padding:11px;background:#f8fafc;border:1px solid var(--border);border-radius:10px}
+        .agenda-recurrence-box .recurrence-note{font-size:.72rem;color:var(--text-sub);margin-top:5px;line-height:1.35}
         .event-action-btn:hover {
             background: #f0f7ff;
             border-color: #bfdbfe;
@@ -2097,6 +2101,8 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
         <h3 style="margin-top:0;" id="modal-slot-title">Programmer une activité</h3>
         <input type="hidden" id="modal-slot-date">
         <input type="hidden" id="modal-slot-period">
+        <input type="hidden" id="modal-slot-event-id">
+        <input type="hidden" id="modal-slot-edit-mode" value="create">
 
         <div class="grid-2">
             <div>
@@ -2117,6 +2123,15 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
             💡 <strong>Plusieurs périodes :</strong> choisissez simplement la première et la dernière période. Le même événement sera automatiquement étendu sur tous les créneaux intermédiaires.
         </div>
         
+        <div class="agenda-recurrence-box">
+            <label for="modal-slot-recurrence" style="margin-bottom:6px;display:block;">Type de planification :</label>
+            <select id="modal-slot-recurrence" onchange="updateRecurrenceNote()">
+                <option value="weekly">Récurrente hebdomadaire</option>
+                <option value="unique">Événement unique</option>
+            </select>
+            <div id="modal-slot-recurrence-note" class="recurrence-note">Cette activité sera répétée chaque semaine le même jour.</div>
+        </div>
+
         <label>Type d'activité / mission :</label>
         <select id="modal-slot-type" onchange="toggleModalSlotFields()">
             <option value="ELEVE">Accompagnement Élève (En classe)</option>
@@ -2178,8 +2193,22 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
             <button class="event-action-btn" id="event-action-edit">✏️ Modifier la planification</button>
             <button class="event-action-btn" id="event-action-extend">↔️ Étendre / réduire la durée</button>
             <button class="event-action-btn" id="event-action-duplicate">🔁 Dupliquer à une autre date</button>
+            <button class="event-action-btn danger" id="event-action-delete">🗑️ Supprimer</button>
         </div>
         <button class="btn-primary" style="background:#64748b; width:100%; margin-top:12px;" onclick="closeEventActionModal()">Fermer</button>
+    </div>
+</div>
+
+<!-- MODAL SUPPRESSION ÉVÉNEMENT -->
+<div id="eventDeleteModal" class="modal-overlay hidden">
+    <div class="modal-card" style="max-width:520px;">
+        <h3 style="margin-top:0;">Supprimer l’événement</h3>
+        <div id="event-delete-summary" class="event-summary-box"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
+            <button class="event-action-btn danger" id="event-delete-occurrence">🗑️ Supprimer cette occurrence uniquement</button>
+            <button class="event-action-btn danger" id="event-delete-series">🗑️ Supprimer la série</button>
+        </div>
+        <button class="btn-primary" style="background:#64748b;width:100%;margin-top:12px;" onclick="closeEventDeleteModal()">Annuler</button>
     </div>
 </div>
 
@@ -2241,6 +2270,82 @@ let INDICATOR_LIBRARY = null;
 let INDICATOR_LIBRARY_STATUS = 'pending';
 let q3AssessmentState = {};
 
+/* =========================================================
+   DIAGNOSTIC TECHNIQUE — Bibliothèque indicateurs
+   Invisible par défaut. Activation : ?diagnostic=1
+   ou console : showJournalierDiagnostics()
+   ========================================================= */
+const JOURNALIER_DIAGNOSTICS = window.JOURNALIER_DIAGNOSTICS = {
+    indicatorLibrary: {
+        status: 'pending',
+        version: null,
+        count: 0,
+        source: null,
+        loadedAt: null,
+        attempted: [],
+        error: null
+    },
+    q3: {
+        objective: '',
+        subject: '',
+        level: '',
+        form: '',
+        suggestions: 0
+    }
+};
+
+function updateIndicatorDiagnosticPanel(){
+    const panel=document.getElementById('journalier-dev-diagnostic');
+    if(!panel) return;
+    const lib=JOURNALIER_DIAGNOSTICS.indicatorLibrary;
+    const q3=JOURNALIER_DIAGNOSTICS.q3;
+    const ok=lib.status==='loaded';
+    const status=ok
+        ? `✓ v${escapeHtml(lib.version||'?')} — ${Number(lib.count||0)} indicateurs`
+        : lib.status==='error'
+            ? `⚠ Bibliothèque indisponible${lib.error ? ` — ${escapeHtml(lib.error)}` : ''}`
+            : '⏳ Chargement…';
+    const attempts=(lib.attempted||[]).map(x=>`<div style=\"margin-top:3px\">${escapeHtml(x.url)} → ${escapeHtml(x.result||'…')}</div>`).join('');
+    panel.innerHTML=`
+      <div style=\"font-weight:800;font-size:14px;margin-bottom:10px\">DIAGNOSTIC TECHNIQUE</div>
+      <div style=\"font-weight:750\">Bibliothèque indicateurs</div>
+      <div style=\"margin-top:4px;line-height:1.45\">${status}</div>
+      ${lib.source?`<div style=\"margin-top:4px;color:#555\">Source : ${escapeHtml(lib.source)}</div>`:''}
+      ${lib.loadedAt?`<div style=\"margin-top:3px;color:#777\">Chargée : ${escapeHtml(new Date(lib.loadedAt).toLocaleString('fr-BE'))}</div>`:''}
+      ${lib.status==='error'?`<div style=\"margin-top:8px;color:#9b1c1c\">Dernière erreur : ${escapeHtml(lib.error||'inconnue')}</div>`:''}
+      ${attempts?`<div style=\"margin-top:10px;padding-top:8px;border-top:1px solid #ddd;font-size:11px;color:#555\"><strong>Tentatives</strong>${attempts}</div>`:''}
+      <div style=\"margin-top:12px;padding-top:8px;border-top:1px solid #ddd\">
+        <div style=\"font-weight:750\">Moteur Q3</div>
+        <div style=\"margin-top:4px\">${ok?'✓ Actif':'⚠ Bloqué : bibliothèque non chargée'}</div>
+        ${q3.objective?`<div style=\"margin-top:5px;color:#555\">Objectif : ${escapeHtml(q3.objective)}</div>`:''}
+        <div style=\"margin-top:3px;color:#555\">Suggestions : ${Number(q3.suggestions||0)}</div>
+      </div>`;
+}
+
+function initJournalierDiagnostics(){
+    const params=new URLSearchParams(window.location.search);
+    const enabled=params.get('diagnostic')==='1' || window.location.hash==='#diagnostic';
+    if(!enabled) return;
+    const panel=document.createElement('div');
+    panel.id='journalier-dev-diagnostic';
+    panel.style.cssText='position:fixed;right:16px;bottom:16px;z-index:99999;width:min(430px,calc(100vw - 32px));max-height:70vh;overflow:auto;background:#fff;border:1px solid #cfd4dc;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.18);padding:14px;font:12px/1.45 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;color:#111';
+    document.body.appendChild(panel);
+    updateIndicatorDiagnosticPanel();
+}
+
+window.showJournalierDiagnostics=()=>{
+    if(!document.getElementById('journalier-dev-diagnostic')){
+        const url=new URL(window.location.href);
+        url.searchParams.set('diagnostic','1');
+        window.history.replaceState({},'',url);
+        initJournalierDiagnostics();
+    }
+    updateIndicatorDiagnosticPanel();
+};
+
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initJournalierDiagnostics,{once:true});
+else initJournalierDiagnostics();
+
 function normalizeIndicatorLibraryV05(data){
     if(!data || typeof data!=='object') throw new Error('Bibliothèque JSON invalide');
     if(!['0.5','0.5.1','0.4'].includes(String(data.version||''))) throw new Error(`Version JSON inattendue: ${data.version || 'inconnue'}`);
@@ -2279,27 +2384,44 @@ function normalizeIndicatorLibraryV05(data){
 }
 
 async function loadIndicatorLibrary() {
-    const candidates = [
-        './bibliotheque_indicateurs_v0_5_1.json',
-        './bibliotheque_indicateurs_v0_4_3_test.json',
-        './bibliotheque_indicateurs_v0_4_2_test.json',
-        './bibliotheque_indicateurs_v0_4(1).json'
-    ];
-    let lastError = null;
-    for (const url of candidates) {
-        try {
-            const response = await fetch(url, { cache: 'no-store' });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const data = await response.json();
-            INDICATOR_LIBRARY = normalizeIndicatorLibraryV05(data);
-            INDICATOR_LIBRARY_STATUS = 'loaded';
-            if (typeof updateObservationSuggestions === 'function') updateObservationSuggestions();
-            console.log('✓ Bibliothèque JSON chargée', {source:url,version:data.version,apprentissage:data.indicateurs_apprentissage.length});
-            return;
-        } catch (error) { lastError=error; }
+    const url = './bibliotheque_indicateurs_v0_5_1.json';
+    JOURNALIER_DIAGNOSTICS.indicatorLibrary.status='pending';
+    JOURNALIER_DIAGNOSTICS.indicatorLibrary.attempted=[];
+    updateIndicatorDiagnosticPanel();
+    try {
+        JOURNALIER_DIAGNOSTICS.indicatorLibrary.attempted.push({url,result:'en cours'});
+        updateIndicatorDiagnosticPanel();
+        const response = await fetch(url, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        INDICATOR_LIBRARY = normalizeIndicatorLibraryV05(data);
+        INDICATOR_LIBRARY_STATUS = 'loaded';
+        const attempt=JOURNALIER_DIAGNOSTICS.indicatorLibrary.attempted.at(-1);
+        if(attempt) attempt.result=`HTTP ${response.status} — valide`;
+        JOURNALIER_DIAGNOSTICS.indicatorLibrary={
+            ...JOURNALIER_DIAGNOSTICS.indicatorLibrary,
+            status:'loaded',
+            version:String(data.version||''),
+            count:Number(data.indicateurs_apprentissage?.length||0),
+            source:url.replace(/^\.\//,''),
+            loadedAt:new Date().toISOString(),
+            error:null
+        };
+        updateIndicatorDiagnosticPanel();
+        if (typeof updateObservationSuggestions === 'function') updateObservationSuggestions();
+        console.log('✓ Bibliothèque JSON chargée', {source:url,version:data.version,apprentissage:data.indicateurs_apprentissage.length});
+    } catch (error) {
+        INDICATOR_LIBRARY_STATUS='error';
+        JOURNALIER_DIAGNOSTICS.indicatorLibrary={
+            ...JOURNALIER_DIAGNOSTICS.indicatorLibrary,
+            status:'error', source:url.replace(/^\.\//,''), loadedAt:null,
+            error:error?.message||String(error||'Erreur inconnue')
+        };
+        const attempt=JOURNALIER_DIAGNOSTICS.indicatorLibrary.attempted.at(-1);
+        if(attempt) attempt.result=error?.message||String(error);
+        updateIndicatorDiagnosticPanel();
+        console.error('✗ Impossible de charger la bibliothèque d’indicateurs',error);
     }
-    INDICATOR_LIBRARY_STATUS='error';
-    console.error('✗ Impossible de charger la bibliothèque d’indicateurs',lastError);
 }
 
 loadIndicatorLibrary();
@@ -2309,6 +2431,8 @@ loadIndicatorLibrary();
     const periods = ["1e H", "2e H", "3e H", "4e H", "5e H", "6e H", "7e H", "8e H"];
 
     let agendaMode = 'day';
+    let agendaModalState = { mode:'create', eventId:null, recurrence:null, occurrenceDate:null };
+    let agendaDeleteState = { eventId:null, occurrenceDate:null, recurrence:null };
     function getInitialDateISO() {
         const now = new Date();
         if (isNaN(now.getTime())) return '2026-08-24';
@@ -2431,9 +2555,19 @@ loadIndicatorLibrary();
         const ownerId = v63GetLocalIdentity().ownerId;
         const out = {};
         Object.entries(prev || {}).forEach(([key, value]) => {
+            if (key === '__uniqueEvents') {
+                out[key] = Array.isArray(value) ? value.map(item => ({ ...item, ownerId:item?.ownerId||ownerId, dataVersion:JOURNALIER_ARCHITECTURE_VERSION })) : [];
+                return;
+            }
+            if (key === '__exceptions') {
+                out[key] = value && typeof value === 'object' ? JSON.parse(JSON.stringify(value)) : {};
+                return;
+            }
             if (!value || typeof value !== 'object') return;
             const v = { ...value, ownerId: value.ownerId || ownerId, dataVersion: JOURNALIER_ARCHITECTURE_VERSION };
             if (!v.eventId) v.eventId = `legacy_${key.replace(/[^a-zA-Z0-9_-]/g,'_')}`;
+            v.recurrence = v.recurrence || 'weekly';
+            v.seriesId = v.seriesId || v.eventId;
             out[key] = v;
         });
         return out;
@@ -2612,9 +2746,12 @@ loadIndicatorLibrary();
 
     function normalizePrevisionnel(prev) {
         const out = {};
+        out.__uniqueEvents = Array.isArray(prev?.__uniqueEvents) ? prev.__uniqueEvents.map(x => ({...x, recurrence:'unique'})) : [];
+        out.__exceptions = prev?.__exceptions && typeof prev.__exceptions === 'object' ? JSON.parse(JSON.stringify(prev.__exceptions)) : {};
         Object.entries(prev || {}).forEach(([key, value]) => {
+            if (key === '__uniqueEvents' || key === '__exceptions') return;
             if (!value || typeof value !== 'object') return;
-            out[key] = { ...value };
+            out[key] = { ...value, recurrence:value.recurrence || 'weekly', seriesId:value.seriesId || value.eventId };
         });
         const groups = {};
         Object.entries(out).forEach(([key, value]) => {
@@ -2693,10 +2830,19 @@ loadIndicatorLibrary();
         return iso;
     }
 
-    function getEventForDatePeriod(iso, period) {
+    function getEventForDatePeriod(iso, period, prev=getPrevisionnel()) {
+        const uniqueEvents = Array.isArray(prev.__uniqueEvents) ? prev.__uniqueEvents : [];
+        const pIdx = periodIndex(period);
+        const unique = uniqueEvents.find(ev => ev && ev.date === iso && pIdx >= periodIndex(ev.startPeriod) && pIdx <= periodIndex(ev.endPeriod));
+        if (unique) return { ...unique, recurrence:'unique', occurrenceDate:iso, startIndex:periodIndex(unique.startPeriod), endIndex:periodIndex(unique.endPeriod) };
         const dayIdx = getDayIndexFromISO(iso);
         if (dayIdx < 0 || dayIdx > 4) return null;
-        return getEventForCell(dayIdx, period, getPrevisionnel());
+        const event = getEventForCell(dayIdx, period, prev);
+        if (!event) return null;
+        const seriesId = event.seriesId || event.eventId;
+        const exceptions = prev.__exceptions?.[seriesId] || [];
+        if (exceptions.includes(iso)) return null;
+        return { ...event, recurrence:'weekly', seriesId, occurrenceDate:iso };
     }
 
     function renderHome() {
@@ -2714,7 +2860,7 @@ loadIndicatorLibrary();
         } else {
             let html=''; const seen=new Set();
             periods.forEach(p=>{
-                const ev=getEventForCell(dayIdx,p,prev);
+                const ev=getEventForDatePeriod(iso,p,prev);
                 if(ev && seen.has(ev.eventId)) return;
                 if(ev) seen.add(ev.eventId);
                 const enc=ev && getEncodedForEvent(dayIdx,iso,ev,db);
@@ -2892,10 +3038,11 @@ loadIndicatorLibrary();
         const dayView = document.getElementById('agenda-view-day');
         const db = getDB(), prev = getPrevisionnel();
         const dayIdx = getDayIndexFromISO(selectedDateISO);
-        if (dayIdx > 4) { dayView.innerHTML = `<div class="card" style="text-align:center;padding:30px;"><h3 style="margin-top:0;color:#475569;">Aucun cours prévu le week-end</h3><button class="btn-secondary focus-ring" style="padding:9px 12px;border-radius:8px;cursor:pointer;" onclick="todayAgenda()">Revenir à aujourd’hui</button></div>`; return; }
-        let html=''; const seen=new Set();
+        const weekend = dayIdx > 4;
+        let html = weekend ? `<div style="padding:10px 0 14px;color:#64748b;font-size:.78rem;">Week-end : seuls les événements uniques sont affichés.</div>` : '';
+        const seen=new Set();
         periods.forEach(p=>{
-            const ev=getEventForCell(dayIdx,p,prev);
+            const ev=getEventForDatePeriod(selectedDateISO,p,prev);
             if(ev && seen.has(ev.eventId)) return;
             if(ev) seen.add(ev.eventId);
             if(ev){
@@ -2945,7 +3092,9 @@ loadIndicatorLibrary();
                     ...direct,
                     eventId: direct.eventId,
                     startIndex: Math.min(...indexes),
-                    endIndex: Math.max(...indexes)
+                    endIndex: Math.max(...indexes),
+                    recurrence:'weekly',
+                    seriesId:direct.seriesId || direct.eventId
                 };
             }
         }
@@ -2954,7 +3103,9 @@ loadIndicatorLibrary();
             ...direct,
             eventId: direct.eventId || `legacy_${dayIdx}_${period}`,
             startIndex: periodIndex(period),
-            endIndex: periodIndex(period)
+            endIndex: periodIndex(period),
+            recurrence:'weekly',
+            seriesId:direct.eventId || `legacy_${dayIdx}_${period}`
         };
     }
 
@@ -3068,7 +3219,7 @@ loadIndicatorLibrary();
             let periodIdx = 0;
             while (periodIdx < periods.length) {
                 const p = periods[periodIdx];
-                const event = getEventForCell(dayIdx, p, prev);
+                const event = getEventForDatePeriod(isoDate, p, prev);
                 if (event && event.startIndex === periodIdx) {
                     const encoded = getEncodedForEvent(dayIdx, isoDate, event, db);
                     const span = Math.max(1, Math.min(periods.length - periodIdx, event.endIndex - event.startIndex + 1));
@@ -3091,7 +3242,7 @@ loadIndicatorLibrary();
     function openEventActionModal(isoDate, period, dayIdx, eventId) {
         closeAllChoiceMenus();
         const prev = getPrevisionnel();
-        const event = getEventForCell(dayIdx, period, prev);
+        const event = getEventForDatePeriod(isoDate, period, prev);
         if (!event) {
             openSlotModal(isoDate, period, dayIdx);
             return;
@@ -3104,7 +3255,7 @@ loadIndicatorLibrary();
         document.getElementById('event-action-summary').innerHTML = `
             <strong>${getEventLabel(event)}</strong><br>
             ${getEventMeta(event) ? `${getEventMeta(event)}<br>` : ''}
-            <span style="color:var(--text-sub);">${event.startPeriod}${span > 1 ? ' → ' + event.endPeriod : ''}</span>
+            <span style="color:var(--text-sub);">${event.startPeriod}${span > 1 ? ' → ' + event.endPeriod : ''} · ${event.recurrence==='unique'?'Événement unique':'Récurrent hebdomadaire'}</span>
         `;
 
         document.getElementById('event-action-observe').onclick = () => {
@@ -3128,14 +3279,10 @@ loadIndicatorLibrary();
 
         document.getElementById('event-action-duplicate').onclick = () => {
             closeEventActionModal();
-            openSlotModal(isoDate, event.startPeriod, dayIdx);
-            setTimeout(() => {
-                const cb = document.getElementById('modal-duplicate-enabled');
-                if (cb) {
-                    cb.checked = true;
-                    toggleDuplicateFields();
-                }
-            }, 50);
+            openDuplicateEventModal(isoDate, event.startPeriod, dayIdx, event.eventId);
+        };
+        document.getElementById('event-action-delete').onclick = () => {
+            openEventDeleteModal(event);
         };
 
         modal.classList.remove('hidden');
@@ -3182,12 +3329,11 @@ loadIndicatorLibrary();
             const isToday = iso === selectedDateISO;
             const dayIdx = getDayIndexFromISO(iso);
 
-            // Le prévisionnel est enregistré par jour de semaine (0 = lundi ... 4 = vendredi).
-            // La vue mensuelle projette donc les activités récurrentes sur chaque date correspondante.
+            // Les activités récurrentes sont projetées sur leur jour de semaine ; les événements uniques utilisent leur date exacte.
             const plannedEvents = [];
             const seenEvents = new Set();
             periods.forEach(period => {
-                const event = getEventForCell(dayIdx, period, prev);
+                const event = getEventForDatePeriod(iso, period, prev);
                 if (!event || seenEvents.has(event.eventId)) return;
                 seenEvents.add(event.eventId);
                 plannedEvents.push(event);
@@ -3272,46 +3418,114 @@ loadIndicatorLibrary();
         document.getElementById('modal-duplicate-fields').classList.toggle('hidden', !enabled);
     }
 
+    function updateRecurrenceNote() {
+        const mode = document.getElementById('modal-slot-recurrence')?.value || 'weekly';
+        const note = document.getElementById('modal-slot-recurrence-note');
+        if (note) note.textContent = mode === 'unique'
+            ? 'Cette activité aura lieu uniquement à la date choisie.'
+            : 'Cette activité sera répétée chaque semaine le même jour.';
+    }
+
+    function removeRecurringSeries(prev, seriesId) {
+        Object.keys(prev).forEach(key => {
+            if (key === '__uniqueEvents' || key === '__exceptions') return;
+            const value = prev[key];
+            if (value && (value.eventId === seriesId || value.seriesId === seriesId)) delete prev[key];
+        });
+        if (prev.__exceptions) delete prev.__exceptions[seriesId];
+    }
+
+    function removeUniqueEvent(prev, eventId) {
+        prev.__uniqueEvents = (prev.__uniqueEvents || []).filter(ev => ev?.eventId !== eventId);
+    }
+
+    function removeUniqueOverlaps(prev, dateIso, startIdx, endIdx, exceptEventId=null) {
+        prev.__uniqueEvents = (prev.__uniqueEvents || []).filter(ev => {
+            if (!ev || ev.date !== dateIso) return true;
+            if (exceptEventId && ev.eventId === exceptEventId) return true;
+            const a=periodIndex(ev.startPeriod), b=periodIndex(ev.endPeriod);
+            return b < startIdx || a > endIdx;
+        });
+    }
+
+    function buildAgendaActivityFromModal(type, startPeriod, endPeriod) {
+        if (type === 'ELEVE') {
+            return {
+                type:'ELEVE',
+                eleve:document.getElementById('modal-slot-eleve').value,
+                matiere:document.getElementById('modal-slot-matiere').value,
+                local:document.getElementById('modal-slot-local').value
+            };
+        }
+        return {
+            type,
+            title:document.getElementById('modal-slot-admin-title').value || 'Activité Pôle',
+            detail:document.getElementById('modal-slot-admin-detail').value || ''
+        };
+    }
+
     function openSlotModal(dateIso, period, dayIdx) {
+        const prev = getPrevisionnel();
+        const event = getEventForDatePeriod(dateIso, period, prev);
+        const edit = Boolean(event);
+        agendaModalState = {
+            mode:'edit',
+            eventId:event?.eventId || null,
+            recurrence:event?.recurrence || null,
+            occurrenceDate:dateIso
+        };
         document.getElementById('modal-slot-date').value = dateIso;
         document.getElementById('modal-slot-date-visible').value = dateIso;
         document.getElementById('modal-slot-period').value = period;
-        document.getElementById('modal-slot-title').innerText = `Activité ${days[dayIdx]}`;
+        document.getElementById('modal-slot-event-id').value = event?.eventId || '';
+        document.getElementById('modal-slot-edit-mode').value = edit ? 'edit' : 'create';
+        document.getElementById('modal-slot-title').innerText = edit ? 'Modifier l’activité' : `Programmer une activité${dayIdx >= 0 && dayIdx <= 4 ? ' · ' + days[dayIdx] : ''}`;
 
-        const prev = getPrevisionnel();
-        const event = getEventForCell(dayIdx, period, prev);
-        const slot = event || prev[getSlotKey(dayIdx, period)];
-
-        // Nettoyage des champs
         document.getElementById('modal-slot-admin-title').value = '';
         document.getElementById('modal-slot-admin-detail').value = '';
         document.getElementById('modal-slot-local').value = '';
         document.getElementById('modal-duplicate-enabled').checked = false;
+        document.getElementById('modal-duplicate-date').value = '';
         toggleDuplicateFields();
+        populatePeriodSelectors(event?.startPeriod || period, event?.endPeriod || period);
 
-        if (slot) {
-            document.getElementById('modal-slot-type').value = slot.type || 'ELEVE';
-            document.getElementById('modal-slot-period-start').value = slot.startPeriod || period;
-            document.getElementById('modal-slot-period-end').value = slot.endPeriod || period;
+        const recurrence = event?.recurrence || 'weekly';
+        document.getElementById('modal-slot-recurrence').value = recurrence;
+        updateRecurrenceNote();
 
-            if (slot.type === 'ELEVE') {
-                document.getElementById('modal-slot-eleve').value = slot.eleve || '';
-                document.getElementById('modal-slot-matiere').value = slot.matiere || 'Mathématiques';
-                document.getElementById('modal-slot-local').value = slot.local || '';
+        if (event) {
+            document.getElementById('modal-slot-type').value = event.type || 'ELEVE';
+            if (event.type === 'ELEVE') {
+                document.getElementById('modal-slot-eleve').value = event.eleve || '';
+                document.getElementById('modal-slot-matiere').value = event.matiere || 'Mathématiques';
+                document.getElementById('modal-slot-local').value = event.local || '';
             } else {
-                document.getElementById('modal-slot-admin-title').value = slot.title || '';
-                document.getElementById('modal-slot-admin-detail').value = slot.detail || '';
+                document.getElementById('modal-slot-admin-title').value = event.title || '';
+                document.getElementById('modal-slot-admin-detail').value = event.detail || '';
             }
         } else {
             document.getElementById('modal-slot-type').value = 'ELEVE';
-            document.getElementById('modal-slot-period-start').value = period;
-            document.getElementById('modal-slot-period-end').value = period;
             document.getElementById('modal-slot-eleve').value = '';
             document.getElementById('modal-slot-matiere').value = 'Mathématiques';
         }
 
         toggleModalSlotFields();
         document.getElementById('slotModal').classList.remove('hidden');
+    }
+
+    function openDuplicateEventModal(isoDate, period, dayIdx, eventId) {
+        const prev=getPrevisionnel();
+        const event=getEventForDatePeriod(isoDate,period,prev);
+        if(!event) return;
+        openSlotModal(isoDate,period,dayIdx);
+        agendaModalState={mode:'duplicate',eventId:event.eventId,recurrence:event.recurrence,occurrenceDate:isoDate,sourceEvent:event};
+        document.getElementById('modal-slot-edit-mode').value='duplicate';
+        document.getElementById('modal-slot-title').innerText='Dupliquer l’activité';
+        document.getElementById('modal-slot-recurrence').value='unique';
+        updateRecurrenceNote();
+        document.getElementById('modal-duplicate-enabled').checked=true;
+        document.getElementById('modal-duplicate-date').value='';
+        toggleDuplicateFields();
     }
 
     function toggleModalSlotFields() {
@@ -3323,89 +3537,124 @@ loadIndicatorLibrary();
     function closeSlotModal() { closeAllChoiceMenus(); document.getElementById('slotModal').classList.add('hidden'); }
 
     function saveSlotModification() {
-        const dateIso = document.getElementById('modal-slot-date-visible').value || document.getElementById('modal-slot-date').value;
-        const period = document.getElementById('modal-slot-period').value;
+        const sourceDateIso = document.getElementById('modal-slot-date-visible').value || document.getElementById('modal-slot-date').value;
         const type = document.getElementById('modal-slot-type').value;
+        const recurrence = document.getElementById('modal-slot-recurrence').value || 'weekly';
         const startPeriod = document.getElementById('modal-slot-period-start').value;
         const endPeriod = document.getElementById('modal-slot-period-end').value;
-
-        document.getElementById('modal-slot-date').value = dateIso;
-        const dt = parseISODate(dateIso);
+        const mode = agendaModalState.mode || document.getElementById('modal-slot-edit-mode').value || 'create';
+        const duplicateTargetDate = document.getElementById('modal-duplicate-date').value;
+        const dateIso = mode==='duplicate' ? duplicateTargetDate : sourceDateIso;
         const dayIdx = getDayIndexFromISO(dateIso);
-        if (dayIdx > 4) { alert('La planification est limitée du lundi au vendredi.'); return; }
-        const startIdx = periodIndex(startPeriod);
-        const endIdx = periodIndex(endPeriod);
+        const startIdx = periodIndex(startPeriod), endIdx = periodIndex(endPeriod);
 
-        if (startIdx < 0 || endIdx < 0 || endIdx < startIdx) {
-            alert("La période de fin doit être identique ou postérieure à la période de début.");
+        if (!dateIso) { alert('Choisissez une date.'); return; }
+        if (recurrence === 'weekly' && (dayIdx < 0 || dayIdx > 4)) {
+            alert('Une planification récurrente hebdomadaire doit être placée du lundi au vendredi. Pour le week-end, choisissez « Événement unique ».');
             return;
         }
-
-        const prev = getPrevisionnel();
-
-        // Si une activité existante couvre ces périodes, on retire son ancien bloc.
-        const clicked = prev[getSlotKey(dayIdx, period)];
-        if (clicked && clicked.eventId) {
-            Object.keys(prev).forEach(key => {
-                if (prev[key] && prev[key].eventId === clicked.eventId) delete prev[key];
-            });
-        } else {
-            // Nettoyage des périodes visées pour éviter les chevauchements.
-            for (let i = startIdx; i <= endIdx; i++) delete prev[getSlotKey(dayIdx, periods[i])];
+        if (startIdx < 0 || endIdx < 0 || endIdx < startIdx) {
+            alert('La période de fin doit être identique ou postérieure à la période de début.');
+            return;
         }
-
         if (type === 'ELEVE' && !document.getElementById('modal-slot-eleve').value) {
             alert('Sélectionnez un élève pour une activité de type Accompagnement Élève.');
             return;
         }
+        if (type === 'LIBRE') { alert('Choisissez un type d’activité pour enregistrer un événement.'); return; }
 
-        if (type !== 'LIBRE') {
-            const eventId = `evt_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
-            const base = type === 'ELEVE'
-                ? {
-                    type: 'ELEVE',
-                    eleve: document.getElementById('modal-slot-eleve').value,
-                    matiere: document.getElementById('modal-slot-matiere').value,
-                    local: document.getElementById('modal-slot-local').value
-                }
-                : {
-                    type: type,
-                    title: document.getElementById('modal-slot-admin-title').value || 'Activité Pôle',
-                    detail: document.getElementById('modal-slot-admin-detail').value || ''
-                };
+        const prev = getPrevisionnel();
+        prev.__uniqueEvents = Array.isArray(prev.__uniqueEvents) ? prev.__uniqueEvents : [];
+        prev.__exceptions = prev.__exceptions || {};
 
-            base.eventId = eventId;
-            base.startPeriod = startPeriod;
-            base.endPeriod = endPeriod;
+        // Évite deux événements uniques qui se chevauchent sur la même date.
+        if (mode !== 'duplicate') removeUniqueOverlaps(prev, dateIso, startIdx, endIdx, mode==='edit' ? agendaModalState.eventId : null);
 
-            for (let i = startIdx; i <= endIdx; i++) {
-                prev[getSlotKey(dayIdx, periods[i])] = { ...base };
-            }
+        // En création/édition normale, retirer l'ancien événement avant de le recréer.
+        if (mode === 'edit' && agendaModalState.eventId) {
+            if (agendaModalState.recurrence === 'unique') removeUniqueEvent(prev, agendaModalState.eventId);
+            else removeRecurringSeries(prev, agendaModalState.eventId);
+        }
 
-            // Duplication : même durée, autre date.
-            const duplicateEnabled = document.getElementById('modal-duplicate-enabled').checked;
-            const duplicateDate = document.getElementById('modal-duplicate-date').value;
+        const base = buildAgendaActivityFromModal(type,startPeriod,endPeriod);
+        const eventId = (mode === 'edit' && agendaModalState.eventId) ? agendaModalState.eventId : `evt_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+        base.eventId=eventId;
+        base.startPeriod=startPeriod;
+        base.endPeriod=endPeriod;
+        base.recurrence=recurrence;
 
-            if (duplicateEnabled && duplicateDate) {
-                const duplicateDayIdx = getDayIndexFromISO(duplicateDate);
-                if (duplicateDayIdx > 4) { alert('La date de duplication doit être un jour de semaine.'); return; }
-                const duplicateEventId = `evt_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+        if (recurrence === 'unique' || mode === 'duplicate') {
+            base.recurrence='unique';
+            base.date=dateIso;
+            prev.__uniqueEvents.push(base);
+        } else {
+            base.recurrence='weekly';
+            base.seriesId=eventId;
+            for (let i=startIdx;i<=endIdx;i++) prev[getSlotKey(dayIdx,periods[i])] = {...base};
+        }
 
-                // Nettoyage des périodes cibles avant duplication.
-                for (let i = startIdx; i <= endIdx; i++) {
-                    delete prev[getSlotKey(duplicateDayIdx, periods[i])];
-                }
-
-                const duplicateBase = { ...base, eventId: duplicateEventId };
-                for (let i = startIdx; i <= endIdx; i++) {
-                    prev[getSlotKey(duplicateDayIdx, periods[i])] = { ...duplicateBase };
-                }
-            }
+        // La duplication rapide crée toujours une occurrence unique : elle ne crée pas une seconde série hebdomadaire.
+        const duplicateEnabled = document.getElementById('modal-duplicate-enabled').checked;
+        const duplicateDate = document.getElementById('modal-duplicate-date').value;
+        if (mode !== 'duplicate' && duplicateEnabled && duplicateDate) {
+            const duplicate = {...base, eventId:`evt_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, recurrence:'unique', date:duplicateDate};
+            prev.__uniqueEvents.push(duplicate);
         }
 
         savePrevisionnel(prev);
         closeSlotModal();
-        showAppToast("Activité enregistrée.", "success");
+        showAppToast(mode==='duplicate' ? 'Activité dupliquée.' : 'Activité enregistrée.', 'success');
+    }
+
+    function openEventDeleteModal(event) {
+        agendaDeleteState={eventId:event.eventId,occurrenceDate:event.occurrenceDate,recurrence:event.recurrence};
+        const summary=document.getElementById('event-delete-summary');
+        if(summary) summary.innerHTML=`<strong>${escapeHtml(getEventLabel(event))}</strong><br>${escapeHtml(getEventMeta(event)||'Mission Pôle Territorial')}<br><span style="color:var(--text-sub);">${escapeHtml(event.occurrenceDate||selectedDateISO)} · ${escapeHtml(event.startPeriod)}${event.endPeriod!==event.startPeriod?' → '+escapeHtml(event.endPeriod):''}</span>`;
+        const seriesActions=document.getElementById('event-delete-series-actions');
+        if(seriesActions) seriesActions.style.display=event.recurrence==='weekly'?'flex':'none';
+        const occurrence=document.getElementById('event-delete-occurrence');
+        const series=document.getElementById('event-delete-series');
+        if(occurrence) occurrence.textContent=event.recurrence==='weekly'?'🗑️ Supprimer cette occurrence uniquement':'🗑️ Supprimer l’événement';
+        if(series) series.textContent='🗑️ Supprimer la série';
+        closeEventActionModal();
+        document.getElementById('eventDeleteModal').classList.remove('hidden');
+    }
+
+    function closeEventDeleteModal(){
+        document.getElementById('eventDeleteModal').classList.add('hidden');
+        agendaDeleteState={eventId:null,occurrenceDate:null,recurrence:null};
+    }
+
+    document.getElementById('event-delete-occurrence')?.addEventListener('click', deleteAgendaOccurrence);
+    document.getElementById('event-delete-series')?.addEventListener('click', deleteAgendaSeries);
+
+    function deleteAgendaOccurrence(){
+        const prev=getPrevisionnel();
+        if(!agendaDeleteState.eventId) return;
+        if(agendaDeleteState.recurrence==='weekly'){
+            const id=agendaDeleteState.eventId;
+            prev.__exceptions=prev.__exceptions||{};
+            const dates=new Set(prev.__exceptions[id]||[]);
+            dates.add(agendaDeleteState.occurrenceDate);
+            prev.__exceptions[id]=[...dates];
+        } else {
+            removeUniqueEvent(prev,agendaDeleteState.eventId);
+        }
+        savePrevisionnel(prev);
+        closeEventDeleteModal();
+        closeEventActionModal();
+        showAppToast('Événement supprimé.', 'success');
+    }
+
+    function deleteAgendaSeries(){
+        const prev=getPrevisionnel();
+        if(!agendaDeleteState.eventId) return;
+        if(agendaDeleteState.recurrence==='weekly') removeRecurringSeries(prev,agendaDeleteState.eventId);
+        else removeUniqueEvent(prev,agendaDeleteState.eventId);
+        savePrevisionnel(prev);
+        closeEventDeleteModal();
+        closeEventActionModal();
+        showAppToast('Série supprimée.', 'success');
     }
 
     function sessionParts(entry){const i=entry?.identification||{},p=i.periode||{},c=entry?.contexte||{};return {eleve:i.eleve||'',date:i.date||'',start:p.start||'',end:p.end||'',matiere:c.matiere||''};}
@@ -4211,6 +4460,8 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
 
         const selectedLearning=q3CurrentSelections('q3-learning');
         const ranked=getLearningSuggestions(context);
+        JOURNALIER_DIAGNOSTICS.q3.suggestions=ranked.length;
+        updateIndicatorDiagnosticPanel();
 
         // Q3 utilise une divulgation progressive : 4, puis 8, puis le reste.
         // La sélection ne modifie jamais automatiquement le niveau d'affichage.
@@ -4257,6 +4508,12 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
         const level = document.getElementById('f-niveau')?.value || '';
         const form = document.getElementById('f-forme')?.value || '';
         const objective = document.getElementById('f-objLecon')?.value || '';
+
+        JOURNALIER_DIAGNOSTICS.q3={
+            ...JOURNALIER_DIAGNOSTICS.q3,
+            objective, subject, level, form
+        };
+        updateIndicatorDiagnosticPanel();
 
         // Repère contextuel existant.
         const boxId = 'v11-last-context-note';
@@ -5387,7 +5644,7 @@ function chooseSessionSubject(subject){
      par le formulaire Q2-Q6.
    - Les conflits bloquent toute écriture automatique.
    ========================================================= */
-const MS_CONFIG={clientId:"65c3db78-9bad-4a08-8eac-404b83e368cb",tenantId:"96c46ef2-21cc-480d-92df-0bf9fd599a97",redirectUri:"https://koffiatsou.github.io/journalier-electronique/msal-redirect.html",postLogoutRedirectUri:"https://koffiatsou.github.io/journalier-electronique/msal-redirect.html",scopes:["openid","profile","User.Read","Files.ReadWrite"]};
+const MS_CONFIG={clientId:"65c3db78-9bad-4a08-8eac-404b83e368cb",tenantId:"96c46ef2-21cc-480d-92df-0bf9fd599a97",redirectUri:"http://localhost:8000/msal-redirect.html",postLogoutRedirectUri:"http://localhost:8000/msal-redirect.html",scopes:["openid","profile","User.Read","Files.ReadWrite"]};
 const GRAPH_SCOPES=["Files.ReadWrite"], GRAPH_BASE="https://graph.microsoft.com/v1.0", GRAPH_ROOT_FOLDER="Journalier";
 let msalInstance=null, msAccount=null, msalReadyPromise=null;
 function msConfigReady(){return Boolean(MS_CONFIG.clientId&&MS_CONFIG.tenantId&&MS_CONFIG.redirectUri);}
