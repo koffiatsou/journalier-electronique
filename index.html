@@ -5387,7 +5387,7 @@ function chooseSessionSubject(subject){
      par le formulaire Q2-Q6.
    - Les conflits bloquent toute écriture automatique.
    ========================================================= */
-const MS_CONFIG={clientId:"65c3db78-9bad-4a08-8eac-404b83e368cb",tenantId:"96c46ef2-21cc-480d-92df-0bf9fd599a97",redirectUri:"http://localhost:8000/msal-redirect.html",postLogoutRedirectUri:"http://localhost:8000/msal-redirect.html",scopes:["openid","profile","User.Read","Files.ReadWrite"]};
+const MS_CONFIG={clientId:"65c3db78-9bad-4a08-8eac-404b83e368cb",tenantId:"96c46ef2-21cc-480d-92df-0bf9fd599a97",redirectUri:"https://koffiatsou.github.io/journalier-electronique/msal-redirect.html",postLogoutRedirectUri:"https://koffiatsou.github.io/journalier-electronique/msal-redirect.html",scopes:["openid","profile","User.Read","Files.ReadWrite"]};
 const GRAPH_SCOPES=["Files.ReadWrite"], GRAPH_BASE="https://graph.microsoft.com/v1.0", GRAPH_ROOT_FOLDER="Journalier";
 let msalInstance=null, msAccount=null, msalReadyPromise=null;
 function msConfigReady(){return Boolean(MS_CONFIG.clientId&&MS_CONFIG.tenantId&&MS_CONFIG.redirectUri);}
