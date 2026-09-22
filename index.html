@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-cdzt4beHJochL74sqf0/y+8GeaHZP0ed2hXLP5LDNIs=' 'sha256-iXdWlzQmy/kLI1TwTrqTHOHTT8eStQQzaTj2NUxYLCQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-H7T5blKpcb/qPM1oppW8OKP0L4UZAfBnEoeHQE2en50=' 'sha256-sJW1NzRk+BdGuD8/WNG1feZTuwJ9qpE5GnqyPb4jQpw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pôle Territorial – Agenda & Suivi Orthopédagogique · V72.2</title>
@@ -2650,6 +2650,62 @@ loadIndicatorLibrary();
         }
     };
 
+    /* AUTO-LOCK — verrouillage mémoire après inactivité.
+       Les données restent dans IndexedDB sous forme chiffrée AES-GCM.
+       Le verrouillage n'efface pas le compte Microsoft ni les données distantes.
+    */
+    const JOURNALIER_AUTOLOCK_MS=15*60*1000;
+    const JOURNALIER_AUTOLOCK_WARNING_MS=60*1000;
+    let journalierAutoLockTimer=null, journalierAutoLockWarningTimer=null, journalierLastActivity=Date.now(), journalierLockedByTimeout=false;
+
+    function journalierClearAutoLockTimers(){
+        if(journalierAutoLockTimer)clearTimeout(journalierAutoLockTimer);
+        if(journalierAutoLockWarningTimer)clearTimeout(journalierAutoLockWarningTimer);
+        journalierAutoLockTimer=null; journalierAutoLockWarningTimer=null;
+    }
+    function journalierScheduleAutoLock(){
+        journalierClearAutoLockTimers();
+        if(!JournalierSecurity.ready)return;
+        journalierLastActivity=Date.now();
+        journalierAutoLockWarningTimer=setTimeout(()=>{
+            if(!JournalierSecurity.ready)return;
+            try{showAppToast?.('🔒 Verrouillage automatique dans 1 minute en cas d’inactivité.','info',5000);}catch(_){}
+        },Math.max(0,JOURNALIER_AUTOLOCK_MS-JOURNALIER_AUTOLOCK_WARNING_MS));
+        journalierAutoLockTimer=setTimeout(()=>journalierAutoLockNow(),JOURNALIER_AUTOLOCK_MS);
+    }
+    function journalierRegisterActivity(){
+        if(!JournalierSecurity.ready)return;
+        journalierLastActivity=Date.now();
+        journalierScheduleAutoLock();
+    }
+    async function journalierAutoLockNow(){
+        if(!JournalierSecurity.ready)return;
+        const idle=Date.now()-journalierLastActivity;
+        if(idle<JOURNALIER_AUTOLOCK_MS){journalierScheduleAutoLock();return;}
+        try{
+            await JournalierSecurity.persist(JournalierSecurity.state);
+            JournalierSecurity.lock();
+            journalierLockedByTimeout=true;
+            try{msAccount=null;updateMicrosoftUI?.();updateStudentDropdowns?.();renderStudentsView?.();renderAgenda?.();updateStats?.();}catch(_){}
+            try{setCloudStatus?.('🔒 Journalier a été verrouillé après 15 minutes d’inactivité. Reconnectez-vous avec Microsoft pour reprendre la session.','info');showAppToast?.('🔒 Session Journalier verrouillée automatiquement.','success',6500);}catch(_){}
+        }catch(_){
+            journalierScheduleAutoLock();
+            try{showAppToast?.('⚠️ Le verrouillage automatique a été reporté : impossible de sécuriser la dernière sauvegarde locale.','error',6500);}catch(_){}
+        }
+    }
+    function journalierResetAutoLockAfterUnlock(){
+        journalierLockedByTimeout=false;
+        journalierScheduleAutoLock();
+    }
+    ['pointerdown','keydown','touchstart'].forEach(type=>{
+        document.addEventListener(type,()=>journalierRegisterActivity(),{capture:true,passive:true});
+    });
+    document.addEventListener('visibilitychange',()=>{
+        if(document.hidden)return;
+        if(JournalierSecurity.ready&&Date.now()-journalierLastActivity>=JOURNALIER_AUTOLOCK_MS)journalierAutoLockNow();
+        else if(JournalierSecurity.ready)journalierScheduleAutoLock();
+    });
+
     function securePersistState(){
         return JournalierSecurity.persist(DataStore.state).catch(_=>{ console.error('Écriture sécurisée impossible.'); setCloudStatus?.('⚠️ Les données locales n’ont pas pu être sécurisées.','error'); return false; });
     }
@@ -3354,11 +3410,23 @@ loadIndicatorLibrary();
         document.getElementById('event-action-title').innerText = getEventLabel(event);
 
         const span = Math.max(1, event.endIndex - event.startIndex + 1);
-        document.getElementById('event-action-summary').innerHTML = `
-            <strong>${getEventLabel(event)}</strong><br>
-            ${getEventMeta(event) ? `${getEventMeta(event)}<br>` : ''}
-            <span style="color:var(--text-sub);">${event.startPeriod}${span > 1 ? ' → ' + event.endPeriod : ''} · ${event.recurrence==='unique'?'Événement unique':'Récurrent hebdomadaire'}</span>
-        `;
+        const eventSummary=document.getElementById('event-action-summary');
+        if(eventSummary){
+            eventSummary.replaceChildren();
+            const titleNode=document.createElement('strong');
+            titleNode.textContent=getEventLabel(event);
+            eventSummary.appendChild(titleNode);
+            eventSummary.appendChild(document.createElement('br'));
+            const meta=getEventMeta(event);
+            if(meta){
+                eventSummary.appendChild(document.createTextNode(meta));
+                eventSummary.appendChild(document.createElement('br'));
+            }
+            const detailNode=document.createElement('span');
+            detailNode.style.color='var(--text-sub)';
+            detailNode.textContent=`${event.startPeriod}${span > 1 ? ' → ' + event.endPeriod : ''} · ${event.recurrence==='unique'?'Événement unique':'Récurrent hebdomadaire'}`;
+            eventSummary.appendChild(detailNode);
+        }
 
         const encodedSession = event.type === 'ELEVE'
             ? getEncodedForEvent(dayIdx, isoDate, event, getDB())
@@ -6373,7 +6441,7 @@ async function initMicrosoftAuth(){
       const authority='https://login.microsoftonline.com/'+MS_CONFIG.tenantId;
       msalInstance=await mod.createStandardPublicClientApplication({auth:{clientId:MS_CONFIG.clientId,authority,redirectUri:MS_CONFIG.redirectUri,postLogoutRedirectUri:MS_CONFIG.postLogoutRedirectUri},cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:false}});
       const accounts=msalInstance.getAllAccounts();msAccount=accounts.length?accounts[0]:null;
-      if(msAccount){try{await activateJournalierAccount(msAccount);}catch(err){JournalierSecurity.lock();msAccount=null;setCloudStatus('⚠️ Espace local sécurisé indisponible : '+(err?.message||String(err)),'error');}}
+      if(msAccount&&!journalierLockedByTimeout){try{await activateJournalierAccount(msAccount);}catch(err){JournalierSecurity.lock();msAccount=null;setCloudStatus('⚠️ Espace local sécurisé indisponible : '+(err?.message||String(err)),'error');}}
       updateMicrosoftUI();return true;
     }catch(err){console.error('Initialisation Microsoft impossible.');setCloudStatus('Impossible d’initialiser Microsoft.','error');return false;}
   })();return msalReadyPromise;
@@ -6384,15 +6452,15 @@ async function startMicrosoftLogin(){
     if(status){status.className='ms-status-box';status.textContent='Préparation de la connexion Microsoft…';}
     if(!await initMicrosoftAuth())throw new Error('MSAL n’est pas initialisé.');
     const response=await msalInstance.loginPopup({scopes:MS_CONFIG.scopes,redirectUri:MS_CONFIG.redirectUri,prompt:'select_account'});
-    JournalierSecurity.lock();msAccount=response.account;await activateJournalierAccount(msAccount);updateMicrosoftUI();
+    JournalierSecurity.lock();msAccount=response.account;await activateJournalierAccount(msAccount);journalierResetAutoLockAfterUnlock?.();updateMicrosoftUI();
     try{const imported=await hydrateMicrosoftDataIfLocalEmpty();if(imported?.imported)showAppToast(`Connexion réussie : ${imported.students||0} élève(s), ${imported.sessions||0} séance(s) et l’agenda ont été récupérés.`,'success');else showAppToast('Connexion Microsoft réussie.','success');}
     catch(_){setCloudStatus('✓ Compte Microsoft connecté.\n⚠️ Les données OneDrive n’ont pas pu être récupérées automatiquement.','error');showAppToast('Connexion réussie, mais récupération des données OneDrive impossible.','error',5000);}
-  }catch(err){JournalierSecurity.lock();msAccount=null;const msg=err?.errorMessage||err?.message||'Erreur Microsoft inconnue';const code=err?.errorCode||err?.code||'';const detail=code?`[${code}] ${msg}`:msg;if(status){status.className='ms-status-box error';status.textContent='Connexion non effectuée : '+detail;}setCloudStatus('Détail Microsoft : '+detail,'error');showAppToast('La connexion Microsoft n’a pas abouti.','error',6500);}
+  }catch(err){journalierClearAutoLockTimers?.();JournalierSecurity.lock();msAccount=null;const msg=err?.errorMessage||err?.message||'Erreur Microsoft inconnue';const code=err?.errorCode||err?.code||'';const detail=code?`[${code}] ${msg}`:msg;if(status){status.className='ms-status-box error';status.textContent='Connexion non effectuée : '+detail;}setCloudStatus('Détail Microsoft : '+detail,'error');showAppToast('La connexion Microsoft n’a pas abouti.','error',6500);}
   finally{if(btn)btn.disabled=false;updateMicrosoftUI();}
 }
 async function disconnectMicrosoft(){
   const btn=document.getElementById('ms-logout-action');if(btn)btn.disabled=true;
-  try{if(!msalInstance)await initMicrosoftAuth();const account=msAccount||msalInstance?.getAllAccounts?.()[0]||null;if(msalInstance&&account)await msalInstance.logoutPopup({account,postLogoutRedirectUri:MS_CONFIG.postLogoutRedirectUri});JournalierSecurity.lock();msAccount=null;updateStudentDropdowns?.();renderStudentsView?.();renderAgenda?.();updateStats?.();updateMicrosoftUI();setCloudStatus('Microsoft déconnecté. Les données locales restent chiffrées et sont inaccessibles sans réauthentification.','success');showAppToast('Déconnexion Microsoft effectuée.','success');}
+  try{if(!msalInstance)await initMicrosoftAuth();const account=msAccount||msalInstance?.getAllAccounts?.()[0]||null;if(msalInstance&&account)await msalInstance.logoutPopup({account,postLogoutRedirectUri:MS_CONFIG.postLogoutRedirectUri});journalierClearAutoLockTimers?.();JournalierSecurity.lock();msAccount=null;journalierLockedByTimeout=false;updateStudentDropdowns?.();renderStudentsView?.();renderAgenda?.();updateStats?.();updateMicrosoftUI();setCloudStatus('Microsoft déconnecté. Les données locales restent chiffrées et sont inaccessibles sans réauthentification.','success');showAppToast('Déconnexion Microsoft effectuée.','success');}
   catch(err){const msg=err?.errorMessage||err?.message||'Erreur lors de la déconnexion Microsoft.';if(btn)btn.disabled=false;setCloudStatus('Déconnexion Microsoft non confirmée : '+msg,'error');showAppToast('La déconnexion Microsoft n’a pas abouti.','error',4500);}
   finally{updateMicrosoftUI();}
 }
@@ -6497,7 +6565,17 @@ async function testMicrosoftAppFolder(){
     if(b)b.disabled=!msAccount;
   }
 }
-async function graphWriteJsonWithETag(parentId,filename,payload,eTag){const headers={'Content-Type':'text/plain'};if(eTag)headers['If-Match']=eTag;return graphRequest(`/me/drive/items/${encodeURIComponent(parentId)}:/${encodeURIComponent(filename)}:/content`,{method:'PUT',headers,body:JSON.stringify(payload,null,2)});}
+async function graphWriteJsonWithETag(parentId,filename,payload,eTag){
+  const name=String(filename||'');
+  if(name==='profil.json')validateStrictStudent(payload,'Écriture profil élève');
+  else if(name==='agenda.json')validateStrictAgenda(payload,'Écriture agenda');
+  else if(name==='sync.json')validateStrictSyncRecord(payload,'Écriture synchronisation');
+  else if(/\.json$/i.test(name)&&/^[^/]+\.json$/i.test(name))validateStrictSession(payload,'Écriture séance');
+  else validateStrictJsonPayload(payload,`Écriture ${name||'JSON'}`);
+  const headers={'Content-Type':'text/plain'};
+  if(eTag)headers['If-Match']=eTag;
+  return graphRequest(`/me/drive/items/${encodeURIComponent(parentId)}:/${encodeURIComponent(filename)}:/content`,{method:'PUT',headers,body:JSON.stringify(payload,null,2)});
+}
 function graphWriteJson(parentId,filename,payload){return graphWriteJsonWithETag(parentId,filename,payload,null);}
 async function graphReadItemWithJson(path){const item=await graphGetByPath(path);const raw=await graphRequest(`/me/drive/items/${encodeURIComponent(item.id)}/content`);return{item,json:typeof raw==='object'?raw:JSON.parse(raw)};}
 async function graphReadItemByIdWithJson(itemId){const item=await graphRequest(`/me/drive/items/${encodeURIComponent(itemId)}?$select=id,name,eTag,parentReference,file,folder,lastModifiedDateTime`);const raw=await graphRequest(`/me/drive/items/${encodeURIComponent(itemId)}/content`);return{item,json:typeof raw==='object'?raw:JSON.parse(raw)};}
@@ -6506,10 +6584,153 @@ async function graphWriteExistingItemWithETag(item,payload){const parentId=item?
 function cloudSafeIdentity(){const identity=DataStore.getIdentity();return{ownerId:identity.ownerId,displayName:msAccount?.name||msAccount?.username||identity.displayName||'Utilisateur Journalier',microsoftAccount:msAccount?.username||null,provider:'microsoft365',architectureVersion:JOURNALIER_ARCHITECTURE_VERSION,updatedAt:new Date().toISOString()};}
 async function prepareMicrosoft365Space(){const b=document.getElementById('ms-prepare-cloud-action');if(b)b.disabled=true;setCloudStatus('Préparation de l’espace Journalier…','');try{const s=await graphEnsureJournalierStructure();await graphWriteJson(s.system.id,'sync.json',{schemaVersion:'JOURNALIER-SYNC-1',architectureVersion:JOURNALIER_ARCHITECTURE_VERSION,ownerId:JournalierSecurity.accountKey,provider:'microsoft365',preparedAt:new Date().toISOString(),status:'prepared'});setCloudStatus('✓ Espace Journalier prêt dans OneDrive. Aucune donnée métier n’a été envoyée.','success');}catch(e){setCloudStatus('⚠️ '+(e.message||e),'error');}finally{if(b)b.disabled=!msAccount;}}
 async function graphListChildren(id){return graphRequest(`/me/drive/items/${encodeURIComponent(id)}/children?$select=id,name,folder,file,size,lastModifiedDateTime,eTag`);}
-function validateRemoteJsonObject(value,label,maxBytes=1048576){const serialized=JSON.stringify(value??null);if(serialized.length>maxBytes)throw new Error(`${label} trop volumineux : import refusé.`);if(!value||typeof value!=='object'||Array.isArray(value))throw new Error(`${label} invalide : objet JSON attendu.`);return true;}
-function validateRemoteStudent(student){validateRemoteJsonObject(student,'Profil élève');if(!student.studentId||typeof student.studentId!=='string')throw new Error('Profil élève invalide : identifiant manquant.');if(typeof student.nom!=='string'||student.nom.length>200)throw new Error('Profil élève invalide : nom incorrect.');return true;}
-function validateRemoteSession(session){validateRemoteJsonObject(session,'Séance');if(session.type!=='SEANCE'||!session.id)throw new Error('Séance invalide.');return true;}
-function validateRemoteAgenda(agenda){validateRemoteJsonObject(agenda,'Agenda');return true;}
+
+const JOURNALIER_JSON_LIMITS={maxBytes:1048576,maxDepth:8,maxKeys:120,maxArray:500,maxString:20000};
+function validateJsonValue(value,label='JSON',depth=0,seen=new WeakSet()){
+  if(depth>JOURNALIER_JSON_LIMITS.maxDepth)throw new Error(`${label} trop profond : import/refusé.`);
+  if(value===null||typeof value==='string'||typeof value==='number'||typeof value==='boolean') {
+    if(typeof value==='string'&&value.length>JOURNALIER_JSON_LIMITS.maxString)throw new Error(`${label} contient une chaîne trop longue.`);
+    if(typeof value==='number'&&!Number.isFinite(value))throw new Error(`${label} contient un nombre invalide.`);
+    return true;
+  }
+  if(typeof value!=='object')throw new Error(`${label} contient un type JSON interdit.`);
+  if(seen.has(value))throw new Error(`${label} contient une référence circulaire.`);
+  seen.add(value);
+  if(Array.isArray(value)){
+    if(value.length>JOURNALIER_JSON_LIMITS.maxArray)throw new Error(`${label} contient trop d’éléments.`);
+    value.forEach((v,i)=>validateJsonValue(v,`${label}[${i}]`,depth+1,seen));
+  }else{
+    const keys=Object.keys(value);
+    if(keys.length>JOURNALIER_JSON_LIMITS.maxKeys)throw new Error(`${label} contient trop de propriétés.`);
+    for(const key of keys){
+      if(key.length>120)throw new Error(`${label} contient une clé trop longue.`);
+      validateJsonValue(value[key],`${label}.${key}`,depth+1,seen);
+    }
+  }
+  seen.delete(value);
+  return true;
+}
+function validateStrictJsonPayload(value,label='JSON',maxBytes=JOURNALIER_JSON_LIMITS.maxBytes){
+  validateJsonValue(value,label);
+  let serialized;
+  try{serialized=JSON.stringify(value);}catch(_){throw new Error(`${label} non sérialisable.`);}
+  if(serialized.length>maxBytes)throw new Error(`${label} trop volumineux : import/écriture refusé.`);
+  return true;
+}
+function assertAllowedKeys(obj,allowed,label){
+  const unknown=Object.keys(obj||{}).filter(k=>!allowed.has(k));
+  if(unknown.length)throw new Error(`${label} contient des propriétés inattendues : ${unknown.slice(0,8).join(', ')}${unknown.length>8?'…':''}.`);
+}
+function validateStrictStudent(student,label='Profil élève'){
+  validateStrictJsonPayload(student,label);
+  if(!student||typeof student!=='object'||Array.isArray(student))throw new Error(`${label} invalide.`);
+  assertAllowedKeys(student,new Set(['id','studentId','nom','classe','ecole','pia','matieres','piaFileName','ownerId','dataVersion']),label);
+  if(typeof student.studentId!=='string'||student.studentId.length<1||student.studentId.length>120)throw new Error(`${label} : studentId invalide.`);
+  if(typeof student.nom!=='string'||student.nom.length<1||student.nom.length>200)throw new Error(`${label} : nom invalide.`);
+  for(const k of ['classe','ecole','pia','piaFileName'])if(student[k]!=null&&typeof student[k]!=='string')throw new Error(`${label} : ${k} invalide.`);
+  if(student.matieres!=null&&(!Array.isArray(student.matieres)||student.matieres.some(x=>typeof x!=='string'||x.length>200)))throw new Error(`${label} : matières invalides.`);
+  if(student.id!=null&&!['number','string'].includes(typeof student.id))throw new Error(`${label} : id invalide.`);
+  return true;
+}
+function validateStrictSession(session,label='Séance'){
+  validateStrictJsonPayload(session,label);
+  if(!session||typeof session!=='object'||Array.isArray(session))throw new Error(`${label} invalide.`);
+  assertAllowedKeys(session,new Set(['id','schemaVersion','dataVersion','ownerId','type','identification','contexte','objectif','q2','q3','q4','q5','q6','metadata']),label);
+  if(session.type!=='SEANCE')throw new Error(`${label} : type invalide.`);
+  if(typeof session.id!=='string'&&typeof session.id!=='number')throw new Error(`${label} : id invalide.`);
+  if(!session.identification||typeof session.identification!=='object'||Array.isArray(session.identification))throw new Error(`${label} : identification invalide.`);
+  assertAllowedKeys(session.identification,new Set(['eleve','eleveId','date','periode']),`${label}.identification`);
+  if(typeof session.identification.eleve!=='string'||session.identification.eleve.length>200)throw new Error(`${label} : élève invalide.`);
+  if(session.identification.eleveId!=null&&typeof session.identification.eleveId!=='string')throw new Error(`${label} : eleveId invalide.`);
+  if(typeof session.identification.date!=='string'||session.identification.date.length>40)throw new Error(`${label} : date invalide.`);
+  if(session.identification.periode!=null){
+    if(typeof session.identification.periode!=='object'||Array.isArray(session.identification.periode))throw new Error(`${label} : période invalide.`);
+    assertAllowedKeys(session.identification.periode,new Set(['start','end']),`${label}.identification.periode`);
+  }
+  const nested={
+    contexte:new Set(['matiere','niveau','forme','typeIntervention']),
+    objectif:new Set(['objectifLecon','objectifProfessionnel']),
+    q2:new Set(['observations','precision']),
+    q3:new Set(['repereWBE','indicateurs','precision']),
+    q4:new Set(['situation','types','effets','precision']),
+    q5:new Set(['statut','precision']),
+    q6:new Set(['actions','modalite','objectif','collaborations','precision']),
+    metadata:new Set(['createdAt','updatedAt','source'])
+  };
+  for(const [key,allowed] of Object.entries(nested)){
+    if(session[key]!=null){
+      if(typeof session[key]!=='object'||Array.isArray(session[key]))throw new Error(`${label}.${key} invalide.`);
+      assertAllowedKeys(session[key],allowed,`${label}.${key}`);
+    }
+  }
+  if(session.contexte?.typeIntervention!=null&&!Array.isArray(session.contexte.typeIntervention))throw new Error(`${label}.contexte.typeIntervention invalide.`);
+  if(session.q2?.observations!=null){
+    if(!Array.isArray(session.q2.observations))throw new Error(`${label}.q2.observations invalide.`);
+    session.q2.observations.forEach((x,i)=>{
+      if(!x||typeof x!=='object'||Array.isArray(x))throw new Error(`${label}.q2.observations[${i}] invalide.`);
+      assertAllowedKeys(x,new Set(['categorie','observation','niveau']),`${label}.q2.observations[${i}]`);
+      if(typeof x.observation!=='string'||x.observation.length>5000)throw new Error(`${label}.q2.observations[${i}].observation invalide.`);
+      if(x.categorie!=null&&typeof x.categorie!=='string')throw new Error(`${label}.q2.observations[${i}].categorie invalide.`);
+      if(x.niveau!=null&&(!Number.isFinite(Number(x.niveau))||Number(x.niveau)<0||Number(x.niveau)>10))throw new Error(`${label}.q2.observations[${i}].niveau invalide.`);
+    });
+  }
+  if(session.q3?.repereWBE!=null){
+    const r=session.q3.repereWBE;
+    if(typeof r!=='object'||Array.isArray(r))throw new Error(`${label}.q3.repereWBE invalide.`);
+    assertAllowedKeys(r,new Set(['signature','hit','kind','bridgeId','indicatorIds','source']),`${label}.q3.repereWBE`);
+    if(r.indicatorIds!=null&&(!Array.isArray(r.indicatorIds)||r.indicatorIds.some(x=>typeof x!=='string')))throw new Error(`${label}.q3.repereWBE.indicatorIds invalide.`);
+  }
+  if(session.q3?.indicateurs!=null){
+    if(!Array.isArray(session.q3.indicateurs))throw new Error(`${label}.q3.indicateurs invalide.`);
+    session.q3.indicateurs.forEach((x,i)=>{
+      if(!x||typeof x!=='object'||Array.isArray(x))throw new Error(`${label}.q3.indicateurs[${i}] invalide.`);
+      assertAllowedKeys(x,new Set(['id','texte','source','appreciation']),`${label}.q3.indicateurs[${i}]`);
+      if(typeof x.id!=='string'||typeof x.texte!=='string')throw new Error(`${label}.q3.indicateurs[${i}] invalide.`);
+      if(x.appreciation!=null&&(!Number.isFinite(Number(x.appreciation))||Number(x.appreciation)<0||Number(x.appreciation)>2))throw new Error(`${label}.q3.indicateurs[${i}].appreciation invalide.`);
+    });
+  }
+  if(session.q4?.types!=null&&!Array.isArray(session.q4.types))throw new Error(`${label}.q4.types invalide.`);
+  if(session.q4?.effets!=null){
+    if(typeof session.q4.effets!=='object'||Array.isArray(session.q4.effets))throw new Error(`${label}.q4.effets invalide.`);
+    for(const [k,v] of Object.entries(session.q4.effets)){
+      if(k.length>200||!Number.isFinite(Number(v))||Number(v)<0||Number(v)>2)throw new Error(`${label}.q4.effets contient une valeur invalide.`);
+    }
+  }
+  for(const key of ['actions','collaborations']){
+    if(session.q6?.[key]!=null&&(!Array.isArray(session.q6[key])||session.q6[key].some(x=>typeof x!=='string')))throw new Error(`${label}.q6.${key} invalide.`);
+  }
+  return true;
+}
+function validateStrictAgenda(agenda,label='Agenda'){
+  validateStrictJsonPayload(agenda,label);
+  if(!agenda||typeof agenda!=='object'||Array.isArray(agenda))throw new Error(`${label} invalide.`);
+  for(const [key,value] of Object.entries(agenda)){
+    if(key==='__uniqueEvents'){
+      if(!Array.isArray(value)||value.length>JOURNALIER_JSON_LIMITS.maxArray)throw new Error(`${label}.__uniqueEvents invalide.`);
+      continue;
+    }
+    if(key==='__exceptions'){
+      if(!value||typeof value!=='object'||Array.isArray(value))throw new Error(`${label}.__exceptions invalide.`);
+      continue;
+    }
+    if(!value||typeof value!=='object'||Array.isArray(value))throw new Error(`${label}.${key} invalide.`);
+    assertAllowedKeys(value,new Set(['eventId','seriesId','recurrence','type','eleve','matiere','title','detail','local','startIndex','endIndex','startPeriod','endPeriod','occurrenceDate','ownerId','dataVersion']),`${label}.${key}`);
+  }
+  return true;
+}
+function validateStrictSyncRecord(record,label='Synchronisation'){
+  validateStrictJsonPayload(record,label);
+  if(!record||typeof record!=='object'||Array.isArray(record))throw new Error(`${label} invalide.`);
+  assertAllowedKeys(record,new Set(['schemaVersion','architectureVersion','ownerId','status','students','sessions','agendaEntries','syncedAt','provider','preparedAt']),label);
+  if(record.schemaVersion!==undefined&&typeof record.schemaVersion!=='string')throw new Error(`${label} : schemaVersion invalide.`);
+  if(record.ownerId!==undefined&&typeof record.ownerId!=='string')throw new Error(`${label} : ownerId invalide.`);
+  return true;
+}
+
+function validateRemoteJsonObject(value,label,maxBytes=1048576){return validateStrictJsonPayload(value,label,maxBytes);}
+function validateRemoteStudent(student){return validateStrictStudent(student,'Profil élève');}
+function validateRemoteSession(session){return validateStrictSession(session,'Séance');}
+function validateRemoteAgenda(agenda){return validateStrictAgenda(agenda,'Agenda');}
 async function hydrateMicrosoftDataIfLocalEmpty(){
   const state=DataStore.state;
   const localStudents=DataStore.getStudents();
@@ -6525,7 +6746,7 @@ async function hydrateMicrosoftDataIfLocalEmpty(){
 
   // sync.json n'est jamais une source d'identité. L'identité active provient exclusivement d'Entra.
   try{
-    const remoteSync=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/system/sync.json`);
+    const remoteSync=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/system/sync.json`); validateStrictSyncRecord(remoteSync?.json,'Synchronisation distante');
     if(remoteSync?.json?.ownerId && String(remoteSync.json.ownerId)!==String(state.ownerId)) throw new Error('L’espace OneDrive Journalier est associé à une autre identité locale. Import refusé.');
   }catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;}
 
