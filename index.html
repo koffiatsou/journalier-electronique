@@ -2743,7 +2743,7 @@ loadIndicatorLibrary();
 
     async function activateJournalierAccount(account){
         await JournalierSecurity.activate(account);
-        renderStudentsView?.(); renderAgenda?.(); updateStudentDropdowns?.(); updateStats?.(); updateMicrosoftUI?.();
+        renderStudentsView?.(); renderAgenda?.(); updateStudentDropdowns?.(); updateStats?.(); window.updateMicrosoftUI?.();
         return JournalierSecurity.state;
     }
 
@@ -6380,6 +6380,7 @@ document.addEventListener('click',function(e){
 },true);
 
 
+window.updateMicrosoftUI = updateMicrosoftUI;
 Object.assign(window,{openMicrosoftConnection,closeMicrosoftConnection,startMicrosoftLogin,disconnectMicrosoft,prepareMicrosoft365Space,verifyMicrosoft365Space,testMicrosoftAppFolder,diagnoseSyncManagerV72,syncPendingLocalChangesV72,openConflictResolutionV72,deleteHistorySession,showAppToast,syncFingerprint,syncWithoutVolatileMeta});
 document.getElementById('ms-conflict-resolution-list')?.addEventListener('click',async e=>{
   const button=e.target.closest('.v72-conflict-choice');
