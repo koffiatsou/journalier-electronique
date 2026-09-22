@@ -2178,7 +2178,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                 <option value="Autre">Autre branche</option>
             </select>
             <label>Local / Classe :</label>
-            <input type="text" id="modal-slot-local" placeholder="Ex: C28 / D19 / B08">
+            <input type="text" id="modal-slot-local" placeholder="Ex: Salle 204 / Local A">
         </div>
 
         <div id="modal-fields-autre" class="hidden">
@@ -2255,13 +2255,13 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
         <input type="hidden" id="student-modal-id">
         
         <label>Nom complet de l'élève *</label>
-        <input type="text" id="student-modal-nom" placeholder="Ex: Mohamed B.">
+        <input type="text" id="student-modal-nom" placeholder="Ex: Nom Prénom">
 
         <label>Classe *</label>
         <input type="text" id="student-modal-classe" placeholder="Ex: 3A / 1B">
 
         <label>École / Établissement</label>
-        <input type="text" id="student-modal-ecole" placeholder="Ex: ARRG">
+        <input type="text" id="student-modal-ecole" placeholder="Ex: Nom de l’établissement">
 
         <label>Matières principales</label>
         <div class="multi-select" id="student-subjects-select">
@@ -2608,21 +2608,18 @@ loadIndicatorLibrary();
 
         const identity = v63GetLocalIdentity();
         const legacyStudents = v63ReadJSON('ortho_app_students', null);
-        const defaultStudents = [
-            { id: 1, nom: "Ghizela Séfora Dorot", classe: "1B", ecole: "ARRG", matieres: ["Mathématiques"], pia: "Maths: Repères visuels (règles des signes, PEMDAS). Tenue des classeurs." },
-            { id: 2, nom: "Nicoleta Milosiu", classe: "3A", ecole: "ARRG", matieres: ["Sciences économiques", "Physique"], pia: "Confiance en soi. Soutien en vocabulaire Sciences Éco / Physique." },
-            { id: 3, nom: "Tasnime", classe: "3A", ecole: "ARRG", matieres: ["Mathématiques"], pia: "Soutien en Mathématiques." },
-            { id: 4, nom: "Matéo", classe: "1B", ecole: "ARRG", matieres: ["Mathématiques"], pia: "Soutien en Mathématiques." },
-            { id: 5, nom: "Mohamed", classe: "2B", ecole: "ARRG", matieres: ["Mathématiques"], pia: "Soutien en Mathématiques." }
-        ];
-        const rawStudents = Array.isArray(legacyStudents) ? legacyStudents : defaultStudents;
+        // V72.2-PRIVACY: aucune donnée réelle d'élève n'est embarquée dans le code publié.
+        // Les anciennes données locales restent migrables si elles existent déjà sur ce navigateur.
+        const rawStudents = Array.isArray(legacyStudents) ? legacyStudents : [];
         const students = rawStudents.map(v63NormalizeStudent);
         const legacyDB = v63ReadJSON('ortho_app_v2027_db', []);
         const sessions = Array.isArray(legacyDB) ? legacyDB.filter(x => x && x.type === 'SEANCE').map(x => v63NormalizeSession(x, students)) : [];
         const legacyAgenda = v63ReadJSON('ortho_app_previsionnel', null);
-        const agendaSource = legacyAgenda && typeof legacyAgenda === 'object' && !Array.isArray(legacyAgenda) && Object.keys(legacyAgenda).length
+        // V72.2-PRIVACY: un navigateur vierge doit démarrer avec un agenda vide.
+        // Une ancienne planification locale est conservée uniquement si elle existe réellement.
+        const agendaSource = legacyAgenda && typeof legacyAgenda === 'object' && !Array.isArray(legacyAgenda)
             ? legacyAgenda
-            : getLegacyDefaultPrevisionnel();
+            : {};
         const agenda = v63NormalizeAgenda(agendaSource);
 
         const state = {
@@ -2826,26 +2823,10 @@ loadIndicatorLibrary();
         return normalizePrevisionnel(DataStore.getAgenda());
     }
 
+    // V72.2-PRIVACY: aucun agenda réel ou jeu de démonstration n'est stocké dans le code publié.
+    // Cette fonction reste volontairement vide pour préserver la compatibilité d'appel éventuelle.
     function getLegacyDefaultPrevisionnel() {
-        return normalizePrevisionnel({
-            "0_1e H": { type: "ELEVE", eleve: "Tasnime", matiere: "Mathématiques", local: "C28" },
-            "0_2e H": { type: "ELEVE", eleve: "Matéo", matiere: "Mathématiques", local: "B08" },
-            "0_7e H": { type: "ELEVE", eleve: "Ghizela Séfora Dorot", matiere: "Mathématiques", local: "D19" },
-            
-            "1_1e H": { type: "ELEVE", eleve: "Mohamed", matiere: "Mathématiques", local: "E29" },
-            "1_5e H": { type: "ELEVE", eleve: "Ghizela Séfora Dorot", matiere: "Mathématiques", local: "C28" },
-            "1_6e H": { type: "FORMATION", title: "GTPE", detail: "Concertation Pôle" },
-            "1_7e H": { type: "FORMATION", title: "NUMÉRIQUE", detail: "Projet numérique" },
-            
-            "2_1e H": { type: "ELEVE", eleve: "Matéo", matiere: "Mathématiques", local: "B08" },
-            
-            "3_3e H": { type: "COLLAB", title: "Équipe - BUREAU", detail: "Réunion Pôle / Admin" },
-            "3_4e H": { type: "COLLAB", title: "Équipe - BUREAU", detail: "Réunion Pôle / Admin" },
-            
-            "4_1e H": { type: "ELEVE", eleve: "Ghizela Séfora Dorot", matiere: "Mathématiques", local: "C28" },
-            "4_2e H": { type: "ELEVE", eleve: "Tasnime", matiere: "Mathématiques", local: "C28" },
-            "4_4e H": { type: "ELEVE", eleve: "Mohamed", matiere: "Mathématiques", local: "E29" }
-        });
+        return {};
     }
 
     function savePrevisionnel(prev) {
@@ -6107,7 +6088,7 @@ function openMicrosoftConnection(){animateClick(document.getElementById('ms-conn
 function closeMicrosoftConnection(){const modal=document.getElementById('ms-connection-modal');if(modal)modal.style.display='none';}
 async function initMicrosoftAuth(){if(msalReadyPromise)return msalReadyPromise;msalReadyPromise=(async()=>{try{const mod=window.JournalierMSAL;
       if(!mod) throw new Error('MSAL n’est pas chargé.');const authority='https://login.microsoftonline.com/'+MS_CONFIG.tenantId;msalInstance=await mod.createStandardPublicClientApplication({auth:{clientId:MS_CONFIG.clientId,authority,redirectUri:MS_CONFIG.redirectUri,postLogoutRedirectUri:MS_CONFIG.postLogoutRedirectUri},cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:false}});const accounts=msalInstance.getAllAccounts();msAccount=accounts.length?accounts[0]:null;updateMicrosoftUI();return true;}catch(err){console.error('Initialisation Microsoft impossible.',err);setCloudStatus('Impossible d’initialiser Microsoft : '+(err?.message||err),'error');return false;}})();return msalReadyPromise;}
-async function startMicrosoftLogin(){const btn=document.getElementById('ms-login-action');if(btn)btn.disabled=true;const status=document.getElementById('ms-config-status');try{if(status){status.className='ms-status-box';status.textContent='Préparation de la connexion Microsoft…';}const ready=await initMicrosoftAuth();if(!ready)throw new Error('MSAL n’a pas pu être initialisé.');const response=await msalInstance.loginPopup({scopes:MS_CONFIG.scopes,redirectUri:MS_CONFIG.redirectUri,prompt:'select_account'});msAccount=response.account;updateMicrosoftUI();showAppToast('Connexion Microsoft réussie.','success');}catch(err){const msg=err?.errorMessage||err?.message||'Erreur Microsoft inconnue';if(status){status.className='ms-status-box error';status.textContent='Connexion non effectuée : '+msg;}showAppToast('La connexion Microsoft n’a pas abouti.','error',4500);}finally{if(btn)btn.disabled=false;updateMicrosoftUI();}}
+async function startMicrosoftLogin(){const btn=document.getElementById('ms-login-action');if(btn)btn.disabled=true;const status=document.getElementById('ms-config-status');try{if(status){status.className='ms-status-box';status.textContent='Préparation de la connexion Microsoft…';}const ready=await initMicrosoftAuth();if(!ready)throw new Error('MSAL n’est pas initialisé.');const response=await msalInstance.loginPopup({scopes:MS_CONFIG.scopes,redirectUri:MS_CONFIG.redirectUri,prompt:'select_account'});msAccount=response.account;updateMicrosoftUI();try{const imported=await hydrateMicrosoftDataIfLocalEmpty();if(imported?.imported){showAppToast(`Connexion réussie : ${imported.students||0} élève(s), ${imported.sessions||0} séance(s) et l’agenda ont été récupérés.`,'success');}else{showAppToast('Connexion Microsoft réussie.','success');}}catch(hydrationError){console.error('Récupération OneDrive impossible.',hydrationError);setCloudStatus('✓ Compte Microsoft connecté.\n⚠️ Les données OneDrive n’ont pas pu être récupérées automatiquement : '+(hydrationError?.message||hydrationError),'error');showAppToast('Connexion réussie, mais récupération des données OneDrive impossible.','error',5000);}}catch(err){const msg=err?.errorMessage||err?.message||'Erreur Microsoft inconnue';if(status){status.className='ms-status-box error';status.textContent='Connexion non effectuée : '+msg;}showAppToast('La connexion Microsoft n’a pas abouti.','error',4500);}finally{if(btn)btn.disabled=false;updateMicrosoftUI();}}
 async function disconnectMicrosoft(){const btn=document.getElementById('ms-logout-action');if(btn)btn.disabled=true;try{if(!msalInstance)await initMicrosoftAuth();const account=msAccount||msalInstance?.getAllAccounts?.()[0]||null;if(msalInstance&&account){await msalInstance.logoutPopup({account,postLogoutRedirectUri:MS_CONFIG.postLogoutRedirectUri});}msAccount=null;updateMicrosoftUI();setCloudStatus('Microsoft déconnecté. Les données locales de Journalier restent disponibles ; aucune donnée locale n’a été supprimée.','success');showAppToast('Déconnexion Microsoft effectuée.','success');}catch(err){const msg=err?.errorMessage||err?.message||'Erreur lors de la déconnexion Microsoft.';if(btn)btn.disabled=false;setCloudStatus('Déconnexion Microsoft non confirmée : '+msg,'error');showAppToast('La déconnexion Microsoft n’a pas abouti.','error',4500);}finally{updateMicrosoftUI();}}
 async function getMicrosoftGraphToken(){if(!await initMicrosoftAuth())throw new Error('MSAL non initialisé.');const account=msAccount||msalInstance.getAllAccounts()[0];if(!account)throw new Error('Aucun compte Microsoft connecté.');msAccount=account;try{return (await msalInstance.acquireTokenSilent({account,scopes:GRAPH_SCOPES})).accessToken;}catch(_){return (await msalInstance.acquireTokenPopup({account,scopes:GRAPH_SCOPES})).accessToken;}}
 async function graphRequest(path,options={}){const token=await getMicrosoftGraphToken();const headers=new Headers(options.headers||{});headers.set('Authorization','Bearer '+token);if(options.body&&!headers.has('Content-Type')&&options.method&&options.method.toUpperCase()!=='GET')headers.set('Content-Type','application/json');const response=await fetch(GRAPH_BASE+path,{...options,headers});if(!response.ok){let message='';try{const data=await response.json();message=data?.error?.message||JSON.stringify(data);}catch(_){message=await response.text();}throw new Error(`Graph ${response.status} : ${message}`);}const text=await response.text();if(!text)return null;try{return JSON.parse(text);}catch(_){return text;}}
@@ -6125,6 +6106,89 @@ async function graphWriteExistingItemWithETag(item,payload){const parentId=item?
 function cloudSafeIdentity(){const identity=DataStore.getIdentity();return{ownerId:identity.ownerId,displayName:msAccount?.name||msAccount?.username||identity.displayName||'Utilisateur Journalier',microsoftAccount:msAccount?.username||null,provider:'microsoft365',architectureVersion:JOURNALIER_ARCHITECTURE_VERSION,updatedAt:new Date().toISOString()};}
 async function prepareMicrosoft365Space(){const b=document.getElementById('ms-prepare-cloud-action');if(b)b.disabled=true;setCloudStatus('Préparation de l’espace Journalier…','');try{const s=await graphEnsureJournalierStructure();await graphWriteJson(s.system.id,'sync.json',{schemaVersion:'JOURNALIER-SYNC-1',architectureVersion:JOURNALIER_ARCHITECTURE_VERSION,ownerId:DataStore.getIdentity().ownerId,provider:'microsoft365',preparedAt:new Date().toISOString(),status:'prepared'});setCloudStatus('✓ Espace Journalier prêt dans OneDrive. Aucune donnée métier n’a été envoyée.','success');}catch(e){setCloudStatus('⚠️ '+(e.message||e),'error');}finally{if(b)b.disabled=!msAccount;}}
 async function graphListChildren(id){return graphRequest(`/me/drive/items/${encodeURIComponent(id)}/children?$select=id,name,folder,file,size,lastModifiedDateTime,eTag`);}
+async function hydrateMicrosoftDataIfLocalEmpty(){
+  const state=DataStore.state;
+  const localStudents=DataStore.getStudents();
+  const localSessions=DataStore.getSessions();
+  const localAgenda=DataStore.getAgenda();
+  const agendaHasData=Object.keys(localAgenda||{}).some(k=>k!=='__uniqueEvents'&&k!=='__exceptions') || (Array.isArray(localAgenda?.__uniqueEvents)&&localAgenda.__uniqueEvents.length>0) || Object.keys(localAgenda?.__exceptions||{}).length>0;
+  if(localStudents.length||localSessions.length||agendaHasData) return {imported:false,reason:'local-data-present'};
+
+  const structure=await graphEnsureJournalierStructure();
+  const importedStudents=[];
+  const importedSessions=[];
+  const registry={version:'1',students:{},sessions:{},agenda:null};
+
+  // L'identité propriétaire doit rester stable entre plusieurs appareils pour un même espace OneDrive.
+  // Si sync.json porte déjà un ownerId, on l'adopte avant d'importer les données métier.
+  try{
+    const remoteSync=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/system/sync.json`);
+    if(remoteSync?.json?.ownerId){
+      state.ownerId=remoteSync.json.ownerId;
+      state.identity={...(state.identity||{}),ownerId:remoteSync.json.ownerId,provider:'microsoft365',displayName:msAccount?.name||msAccount?.username||state.identity?.displayName||'Utilisateur Journalier'};
+      v63WriteJSON(V63_IDENTITY_KEY,state.identity);
+    }
+  }catch(e){
+    if(!String(e.message||e).includes('Graph 404')) throw e;
+  }
+
+  let children=await graphListChildren(structure.eleves.id);
+  for(const folder of (children?.value||[])){
+    if(!folder?.folder) continue;
+    try{
+      const profile=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/eleves/${encodeURIComponent(folder.name)}/profil.json`);
+      const student=v63NormalizeStudent(profile.json);
+      student.ownerId=state.ownerId;
+      if(!student.studentId) student.studentId=folder.name;
+      importedStudents.push(student);
+      const fp=syncFingerprint(syncWithoutVolatileMeta(student));
+      registry.students[student.studentId]={remoteId:profile.item.id,eTag:profile.item.eTag||null,fingerprint:fp,remoteFingerprint:fp,lastCheckedAt:new Date().toISOString(),status:'synced'};
+    }catch(e){
+      if(!String(e.message||e).includes('Graph 404')) throw e;
+    }
+    try{
+      const sessionsFolder=await graphGetByPath(`${GRAPH_ROOT_FOLDER}/eleves/${encodeURIComponent(folder.name)}/seances`);
+      const sessionItems=await graphListChildren(sessionsFolder.id);
+      for(const item of (sessionItems?.value||[])){
+        if(!item?.file || !String(item.name||'').toLowerCase().endsWith('.json')) continue;
+        try{
+          const raw=await graphReadItemByIdWithJson(item.id);
+          const session=v63NormalizeSession(raw.json,importedStudents);
+          session.ownerId=state.ownerId;
+          importedSessions.push(session);
+          const fp=syncFingerprint(syncWithoutVolatileMeta(session));
+          registry.sessions[session.id]={remoteId:item.id,eTag:item.eTag||null,fingerprint:fp,remoteFingerprint:fp,studentId:session.identification?.eleveId||null,lastCheckedAt:new Date().toISOString(),status:'synced'};
+        }catch(e){
+          console.warn('Journalier — séance distante ignorée',item.name,e);
+        }
+      }
+    }catch(e){
+      if(!String(e.message||e).includes('Graph 404')) throw e;
+    }
+  }
+
+  let importedAgenda={};
+  try{
+    const remoteAgenda=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/agenda/agenda.json`);
+    importedAgenda=v63NormalizeAgenda(remoteAgenda.json||{});
+    const fp=syncFingerprint(syncWithoutVolatileMeta(importedAgenda));
+    registry.agenda={remoteId:remoteAgenda.item.id,eTag:remoteAgenda.item.eTag||null,fingerprint:fp,remoteFingerprint:fp,lastCheckedAt:new Date().toISOString(),status:'synced'};
+  }catch(e){
+    if(!String(e.message||e).includes('Graph 404')) throw e;
+  }
+
+  state.students=importedStudents;
+  state.sessions=importedSessions;
+  state.agenda=importedAgenda;
+  state.syncRegistry=registry;
+  state.sync={status:'synced',lastSyncAt:new Date().toISOString(),pendingChanges:0};
+  state.meta={...(state.meta||{}),cloudHydratedAt:new Date().toISOString(),cloudHydratedAccount:msAccount?.username||null};
+  v63WriteJSON(V63_STORAGE_KEY,state);
+  renderStudentsView();
+  renderAgenda();
+  updateMicrosoftUI();
+  return {imported:true,students:importedStudents.length,sessions:importedSessions.length,agenda:Boolean(Object.keys(importedAgenda).length)};
+}
 async function verifyMicrosoft365Space(){const b=document.getElementById('ms-verify-cloud-action');if(b)b.disabled=true;try{const root=await graphGetByPath(GRAPH_ROOT_FOLDER),children=await graphListChildren(root.id),names=new Set((children.value||[]).map(x=>x.name)),expected=['profil','eleves','agenda','system'],missing=expected.filter(x=>!names.has(x));if(missing.length)throw new Error('Structure incomplète : '+missing.join(', '));const sync=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/system/sync.json`).catch(()=>null);setCloudStatus('✓ Structure OneDrive vérifiée.\n✓ Journalier/\n✓ profil/\n✓ eleves/\n✓ agenda/\n✓ system/'+(sync?`\n✓ sync.json : ${sync.json.status||'—'}`:''),'success');}catch(e){setCloudStatus('⚠️ '+(e.message||e),'error');}finally{if(b)b.disabled=!msAccount;}}
 function syncStableValue(value){if(Array.isArray(value))return value.map(syncStableValue);if(value&&typeof value==='object')return Object.keys(value).sort().reduce((o,k)=>(o[k]=syncStableValue(value[k]),o),{});return value;}
 function syncFingerprint(value){return JSON.stringify(syncStableValue(value));}
