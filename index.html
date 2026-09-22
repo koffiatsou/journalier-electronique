@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-cdzt4beHJochL74sqf0/y+8GeaHZP0ed2hXLP5LDNIs=' 'sha256-iXdWlzQmy/kLI1TwTrqTHOHTT8eStQQzaTj2NUxYLCQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pôle Territorial – Agenda & Suivi Orthopédagogique · V72.2</title>
@@ -1619,7 +1620,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
         </div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end">
-        <button id="ms-connect-btn" class="ms-connect-btn focus-ring" type="button" onclick="openMicrosoftConnection()" aria-label="Connexion Microsoft">
+        <button id="ms-connect-btn" class="ms-connect-btn focus-ring" type="button" data-jr-handlers="h1" aria-label="Connexion Microsoft">
             <span class="ms-logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
             <span>Connexion Microsoft</span>
         </button>
@@ -1629,19 +1630,19 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
         </div>
     </div>
     <div class="nav-tabs" aria-label="Navigation principale">
-        <button class="nav-btn active focus-ring" id="tab-btn-accueil" onclick="showTab('accueil')">
+        <button class="nav-btn active focus-ring" id="tab-btn-accueil" data-jr-handlers="h2">
             <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span>Accueil</span>
         </button>
-        <button class="nav-btn focus-ring" id="tab-btn-agenda" onclick="showTab('agenda')">
+        <button class="nav-btn focus-ring" id="tab-btn-agenda" data-jr-handlers="h3">
             <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M7.5 3.5v3M16.5 3.5v3M3.5 9h17"/><path d="M8 13h3M13 13h3M8 17h3"/></svg></span><span>Agenda</span>
         </button>
-        <button class="nav-btn focus-ring" id="tab-btn-form" onclick="showTab('form')">
+        <button class="nav-btn focus-ring" id="tab-btn-form" data-jr-handlers="h4">
             <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 4.5h12a1.5 1.5 0 0 1 1.5 1.5v12A1.5 1.5 0 0 1 18 19.5H6A1.5 1.5 0 0 1 4.5 18V6A1.5 1.5 0 0 1 6 4.5Z"/><path d="M8 9h8M8 12.5h8M8 16h5"/></svg></span><span>Séance</span>
         </button>
-        <button class="nav-btn focus-ring" id="tab-btn-eleves" onclick="showTab('eleves')">
+        <button class="nav-btn focus-ring" id="tab-btn-eleves" data-jr-handlers="h5">
             <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c.5-3.1 2.4-5 5.5-5s5 1.9 5.5 5"/><circle cx="17" cy="9" r="2.2"/><path d="M15.5 14.5c2.6-.2 4.5 1.3 5 4.5"/></svg></span><span>Élèves</span>
         </button>
-        <button class="nav-btn focus-ring" id="tab-btn-reports" onclick="showTab('reports')">
+        <button class="nav-btn focus-ring" id="tab-btn-reports" data-jr-handlers="h6">
             <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3.5h10l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-12A1.5 1.5 0 0 1 4 20V5a1.5 1.5 0 0 1 1-1.5Z"/><path d="M14.5 3.5V8H19M8 12h8M8 15.5h8M8 19h5"/></svg></span><span>Rapports & PV</span>
         </button>
     </div>
@@ -1657,7 +1658,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                 <h2 class="page-title">Aujourd’hui</h2>
                 <p class="page-subtitle">Votre point d’entrée pour voir ce qui est prévu, ce qui reste à encoder et accéder rapidement aux dossiers.</p>
             </div>
-            <button class="btn-primary primary-action focus-ring" onclick="showTab('agenda')"><span aria-hidden="true">↗</span> Voir l’agenda</button>
+            <button class="btn-primary primary-action focus-ring" data-jr-handlers="h7"><span aria-hidden="true">↗</span> Voir l’agenda</button>
         </div>
         <div class="home-today">
             <div class="today-card">
@@ -1675,9 +1676,9 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
         <div class="card">
             <div class="page-kicker">Accès rapide</div>
             <div class="grid-3">
-                <button class="btn-primary primary-action focus-ring" onclick="showTab('agenda')">Agenda</button>
-                <button class="btn-secondary primary-action focus-ring" onclick="showTab('eleves')">Dossiers élèves</button>
-                <button class="btn-secondary primary-action focus-ring" onclick="showTab('reports')">Rapports & PV</button>
+                <button class="btn-primary primary-action focus-ring" data-jr-handlers="h8">Agenda</button>
+                <button class="btn-secondary primary-action focus-ring" data-jr-handlers="h9">Dossiers élèves</button>
+                <button class="btn-secondary primary-action focus-ring" data-jr-handlers="h10">Rapports & PV</button>
             </div>
         </div>
     </div>
@@ -1691,21 +1692,21 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                 <h2 class="page-title">Agenda</h2>
                 <p class="page-subtitle">Planifiez les accompagnements, formations et missions. Un événement peut couvrir plusieurs périodes.</p>
             </div>
-            <button class="btn-primary primary-action focus-ring" onclick="openSlotModal(selectedDateISO, periods[0], getDayIndexFromISO(selectedDateISO))"><span aria-hidden="true">＋</span> Programmer</button>
+            <button class="btn-primary primary-action focus-ring" data-jr-handlers="h11"><span aria-hidden="true">＋</span> Programmer</button>
         </div>
         <div class="agenda-controls-bar">
             <div class="view-switcher" role="tablist" aria-label="Vue de l’agenda">
-                <button class="view-btn focus-ring active" id="vbtn-day" onclick="switchAgendaView('day')">Jour</button>
-                <button class="view-btn focus-ring" id="vbtn-week" onclick="switchAgendaView('week')">Semaine · 5j</button>
-                <button class="view-btn focus-ring" id="vbtn-month" onclick="switchAgendaView('month')">Mois</button>
+                <button class="view-btn focus-ring active" id="vbtn-day" data-jr-handlers="h12">Jour</button>
+                <button class="view-btn focus-ring" id="vbtn-week" data-jr-handlers="h13">Semaine · 5j</button>
+                <button class="view-btn focus-ring" id="vbtn-month" data-jr-handlers="h14">Mois</button>
             </div>
             <div class="date-nav">
-                <button class="nav-arrow focus-ring" aria-label="Période précédente" onclick="navigateAgenda(-1)">‹</button>
-                <button class="btn-secondary focus-ring" style="padding:7px 10px;font-size:.76rem;border-radius:8px;cursor:pointer;" onclick="todayAgenda()">Aujourd’hui</button>
+                <button class="nav-arrow focus-ring" aria-label="Période précédente" data-jr-handlers="h15">‹</button>
+                <button class="btn-secondary focus-ring" style="padding:7px 10px;font-size:.76rem;border-radius:8px;cursor:pointer;" data-jr-handlers="h16">Aujourd’hui</button>
                 <div class="current-date-display" id="agenda-date-label">Lundi 24 Août 2026</div>
-                <button class="nav-arrow focus-ring" aria-label="Période suivante" onclick="navigateAgenda(1)">›</button>
+                <button class="nav-arrow focus-ring" aria-label="Période suivante" data-jr-handlers="h17">›</button>
             </div>
-            <input type="date" id="agenda-picker-input" min="2026-08-24" max="2027-07-02" value="" onchange="pickerDateChanged(this.value)" style="width:auto;margin:0;padding:7px 10px;">
+            <input type="date" id="agenda-picker-input" min="2026-08-24" max="2027-07-02" value="" data-jr-handlers="h18" style="width:auto;margin:0;padding:7px 10px;">
         </div>
         <div class="agenda-legend">
             <span class="legend-item legend-planned"><span class="legend-dot"></span>Planifié</span>
@@ -1724,7 +1725,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
         <form id="observationForm">
             <div id="session-save-confirmation" class="hidden" style="margin-bottom:14px;padding:12px 14px;border:1px solid #86efac;background:#f0fdf4;border-radius:10px;color:#166534;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
                 <div><strong>✓ Séance enregistrée</strong><div id="session-save-confirmation-text" style="font-size:.78rem;margin-top:2px;"></div></div>
-                <button type="button" class="btn-secondary focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;" onclick="showTab('reports')">Voir l’historique</button>
+                <button type="button" class="btn-secondary focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;" data-jr-handlers="h19">Voir l’historique</button>
             </div>
             <!-- Q1 -->
             <div class="card">
@@ -1735,21 +1736,21 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                 <div class="grid-3">
                     <div>
                         <label for="f-eleve">Élève accompagné *</label>
-                        <select id="f-eleve" required onchange="updatePIAPrompt(); refreshSessionSubjectsForStudent(); renderSessionMainSubjectBubbles(); updateObservationSuggestions();"></select>
+                        <select id="f-eleve" required data-jr-handlers="h20"></select>
                     </div>
                     <div>
                         <label for="f-date">Date *</label>
-                        <input type="date" id="f-date" min="2026-08-24" max="2027-07-02" required onchange="updateObservationSuggestions()">
+                        <input type="date" id="f-date" min="2026-08-24" max="2027-07-02" required data-jr-handlers="h21">
                     </div>
                     <div>
                         <label>Période *</label>
                         <div class="v15-period-range">
-                            <select id="f-periode-start" required onchange="updateObservationSuggestions()">
+                            <select id="f-periode-start" required data-jr-handlers="h22">
                                 <option>1e H</option><option>2e H</option><option>3e H</option><option>4e H</option>
                                 <option>5e H</option><option>6e H</option><option>7e H</option><option>8e H</option>
                             </select>
                             <span>→</span>
-                            <select id="f-periode-end" required onchange="updateObservationSuggestions()">
+                            <select id="f-periode-end" required data-jr-handlers="h23">
                                 <option>1e H</option><option>2e H</option><option>3e H</option><option>4e H</option>
                                 <option>5e H</option><option>6e H</option><option>7e H</option><option>8e H</option>
                             </select>
@@ -1766,8 +1767,8 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                     <div class="v11-field">
                         <label for="f-matiere">Matière *</label>
                         <div class="search-select" id="session-subject-select">
-                            <input id="f-matiere" class="search-select-input" autocomplete="off" placeholder="Rechercher ou saisir une matière…" data-selected-subject="" onfocus="openSessionSubjectMenu()" oninput="filterSessionSubjects(); renderSessionMainSubjectBubbles()">
-                            <span class="search-select-chevron" onclick="openSessionSubjectMenu()">⌄</span>
+                            <input id="f-matiere" class="search-select-input" autocomplete="off" placeholder="Rechercher ou saisir une matière…" data-selected-subject="" data-jr-handlers="h24" data-jr-handlers="h25">
+                            <span class="search-select-chevron" data-jr-handlers="h26">⌄</span>
                             <div id="session-subject-menu" class="search-select-menu hidden"></div>
                         </div>
                         <div id="session-subject-selected-note" class="search-select-note">Les matières principales du dossier sont proposées en priorité. Vous pouvez aussi saisir librement une autre matière.</div>
@@ -1775,14 +1776,14 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                     </div>
                     <div class="v11-field">
                         <label for="f-niveau">Niveau</label>
-                        <select id="f-niveau" onchange="updateObservationSuggestions()">
+                        <select id="f-niveau" data-jr-handlers="h27">
                             <option value="S1">S1</option><option value="S2">S2</option><option value="S3">S3</option>
                             <option value="S4">S4</option><option value="S5">S5</option><option value="S6">S6</option>
                         </select>
                     </div>
                     <div class="v11-field">
                         <label for="f-forme">Forme d’enseignement</label>
-                        <select id="f-forme" onchange="updateObservationSuggestions()">
+                        <select id="f-forme" data-jr-handlers="h28">
                             <option value="G">Général (G)</option>
                             <option value="TTR">Technique de transition (TTR)</option>
                             <option value="TQ">Technique de qualification (TQ)</option>
@@ -1791,7 +1792,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                     </div>
                     <div class="v11-field full">
                         <label for="f-objLecon">Objectif de la leçon <span class="v11-optional">(objectif de travail en classe)</span></label>
-                        <input type="text" id="f-objLecon" placeholder="Ce que l’élève est censé travailler pendant la séance…" oninput="updateObservationSuggestions()">
+                        <input type="text" id="f-objLecon" placeholder="Ce que l’élève est censé travailler pendant la séance…" data-jr-handlers="h29">
                         <div id="wbe-objective-prediction" class="hidden" style="margin-top:10px;"></div>
                     </div>
                     <div class="v11-field full">
@@ -1884,7 +1885,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                         <div class="q3-assessment-title">Pour chaque indicateur sélectionné, préciser le niveau d’appropriation.</div>
                         <div id="q3-assessment-list" class="q3-assessment-list"></div>
                     </div>
-                    <button type="button" id="q3-learning-more" class="q3-more-btn hidden" onclick="toggleQ3LearningMore()">Afficher 4 suggestions supplémentaires</button>
+                    <button type="button" id="q3-learning-more" class="q3-more-btn hidden" data-jr-handlers="h30">Afficher 4 suggestions supplémentaires</button>
                     <div class="q3-legend">
                         <strong>Légende :</strong> <strong>À renforcer</strong> → l’apprentissage reste à consolider dans la situation observée · <strong>En cours d’appropriation</strong> → l’élève commence à mobiliser l’apprentissage, avec une réussite encore variable ou un étayage nécessaire · <strong>Mobilisé</strong> → l’élève mobilise l’apprentissage dans la situation observée.
                     </div>
@@ -1894,7 +1895,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                     <label for="q3-add-input">Ajouter un indicateur <span class="v11-optional">(facultatif)</span></label>
                     <div class="q3-add-row">
                         <input type="text" id="q3-add-input" placeholder="Saisir un indicateur à ajouter…" autocomplete="off">
-                        <button type="button" class="q3-add-btn" onclick="addCustomQ3Indicator()">Ajouter</button>
+                        <button type="button" class="q3-add-btn" data-jr-handlers="h31">Ajouter</button>
                     </div>
                     <div id="q3-custom-list" class="q3-custom-list"></div>
                 </div>
@@ -1916,11 +1917,11 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                             <option value="none">Aucune</option><option value="existing_adaptation">Adaptation déjà en place</option><option value="existing_mediation">Médiation déjà en place</option><option value="new">Nouvelle adaptation / médiation</option><option value="later">Piste pour plus tard</option>
                         </select>
                         <div class="ux-select-bubbles" data-select-bubbles="q4-status-value">
-                            <button type="button" class="ux-select-bubble" data-value="none" onclick="setBubbleSelect('q4-status-value','none',this)">Aucune</button>
-                            <button type="button" class="ux-select-bubble" data-value="existing_adaptation" onclick="setBubbleSelect('q4-status-value','existing_adaptation',this)">Adaptation déjà en place</button>
-                            <button type="button" class="ux-select-bubble" data-value="existing_mediation" onclick="setBubbleSelect('q4-status-value','existing_mediation',this)">Médiation déjà en place</button>
-                            <button type="button" class="ux-select-bubble" data-value="new" onclick="setBubbleSelect('q4-status-value','new',this)">Nouvelle adaptation / médiation</button>
-                            <button type="button" class="ux-select-bubble" data-value="later" onclick="setBubbleSelect('q4-status-value','later',this)">Piste pour plus tard</button>
+                            <button type="button" class="ux-select-bubble" data-value="none" data-jr-handlers="h32">Aucune</button>
+                            <button type="button" class="ux-select-bubble" data-value="existing_adaptation" data-jr-handlers="h33">Adaptation déjà en place</button>
+                            <button type="button" class="ux-select-bubble" data-value="existing_mediation" data-jr-handlers="h34">Médiation déjà en place</button>
+                            <button type="button" class="ux-select-bubble" data-value="new" data-jr-handlers="h35">Nouvelle adaptation / médiation</button>
+                            <button type="button" class="ux-select-bubble" data-value="later" data-jr-handlers="h36">Piste pour plus tard</button>
                         </div>
                         <div class="choice-caption">Une seule situation peut être retenue pour cette séance.</div>
                     </div>
@@ -1960,11 +1961,11 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                 <p class="form-section-intro">Distinguer ce qui est observé pendant cette séance d’un transfert ou d’une généralisation dans une autre situation.</p>
                 <div class="v11-grid">
                     <div class="v11-field"><label>Situation de transfert</label><select id="q5-transfer-value" class="choice-select ux-hidden-select"><option value="">-- Sélectionner --</option><option value="observed">Observé</option><option value="not_observed">Non observé</option><option value="no_opportunity">Pas d’occasion</option><option value="later">À observer plus tard</option><option value="not_relevant">Non pertinent</option></select><div class="ux-select-bubbles" data-select-bubbles="q5-transfer-value">
-                            <button type="button" class="ux-select-bubble" data-value="observed" onclick="setBubbleSelect('q5-transfer-value','observed',this)">Observé</button>
-                            <button type="button" class="ux-select-bubble" data-value="not_observed" onclick="setBubbleSelect('q5-transfer-value','not_observed',this)">Non observé</button>
-                            <button type="button" class="ux-select-bubble" data-value="no_opportunity" onclick="setBubbleSelect('q5-transfer-value','no_opportunity',this)">Pas d’occasion</button>
-                            <button type="button" class="ux-select-bubble" data-value="later" onclick="setBubbleSelect('q5-transfer-value','later',this)">À observer plus tard</button>
-                            <button type="button" class="ux-select-bubble" data-value="not_relevant" onclick="setBubbleSelect('q5-transfer-value','not_relevant',this)">Non pertinent</button>
+                            <button type="button" class="ux-select-bubble" data-value="observed" data-jr-handlers="h37">Observé</button>
+                            <button type="button" class="ux-select-bubble" data-value="not_observed" data-jr-handlers="h38">Non observé</button>
+                            <button type="button" class="ux-select-bubble" data-value="no_opportunity" data-jr-handlers="h39">Pas d’occasion</button>
+                            <button type="button" class="ux-select-bubble" data-value="later" data-jr-handlers="h40">À observer plus tard</button>
+                            <button type="button" class="ux-select-bubble" data-value="not_relevant" data-jr-handlers="h41">Non pertinent</button>
                         </div><div class="choice-caption">Ces situations sont exclusives : un seul choix est retenu.</div></div>
                     <div class="v11-field"><label for="f-q5-txt">Précision <span class="v11-optional">(facultatif)</span></label><textarea id="f-q5-txt" rows="3" placeholder="Dans quelle situation le transfert a-t-il été observé, ou pourquoi n’était-il pas observable ?"></textarea></div>
                 </div>
@@ -2000,7 +2001,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                             <option value="">Sans changement</option><option value="Maintenir l’individuel">Maintenir l’individuel</option><option value="Groupe">Groupe</option><option value="Cointervention">Cointervention</option><option value="Coenseignement">Coenseignement</option>
                         </select>
                         <div class="ux-select-bubbles" data-select-bubbles="q6-modality-value">
-                            <button type="button" class="ux-select-bubble" data-value="" onclick="setBubbleSelect('q6-modality-value','',this)">Sans changement</button><button type="button" class="ux-select-bubble" data-value="Maintenir l’individuel" onclick="setBubbleSelect('q6-modality-value','Maintenir l’individuel',this)">Maintenir l’individuel</button><button type="button" class="ux-select-bubble" data-value="Groupe" onclick="setBubbleSelect('q6-modality-value','Groupe',this)">Groupe</button><button type="button" class="ux-select-bubble" data-value="Cointervention" onclick="setBubbleSelect('q6-modality-value','Cointervention',this)">Cointervention</button><button type="button" class="ux-select-bubble" data-value="Coenseignement" onclick="setBubbleSelect('q6-modality-value','Coenseignement',this)">Coenseignement</button>
+                            <button type="button" class="ux-select-bubble" data-value="" data-jr-handlers="h42">Sans changement</button><button type="button" class="ux-select-bubble" data-value="Maintenir l’individuel" data-jr-handlers="h43">Maintenir l’individuel</button><button type="button" class="ux-select-bubble" data-value="Groupe" data-jr-handlers="h44">Groupe</button><button type="button" class="ux-select-bubble" data-value="Cointervention" data-jr-handlers="h45">Cointervention</button><button type="button" class="ux-select-bubble" data-value="Coenseignement" data-jr-handlers="h46">Coenseignement</button>
                         </div>
                     </div>
                     <div class="v11-field">
@@ -2009,7 +2010,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                             <option value="">Sans changement</option><option value="Maintenir les objectifs">Maintenir les objectifs</option><option value="Ajuster l’objectif de travail">Ajuster l’objectif de travail</option><option value="Évolution du PIA à discuter">Évolution du PIA à discuter</option>
                         </select>
                         <div class="ux-select-bubbles" data-select-bubbles="q6-objective-value">
-                            <button type="button" class="ux-select-bubble" data-value="" onclick="setBubbleSelect('q6-objective-value','',this)">Sans changement</button><button type="button" class="ux-select-bubble" data-value="Maintenir les objectifs" onclick="setBubbleSelect('q6-objective-value','Maintenir les objectifs',this)">Maintenir les objectifs</button><button type="button" class="ux-select-bubble" data-value="Ajuster l’objectif de travail" onclick="setBubbleSelect('q6-objective-value','Ajuster l’objectif de travail',this)">Ajuster l’objectif de travail</button><button type="button" class="ux-select-bubble" data-value="Évolution du PIA à discuter" onclick="setBubbleSelect('q6-objective-value','Évolution du PIA à discuter',this)">Évolution du PIA à discuter</button>
+                            <button type="button" class="ux-select-bubble" data-value="" data-jr-handlers="h47">Sans changement</button><button type="button" class="ux-select-bubble" data-value="Maintenir les objectifs" data-jr-handlers="h48">Maintenir les objectifs</button><button type="button" class="ux-select-bubble" data-value="Ajuster l’objectif de travail" data-jr-handlers="h49">Ajuster l’objectif de travail</button><button type="button" class="ux-select-bubble" data-value="Évolution du PIA à discuter" data-jr-handlers="h50">Évolution du PIA à discuter</button>
                         </div>
                     </div>
                 </div>
@@ -2052,12 +2053,12 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                 <h2 class="page-title">Élèves accompagnés</h2>
                 <p class="page-subtitle">Le dossier élève rassemble les informations scolaires, le PIA, les séances, les synthèses et les propositions d’évolution.</p>
             </div>
-            <button class="btn-primary primary-action focus-ring" onclick="openAddStudentModal()"><span aria-hidden="true">＋</span> Ajouter un élève</button>
+            <button class="btn-primary primary-action focus-ring" data-jr-handlers="h51"><span aria-hidden="true">＋</span> Ajouter un élève</button>
         </div>
 
         <div class="card">
             <div class="student-toolbar">
-                <div class="ux-search"><span class="ux-search-icon">⌕</span><input id="student-search" class="focus-ring" type="search" placeholder="Rechercher un élève, une classe ou une école…" oninput="renderStudentsView()" aria-label="Rechercher un élève"></div>
+                <div class="ux-search"><span class="ux-search-icon">⌕</span><input id="student-search" class="focus-ring" type="search" placeholder="Rechercher un élève, une classe ou une école…" data-jr-handlers="h52" aria-label="Rechercher un élève"></div>
                 <span class="student-count" id="student-count"></span>
             </div>
         </div>
@@ -2072,7 +2073,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
             <div class="grid-2">
                 <div>
                     <label for="r-eleve">Sélectionner l'élève</label>
-                    <select id="r-eleve" onchange="loadStudentHistory()"></select>
+                    <select id="r-eleve" data-jr-handlers="h53"></select>
                 </div>
                 <div>
                     <label for="r-periode">Type de Rapport souhaité</label>
@@ -2087,11 +2088,11 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
             <div class="report-filters">
                 <div>
                     <label for="r-date-anchor">Date de référence pour la synthèse</label>
-                    <input type="date" id="r-date-anchor" min="2026-08-24" max="2027-07-02" value="" onchange="selectedDateISO=this.value; renderAgenda();">
+                    <input type="date" id="r-date-anchor" min="2026-08-24" max="2027-07-02" value="" data-jr-handlers="h54">
                     <div class="v11-help">Hebdomadaire = semaine de la date choisie · Mensuel = mois de la date choisie · PV = ensemble des observations disponibles jusqu’à la date choisie.</div>
                 </div>
             </div>
-            <button class="btn-primary" style="background:#059669;" onclick="generateReport()">Générer la synthèse</button>
+            <button class="btn-primary" style="background:#059669;" data-jr-handlers="h55">Générer la synthèse</button>
 
             <div id="report-output-box" class="report-box hidden" style="background:#f0fdf4; border:1px solid #bbf7d0; padding:16px; border-radius:12px; margin-top:16px;">
                 <h4 style="margin-top:0; color:#166534;">Document prêt à être copié dans Word / SharePoint :</h4>
@@ -2150,7 +2151,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
         
         <div class="agenda-recurrence-box">
             <label for="modal-slot-recurrence" style="margin-bottom:6px;display:block;">Type de planification :</label>
-            <select id="modal-slot-recurrence" onchange="updateRecurrenceNote()">
+            <select id="modal-slot-recurrence" data-jr-handlers="h56">
                 <option value="weekly">Récurrente hebdomadaire</option>
                 <option value="unique">Événement unique</option>
             </select>
@@ -2158,7 +2159,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
         </div>
 
         <label>Type d'activité / mission :</label>
-        <select id="modal-slot-type" onchange="toggleModalSlotFields()">
+        <select id="modal-slot-type" data-jr-handlers="h57">
             <option value="ELEVE">Accompagnement Élève (En classe)</option>
             <option value="COLLAB">Concertation / Travail Collaboratif (Équipe, Titulaire, PMS, Parents)</option>
             <option value="FORMATION">Formation / GTPE / Projets</option>
@@ -2191,7 +2192,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
 
         <div style="margin-top:14px;padding:10px;background:#f8fafc;border-radius:10px;border:1px solid var(--border);">
             <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                <input type="checkbox" id="modal-duplicate-enabled" onchange="toggleDuplicateFields()" style="width:auto;margin:0;">
+                <input type="checkbox" id="modal-duplicate-enabled" data-jr-handlers="h58" style="width:auto;margin:0;">
                 🔁 Dupliquer aussi sur une autre date
             </label>
             <div id="modal-duplicate-fields" class="hidden">
@@ -2201,8 +2202,8 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
         </div>
 
         <div style="display:flex; gap:10px; margin-top:20px;">
-            <button class="btn-primary" style="background:#64748b;" onclick="closeSlotModal()">Annuler</button>
-            <button class="btn-primary" style="flex:1;" onclick="saveSlotModification()">💾 Enregistrer l'activité</button>
+            <button class="btn-primary" style="background:#64748b;" data-jr-handlers="h59">Annuler</button>
+            <button class="btn-primary" style="flex:1;" data-jr-handlers="h60">💾 Enregistrer l'activité</button>
         </div>
     </div>
 </div>
@@ -2220,7 +2221,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
             <button class="event-action-btn" id="event-action-duplicate">🔁 Dupliquer à une autre date</button>
             <button class="event-action-btn danger" id="event-action-delete">🗑️ Supprimer</button>
         </div>
-        <button class="btn-primary" style="background:#64748b; width:100%; margin-top:12px;" onclick="closeEventActionModal()">Fermer</button>
+        <button class="btn-primary" style="background:#64748b; width:100%; margin-top:12px;" data-jr-handlers="h61">Fermer</button>
     </div>
 </div>
 
@@ -2233,7 +2234,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
             <button class="event-action-btn danger" id="event-delete-occurrence">🗑️ Supprimer cette occurrence uniquement</button>
             <button class="event-action-btn danger" id="event-delete-series">🗑️ Supprimer la série</button>
         </div>
-        <button class="btn-primary" style="background:#64748b;width:100%;margin-top:12px;" onclick="closeEventDeleteModal()">Annuler</button>
+        <button class="btn-primary" style="background:#64748b;width:100%;margin-top:12px;" data-jr-handlers="h62">Annuler</button>
     </div>
 </div>
 
@@ -2242,7 +2243,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
     <div class="modal-card" style="max-width:720px;">
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
             <div><div class="page-kicker">Dossier élève</div><h3 style="margin:0 0 3px;" id="student-profile-title">Élève</h3><div style="font-size:.78rem;color:#64748b;" id="student-profile-meta"></div></div>
-            <button class="btn-secondary focus-ring" onclick="closeStudentProfile()" style="padding:6px 9px;border-radius:8px;cursor:pointer;">Fermer</button>
+            <button class="btn-secondary focus-ring" data-jr-handlers="h63" style="padding:6px 9px;border-radius:8px;cursor:pointer;">Fermer</button>
         </div>
         <div id="student-profile-body" style="margin-top:12px;"></div>
     </div>
@@ -2265,9 +2266,9 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
 
         <label>Matières principales</label>
         <div class="multi-select" id="student-subjects-select">
-            <button type="button" class="multi-select-trigger" onclick="toggleMultiSelect('student-subjects-select')"><span id="student-subjects-summary" class="placeholder">Sélectionner une ou plusieurs matières…</span><span class="multi-select-chevron">⌄</span></button>
+            <button type="button" class="multi-select-trigger" data-jr-handlers="h64"><span id="student-subjects-summary" class="placeholder">Sélectionner une ou plusieurs matières…</span><span class="multi-select-chevron">⌄</span></button>
             <div class="multi-select-menu hidden">
-                <div class="multi-select-search" style="padding:4px 4px 5px;"><input type="search" id="student-subject-search" placeholder="Rechercher une matière…" oninput="filterStudentSubjects()"></div>
+                <div class="multi-select-search" style="padding:4px 4px 5px;"><input type="search" id="student-subject-search" placeholder="Rechercher une matière…" data-jr-handlers="h65"></div>
                 <div id="student-subject-options"></div>
             </div>
         </div>
@@ -2275,16 +2276,16 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
 
         <label style="margin-top:12px;">PIA</label>
         <div style="display:flex;gap:8px;align-items:center;">
-            <button type="button" class="btn-secondary focus-ring" onclick="document.getElementById('student-pia-file').click()">📄 Importer le PIA</button>
-            <input id="student-pia-file" type="file" accept=".pdf,.doc,.docx" class="hidden" onchange="showPIAImportName(this)">
+            <button type="button" class="btn-secondary focus-ring" data-jr-handlers="h66">📄 Importer le PIA</button>
+            <input id="student-pia-file" type="file" accept=".pdf,.doc,.docx" class="hidden" data-jr-handlers="h67">
         </div>
         <div id="student-pia-file-name" class="v11-help">Le document original doit être conservé ; l’analyse et les propositions viennent ensuite.</div>
         <label style="margin-top:12px;">Repère / objectifs du PIA</label>
         <textarea id="student-modal-pia" rows="3" placeholder="Repères du PIA — sans remplacer le document original…"></textarea>
 
         <div style="display:flex; gap:10px; margin-top:15px;">
-            <button type="button" class="btn-primary" style="background:#64748b;" onclick="closeStudentModal()">Annuler</button>
-            <button type="button" class="btn-primary" style="flex:1;" onclick="saveStudent(event)">💾 Enregistrer l'Élève</button>
+            <button type="button" class="btn-primary" style="background:#64748b;" data-jr-handlers="h68">Annuler</button>
+            <button type="button" class="btn-primary" style="flex:1;" data-jr-handlers="h69">💾 Enregistrer l'Élève</button>
         </div>
     </div>
 </div>
@@ -6004,28 +6005,312 @@ function chooseSessionSubject(subject){
     input.dispatchEvent(new Event('input',{bubbles:true}));
 }
 
+
+
+/* =========================================================
+   CSP — migration statique des handlers inline
+   Injecté dans le même scope que le code applicatif.
+   ========================================================= */
+const JR_HANDLERS = Object.create(null);
+JR_HANDLERS["h1"] = {attr:"onclick", fn:function(event){
+openMicrosoftConnection()
+}};
+JR_HANDLERS["h2"] = {attr:"onclick", fn:function(event){
+showTab('accueil')
+}};
+JR_HANDLERS["h3"] = {attr:"onclick", fn:function(event){
+showTab('agenda')
+}};
+JR_HANDLERS["h4"] = {attr:"onclick", fn:function(event){
+showTab('form')
+}};
+JR_HANDLERS["h5"] = {attr:"onclick", fn:function(event){
+showTab('eleves')
+}};
+JR_HANDLERS["h6"] = {attr:"onclick", fn:function(event){
+showTab('reports')
+}};
+JR_HANDLERS["h7"] = {attr:"onclick", fn:function(event){
+showTab('agenda')
+}};
+JR_HANDLERS["h8"] = {attr:"onclick", fn:function(event){
+showTab('agenda')
+}};
+JR_HANDLERS["h9"] = {attr:"onclick", fn:function(event){
+showTab('eleves')
+}};
+JR_HANDLERS["h10"] = {attr:"onclick", fn:function(event){
+showTab('reports')
+}};
+JR_HANDLERS["h11"] = {attr:"onclick", fn:function(event){
+openSlotModal(selectedDateISO, periods[0], getDayIndexFromISO(selectedDateISO))
+}};
+JR_HANDLERS["h12"] = {attr:"onclick", fn:function(event){
+switchAgendaView('day')
+}};
+JR_HANDLERS["h13"] = {attr:"onclick", fn:function(event){
+switchAgendaView('week')
+}};
+JR_HANDLERS["h14"] = {attr:"onclick", fn:function(event){
+switchAgendaView('month')
+}};
+JR_HANDLERS["h15"] = {attr:"onclick", fn:function(event){
+navigateAgenda(-1)
+}};
+JR_HANDLERS["h16"] = {attr:"onclick", fn:function(event){
+todayAgenda()
+}};
+JR_HANDLERS["h17"] = {attr:"onclick", fn:function(event){
+navigateAgenda(1)
+}};
+JR_HANDLERS["h18"] = {attr:"onchange", fn:function(event){
+pickerDateChanged(this.value)
+}};
+JR_HANDLERS["h19"] = {attr:"onclick", fn:function(event){
+showTab('reports')
+}};
+JR_HANDLERS["h20"] = {attr:"onchange", fn:function(event){
+updatePIAPrompt(); refreshSessionSubjectsForStudent(); renderSessionMainSubjectBubbles(); updateObservationSuggestions();
+}};
+JR_HANDLERS["h21"] = {attr:"onchange", fn:function(event){
+updateObservationSuggestions()
+}};
+JR_HANDLERS["h22"] = {attr:"onchange", fn:function(event){
+updateObservationSuggestions()
+}};
+JR_HANDLERS["h23"] = {attr:"onchange", fn:function(event){
+updateObservationSuggestions()
+}};
+JR_HANDLERS["h24"] = {attr:"onfocus", fn:function(event){
+openSessionSubjectMenu()
+}};
+JR_HANDLERS["h25"] = {attr:"oninput", fn:function(event){
+filterSessionSubjects(); renderSessionMainSubjectBubbles()
+}};
+JR_HANDLERS["h26"] = {attr:"onclick", fn:function(event){
+openSessionSubjectMenu()
+}};
+JR_HANDLERS["h27"] = {attr:"onchange", fn:function(event){
+updateObservationSuggestions()
+}};
+JR_HANDLERS["h28"] = {attr:"onchange", fn:function(event){
+updateObservationSuggestions()
+}};
+JR_HANDLERS["h29"] = {attr:"oninput", fn:function(event){
+updateObservationSuggestions()
+}};
+JR_HANDLERS["h30"] = {attr:"onclick", fn:function(event){
+toggleQ3LearningMore()
+}};
+JR_HANDLERS["h31"] = {attr:"onclick", fn:function(event){
+addCustomQ3Indicator()
+}};
+JR_HANDLERS["h32"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q4-status-value','none',this)
+}};
+JR_HANDLERS["h33"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q4-status-value','existing_adaptation',this)
+}};
+JR_HANDLERS["h34"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q4-status-value','existing_mediation',this)
+}};
+JR_HANDLERS["h35"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q4-status-value','new',this)
+}};
+JR_HANDLERS["h36"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q4-status-value','later',this)
+}};
+JR_HANDLERS["h37"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q5-transfer-value','observed',this)
+}};
+JR_HANDLERS["h38"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q5-transfer-value','not_observed',this)
+}};
+JR_HANDLERS["h39"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q5-transfer-value','no_opportunity',this)
+}};
+JR_HANDLERS["h40"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q5-transfer-value','later',this)
+}};
+JR_HANDLERS["h41"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q5-transfer-value','not_relevant',this)
+}};
+JR_HANDLERS["h42"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q6-modality-value','',this)
+}};
+JR_HANDLERS["h43"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q6-modality-value','Maintenir l’individuel',this)
+}};
+JR_HANDLERS["h44"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q6-modality-value','Groupe',this)
+}};
+JR_HANDLERS["h45"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q6-modality-value','Cointervention',this)
+}};
+JR_HANDLERS["h46"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q6-modality-value','Coenseignement',this)
+}};
+JR_HANDLERS["h47"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q6-objective-value','',this)
+}};
+JR_HANDLERS["h48"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q6-objective-value','Maintenir les objectifs',this)
+}};
+JR_HANDLERS["h49"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q6-objective-value','Ajuster l’objectif de travail',this)
+}};
+JR_HANDLERS["h50"] = {attr:"onclick", fn:function(event){
+setBubbleSelect('q6-objective-value','Évolution du PIA à discuter',this)
+}};
+JR_HANDLERS["h51"] = {attr:"onclick", fn:function(event){
+openAddStudentModal()
+}};
+JR_HANDLERS["h52"] = {attr:"oninput", fn:function(event){
+renderStudentsView()
+}};
+JR_HANDLERS["h53"] = {attr:"onchange", fn:function(event){
+loadStudentHistory()
+}};
+JR_HANDLERS["h54"] = {attr:"onchange", fn:function(event){
+selectedDateISO=this.value; renderAgenda();
+}};
+JR_HANDLERS["h55"] = {attr:"onclick", fn:function(event){
+generateReport()
+}};
+JR_HANDLERS["h56"] = {attr:"onchange", fn:function(event){
+updateRecurrenceNote()
+}};
+JR_HANDLERS["h57"] = {attr:"onchange", fn:function(event){
+toggleModalSlotFields()
+}};
+JR_HANDLERS["h58"] = {attr:"onchange", fn:function(event){
+toggleDuplicateFields()
+}};
+JR_HANDLERS["h59"] = {attr:"onclick", fn:function(event){
+closeSlotModal()
+}};
+JR_HANDLERS["h60"] = {attr:"onclick", fn:function(event){
+saveSlotModification()
+}};
+JR_HANDLERS["h61"] = {attr:"onclick", fn:function(event){
+closeEventActionModal()
+}};
+JR_HANDLERS["h62"] = {attr:"onclick", fn:function(event){
+closeEventDeleteModal()
+}};
+JR_HANDLERS["h63"] = {attr:"onclick", fn:function(event){
+closeStudentProfile()
+}};
+JR_HANDLERS["h64"] = {attr:"onclick", fn:function(event){
+toggleMultiSelect('student-subjects-select')
+}};
+JR_HANDLERS["h65"] = {attr:"oninput", fn:function(event){
+filterStudentSubjects()
+}};
+JR_HANDLERS["h66"] = {attr:"onclick", fn:function(event){
+document.getElementById('student-pia-file').click()
+}};
+JR_HANDLERS["h67"] = {attr:"onchange", fn:function(event){
+showPIAImportName(this)
+}};
+JR_HANDLERS["h68"] = {attr:"onclick", fn:function(event){
+closeStudentModal()
+}};
+JR_HANDLERS["h69"] = {attr:"onclick", fn:function(event){
+saveStudent(event)
+}};
+JR_HANDLERS["h70"] = {attr:"onclick", fn:function(event){
+closeMicrosoftConnection()
+}};
+JR_HANDLERS["h71"] = {attr:"onclick", fn:function(event){
+closeMicrosoftConnection()
+}};
+JR_HANDLERS["h72"] = {attr:"onclick", fn:function(event){
+startMicrosoftLogin()
+}};
+JR_HANDLERS["h73"] = {attr:"onclick", fn:function(event){
+disconnectMicrosoft()
+}};
+JR_HANDLERS["h74"] = {attr:"onclick", fn:function(event){
+prepareMicrosoft365Space()
+}};
+JR_HANDLERS["h75"] = {attr:"onclick", fn:function(event){
+verifyMicrosoft365Space()
+}};
+JR_HANDLERS["h76"] = {attr:"onclick", fn:function(event){
+testMicrosoftAppFolder()
+}};
+JR_HANDLERS["h77"] = {attr:"onclick", fn:function(event){
+diagnoseSyncManagerV72()
+}};
+JR_HANDLERS["h78"] = {attr:"onclick", fn:function(event){
+syncPendingLocalChangesV72()
+}};
+JR_HANDLERS["h79"] = {attr:"onclick", fn:function(event){
+openConflictResolutionV72()
+}};
+
+const JR_HANDLER_INSTALLED = new WeakSet();
+
+function jrAttachHandlers(el) {
+    if (JR_HANDLER_INSTALLED.has(el)) return;
+    const ids = (el.getAttribute('data-jr-handlers') || '').trim().split(/\s+/).filter(Boolean);
+    for (const id of ids) {
+        const entry = JR_HANDLERS[id];
+        if (!entry) continue;
+        el.addEventListener(entry.attr.slice(2), function(event) {
+            entry.fn.call(el, event);
+        }, false);
+    }
+    JR_HANDLER_INSTALLED.add(el);
+}
+
+function jrInstallHandlers(root) {
+    if (!root) return;
+    if (root.nodeType === 1 && root.matches?.('[data-jr-handlers]')) jrAttachHandlers(root);
+    root.querySelectorAll?.('[data-jr-handlers]').forEach(jrAttachHandlers);
+}
+
+function jrBootHandlers() {
+    jrInstallHandlers(document);
+    const observer = new MutationObserver(mutations => {
+        for (const mutation of mutations) {
+            for (const node of mutation.addedNodes) {
+                if (node.nodeType === 1) jrInstallHandlers(node);
+            }
+        }
+    });
+    observer.observe(document.documentElement, {childList:true, subtree:true});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', jrBootHandlers, {once:true});
+} else {
+    jrBootHandlers();
+}
+
 </script>
 
 <div id="ms-connection-modal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="ms-modal-title">
   <div class="modal-card" style="max-width:620px;width:calc(100% - 32px);padding:24px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
       <div><div class="page-kicker">MICROSOFT 365</div><h2 id="ms-modal-title" style="margin:3px 0 0;font-size:1.25rem">Connexion Microsoft</h2></div>
-      <button class="btn-secondary" type="button" onclick="closeMicrosoftConnection()" aria-label="Fermer">✕</button>
+      <button class="btn-secondary" type="button" data-jr-handlers="h70" aria-label="Fermer">✕</button>
     </div>
     <div class="ms-setup-banner" style="margin-top:18px"><div class="ms-setup-icon">M</div><div><div class="ms-setup-title">Connexion sécurisée</div><div class="ms-setup-text">Journalier ne demande jamais votre mot de passe Microsoft. L'authentification sera effectuée directement par Microsoft Entra ID.</div></div></div>
     <div id="ms-config-status" class="ms-status-box">Configuration Microsoft à effectuer avant la première connexion.</div>
     <div style="margin-top:14px;font-size:.78rem;color:#6e6e73;line-height:1.5">V72 relie maintenant le DataStore réel de Journalier à Microsoft Graph. Les données restent d'abord enregistrées localement ; la synchronisation cloud est contrôlée par le SyncManager.</div>
     <div id="ms-cloud-status" class="ms-status-box" style="margin-top:12px">Aucune opération cloud lancée.</div>
     <div class="ms-modal-actions" style="flex-wrap:wrap">
-      <button class="btn-secondary" type="button" onclick="closeMicrosoftConnection()">Fermer</button>
-      <button id="ms-login-action" class="btn-primary" type="button" onclick="startMicrosoftLogin()">Se connecter avec Microsoft</button>
-      <button id="ms-logout-action" class="btn-secondary" type="button" onclick="disconnectMicrosoft()" disabled>Se déconnecter de Microsoft</button>
-      <button id="ms-prepare-cloud-action" class="btn-secondary" type="button" onclick="prepareMicrosoft365Space()" disabled>Préparer l'espace Journalier</button>
-      <button id="ms-verify-cloud-action" class="btn-secondary" type="button" onclick="verifyMicrosoft365Space()" disabled>Vérifier la structure OneDrive</button>
-      <button id="ms-appfolder-test-action" class="btn-secondary" type="button" onclick="testMicrosoftAppFolder()" disabled>Tester réellement l’AppFolder</button>
-      <button id="ms-sync-diagnose-action" class="btn-secondary" type="button" onclick="diagnoseSyncManagerV72()" disabled>Analyser la synchronisation</button>
-      <button id="ms-sync-action" class="btn-primary" type="button" onclick="syncPendingLocalChangesV72()" disabled>Synchroniser maintenant</button>
-      <button id="ms-resolve-conflict-action" class="btn-secondary" type="button" onclick="openConflictResolutionV72()" disabled>Résoudre un conflit</button>
+      <button class="btn-secondary" type="button" data-jr-handlers="h71">Fermer</button>
+      <button id="ms-login-action" class="btn-primary" type="button" data-jr-handlers="h72">Se connecter avec Microsoft</button>
+      <button id="ms-logout-action" class="btn-secondary" type="button" data-jr-handlers="h73" disabled>Se déconnecter de Microsoft</button>
+      <button id="ms-prepare-cloud-action" class="btn-secondary" type="button" data-jr-handlers="h74" disabled>Préparer l'espace Journalier</button>
+      <button id="ms-verify-cloud-action" class="btn-secondary" type="button" data-jr-handlers="h75" disabled>Vérifier la structure OneDrive</button>
+      <button id="ms-appfolder-test-action" class="btn-secondary" type="button" data-jr-handlers="h76" disabled>Tester réellement l’AppFolder</button>
+      <button id="ms-sync-diagnose-action" class="btn-secondary" type="button" data-jr-handlers="h77" disabled>Analyser la synchronisation</button>
+      <button id="ms-sync-action" class="btn-primary" type="button" data-jr-handlers="h78" disabled>Synchroniser maintenant</button>
+      <button id="ms-resolve-conflict-action" class="btn-secondary" type="button" data-jr-handlers="h79" disabled>Résoudre un conflit</button>
     </div>
     <div id="ms-conflict-resolution-panel" class="ms-status-box" style="display:none;margin-top:12px">
       <div style="font-weight:700;margin-bottom:8px">Résolution contrôlée des conflits</div>
