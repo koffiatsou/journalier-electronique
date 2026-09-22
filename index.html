@@ -6112,7 +6112,97 @@ async function graphGetByPath(path){const relative=graphRelativeAppPath(path);co
 async function graphCreateChildFolder(parentId,name){return graphRequest(`/me/drive/items/${encodeURIComponent(parentId)}/children`,{method:'POST',body:JSON.stringify({name,folder:{},'@microsoft.graph.conflictBehavior':'fail'})});}
 async function graphGetOrCreateFolder(parentId,name,parentPath){try{return await graphGetByPath(parentPath?`${parentPath}/${name}`:name);}catch(err){if(!String(err.message||err).includes('Graph 404'))throw err;try{return await graphCreateChildFolder(parentId,name);}catch(e){if(String(e.message||e).includes('Graph 409'))return await graphGetByPath(parentPath?`${parentPath}/${name}`:name);throw e;}}}
 async function graphEnsureJournalierStructure(){const root=await graphGetAppRoot();const profil=await graphGetOrCreateFolder(root.id,'profil',GRAPH_ROOT_FOLDER),eleves=await graphGetOrCreateFolder(root.id,'eleves',GRAPH_ROOT_FOLDER),agenda=await graphGetOrCreateFolder(root.id,'agenda',GRAPH_ROOT_FOLDER),system=await graphGetOrCreateFolder(root.id,'system',GRAPH_ROOT_FOLDER);return{root,profil,eleves,agenda,system};}
-async function testMicrosoftAppFolder(){const b=document.getElementById('ms-appfolder-test-action');if(b)b.disabled=true;setCloudStatus('Test AppFolder : obtention de /drive/special/approot…','');try{const root=await graphGetAppRoot(true);if(!root.id)throw new Error('AppFolder introuvable : aucun identifiant de dossier retourné.');const probeFolderName=`__journalier_appfolder_probe_${Date.now()}`;const probeFolder=await graphCreateChildFolder(root.id,probeFolderName);const probePayload={schema:'JOURNALIER-APPFOLDER-PROBE-1',createdAt:new Date().toISOString(),appFolderId:root.id};const probeItem=await graphWriteJson(probeFolder.id,'probe.json',probePayload);const readBack=await graphReadItemByIdWithJson(probeItem.id);if(JSON.stringify(readBack.json)!==JSON.stringify(probePayload))throw new Error('Le fichier de test a été créé mais son contenu relu ne correspond pas.');await graphDeleteItemWithETag(probeItem.id,probeItem.eTag||readBack.item?.eTag||null);await graphDeleteItemWithETag(probeFolder.id,probeFolder.eTag||null);setCloudStatus(`✓ AppFolder fonctionnel.\n✓ approot : ${root.name||'AppFolder'}\n✓ création / lecture / suppression testées.\n✓ Aucune donnée Journalier n’a été modifiée.`,'success');showAppToast('Test AppFolder réussi.','success');return{ok:true,root};}catch(err){const msg=err?.message||String(err);setCloudStatus('⚠️ Test AppFolder échoué.\n'+msg+'\n\nAucune donnée Journalier n’a été modifiée.','error');showAppToast('Le test AppFolder a échoué.','error',6000);return{ok:false,error:msg};}finally{if(b)b.disabled=!msAccount;}}
+async function graphGetItemMetaById(itemId){
+  return graphRequest(`/me/drive/items/${encodeURIComponent(itemId)}?$select=id,name,eTag,parentReference,file,folder,lastModifiedDateTime`);
+}
+async function graphDeleteProbeItem(itemId){
+  if(!itemId)return;
+  try{
+    const meta=await graphGetItemMetaById(itemId);
+    await graphDeleteItemWithETag(itemId,meta.eTag||null);
+  }catch(err){
+    if(!String(err?.message||err).includes('404'))throw err;
+  }
+}
+async function testMicrosoftAppFolder(){
+  const b=document.getElementById('ms-appfolder-test-action');
+  if(b)b.disabled=true;
+  setCloudStatus('Test AppFolder : obtention de /drive/special/approot…','');
+  let probeFolderId=null;
+  let probeItemId=null;
+  let cleanupError=null;
+  try{
+    const root=await graphGetAppRoot(true);
+    if(!root.id)throw new Error('AppFolder introuvable : aucun identifiant de dossier retourné.');
+
+    const probeFolderName=`__journalier_appfolder_probe_${Date.now()}`;
+    const probeFolder=await graphCreateChildFolder(root.id,probeFolderName);
+    probeFolderId=probeFolder.id;
+
+    const probePayload={
+      schema:'JOURNALIER-APPFOLDER-PROBE-1',
+      createdAt:new Date().toISOString(),
+      appFolderId:root.id
+    };
+
+    const probeItem=await graphWriteJson(probeFolder.id,'probe.json',probePayload);
+    probeItemId=probeItem.id;
+
+    const readBack=await graphReadItemByIdWithJson(probeItem.id);
+    if(JSON.stringify(readBack.json)!==JSON.stringify(probePayload)){
+      throw new Error('Le fichier de test a été créé mais son contenu relu ne correspond pas.');
+    }
+
+    // Le fichier de test peut avoir changé d’eTag après sa création/lecture.
+    // On relit donc toujours son eTag courant avant suppression.
+    await graphDeleteProbeItem(probeItem.id);
+    probeItemId=null;
+
+    // La création/suppression du fichier enfant a modifié l’eTag du dossier parent.
+    // On récupère impérativement l’eTag courant avant de supprimer le dossier de test.
+    const freshFolder=await graphGetItemMetaById(probeFolder.id);
+    await graphDeleteItemWithETag(probeFolder.id,freshFolder.eTag||null);
+    probeFolderId=null;
+
+    setCloudStatus(`✓ AppFolder fonctionnel.
+✓ approot : ${root.name||'AppFolder'}
+✓ création / lecture / suppression testées.
+✓ Aucune donnée métier Journalier n’a été modifiée.`,'success');
+    showAppToast('Test AppFolder réussi.','success');
+    return{ok:true,root};
+  }catch(err){
+    const msg=err?.message||String(err);
+
+    // Nettoyage limité aux seuls objets créés par CE test.
+    try{
+      if(probeItemId){
+        await graphDeleteProbeItem(probeItemId);
+        probeItemId=null;
+      }
+    }catch(cleanErr){
+      cleanupError=cleanErr?.message||String(cleanErr);
+    }
+
+    try{
+      if(probeFolderId){
+        const freshFolder=await graphGetItemMetaById(probeFolderId);
+        await graphDeleteItemWithETag(probeFolderId,freshFolder.eTag||null);
+        probeFolderId=null;
+      }
+    }catch(cleanErr){
+      cleanupError=(cleanupError?cleanupError+' | ':'')+(cleanErr?.message||String(cleanErr));
+    }
+
+    const suffix=cleanupError
+      ? `\n\n⚠️ Nettoyage du dossier de test incomplet : ${cleanupError}`
+      : '';
+    setCloudStatus('⚠️ Test AppFolder échoué.\n'+msg+'\n\nAucune donnée métier Journalier n’a été modifiée.'+suffix,'error');
+    showAppToast('Le test AppFolder a échoué.','error',6000);
+    return{ok:false,error:msg,cleanupError};
+  }finally{
+    if(b)b.disabled=!msAccount;
+  }
+}
 async function graphWriteJsonWithETag(parentId,filename,payload,eTag){const headers={'Content-Type':'text/plain'};if(eTag)headers['If-Match']=eTag;return graphRequest(`/me/drive/items/${encodeURIComponent(parentId)}:/${encodeURIComponent(filename)}:/content`,{method:'PUT',headers,body:JSON.stringify(payload,null,2)});}
 function graphWriteJson(parentId,filename,payload){return graphWriteJsonWithETag(parentId,filename,payload,null);}
 async function graphReadItemWithJson(path){const item=await graphGetByPath(path);const raw=await graphRequest(`/me/drive/items/${encodeURIComponent(item.id)}/content`);return{item,json:typeof raw==='object'?raw:JSON.parse(raw)};}
