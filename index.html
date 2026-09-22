@@ -5894,6 +5894,7 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
         const db = getDB();
         const students = getStudents();
         const container = document.getElementById('stats-container');
+        if (!container) return;
 
         let html = `
             <div class="stat-box">
