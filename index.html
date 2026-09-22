@@ -384,6 +384,18 @@
             margin-top: 14px;
         }
 
+        .history-edit-btn{
+            border:1px solid #bfdbfe;
+            background:#eff6ff;
+            color:#1d4ed8;
+            border-radius:8px;
+            padding:6px 10px;
+            font-size:.72rem;
+            font-weight:700;
+            cursor:pointer;
+        }
+        .history-edit-btn:hover{background:#dbeafe;border-color:#93c5fd}
+
         .event-action-btn {
             width: 100%;
             text-align: left;
@@ -2282,6 +2294,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
 let INDICATOR_LIBRARY = null;
 let INDICATOR_LIBRARY_STATUS = 'pending';
 let q3AssessmentState = {};
+let editingSessionId = null;
 
 /* =========================================================
    DIAGNOSTIC TECHNIQUE — Bibliothèque indicateurs
@@ -3272,18 +3285,24 @@ loadIndicatorLibrary();
     }
 
     function getEncodedForEvent(dayIdx, isoDate, event, db) {
-        if (!event) return null;
-        const start = event.startIndex ?? 0;
-        const end = event.endIndex ?? start;
-        return db.find(item => {
-            if(item.date !== isoDate || item.eleve !== event.eleve) return false;
-            const sp=sessionParts(item);
-            const itemStart=periodIndex(sp.start);
-            const itemEnd=periodIndex(sp.end||sp.start);
-            if(itemStart<0 || itemEnd<0) return false;
-            return itemStart<=end && itemEnd>=start;
-        }) || null;
-    }
+    if (!event) return null;
+
+    const start = event.startIndex ?? 0;
+    const end = event.endIndex ?? start;
+
+    return db.find(item => {
+        const sp = sessionParts(item);
+
+        if (sp.date !== isoDate || sp.eleve !== event.eleve) return false;
+
+        const itemStart = periodIndex(sp.start);
+        const itemEnd = periodIndex(sp.end || sp.start);
+
+        if (itemStart < 0 || itemEnd < 0) return false;
+
+        return itemStart <= end && itemEnd >= start;
+    }) || null;
+}
 
     function renderWeekView() {
         const monday = getMonday(parseISODate(selectedDateISO));
@@ -3352,10 +3371,19 @@ loadIndicatorLibrary();
             <span style="color:var(--text-sub);">${event.startPeriod}${span > 1 ? ' → ' + event.endPeriod : ''} · ${event.recurrence==='unique'?'Événement unique':'Récurrent hebdomadaire'}</span>
         `;
 
-        document.getElementById('event-action-observe').onclick = () => {
+        const encodedSession = event.type === 'ELEVE'
+            ? getEncodedForEvent(dayIdx, isoDate, event, getDB())
+            : null;
+        const observeButton=document.getElementById('event-action-observe');
+        observeButton.textContent=encodedSession ? '✏️ Modifier la séance' : '📝 Encoder la séance';
+        observeButton.onclick = () => {
             closeEventActionModal();
             if (event.type === 'ELEVE') {
-                quickFormForSlot(isoDate, event.startPeriod, event.eleve, event.matiere);
+                if(encodedSession){
+                    editHistorySession(encodedSession.id);
+                }else{
+                    quickFormForSlot(isoDate, event.startPeriod, event.eleve, event.matiere);
+                }
             } else {
                 alert("L'encodage détaillé d'une observation concerne les accompagnements d'élèves.");
             }
@@ -3452,7 +3480,7 @@ loadIndicatorLibrary();
                 pills.push(`<div class="month-more-pill">+ ${hiddenCount} autre${hiddenCount > 1 ? 's' : ''}</div>`);
             }
 
-            const countEncoded = db.filter(item => item.date === iso).length;
+            const countEncoded = db.filter(item => sessionParts(item).date === iso).length;
             if (countEncoded > 0) {
                 pills.push(`<div class="month-indicator-pill" style="background:#dcfce7; color:#15803d;">✓ ${countEncoded} séance${countEncoded > 1 ? 's' : ''}</div>`);
             }
@@ -3858,8 +3886,20 @@ loadIndicatorLibrary();
         const normalized=v63NormalizeSession({...entry, schemaVersion:63, ownerId:DataStore.getIdentity().ownerId}, students);
         normalized.identification={...(normalized.identification||{}),eleveId:student.studentId};
         const db=getDB();
+        const editingId=String(entry.id||'');
+        if(editingId){
+            const collision=db.find(item=>{
+                if(!isJournalSession(item) || String(item.id)===editingId) return false;
+                const x=sessionParts(item);
+                const sameStudent=(item.identification?.eleveId&&item.identification.eleveId===student.studentId)||(x.eleve===p.eleve);
+                return sameStudent&&x.date===p.date&&x.start===p.start&&x.end===p.end;
+            });
+            if(collision) throw new Error('Une autre séance existe déjà pour cet élève, cette date et cette période.');
+        }
         const filtered=db.filter(item=>{
             if(!isJournalSession(item)) return true;
+            // En mode édition, l'entrée d'origine est remplacée par son ID.
+            if(editingId && String(item.id)===editingId) return false;
             const x=sessionParts(item);
             const sameStudent=(item.identification?.eleveId&&item.identification.eleveId===student.studentId)||(x.eleve===p.eleve);
             return !(sameStudent&&x.date===p.date&&x.start===p.start&&x.end===p.end);
@@ -3872,6 +3912,9 @@ loadIndicatorLibrary();
     }
 
     function clearObservationForm() {
+        editingSessionId = null;
+        const saveButton = document.getElementById('save-session-btn');
+        if(saveButton) saveButton.textContent='💾 Enregistrer la séance';
         const form = document.getElementById('observationForm');
         form.reset();
         const confirmation=document.getElementById('session-save-confirmation');
@@ -4793,19 +4836,74 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
     // Le bouton est également relié directement afin que la sauvegarde ne dépende
     // pas uniquement du comportement submit natif du navigateur.
     function handleSessionSave(e){
-        if(e)e.preventDefault();const form=document.getElementById('observationForm');if(!form)return;if(!form.checkValidity()){form.reportValidity();return;}
-        const student=document.getElementById('f-eleve')?.value||'',date=document.getElementById('f-date')?.value||'',start=document.getElementById('f-periode-start')?.value||'',end=document.getElementById('f-periode-end')?.value||'',subjectInput=document.getElementById('f-matiere'),matiere=String(subjectInput?.value||'').trim();
-        if(!student||!date||!start||!end||!matiere){alert(!matiere?'Merci de sélectionner ou de saisir une matière.':'Merci de compléter au minimum l’élève, la date et la période.');if(!matiere)subjectInput?.focus();return;}
+        if(e)e.preventDefault();
+        const form=document.getElementById('observationForm');
+        if(!form)return;
+        if(!form.checkValidity()){form.reportValidity();return;}
+
+        const student=document.getElementById('f-eleve')?.value||'',
+              date=document.getElementById('f-date')?.value||'',
+              start=document.getElementById('f-periode-start')?.value||'',
+              end=document.getElementById('f-periode-end')?.value||'',
+              subjectInput=document.getElementById('f-matiere'),
+              matiere=String(subjectInput?.value||'').trim();
+        if(!student||!date||!start||!end||!matiere){
+            alert(!matiere?'Merci de sélectionner ou de saisir une matière.':'Merci de compléter au minimum l’élève, la date et la période.');
+            if(!matiere)subjectInput?.focus();
+            return;
+        }
+
         const cats={'q2-comprehension':'Compréhension / traitement','q2-organisation':'Organisation / fonctions exécutives','q2-realisation':'Réalisation','q2-aide':'Rapport à l’aide / engagement'};
-        const q2=Array.from(document.querySelectorAll('.q2-observation-item')).filter(x=>x.querySelector('input[type="checkbox"]')?.checked).map(x=>{const c=x.querySelector('input[type="checkbox"]'),r=x.querySelector('input[type="range"]');return {categorie:cats[c?.name]||c?.name||'',observation:c?.value||'',niveau:Number(r?.value??0)};});
-        rememberQ3AssessmentValues();const q3=Array.from(document.querySelectorAll('input[name="q3-learning"]:checked')).map(c=>{const id=String(c.dataset.indicatorId||c.value||''),lib=INDICATOR_LIBRARY?.indicateurs_apprentissage?.find(x=>String(x.id||'')===id);return {id:lib?.id?String(lib.id):(id.startsWith('MANUEL-')?id:`MANUEL-${id}`),texte:String(c.value||''),source:lib?'bibliotheque':'manuel',appreciation:Number(q3AssessmentState[id]??1)};});
-        const newEntry={id:Date.now()+Math.floor(Math.random()*1000),schemaVersion:63,type:'SEANCE',identification:{eleve:student,date,periode:{start,end}},contexte:{matiere,niveau:document.getElementById('f-niveau')?.value||'',forme:document.getElementById('f-forme')?.value||'',typeIntervention:getCheckedValues('f-type-interv')},objectif:{objectifLecon:document.getElementById('f-objLecon')?.value.trim()||'',objectifProfessionnel:document.getElementById('f-objAgent')?.value.trim()||''},q2:{observations:q2,precision:document.getElementById('f-q2-txt')?.value.trim()||''},q3:{repereWBE:{signature:wbeValidatedState.signature||'',hit:wbeValidatedState.hit||'',kind:wbeValidatedState.kind||'',bridgeId:wbeValidatedState.bridgeId||'',indicatorIds:[...(wbeValidatedState.indicatorIds||[])],source:wbeValidatedState.sourceLabel||''},indicateurs:q3,precision:document.getElementById('f-q3-txt')?.value.trim()||''},q4:{situation:document.getElementById('q4-status-value')?.value||'none',types:getCheckedValues('q4-type'),effets:getQ4EffectMap(),precision:document.getElementById('f-q4-txt')?.value.trim()||''},q5:{statut:document.getElementById('q5-transfer-value')?.value||'',precision:document.getElementById('f-q5-txt')?.value.trim()||''},q6:{actions:getCheckedValues('q6-action'),modalite:document.getElementById('q6-modality-value')?.value||'',objectif:document.getElementById('q6-objective-value')?.value||'',collaborations:getCheckedValues('q6-collab'),precision:document.getElementById('f-q6-txt')?.value.trim()||''},metadata:{createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}};
+        const q2=Array.from(document.querySelectorAll('.q2-observation-item'))
+            .filter(x=>x.querySelector('input[type="checkbox"]')?.checked)
+            .map(x=>{
+                const c=x.querySelector('input[type="checkbox"]'),r=x.querySelector('input[type="range"]');
+                return {categorie:cats[c?.name]||c?.name||'',observation:c?.value||'',niveau:Number(r?.value??0)};
+            });
+
+        rememberQ3AssessmentValues();
+        const q3=Array.from(document.querySelectorAll('input[name="q3-learning"]:checked')).map(c=>{
+            const id=String(c.dataset.indicatorId||c.value||''),
+                  lib=INDICATOR_LIBRARY?.indicateurs_apprentissage?.find(x=>String(x.id||'')===id);
+            return {
+                id:lib?.id?String(lib.id):(id.startsWith('MANUEL-')?id:`MANUEL-${id}`),
+                texte:String(c.value||''),
+                source:lib?'bibliotheque':'manuel',
+                appreciation:Number(q3AssessmentState[id]??1)
+            };
+        });
+
+        const now=new Date().toISOString();
+        const isEditing=!!editingSessionId;
+        const existing=isEditing ? getDB().find(x=>String(x.id)===String(editingSessionId)) : null;
+        if(isEditing && (!existing || !isJournalSession(existing))){
+            editingSessionId=null;
+            const saveButton=document.getElementById('save-session-btn');
+            if(saveButton)saveButton.textContent='💾 Enregistrer la séance';
+            showAppToast('⚠️ La séance à modifier est introuvable.','error',5000);
+            return;
+        }
+
+        const newEntry={
+            ...(existing||{}),
+            id:isEditing ? existing.id : Date.now()+Math.floor(Math.random()*1000),
+            schemaVersion:63,
+            type:'SEANCE',
+            identification:{eleve:student,date,periode:{start,end}},
+            contexte:{matiere,niveau:document.getElementById('f-niveau')?.value||'',forme:document.getElementById('f-forme')?.value||'',typeIntervention:getCheckedValues('f-type-interv')},
+            objectif:{objectifLecon:document.getElementById('f-objLecon')?.value.trim()||'',objectifProfessionnel:document.getElementById('f-objAgent')?.value.trim()||''},
+            q2:{observations:q2,precision:document.getElementById('f-q2-txt')?.value.trim()||''},
+            q3:{repereWBE:{signature:wbeValidatedState.signature||'',hit:wbeValidatedState.hit||'',kind:wbeValidatedState.kind||'',bridgeId:wbeValidatedState.bridgeId||'',indicatorIds:[...(wbeValidatedState.indicatorIds||[])],source:wbeValidatedState.sourceLabel||''},indicateurs:q3,precision:document.getElementById('f-q3-txt')?.value.trim()||''},
+            q4:{situation:document.getElementById('q4-status-value')?.value||'none',types:getCheckedValues('q4-type'),effets:getQ4EffectMap(),precision:document.getElementById('f-q4-txt')?.value.trim()||''},
+            q5:{statut:document.getElementById('q5-transfer-value')?.value||'',precision:document.getElementById('f-q5-txt')?.value.trim()||''},
+            q6:{actions:getCheckedValues('q6-action'),modalite:document.getElementById('q6-modality-value')?.value||'',objectif:document.getElementById('q6-objective-value')?.value||'',collaborations:getCheckedValues('q6-collab'),precision:document.getElementById('f-q6-txt')?.value.trim()||''},
+            metadata:{createdAt:existing?.metadata?.createdAt||now,updatedAt:now}
+        };
+
         try{
             persistSessionEntry(newEntry);
             selectedDateISO=date;
             closeAllChoiceMenus();
-            // Réinitialiser avant d'afficher la confirmation : clearObservationForm()
-            // masque volontairement l'ancien message.
             clearObservationForm();
             updateStudentDropdowns();
             const rs=document.getElementById('r-eleve');
@@ -4813,11 +4911,11 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
             loadStudentHistory();
             showTab('form');
             showSessionSaveConfirmation(newEntry);
-            showAppToast(`✓ Séance enregistrée pour ${student}. Vous pouvez encoder la suivante.`,'success',4200);
+            showAppToast(isEditing ? `✓ Séance modifiée pour ${student}.` : `✓ Séance enregistrée pour ${student}. Vous pouvez encoder la suivante.`, 'success', 4200);
         }catch(err){
-            console.error('Enregistrement de la séance impossible',err);
-            showAppToast('⚠️ La séance n’a pas pu être enregistrée. Aucun changement n’a été validé.','error',5000);
-            alert('La séance n’a pas pu être enregistrée. Aucun changement n’a été validé.');
+            console.error(isEditing?'Modification de la séance impossible':'Enregistrement de la séance impossible',err);
+            showAppToast(isEditing?'⚠️ La séance n’a pas pu être modifiée. Aucun changement n’a été validé.':'⚠️ La séance n’a pas pu être enregistrée. Aucun changement n’a été validé.','error',5000);
+            alert(isEditing?'La séance n’a pas pu être modifiée. Aucun changement n’a été validé.':'La séance n’a pas pu être enregistrée. Aucun changement n’a été validé.');
         }
     }
 
@@ -4913,7 +5011,10 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
             return `<div class="card history-session-card" style="margin-bottom:10px;padding:14px;">
                 <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
                     <div><strong>${escapeHtml(p.eleve)} • ${escapeHtml(p.matiere)}</strong> — ${escapeHtml(p.date)} (${escapeHtml(sessionPeriodLabel(l))})</div>
-                    <button type="button" class="history-delete-btn" data-session-id="${sid}" onclick="deleteHistorySession(this.dataset.sessionId)">Supprimer</button>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+                        <button type="button" class="history-edit-btn" data-session-id="${sid}" onclick="editHistorySession(this.dataset.sessionId)">✏️ Modifier</button>
+                        <button type="button" class="history-delete-btn" data-session-id="${sid}" onclick="deleteHistorySession(this.dataset.sessionId)">Supprimer</button>
+                    </div>
                 </div>
                 ${o.objectifLecon||o.objectifProfessionnel?`<div><strong>Objectif :</strong> ${escapeHtml(o.objectifLecon||o.objectifProfessionnel)}</div>`:''}
                 ${(q2.observations||[]).length||q2.precision?`<div><strong>Fonctionnement :</strong> ${escapeHtml((q2.observations||[]).map(x=>x.observation).join(', '))}${q2.precision?` — ${escapeHtml(q2.precision)}`:''}</div>`:''}
@@ -4923,6 +5024,154 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
                 ${(q6.actions||[]).length||q6.precision?`<div><strong>Suite :</strong> ${escapeHtml((q6.actions||[]).join(', '))}${q6.precision?` — ${escapeHtml(q6.precision)}`:''}</div>`:''}
             </div>`;
         }).join('');
+    }
+
+    function editHistorySession(sessionId){
+        const id=String(sessionId||'');
+        const entry=getDB().find(x=>String(x.id)===id);
+        if(!entry || !isJournalSession(entry)){
+            showAppToast('⚠️ La séance à modifier est introuvable.','error',5000);
+            return;
+        }
+
+        const p=sessionParts(entry);
+        editingSessionId=String(entry.id);
+        clearObservationForm();
+        editingSessionId=String(entry.id);
+
+        const saveButton=document.getElementById('save-session-btn');
+        if(saveButton)saveButton.textContent='💾 Enregistrer les modifications';
+
+        const setValue=(id,value)=>{const el=document.getElementById(id);if(el)el.value=value??'';};
+        setValue('f-date',p.date);
+        setValue('f-periode-start',p.start);
+        setValue('f-periode-end',p.end);
+        setValue('f-eleve',p.eleve);
+        setValue('f-matiere',p.matiere);
+        const subjectInput=document.getElementById('f-matiere');
+        if(subjectInput)subjectInput.dataset.selectedSubject=p.matiere||'';
+        const subjectNote=document.getElementById('session-subject-selected-note');
+        if(subjectNote)subjectNote.textContent=p.matiere?`Matière sélectionnée : ${p.matiere}`:'Les matières principales du dossier sont proposées en priorité. Vous pouvez aussi saisir librement une autre matière.';
+
+        const ctx=entry.contexte||{},obj=entry.objectif||{},q2=entry.q2||{},q3=entry.q3||{},q4=entry.q4||{},q5=entry.q5||{},q6=entry.q6||{};
+        setValue('f-niveau',ctx.niveau||'');
+        setValue('f-forme',ctx.forme||'');
+        setValue('f-objLecon',obj.objectifLecon||'');
+        setValue('f-objAgent',obj.objectifProfessionnel||'');
+        setValue('f-q2-txt',q2.precision||'');
+        setValue('f-q3-txt',q3.precision||'');
+        setValue('f-q4-txt',q4.precision||'');
+        setValue('f-q5-txt',q5.precision||'');
+        setValue('f-q6-txt',q6.precision||'');
+        setValue('q4-status-value',q4.situation||'none');
+        setValue('q5-transfer-value',q5.statut||'');
+        setValue('q6-modality-value',q6.modalite||'');
+        setValue('q6-objective-value',q6.objectif||'');
+
+        // Q2 : restaurer les observations et leur niveau.
+        document.querySelectorAll('.q2-observation-item').forEach(item=>{
+            const cb=item.querySelector('input[type="checkbox"]');
+            const range=item.querySelector('input[type="range"]');
+            if(cb){
+                const found=(q2.observations||[]).find(x=>String(x.observation||'')===String(cb.value||''));
+                cb.checked=!!found;
+                if(range && found)range.value=String(found.niveau??0);
+            }
+            if(cb&&range){
+                const level=Number(range.value||0);
+                const levels=['Partiellement','Suffisamment','Totalement'];
+                const label=item.querySelector('.q2-level-head strong');
+                if(label)label.textContent=cb.checked?levels[level]:'À préciser';
+                item.classList.toggle('is-observed',cb.checked);
+                item.classList.remove('q2-level-0','q2-level-1','q2-level-2');
+                if(cb.checked)item.classList.add(`q2-level-${level}`);
+                range.setAttribute('aria-hidden',cb.checked?'false':'true');
+            }
+        });
+
+        // Q4 / Q6 : restaurer les choix à bulles et leurs résumés.
+        const checkedMap={
+            'q4-type':new Set(q4.types||[]),
+            'q6-action':new Set(q6.actions||[]),
+            'q6-collab':new Set(q6.collaborations||[]),
+            'f-type-interv':new Set(ctx.typeIntervention||[])
+        };
+        Object.entries(checkedMap).forEach(([name,set])=>{
+            document.querySelectorAll(`input[name="${name}"]`).forEach(cb=>{cb.checked=set.has(cb.value);});
+        });
+        updateMultiSelectSummary('q4-types-select','q4-type');
+        updateMultiSelectSummary('q6-collab-select','q6-collab');
+        syncBubbleSelects();
+        syncBubbleCheckboxStates();
+        renderQ4EffectSliders();
+        Object.entries(q4.effets||{}).forEach(([type,value])=>{
+            const range=document.querySelector(`#q4-effect-sliders input[data-type="${CSS.escape(String(type))}"]`);
+            if(range){range.value=String(value);range.dispatchEvent(new Event('input',{bubbles:true}));}
+        });
+
+        // Repère WBE associé à la séance.
+        const rw=q3.repereWBE||{};
+        wbeValidatedState={signature:rw.signature||'',hit:rw.hit||'',kind:rw.kind||'',bridgeId:rw.bridgeId||'',indicatorIds:[...(rw.indicatorIds||[])],sourceLabel:rw.source||'',appliedToObjective:!!rw.signature};
+        renderQ3ValidatedWBE();
+
+        // Q3 : reconstruire les sélections de la bibliothèque et les indicateurs manuels.
+        q3AssessmentState={};
+        (q3.indicateurs||[]).forEach(ind=>{
+            const id=String(ind.id||'');
+            q3AssessmentState[id]=Number(ind.appreciation??1);
+        });
+        const customList=document.getElementById('q3-custom-list');
+        if(customList)customList.innerHTML='';
+        const libraryIds=new Set((INDICATOR_LIBRARY?.indicateurs_apprentissage||[]).map(x=>String(x.id||'')));
+        (q3.indicateurs||[]).filter(ind=>!libraryIds.has(String(ind.id||''))).forEach(ind=>{
+            const id=String(ind.id||`custom-${Date.now()}-${Math.floor(Math.random()*1000)}`);
+            const item=document.createElement('label');
+            item.className='q3-custom-item is-active';
+            item.innerHTML=`<input type="checkbox" name="q3-learning" value="${escapeHtml(String(ind.texte||''))}" data-indicator-id="${escapeHtml(id)}" checked onchange="updateQ3BubbleState(this)"><span>${escapeHtml(String(ind.texte||''))}</span>`;
+            customList?.appendChild(item);
+        });
+
+        const renderEditedQ3=()=>{
+            renderQ3Library({
+                level:document.getElementById('f-niveau')?.value||'',
+                form:document.getElementById('f-forme')?.value||'',
+                subject:document.getElementById('f-matiere')?.value||'',
+                objective:document.getElementById('f-objLecon')?.value||''
+            });
+            const selected=(q3.indicateurs||[]).filter(ind=>libraryIds.has(String(ind.id||'')));
+            selected.forEach(ind=>{
+                const id=String(ind.id||'');
+                let cb=document.querySelector(`input[name="q3-learning"][data-indicator-id="${CSS.escape(id)}"]`);
+                if(!cb){
+                    const lib=INDICATOR_LIBRARY?.indicateurs_apprentissage?.find(x=>String(x.id||'')===id);
+                    if(lib){
+                        const box=document.getElementById('q3-learning-suggestions');
+                        if(box){
+                            const temp=document.createElement('div');
+                            temp.innerHTML=q3IndicatorBubble(lib,'q3-learning',false);
+                            const created=temp.firstElementChild;
+                            if(created){box.appendChild(created);cb=created.querySelector('input[name="q3-learning"]');}
+                        }
+                    }
+                }
+                if(cb){
+                    cb.checked=true;
+                    const bubble=cb.closest('.q3-library-bubble');
+                    if(bubble)bubble.classList.add('is-active');
+                }
+            });
+            renderQ3Assessments();
+        };
+        if(INDICATOR_LIBRARY_STATUS==='loaded') renderEditedQ3();
+        else setTimeout(()=>{if(INDICATOR_LIBRARY_STATUS==='loaded')renderEditedQ3();},250);
+
+        updateObservationSuggestions();
+        updatePIAPrompt();
+        renderSessionMainSubjectBubbles();
+        closeAllChoiceMenus();
+        showTab('form');
+        window.scrollTo({top:0,behavior:'smooth'});
+        showAppToast('✏️ Séance chargée pour modification.','success',3000);
     }
 
     function deleteHistorySession(sessionId){
