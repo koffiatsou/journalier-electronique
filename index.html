@@ -2507,7 +2507,7 @@ loadIndicatorLibrary();
        - validation systématique avant import cloud
        - SyncManager séparé du modèle pédagogique
        ========================================================= */
-    const JOURNALIER_ARCHITECTURE_VERSION = '72.2-secure';
+    const JOURNALIER_ARCHITECTURE_VERSION = '72.2-secure-appfolder-test';
     const JOURNALIER_DB_NAME = 'journalier-secure-v72';
     const JOURNALIER_DB_VERSION = 1;
     const JOURNALIER_STATE_STORE = 'states';
@@ -6012,7 +6012,7 @@ function chooseSessionSubject(subject){
       <button id="ms-logout-action" class="btn-secondary" type="button" onclick="disconnectMicrosoft()" disabled>Se déconnecter de Microsoft</button>
       <button id="ms-prepare-cloud-action" class="btn-secondary" type="button" onclick="prepareMicrosoft365Space()" disabled>Préparer l'espace Journalier</button>
       <button id="ms-verify-cloud-action" class="btn-secondary" type="button" onclick="verifyMicrosoft365Space()" disabled>Vérifier la structure OneDrive</button>
-      <button id="ms-appfolder-probe-action" class="btn-secondary" type="button" onclick="runAppFolderSecurityProbe()" disabled>Tester réellement l’AppFolder</button>
+      <button id="ms-appfolder-test-action" class="btn-secondary" type="button" onclick="testMicrosoftAppFolder()" disabled>Tester réellement l’AppFolder</button>
       <button id="ms-sync-diagnose-action" class="btn-secondary" type="button" onclick="diagnoseSyncManagerV72()" disabled>Analyser la synchronisation</button>
       <button id="ms-sync-action" class="btn-primary" type="button" onclick="syncPendingLocalChangesV72()" disabled>Synchroniser maintenant</button>
       <button id="ms-resolve-conflict-action" class="btn-secondary" type="button" onclick="openConflictResolutionV72()" disabled>Résoudre un conflit</button>
@@ -6042,9 +6042,7 @@ function chooseSessionSubject(subject){
    ========================================================= */
 const MSAL_REDIRECT_URI = new URL('msal-redirect.html', document.baseURI).href;
 const MS_CONFIG={clientId:"65c3db78-9bad-4a08-8eac-404b83e368cb",tenantId:"96c46ef2-21cc-480d-92df-0bf9fd599a97",redirectUri:MSAL_REDIRECT_URI,postLogoutRedirectUri:MSAL_REDIRECT_URI,scopes:["openid","profile","Files.ReadWrite.AppFolder"]};
-const GRAPH_SCOPES=["Files.ReadWrite.AppFolder"], GRAPH_BASE="https://graph.microsoft.com/v1.0", GRAPH_ROOT_FOLDER="";
-const JOURNALIER_CLOUD_MODE="appfolder";
-const JOURNALIER_APPTEST_FOLDER="__journalier_security_test__";
+const GRAPH_SCOPES=["Files.ReadWrite.AppFolder"], GRAPH_BASE="https://graph.microsoft.com/v1.0", GRAPH_ROOT_FOLDER="Journalier", GRAPH_APP_ROOT_PATH="/me/drive/special/approot";
 let msalInstance=null, msAccount=null, msalReadyPromise=null;
 function msConfigReady(){return Boolean(MS_CONFIG.clientId&&MS_CONFIG.tenantId&&MS_CONFIG.redirectUri);}
 function setCloudStatus(message,type='info'){const el=document.getElementById('ms-cloud-status');if(el){el.className='ms-status-box '+type;el.textContent=message;}}
@@ -6066,9 +6064,9 @@ function v72ConflictEntries(){
 }
 function updateMicrosoftUI(){
   const status=document.getElementById('ms-config-status'),login=document.getElementById('ms-login-action'),logout=document.getElementById('ms-logout-action'),dot=document.getElementById('ms-dot'),label=document.getElementById('ms-account-label'),button=document.getElementById('ms-connect-btn');
-  const prepare=document.getElementById('ms-prepare-cloud-action'),verify=document.getElementById('ms-verify-cloud-action'),probe=document.getElementById('ms-appfolder-probe-action'),diagnose=document.getElementById('ms-sync-diagnose-action'),sync=document.getElementById('ms-sync-action'),resolve=document.getElementById('ms-resolve-conflict-action');
-  if(msAccount){if(dot)dot.classList.add('connected');if(label)label.textContent=msAccount.name||msAccount.username||'Microsoft connecté';if(button)button.querySelector('span:last-child').textContent='Compte Microsoft';if(status){status.className='ms-status-box success';status.textContent='Connecté : '+(msAccount.username||msAccount.name||'compte Microsoft');}if(login){login.textContent='Reconnecter';login.disabled=false;}if(logout)logout.disabled=false;if(prepare)prepare.disabled=false;if(verify)verify.disabled=false;if(diagnose)diagnose.disabled=false;if(sync)sync.disabled=false;if(probe)probe.disabled=false;if(resolve)resolve.disabled=!v72ConflictEntries().length;return;}
-  if(dot)dot.classList.remove('connected');if(label)label.textContent='Microsoft non connecté';if(button)button.querySelector('span:last-child').textContent='Connexion Microsoft';if(status){status.className='ms-status-box';status.textContent=msConfigReady()?'La configuration est prête. Vous pouvez lancer la connexion Microsoft.':'Configuration Microsoft incomplète.';}if(login)login.disabled=!msConfigReady();if(logout)logout.disabled=true;if(prepare)prepare.disabled=true;if(verify)verify.disabled=true;if(diagnose)diagnose.disabled=true;if(sync)sync.disabled=true;if(probe)probe.disabled=true;if(resolve)resolve.disabled=true;
+  const prepare=document.getElementById('ms-prepare-cloud-action'),verify=document.getElementById('ms-verify-cloud-action'),appTest=document.getElementById('ms-appfolder-test-action'),diagnose=document.getElementById('ms-sync-diagnose-action'),sync=document.getElementById('ms-sync-action'),resolve=document.getElementById('ms-resolve-conflict-action');
+  if(msAccount){if(dot)dot.classList.add('connected');if(label)label.textContent=msAccount.name||msAccount.username||'Microsoft connecté';if(button)button.querySelector('span:last-child').textContent='Compte Microsoft';if(status){status.className='ms-status-box success';status.textContent='Connecté : '+(msAccount.username||msAccount.name||'compte Microsoft');}if(login){login.textContent='Reconnecter';login.disabled=false;}if(logout)logout.disabled=false;if(prepare)prepare.disabled=false;if(verify)verify.disabled=false;if(appTest)appTest.disabled=false;if(diagnose)diagnose.disabled=false;if(sync)sync.disabled=false;if(resolve)resolve.disabled=!v72ConflictEntries().length;return;}
+  if(dot)dot.classList.remove('connected');if(label)label.textContent='Microsoft non connecté';if(button)button.querySelector('span:last-child').textContent='Connexion Microsoft';if(status){status.className='ms-status-box';status.textContent=msConfigReady()?'La configuration est prête. Vous pouvez lancer la connexion Microsoft.':'Configuration Microsoft incomplète.';}if(login)login.disabled=!msConfigReady();if(logout)logout.disabled=true;if(prepare)prepare.disabled=true;if(verify)verify.disabled=true;if(appTest)appTest.disabled=true;if(diagnose)diagnose.disabled=true;if(sync)sync.disabled=true;if(resolve)resolve.disabled=true;
 }
 function openMicrosoftConnection(){animateClick(document.getElementById('ms-connect-btn'),'validating');const modal=document.getElementById('ms-connection-modal');if(modal)modal.style.display='flex';updateMicrosoftUI();}
 function closeMicrosoftConnection(){const modal=document.getElementById('ms-connection-modal');if(modal)modal.style.display='none';}
@@ -6080,7 +6078,7 @@ async function initMicrosoftAuth(){
       const authority='https://login.microsoftonline.com/'+MS_CONFIG.tenantId;
       msalInstance=await mod.createStandardPublicClientApplication({auth:{clientId:MS_CONFIG.clientId,authority,redirectUri:MS_CONFIG.redirectUri,postLogoutRedirectUri:MS_CONFIG.postLogoutRedirectUri},cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:false}});
       const accounts=msalInstance.getAllAccounts();msAccount=accounts.length?accounts[0]:null;
-      if(msAccount){try{await activateJournalierAccount(msAccount);try{await hydrateMicrosoftDataIfLocalEmpty();}catch(_){setCloudStatus('⚠️ Récupération OneDrive non disponible actuellement.','error');}}catch(_){JournalierSecurity.lock();msAccount=null;setCloudStatus('⚠️ Impossible d’ouvrir l’espace local sécurisé de ce compte.','error');}}
+      if(msAccount){try{await activateJournalierAccount(msAccount);}catch(err){JournalierSecurity.lock();msAccount=null;setCloudStatus('⚠️ Espace local sécurisé indisponible : '+(err?.message||String(err)),'error');}}
       updateMicrosoftUI();return true;
     }catch(err){console.error('Initialisation Microsoft impossible.');setCloudStatus('Impossible d’initialiser Microsoft.','error');return false;}
   })();return msalReadyPromise;
@@ -6094,7 +6092,7 @@ async function startMicrosoftLogin(){
     JournalierSecurity.lock();msAccount=response.account;await activateJournalierAccount(msAccount);updateMicrosoftUI();
     try{const imported=await hydrateMicrosoftDataIfLocalEmpty();if(imported?.imported)showAppToast(`Connexion réussie : ${imported.students||0} élève(s), ${imported.sessions||0} séance(s) et l’agenda ont été récupérés.`,'success');else showAppToast('Connexion Microsoft réussie.','success');}
     catch(_){setCloudStatus('✓ Compte Microsoft connecté.\n⚠️ Les données OneDrive n’ont pas pu être récupérées automatiquement.','error');showAppToast('Connexion réussie, mais récupération des données OneDrive impossible.','error',5000);}
-  }catch(err){JournalierSecurity.lock();msAccount=null;const msg=err?.errorMessage||err?.message||'Erreur Microsoft inconnue';if(status){status.className='ms-status-box error';status.textContent='Connexion non effectuée : '+msg;}showAppToast('La connexion Microsoft n’a pas abouti.','error',4500);}
+  }catch(err){JournalierSecurity.lock();msAccount=null;const msg=err?.errorMessage||err?.message||'Erreur Microsoft inconnue';const code=err?.errorCode||err?.code||'';const detail=code?`[${code}] ${msg}`:msg;if(status){status.className='ms-status-box error';status.textContent='Connexion non effectuée : '+detail;}setCloudStatus('Détail Microsoft : '+detail,'error');showAppToast('La connexion Microsoft n’a pas abouti.','error',6500);}
   finally{if(btn)btn.disabled=false;updateMicrosoftUI();}
 }
 async function disconnectMicrosoft(){
@@ -6104,30 +6102,16 @@ async function disconnectMicrosoft(){
   finally{updateMicrosoftUI();}
 }
 async function getMicrosoftGraphToken(){if(!await initMicrosoftAuth())throw new Error('MSAL non initialisé.');const account=msAccount||msalInstance.getAllAccounts()[0];if(!account)throw new Error('Aucun compte Microsoft connecté.');msAccount=account;try{return (await msalInstance.acquireTokenSilent({account,scopes:GRAPH_SCOPES})).accessToken;}catch(_){return (await msalInstance.acquireTokenPopup({account,scopes:GRAPH_SCOPES})).accessToken;}}
-async function graphRequest(path,options={}){const token=await getMicrosoftGraphToken();const headers=new Headers(options.headers||{});headers.set('Authorization','Bearer '+token);if(options.body&&!headers.has('Content-Type')&&options.method&&options.method.toUpperCase()!=='GET')headers.set('Content-Type','application/json');const response=await fetch(GRAPH_BASE+path,{...options,headers});if(!response.ok){let message='';try{const data=await response.json();message=data?.error?.message||JSON.stringify(data);}catch(_){message=await response.text();}throw new Error(`Graph ${response.status} : ${message}`);}const text=await response.text();if(!text)return null;try{return JSON.parse(text);}catch(_){return text;}}
+async function graphRequest(path,options={}){const token=await getMicrosoftGraphToken();const headers=new Headers(options.headers||{});headers.set('Authorization','Bearer '+token);if(options.body&&!headers.has('Content-Type')&&options.method&&options.method.toUpperCase()!=='GET')headers.set('Content-Type','application/json');const response=await fetch(GRAPH_BASE+path,{...options,headers});if(!response.ok){let data=null,message='';try{data=await response.json();message=data?.error?.message||JSON.stringify(data);}catch(_){message=await response.text();}const code=data?.error?.code||'unknown';const requestId=response.headers.get('request-id')||response.headers.get('client-request-id')||'';throw new Error(`Graph ${response.status} [${code}]${requestId?` request-id=${requestId}`:''} : ${message}`);}const text=await response.text();if(!text)return null;try{return JSON.parse(text);}catch(_){return text;}}
 function graphEncodePath(path){return path.split('/').filter(Boolean).map(encodeURIComponent).join('/');}
-async function graphGetAppRoot(){
-  return graphRequest('/me/drive/special/approot');
-}
-async function graphGetByPath(path){
-  const clean=String(path||'').replace(/^\/+|\/+$/g,'');
-  let current=await graphGetAppRoot();
-  if(!clean)return current;
-  for(const part of clean.split('/').filter(Boolean)){
-    const children=await graphRequest(`/me/drive/items/${encodeURIComponent(current.id)}/children?$select=id,name,folder,file,size,lastModifiedDateTime,eTag&$filter=name eq '${String(part).replace(/'/g,"''")}'`);
-    const found=(children.value||[]).find(x=>x.name===part);
-    if(!found){const e=new Error(`Graph 404 : élément introuvable dans l’AppFolder : ${clean}`);e.code='APPFOLDER_PATH_NOT_FOUND';throw e;}
-    current=found;
-  }
-  return current;
-}
+let graphAppRootCache=null;
+async function graphGetAppRoot(force=false){if(!force&&graphAppRootCache?.id)return graphAppRootCache;graphAppRootCache=await graphRequest(GRAPH_APP_ROOT_PATH);if(!graphAppRootCache?.id)throw new Error('Microsoft Graph n’a pas retourné l’AppFolder root.');return graphAppRootCache;}
+function graphRelativeAppPath(path){const normalized=String(path||'').replace(/^\/+|\/+$/g,'');const rootName=GRAPH_ROOT_FOLDER.replace(/^\/+|\/+$/g,'');if(normalized===rootName)return '';if(normalized.startsWith(rootName+'/'))return normalized.slice(rootName.length+1);return normalized;}
+async function graphGetByPath(path){const relative=graphRelativeAppPath(path);const root=await graphGetAppRoot();if(!relative)return root;return graphRequest(`/me/drive/items/${encodeURIComponent(root.id)}:/${graphEncodePath(relative)}:`);}
 async function graphCreateChildFolder(parentId,name){return graphRequest(`/me/drive/items/${encodeURIComponent(parentId)}/children`,{method:'POST',body:JSON.stringify({name,folder:{},'@microsoft.graph.conflictBehavior':'fail'})});}
 async function graphGetOrCreateFolder(parentId,name,parentPath){try{return await graphGetByPath(parentPath?`${parentPath}/${name}`:name);}catch(err){if(!String(err.message||err).includes('Graph 404'))throw err;try{return await graphCreateChildFolder(parentId,name);}catch(e){if(String(e.message||e).includes('Graph 409'))return await graphGetByPath(parentPath?`${parentPath}/${name}`:name);throw e;}}}
-async function graphEnsureJournalierStructure(){
-  const root=await graphGetAppRoot();
-  const profil=await graphGetOrCreateFolder(root.id,'profil','profil'),eleves=await graphGetOrCreateFolder(root.id,'eleves','eleves'),agenda=await graphGetOrCreateFolder(root.id,'agenda','agenda'),system=await graphGetOrCreateFolder(root.id,'system','system');
-  return{root,profil,eleves,agenda,system};
-}
+async function graphEnsureJournalierStructure(){const root=await graphGetAppRoot();const profil=await graphGetOrCreateFolder(root.id,'profil',GRAPH_ROOT_FOLDER),eleves=await graphGetOrCreateFolder(root.id,'eleves',GRAPH_ROOT_FOLDER),agenda=await graphGetOrCreateFolder(root.id,'agenda',GRAPH_ROOT_FOLDER),system=await graphGetOrCreateFolder(root.id,'system',GRAPH_ROOT_FOLDER);return{root,profil,eleves,agenda,system};}
+async function testMicrosoftAppFolder(){const b=document.getElementById('ms-appfolder-test-action');if(b)b.disabled=true;setCloudStatus('Test AppFolder : obtention de /drive/special/approot…','');try{const root=await graphGetAppRoot(true);if(!root.id)throw new Error('AppFolder introuvable : aucun identifiant de dossier retourné.');const probeFolderName=`__journalier_appfolder_probe_${Date.now()}`;const probeFolder=await graphCreateChildFolder(root.id,probeFolderName);const probePayload={schema:'JOURNALIER-APPFOLDER-PROBE-1',createdAt:new Date().toISOString(),appFolderId:root.id};const probeItem=await graphWriteJson(probeFolder.id,'probe.json',probePayload);const readBack=await graphReadItemByIdWithJson(probeItem.id);if(JSON.stringify(readBack.json)!==JSON.stringify(probePayload))throw new Error('Le fichier de test a été créé mais son contenu relu ne correspond pas.');await graphDeleteItemWithETag(probeItem.id,probeItem.eTag||readBack.item?.eTag||null);await graphDeleteItemWithETag(probeFolder.id,probeFolder.eTag||null);setCloudStatus(`✓ AppFolder fonctionnel.\n✓ approot : ${root.name||'AppFolder'}\n✓ création / lecture / suppression testées.\n✓ Aucune donnée Journalier n’a été modifiée.`,'success');showAppToast('Test AppFolder réussi.','success');return{ok:true,root};}catch(err){const msg=err?.message||String(err);setCloudStatus('⚠️ Test AppFolder échoué.\n'+msg+'\n\nAucune donnée Journalier n’a été modifiée.','error');showAppToast('Le test AppFolder a échoué.','error',6000);return{ok:false,error:msg};}finally{if(b)b.disabled=!msAccount;}}
 async function graphWriteJsonWithETag(parentId,filename,payload,eTag){const headers={'Content-Type':'text/plain'};if(eTag)headers['If-Match']=eTag;return graphRequest(`/me/drive/items/${encodeURIComponent(parentId)}:/${encodeURIComponent(filename)}:/content`,{method:'PUT',headers,body:JSON.stringify(payload,null,2)});}
 function graphWriteJson(parentId,filename,payload){return graphWriteJsonWithETag(parentId,filename,payload,null);}
 async function graphReadItemWithJson(path){const item=await graphGetByPath(path);const raw=await graphRequest(`/me/drive/items/${encodeURIComponent(item.id)}/content`);return{item,json:typeof raw==='object'?raw:JSON.parse(raw)};}
@@ -6217,49 +6201,7 @@ async function hydrateMicrosoftDataIfLocalEmpty(){
   updateMicrosoftUI();
   return {imported:true,students:importedStudents.length,sessions:importedSessions.length,agenda:Boolean(Object.keys(importedAgenda).length)};
 }
-async function verifyMicrosoft365Space(){
-  const b=document.getElementById('ms-verify-cloud-action');if(b)b.disabled=true;
-  try{
-    if(!msAccount)throw new Error('Connectez d’abord votre compte Microsoft.');
-    const root=await graphGetAppRoot();
-    const children=await graphListChildren(root.id);
-    const names=new Set((children.value||[]).map(x=>x.name));
-    const expected=['profil','eleves','agenda','system'];
-    const missing=expected.filter(x=>!names.has(x));
-    if(missing.length)throw new Error('AppFolder accessible, mais structure incomplète : '+missing.join(', '));
-    const sync=await graphReadItemWithJson('system/sync.json').catch(()=>null);
-    setCloudStatus('✓ AppFolder accessible.\n✓ Files.ReadWrite.AppFolder accepté.\n✓ profil/\n✓ eleves/\n✓ agenda/\n✓ system/'+(sync?`\n✓ sync.json : ${sync.json.status||'—'}`:'\nℹ️ Aucun sync.json trouvé.'),'success');
-  }catch(e){
-    const raw=String(e?.message||e);
-    const diagnostic=raw.includes('invalid_scope')?'Permission Files.ReadWrite.AppFolder refusée ou non exposée par l’application.':raw.includes('65001')?'Consentement requis pour Files.ReadWrite.AppFolder.':raw.includes('Graph 403')?'Accès AppFolder refusé par Microsoft Graph.':raw;
-    setCloudStatus('⚠️ Test AppFolder non validé.\n'+diagnostic,'error');
-  }finally{if(b)b.disabled=!msAccount;}
-}
-async function runAppFolderSecurityProbe(){
-  if(!msAccount)throw new Error('Connectez d’abord votre compte Microsoft.');
-  const b=document.getElementById('ms-prepare-cloud-action');if(b)b.disabled=true;
-  let probe=null;
-  try{
-    const root=await graphGetAppRoot();
-    const existing=await graphGetByPath(JOURNALIER_APPTEST_FOLDER).catch(e=>{if(e.code==='APPFOLDER_PATH_NOT_FOUND')return null;throw e;});
-    if(existing)throw new Error('Le dossier de test existe déjà : suppression manuelle requise avant nouveau test.');
-    probe=await graphCreateChildFolder(root.id,JOURNALIER_APPTEST_FOLDER);
-    const payload={test:'journalier-appfolder',timestamp:new Date().toISOString(),nonce:journalierUuid('probe')};
-    await graphWriteJson(probe.id,'probe.json',payload);
-    const read=await graphReadItemWithJson(`${JOURNALIER_APPTEST_FOLDER}/probe.json`);
-    if(read.json?.test!==payload.test||read.json?.nonce!==payload.nonce)throw new Error('Lecture AppFolder non conforme après écriture.');
-    await graphDeleteItemWithETag(read.item.id,read.item.eTag);
-    await graphDeleteItemWithETag(probe.id);
-    setCloudStatus('✓ TEST APPFOLDER RÉUSSI.\n✓ /me/drive/special/approot accessible.\n✓ écriture autorisée dans l’AppFolder.\n✓ lecture autorisée.\n✓ suppression autorisée.\n✓ aucun accès au dossier Journalier racine utilisé.','success');
-    return true;
-  }catch(e){
-    try{if(probe?.id)await graphDeleteItemWithETag(probe.id,probe.eTag).catch(()=>{});}catch(_){}
-    const raw=String(e?.message||e);
-    const diagnostic=raw.includes('invalid_scope')?'Permission Files.ReadWrite.AppFolder refusée ou non disponible pour cette application/ce compte.':raw.includes('65001')?'Consentement requis pour Files.ReadWrite.AppFolder.':raw.includes('Graph 403')?'Microsoft Graph a refusé l’accès à l’AppFolder.':raw;
-    setCloudStatus('⚠️ TEST APPFOLDER ÉCHOUÉ.\n'+diagnostic,'error');
-    return false;
-  }finally{if(b)b.disabled=!msAccount;}
-}
+async function verifyMicrosoft365Space(){const b=document.getElementById('ms-verify-cloud-action');if(b)b.disabled=true;try{const root=await graphGetByPath(GRAPH_ROOT_FOLDER),children=await graphListChildren(root.id),names=new Set((children.value||[]).map(x=>x.name)),expected=['profil','eleves','agenda','system'],missing=expected.filter(x=>!names.has(x));if(missing.length)throw new Error('Structure incomplète : '+missing.join(', '));const sync=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/system/sync.json`).catch(()=>null);setCloudStatus('✓ Structure OneDrive vérifiée.\n✓ Journalier/\n✓ profil/\n✓ eleves/\n✓ agenda/\n✓ system/'+(sync?`\n✓ sync.json : ${sync.json.status||'—'}`:''),'success');}catch(e){setCloudStatus('⚠️ '+(e.message||e),'error');}finally{if(b)b.disabled=!msAccount;}}
 function syncStableValue(value){if(Array.isArray(value))return value.map(syncStableValue);if(value&&typeof value==='object')return Object.keys(value).sort().reduce((o,k)=>(o[k]=syncStableValue(value[k]),o),{});return value;}
 function syncFingerprint(value){return JSON.stringify(syncStableValue(value));}
 function syncWithoutVolatileMeta(value){const c=JSON.parse(JSON.stringify(value||{}));if(c.metadata&&typeof c.metadata==='object'){delete c.metadata.updatedAt;delete c.metadata.createdAt;}return c;}
@@ -6437,7 +6379,7 @@ document.addEventListener('click',function(e){
 },true);
 
 
-Object.assign(window,{openMicrosoftConnection,closeMicrosoftConnection,startMicrosoftLogin,disconnectMicrosoft,prepareMicrosoft365Space,verifyMicrosoft365Space,runAppFolderSecurityProbe,diagnoseSyncManagerV72,syncPendingLocalChangesV72,openConflictResolutionV72,deleteHistorySession,showAppToast,syncFingerprint,syncWithoutVolatileMeta});
+Object.assign(window,{openMicrosoftConnection,closeMicrosoftConnection,startMicrosoftLogin,disconnectMicrosoft,prepareMicrosoft365Space,verifyMicrosoft365Space,testMicrosoftAppFolder,diagnoseSyncManagerV72,syncPendingLocalChangesV72,openConflictResolutionV72,deleteHistorySession,showAppToast,syncFingerprint,syncWithoutVolatileMeta});
 document.getElementById('ms-conflict-resolution-list')?.addEventListener('click',async e=>{
   const button=e.target.closest('.v72-conflict-choice');
   if(!button||button.disabled)return;
