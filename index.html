@@ -2658,11 +2658,21 @@ loadIndicatorLibrary();
     function v72RecountPending(state){
         const r=v72EnsureSyncRegistry(state);
         let count=0;
-        for(const x of Object.values(r.students)) if(['local-pending','local-changed','conflict','deleted-pending'].includes(x?.status)) count++;
-        for(const x of Object.values(r.sessions)) if(['local-pending','local-changed','conflict','deleted-pending'].includes(x?.status)) count++;
+        let conflicts=0;
+        for(const x of Object.values(r.students)){
+            if(x?.status==='conflict') conflicts++;
+            if(['local-pending','local-changed','conflict','deleted-pending'].includes(x?.status)) count++;
+        }
+        for(const x of Object.values(r.sessions)){
+            if(x?.status==='conflict') conflicts++;
+            if(['local-pending','local-changed','conflict','deleted-pending'].includes(x?.status)) count++;
+        }
+        if(r.agenda?.status==='conflict') conflicts++;
         if(['local-pending','local-changed','conflict'].includes(r.agenda?.status)) count++;
         state.sync.pendingChanges=count;
-        if(count===0 && state.sync.status==='pending') state.sync.status='synced';
+        if(conflicts>0) state.sync.status='conflict';
+        else if(count===0) state.sync.status='synced';
+        else if(state.sync.status==='conflict' || state.sync.status==='synced') state.sync.status='pending';
     }
     function v72MarkStudentsPending(state, previous, next){
         const r=v72EnsureSyncRegistry(state);
@@ -6043,11 +6053,10 @@ function chooseSessionSubject(subject){
       <button id="ms-resolve-conflict-action" class="btn-secondary" type="button" onclick="openConflictResolutionV72()" disabled>Résoudre un conflit</button>
     </div>
     <div id="ms-conflict-resolution-panel" class="ms-status-box" style="display:none;margin-top:12px">
-      <div style="font-weight:700;margin-bottom:8px">Résolution contrôlée du conflit</div>
+      <div style="font-weight:700;margin-bottom:8px">Résolution contrôlée des conflits</div>
       <div id="ms-conflict-resolution-summary" style="line-height:1.5"></div>
-      <div class="ms-modal-actions" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-        <button id="ms-keep-local-conflict" class="btn-primary" type="button">Conserver la version locale</button>
-        <button id="ms-keep-remote-conflict" class="btn-secondary" type="button">Conserver la version OneDrive</button>
+      <div id="ms-conflict-resolution-list" style="display:grid;gap:10px;margin-top:12px"></div>
+      <div class="ms-modal-actions" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
         <button id="ms-cancel-conflict-resolution" class="btn-secondary" type="button">Fermer</button>
       </div>
     </div>
@@ -6072,7 +6081,22 @@ const GRAPH_SCOPES=["Files.ReadWrite"], GRAPH_BASE="https://graph.microsoft.com/
 let msalInstance=null, msAccount=null, msalReadyPromise=null;
 function msConfigReady(){return Boolean(MS_CONFIG.clientId&&MS_CONFIG.tenantId&&MS_CONFIG.redirectUri);}
 function setCloudStatus(message,type='info'){const el=document.getElementById('ms-cloud-status');if(el){el.className='ms-status-box '+type;el.textContent=message;}}
-function v72ConflictEntries(){const r=DataStore.state.syncRegistry||{};return Object.entries(r.sessions||{}).filter(([,x])=>x?.status==='conflict');}
+function v72ConflictEntries(){
+  const state=DataStore.state, r=state.syncRegistry||{}, entries=[];
+  const students=DataStore.getStudents(), sessions=DataStore.getSessions();
+  for(const [studentId,reg] of Object.entries(r.students||{})){
+    if(reg?.status!=='conflict')continue;
+    const student=students.find(x=>String(x.studentId)===String(studentId))||null;
+    entries.push({type:'student',key:String(studentId),reg,local:student,label:student?.nom||reg.studentId||studentId});
+  }
+  for(const [sessionId,reg] of Object.entries(r.sessions||{})){
+    if(reg?.status!=='conflict')continue;
+    const session=sessions.find(x=>String(x.id)===String(sessionId))||null;
+    entries.push({type:'session',key:String(sessionId),reg,local:session,label:session?.identification?.eleve||reg.studentId||sessionId});
+  }
+  if(r.agenda?.status==='conflict')entries.push({type:'agenda',key:'agenda',reg:r.agenda,local:DataStore.getAgenda(),label:'Agenda'});
+  return entries;
+}
 function updateMicrosoftUI(){
   const status=document.getElementById('ms-config-status'),login=document.getElementById('ms-login-action'),logout=document.getElementById('ms-logout-action'),dot=document.getElementById('ms-dot'),label=document.getElementById('ms-account-label'),button=document.getElementById('ms-connect-btn');
   const prepare=document.getElementById('ms-prepare-cloud-action'),verify=document.getElementById('ms-verify-cloud-action'),diagnose=document.getElementById('ms-sync-diagnose-action'),sync=document.getElementById('ms-sync-action'),resolve=document.getElementById('ms-resolve-conflict-action');
@@ -6108,7 +6132,17 @@ function syncWithoutVolatileMeta(value){const c=JSON.parse(JSON.stringify(value|
 function v72PathForStudent(student){return `${GRAPH_ROOT_FOLDER}/eleves/${student.studentId}/profil.json`;}
 function v72PathForSession(session,students){const studentId=session.identification?.eleveId||students.find(s=>s.nom===session.identification?.eleve)?.studentId;return studentId?`${GRAPH_ROOT_FOLDER}/eleves/${studentId}/seances/${session.id}.json`:null;}
 function v72StatusCount(registry){let c={synced:0,local:0,remote:0,conflict:0,missing:0};for(const x of Object.values(registry.students||{})){if(x.status==='synced')c.synced++;else if(x.status==='local-changed'||x.status==='local-pending')c.local++;else if(x.status==='remote-changed')c.remote++;else if(x.status==='conflict')c.conflict++;}for(const x of Object.values(registry.sessions||{})){if(x.status==='synced')c.synced++;else if(x.status==='local-changed'||x.status==='local-pending')c.local++;else if(x.status==='remote-changed')c.remote++;else if(x.status==='conflict')c.conflict++;}if(registry.agenda){if(registry.agenda.status==='synced')c.synced++;else if(registry.agenda.status==='local-changed'||registry.agenda.status==='local-pending')c.local++;else if(registry.agenda.status==='remote-changed')c.remote++;else if(registry.agenda.status==='conflict')c.conflict++;}return c;}
-function v72Classify(previous,localFp,remoteFp,remoteMissing=false){if(remoteMissing)return 'local-changed';if(!previous)return localFp===remoteFp?'synced':'conflict';const lc=previous.fingerprint!==localFp,rc=previous.remoteFingerprint!==remoteFp;if(lc&&rc)return'conflict';if(lc)return'local-changed';if(rc)return'remote-changed';return'synced';}
+function v72Classify(previous,localFp,remoteFp,remoteMissing=false){
+  if(remoteMissing)return 'local-changed';
+  // Un conflit doit rester explicitement bloqué jusqu'à une résolution utilisateur.
+  if(previous?.status==='conflict')return 'conflict';
+  if(!previous)return localFp===remoteFp?'synced':'conflict';
+  const lc=previous.fingerprint!==localFp,rc=previous.remoteFingerprint!==remoteFp;
+  if(lc&&rc)return'conflict';
+  if(lc)return'local-changed';
+  if(rc)return'remote-changed';
+  return'synced';
+}
 async function diagnoseSyncManagerV72(){if(!msAccount)throw new Error('Connectez d’abord votre compte Microsoft.');const b=document.getElementById('ms-sync-diagnose-action');if(b)b.disabled=true;setCloudStatus('Analyse de la synchronisation en cours…','');try{const state=DataStore.state,students=DataStore.getStudents(),sessions=DataStore.getSessions(),agenda=DataStore.getAgenda(),r=v72EnsureSyncRegistry(state),details=[];let missing=0;
   for(const student of students){const path=v72PathForStudent(student),lf=syncFingerprint(syncWithoutVolatileMeta(student));try{const {item,json}=await graphReadItemWithJson(path),rf=syncFingerprint(syncWithoutVolatileMeta(json)),status=v72Classify(r.students[student.studentId],lf,rf,false);r.students[student.studentId]={...r.students[student.studentId],remoteId:item.id,eTag:item.eTag||null,fingerprint:lf,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status};if(status!=='synced')details.push(`• élève ${student.nom||student.studentId} : ${status}`);}catch(e){if(String(e.message||e).includes('Graph 404')){missing++;r.students[student.studentId]={...r.students[student.studentId],remoteId:null,eTag:null,fingerprint:lf,remoteFingerprint:null,lastCheckedAt:new Date().toISOString(),status:'local-changed'};details.push(`• élève ${student.nom||student.studentId} : local-changed (distant absent)`);}else throw e;}}
   for(const session of sessions){const path=v72PathForSession(session,students);if(!path)continue;const lf=syncFingerprint(syncWithoutVolatileMeta(session));try{const {item,json}=await graphReadItemWithJson(path),rf=syncFingerprint(syncWithoutVolatileMeta(json)),status=v72Classify(r.sessions[session.id],lf,rf,false),studentId=session.identification?.eleveId||students.find(s=>s.nom===session.identification?.eleve)?.studentId;r.sessions[session.id]={...r.sessions[session.id],remoteId:item.id,eTag:item.eTag||null,fingerprint:lf,remoteFingerprint:rf,studentId,lastCheckedAt:new Date().toISOString(),status};if(status!=='synced')details.push(`• séance ${session.id} / ${session.identification?.eleve||studentId} : ${status}`);}catch(e){if(String(e.message||e).includes('Graph 404')){missing++;const studentId=session.identification?.eleveId||students.find(s=>s.nom===session.identification?.eleve)?.studentId;r.sessions[session.id]={...r.sessions[session.id],remoteId:null,eTag:null,fingerprint:lf,remoteFingerprint:null,studentId,lastCheckedAt:new Date().toISOString(),status:'local-changed'};details.push(`• séance ${session.id} / ${session.identification?.eleve||studentId} : local-changed (distant absent)`);}else throw e;}}
@@ -6117,7 +6151,7 @@ async function diagnoseSyncManagerV72(){if(!msAccount)throw new Error('Connectez
 async function v72SyncStudent(student,reg){const structure=await graphEnsureJournalierStructure();let folder;const path=`${GRAPH_ROOT_FOLDER}/eleves/${student.studentId}`;try{folder=await graphGetByPath(path);}catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;folder=await graphCreateChildFolder(structure.eleves.id,String(student.studentId));}const item=await graphGetByPath(`${path}/profil.json`).catch(()=>null);const written=await graphWriteJsonWithETag(folder.id,'profil.json',student,item?.eTag||reg?.eTag||null);return await graphReadItemWithJson(`${path}/profil.json`);}
 async function v72SyncSession(session,reg,students){const studentId=reg?.studentId||session.identification?.eleveId||students.find(s=>s.nom===session.identification?.eleve)?.studentId;if(!studentId)throw new Error(`Élève introuvable pour la séance ${session.id}.`);const structure=await graphEnsureJournalierStructure();const studentPath=`${GRAPH_ROOT_FOLDER}/eleves/${studentId}`;let studentFolder;try{studentFolder=await graphGetByPath(studentPath);}catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;studentFolder=await graphCreateChildFolder(structure.eleves.id,String(studentId));}let sessionsFolder;try{sessionsFolder=await graphGetByPath(`${studentPath}/seances`);}catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;sessionsFolder=await graphCreateChildFolder(studentFolder.id,'seances');}const path=`${studentPath}/seances/${session.id}.json`;const existing=await graphGetByPath(path).catch(()=>null);const written=await graphWriteJsonWithETag(sessionsFolder.id,`${session.id}.json`,session,existing?.eTag||reg?.eTag||null);return await graphReadItemWithJson(path);}
 async function v72SyncAgenda(agenda,reg){const structure=await graphEnsureJournalierStructure();const existing=await graphGetByPath(`${GRAPH_ROOT_FOLDER}/agenda/agenda.json`).catch(()=>null);await graphWriteJsonWithETag(structure.agenda.id,'agenda.json',agenda,existing?.eTag||reg?.eTag||null);return await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/agenda/agenda.json`);}
-async function syncPendingLocalChangesV72(){if(!msAccount)throw new Error('Connectez d’abord votre compte Microsoft.');const b=document.getElementById('ms-sync-action');if(b)b.disabled=true;try{await diagnoseSyncManagerV72();const state=DataStore.state,r=v72EnsureSyncRegistry(state),students=DataStore.getStudents(),sessions=DataStore.getSessions(),agenda=DataStore.getAgenda();if(v72ConflictEntries().length)throw new Error('Conflit détecté : aucune écriture automatique n’a été effectuée. Résolvez d’abord le conflit.');let sent=0;const details=[];
+async function syncPendingLocalChangesV72(){if(!msAccount)throw new Error('Connectez d’abord votre compte Microsoft.');const b=document.getElementById('ms-sync-action');if(b)b.disabled=true;try{await diagnoseSyncManagerV72();const state=DataStore.state,r=v72EnsureSyncRegistry(state),students=DataStore.getStudents(),sessions=DataStore.getSessions(),agenda=DataStore.getAgenda();if(v72ConflictEntries().length)throw new Error('Conflit détecté : aucune écriture automatique n’a été effectuée. Résolvez d’abord les conflits.');let sent=0;const details=[];
   for(const [sessionId,reg] of Object.entries(r.sessions||{})){
     if(reg?.status!=='deleted-pending')continue;
     if(!reg.remoteId){delete r.sessions[sessionId];continue;}
@@ -6136,10 +6170,123 @@ async function syncPendingLocalChangesV72(){if(!msAccount)throw new Error('Conne
   for(const session of sessions){const reg=r.sessions[session.id];if(!reg||!['local-changed','local-pending'].includes(reg.status))continue;const remote=await v72SyncSession(session,reg,students);const fp=syncFingerprint(syncWithoutVolatileMeta(session)),rf=syncFingerprint(syncWithoutVolatileMeta(remote.json));r.sessions[session.id]={...reg,remoteId:remote.item.id,eTag:remote.item.eTag||null,fingerprint:fp,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:fp===rf?'synced':'local-changed'};sent++;details.push(`• séance ${session.id} / ${session.identification?.eleve||reg.studentId} : ${r.sessions[session.id].status}`);}
   if(r.agenda&&['local-changed','local-pending'].includes(r.agenda.status)){const remote=await v72SyncAgenda(agenda,r.agenda),fp=syncFingerprint(syncWithoutVolatileMeta(agenda)),rf=syncFingerprint(syncWithoutVolatileMeta(remote.json));r.agenda={...r.agenda,remoteId:remote.item.id,eTag:remote.item.eTag||null,fingerprint:fp,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:fp===rf?'synced':'local-changed'};sent++;details.push(`• agenda : ${r.agenda.status}`);}
   state.syncRegistry=r;v72RecountPending(state);state.sync.lastSyncAt=new Date().toISOString();state.sync.status=state.sync.pendingChanges?'pending':'synced';v63WriteJSON(V63_STORAGE_KEY,state);const syncRecord={schemaVersion:'JOURNALIER-SYNC-1',architectureVersion:JOURNALIER_ARCHITECTURE_VERSION,ownerId:state.ownerId,status:state.sync.status,students:students.length,sessions:sessions.length,agendaEntries:Object.keys(agenda).length,syncedAt:state.sync.lastSyncAt};const structure=await graphEnsureJournalierStructure();await graphWriteJson(structure.system.id,'sync.json',syncRecord);setCloudStatus(`✓ Synchronisation terminée.\n• Éléments envoyés : ${sent}\n• Éléments en attente : ${state.sync.pendingChanges}\n• Conflits : 0`+(details.length?`\n\n${details.join('\n')}`:''),'success');updateMicrosoftUI();}catch(e){setCloudStatus('⚠️ '+(e.message||e),'error');}finally{if(b)b.disabled=!msAccount;}}
-function v72ConflictSession(){const state=DataStore.state;const sessions=DataStore.getSessions();const entry=sessions.find(s=>state.syncRegistry?.sessions?.[s.id]?.status==='conflict');return entry||null;}
-async function openConflictResolutionV72(){const session=v72ConflictSession();if(!session)throw new Error('Aucun conflit de séance actif.');const reg=DataStore.state.syncRegistry.sessions[session.id];const remote=await graphReadItemByIdWithJson(reg.remoteId);const panel=document.getElementById('ms-conflict-resolution-panel'),summary=document.getElementById('ms-conflict-resolution-summary');if(summary)summary.innerHTML=`<div><strong>Séance :</strong> ${escapeHtml(session.id)} / ${escapeHtml(session.identification?.eleve||reg.studentId||'élève')}</div><div><strong>Version locale :</strong> modifiée.</div><div><strong>Version OneDrive :</strong> modifiée.</div><div><strong>eTag :</strong> ${escapeHtml(remote.item.eTag||'—')}</div><div style="margin-top:6px">Aucune écriture ne sera effectuée sans choix explicite.</div>`;if(panel)panel.style.display='block';}
-async function v72ResolveLocal(){const session=v72ConflictSession();if(!session)throw new Error('Aucun conflit actif.');const state=DataStore.state,reg=state.syncRegistry.sessions[session.id],remote=await graphReadItemByIdWithJson(reg.remoteId),lf=syncFingerprint(syncWithoutVolatileMeta(session));await graphWriteExistingItemWithETag(remote.item,session);const after=await graphReadItemByIdWithJson(remote.item.id);const rf=syncFingerprint(syncWithoutVolatileMeta(after.json));if(lf!==rf)throw new Error('Vérification distante incohérente après résolution locale.');state.syncRegistry.sessions[session.id]={...reg,eTag:after.item.eTag||null,fingerprint:lf,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:'synced'};v72RecountPending(state);v63WriteJSON(V63_STORAGE_KEY,state);document.getElementById('ms-conflict-resolution-panel').style.display='none';setCloudStatus('✓ Conflit résolu en conservant la version locale. Statut : synced.','success');updateMicrosoftUI();}
-async function v72ResolveRemote(){const session=v72ConflictSession();if(!session)throw new Error('Aucun conflit actif.');const state=DataStore.state,reg=state.syncRegistry.sessions[session.id],remote=await graphReadItemByIdWithJson(reg.remoteId);const clean=remote.json;DataStore.saveSessions(DataStore.getSessions().map(s=>s.id===session.id?clean:s));const local=DataStore.getSessions().find(s=>s.id===session.id),fp=syncFingerprint(syncWithoutVolatileMeta(local)),rf=syncFingerprint(syncWithoutVolatileMeta(remote.json));state.syncRegistry.sessions[session.id]={...reg,eTag:remote.item.eTag||null,fingerprint:fp,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:'synced'};v72RecountPending(state);v63WriteJSON(V63_STORAGE_KEY,state);document.getElementById('ms-conflict-resolution-panel').style.display='none';setCloudStatus('✓ Conflit résolu en conservant la version OneDrive. Statut : synced.','success');updateMicrosoftUI();}
+function v72ConflictSession(){
+  const entry=v72ConflictEntries().find(x=>x.type==='session');
+  return entry?.local||null;
+}
+function v72ConflictTypeLabel(type){
+  return type==='student'?'Élève':type==='session'?'Séance':'Agenda';
+}
+function v72ConflictDescription(entry){
+  if(entry.type==='student')return `Élève : ${entry.label}`;
+  if(entry.type==='session')return `Séance : ${entry.label}${entry.local?.identification?.date?` · ${entry.local.identification.date}`:''}`;
+  return 'Planning de l’agenda';
+}
+function v72RenderConflictResolution(){
+  const panel=document.getElementById('ms-conflict-resolution-panel');
+  const summary=document.getElementById('ms-conflict-resolution-summary');
+  const list=document.getElementById('ms-conflict-resolution-list');
+  const entries=v72ConflictEntries();
+  if(!panel||!summary||!list)return;
+  if(!entries.length){
+    summary.innerHTML='<div class="v11-success">✓ Tous les conflits ont été résolus.</div>';
+    list.innerHTML='';
+    panel.style.display='block';
+    return;
+  }
+  summary.innerHTML=`<div><strong>${entries.length}</strong> conflit${entries.length>1?'s':''} nécessite${entries.length>1?'nt':' '} un choix explicite.</div><div style="margin-top:4px;color:#64748b;font-size:.78rem">Aucune écriture distante ne sera effectuée tant que vous n’avez pas choisi, pour chaque élément, la version à conserver.</div>`;
+  list.innerHTML=entries.map(entry=>{
+    const type=v72ConflictTypeLabel(entry.type);
+    const remoteAvailable=Boolean(entry.reg?.remoteId);
+    return `<div class="event-summary-box" data-conflict-card="${escapeHtml(entry.type)}:${escapeHtml(entry.key)}" style="margin-top:0">\
+      <div style="font-weight:800">${escapeHtml(type)} — ${escapeHtml(entry.label)}</div>\
+      <div style="font-size:.76rem;color:#64748b;margin-top:4px">${escapeHtml(v72ConflictDescription(entry))}</div>\
+      <div style="font-size:.76rem;margin-top:7px">Version locale : <strong>${entry.local?'modifiée / disponible':'absente'}</strong> · Version OneDrive : <strong>${remoteAvailable?'modifiée / disponible':'non référencée'}</strong></div>\
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">\
+        <button class="btn-primary v72-conflict-choice" type="button" data-conflict-type="${escapeHtml(entry.type)}" data-conflict-key="${escapeHtml(entry.key)}" data-conflict-choice="local">Conserver la version locale</button>\
+        <button class="btn-secondary v72-conflict-choice" type="button" data-conflict-type="${escapeHtml(entry.type)}" data-conflict-key="${escapeHtml(entry.key)}" data-conflict-choice="remote" ${remoteAvailable?'':'disabled'}>Conserver la version OneDrive</button>\
+      </div>\
+    </div>`;
+  }).join('');
+  panel.style.display='block';
+}
+async function openConflictResolutionV72(){
+  if(!msAccount)throw new Error('Connectez d’abord votre compte Microsoft.');
+  v72RenderConflictResolution();
+}
+async function v72ResolveConflictEntry(entry,choice){
+  if(!entry)throw new Error('Conflit introuvable.');
+  const state=DataStore.state,r=state.syncRegistry;
+  const reg=entry.reg;
+  if(!reg?.remoteId && choice==='remote')throw new Error('La version OneDrive n’est plus disponible pour cet élément.');
+  if(entry.type==='student'){
+    if(choice==='local'){
+      const remote=await graphReadItemByIdWithJson(reg.remoteId);
+      const local=DataStore.getStudents().find(x=>String(x.studentId)===entry.key);
+      if(!local)throw new Error('Élève local introuvable.');
+      await graphWriteExistingItemWithETag(remote.item,local);
+      const after=await graphReadItemByIdWithJson(remote.item.id);
+      const lf=syncFingerprint(syncWithoutVolatileMeta(local)),rf=syncFingerprint(syncWithoutVolatileMeta(after.json));
+      if(lf!==rf)throw new Error('Vérification distante incohérente après résolution de l’élève.');
+      r.students[entry.key]={...reg,remoteId:after.item.id,eTag:after.item.eTag||null,fingerprint:lf,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:'synced'};
+    }else{
+      const remote=await graphReadItemByIdWithJson(reg.remoteId);
+      const clean=v63NormalizeStudent(remote.json);
+      const idx=state.students.findIndex(x=>String(x.studentId)===entry.key);
+      if(idx<0)state.students.push(clean);else state.students[idx]=clean;
+      const lf=syncFingerprint(syncWithoutVolatileMeta(clean)),rf=syncFingerprint(syncWithoutVolatileMeta(remote.json));
+      r.students[entry.key]={...reg,remoteId:remote.item.id,eTag:remote.item.eTag||null,fingerprint:lf,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:'synced'};
+    }
+  }else if(entry.type==='session'){
+    if(choice==='local'){
+      if(!entry.local){
+        await graphDeleteItemWithETag(reg.remoteId,reg.eTag||null);
+        delete r.sessions[entry.key];
+      }else{
+        const remote=await graphReadItemByIdWithJson(reg.remoteId);
+        await graphWriteExistingItemWithETag(remote.item,entry.local);
+        const after=await graphReadItemByIdWithJson(remote.item.id);
+        const lf=syncFingerprint(syncWithoutVolatileMeta(entry.local)),rf=syncFingerprint(syncWithoutVolatileMeta(after.json));
+        if(lf!==rf)throw new Error('Vérification distante incohérente après résolution de la séance.');
+        r.sessions[entry.key]={...reg,remoteId:after.item.id,eTag:after.item.eTag||null,fingerprint:lf,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:'synced'};
+      }
+    }else{
+      const remote=await graphReadItemByIdWithJson(reg.remoteId);
+      const clean=v63NormalizeSession(remote.json,DataStore.getStudents());
+      const idx=state.sessions.findIndex(x=>String(x.id)===entry.key);
+      if(idx<0)state.sessions.push(clean);else state.sessions[idx]=clean;
+      const local=clean,lf=syncFingerprint(syncWithoutVolatileMeta(local)),rf=syncFingerprint(syncWithoutVolatileMeta(remote.json));
+      r.sessions[entry.key]={...reg,remoteId:remote.item.id,eTag:remote.item.eTag||null,fingerprint:lf,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:'synced'};
+    }
+  }else if(entry.type==='agenda'){
+    const remote=await graphReadItemByIdWithJson(reg.remoteId);
+    if(choice==='local'){
+      const local=DataStore.getAgenda();
+      await graphWriteExistingItemWithETag(remote.item,local);
+      const after=await graphReadItemByIdWithJson(remote.item.id);
+      const lf=syncFingerprint(syncWithoutVolatileMeta(local)),rf=syncFingerprint(syncWithoutVolatileMeta(after.json));
+      if(lf!==rf)throw new Error('Vérification distante incohérente après résolution de l’agenda.');
+      r.agenda={...reg,remoteId:after.item.id,eTag:after.item.eTag||null,fingerprint:lf,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:'synced'};
+    }else{
+      state.agenda=v63NormalizeAgenda(remote.json);
+      const local=state.agenda,lf=syncFingerprint(syncWithoutVolatileMeta(local)),rf=syncFingerprint(syncWithoutVolatileMeta(remote.json));
+      r.agenda={...reg,remoteId:remote.item.id,eTag:remote.item.eTag||null,fingerprint:lf,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:'synced'};
+    }
+  }else throw new Error('Type de conflit inconnu.');
+  state.syncRegistry=r;
+  v72RecountPending(state);
+  v63WriteJSON(V63_STORAGE_KEY,state);
+  renderAgenda();
+  updateMicrosoftUI();
+}
+function v72ResolveLocal(){
+  const entry=v72ConflictEntries()[0];
+  return entry?v72ResolveConflictEntry(entry,'local'):Promise.reject(new Error('Aucun conflit actif.'));
+}
+function v72ResolveRemote(){
+  const entry=v72ConflictEntries()[0];
+  return entry?v72ResolveConflictEntry(entry,'remote'):Promise.reject(new Error('Aucun conflit actif.'));
+}
 function closeConflictResolutionV72(){const p=document.getElementById('ms-conflict-resolution-panel');if(p)p.style.display='none';}
 function showAppToast(message,type='info',duration=2600){
   const toast=document.getElementById('app-toast'); if(!toast) return;
@@ -6157,8 +6304,24 @@ document.addEventListener('click',function(e){
 
 
 Object.assign(window,{openMicrosoftConnection,closeMicrosoftConnection,startMicrosoftLogin,disconnectMicrosoft,prepareMicrosoft365Space,verifyMicrosoft365Space,diagnoseSyncManagerV72,syncPendingLocalChangesV72,openConflictResolutionV72,deleteHistorySession,showAppToast,syncFingerprint,syncWithoutVolatileMeta});
-document.getElementById('ms-keep-local-conflict')?.addEventListener('click',()=>v72ResolveLocal().catch(e=>setCloudStatus('⚠️ '+(e.message||e),'error')));
-document.getElementById('ms-keep-remote-conflict')?.addEventListener('click',()=>v72ResolveRemote().catch(e=>setCloudStatus('⚠️ '+(e.message||e),'error')));
+document.getElementById('ms-conflict-resolution-list')?.addEventListener('click',async e=>{
+  const button=e.target.closest('.v72-conflict-choice');
+  if(!button||button.disabled)return;
+  const type=button.dataset.conflictType,key=button.dataset.conflictKey,choice=button.dataset.conflictChoice;
+  const entry=v72ConflictEntries().find(x=>x.type===type&&x.key===key);
+  if(!entry)return;
+  button.disabled=true;
+  const sibling=button.parentElement?.querySelectorAll('button');
+  sibling?.forEach(b=>b.disabled=true);
+  try{
+    await v72ResolveConflictEntry(entry,choice);
+    setCloudStatus(`✓ ${v72ConflictTypeLabel(type)} « ${entry.label} » résolu : version ${choice==='local'?'locale':'OneDrive'} conservée.`,'success');
+    v72RenderConflictResolution();
+  }catch(err){
+    sibling?.forEach(b=>b.disabled=false);
+    setCloudStatus('⚠️ '+(err?.message||err),'error');
+  }
+});
 document.getElementById('ms-cancel-conflict-resolution')?.addEventListener('click',closeConflictResolutionV72);
 document.addEventListener('DOMContentLoaded',async()=>{v72EnsureSyncRegistry(DataStore.state);v72RecountPending(DataStore.state);v63WriteJSON(V63_STORAGE_KEY,DataStore.state);updateMicrosoftUI();await initMicrosoftAuth();});
 </script>
