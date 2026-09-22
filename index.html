@@ -2832,8 +2832,17 @@ loadIndicatorLibrary();
             const el = document.getElementById(id);
             if (!el) return;
             const currentVal = el.value;
-            el.innerHTML = '<option value="">-- Choisir un élève --</option>' +
-                students.map(s => `<option value="${s.nom}">${s.nom} (${s.classe}${s.ecole ? ' - ' + s.ecole : ''})</option>`).join('');
+            el.replaceChildren();
+            const placeholder=document.createElement('option');
+            placeholder.value='';
+            placeholder.textContent='-- Choisir un élève --';
+            el.appendChild(placeholder);
+            students.forEach(s=>{
+                const option=document.createElement('option');
+                option.value=String(s.nom??'');
+                option.textContent=`${s.nom??''} (${s.classe??''}${s.ecole ? ' - ' + s.ecole : ''})`;
+                el.appendChild(option);
+            });
             if (currentVal) el.value = currentVal;
         });
     }
@@ -2956,7 +2965,7 @@ loadIndicatorLibrary();
                 if(ev){
                     if(ev.type==='ELEVE' && !enc) pending.push(ev);
                     const status=enc?'Séance enregistrée':'Planifié';
-                    html+=`<div class="home-row" onclick="openEventActionModal('${iso}','${ev.startPeriod}',${dayIdx},'${ev.eventId}')"><div class="home-period">${escapeHtml(ev.startPeriod)}${ev.startPeriod!==ev.endPeriod?' → '+escapeHtml(ev.endPeriod):''}</div><div><div class="home-event-title">${escapeHtml(getEventLabel(ev))}</div><div class="home-event-meta">${escapeHtml(getEventMeta(ev)||'Mission Pôle Territorial')}</div></div><span class="status-badge ${enc?'badge-encoded':'badge-prev'}">${status}</span></div>`;
+                    html+=`<div class="home-row js-home-event" data-iso="${escapeHtml(iso)}" data-start-period="${escapeHtml(ev.startPeriod)}" data-day-index="${dayIdx}" data-event-id="${escapeHtml(ev.eventId)}"><div class="home-period">${escapeHtml(ev.startPeriod)}${ev.startPeriod!==ev.endPeriod?' → '+escapeHtml(ev.endPeriod):''}</div><div><div class="home-event-title">${escapeHtml(getEventLabel(ev))}</div><div class="home-event-meta">${escapeHtml(getEventMeta(ev)||'Mission Pôle Territorial')}</div></div><span class="status-badge ${enc?'badge-encoded':'badge-prev'}">${status}</span></div>`;
                 }
             });
             list.innerHTML=html || '<div class="home-empty">Aucun créneau planifié aujourd’hui.</div>';
@@ -3139,10 +3148,10 @@ loadIndicatorLibrary();
                     const enc=getEncodedForEvent(dayIdx,selectedDateISO,ev,db);
                     const status=enc?'Séance enregistrée':'Planifié';
                     const badge=enc?'badge-encoded':'badge-prev';
-                    html+=`<div class="day-slot-row" style="align-items:stretch;"><div class="period-badge-col">${escapeHtml(ev.startPeriod)}${ev.startPeriod!==ev.endPeriod?'<br>↓<br>'+escapeHtml(ev.endPeriod):''}</div><div class="slot-content-card"><div class="slot-info-main"><span class="status-badge ${badge}">${status}</span><div class="slot-title">${escapeHtml(getEventLabel(ev))}</div><div class="slot-meta">${escapeHtml(getEventMeta(ev)||'Mission Pôle Territorial')}${ev.type==='ELEVE'&&enc?' · Séance enregistrée':''} · ${ev.recurrence==='unique'?'Unique':'Récurrent'}</div></div><div class="slot-actions" style="margin-top:8px;"><button class="btn-secondary focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;" onclick="openEventActionModal('${selectedDateISO}','${ev.startPeriod}',${dayIdx},'${ev.eventId}')">Voir / agir</button>${ev.type==='ELEVE'&&!enc?`<button class="btn-primary focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;" onclick="quickFormForSlot('${selectedDateISO}','${ev.startPeriod}','${escapeHtml(ev.eleve)}','${escapeHtml(ev.matiere||'')}')">Encoder</button>`:''}</div></div></div>`;
+                    html+=`<div class="day-slot-row" style="align-items:stretch;"><div class="period-badge-col">${escapeHtml(ev.startPeriod)}${ev.startPeriod!==ev.endPeriod?'<br>↓<br>'+escapeHtml(ev.endPeriod):''}</div><div class="slot-content-card"><div class="slot-info-main"><span class="status-badge ${badge}">${status}</span><div class="slot-title">${escapeHtml(getEventLabel(ev))}</div><div class="slot-meta">${escapeHtml(getEventMeta(ev)||'Mission Pôle Territorial')}${ev.type==='ELEVE'&&enc?' · Séance enregistrée':''} · ${ev.recurrence==='unique'?'Unique':'Récurrent'}</div></div><div class="slot-actions" style="margin-top:8px;"><button class="btn-secondary focus-ring js-day-event" data-iso="${escapeHtml(selectedDateISO)}" data-start-period="${escapeHtml(ev.startPeriod)}" data-day-index="${dayIdx}" data-event-id="${escapeHtml(ev.eventId)}" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;">Voir / agir</button>${ev.type==='ELEVE'&&!enc?`<button class="btn-primary focus-ring js-quick-form" data-iso="${escapeHtml(selectedDateISO)}" data-start-period="${escapeHtml(ev.startPeriod)}" data-eleve="${escapeHtml(ev.eleve)}" data-matiere="${escapeHtml(ev.matiere||'')}" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;">Encoder</button>`:''}</div></div></div>`;
                 });
             } else {
-                html+=`<div class="day-slot-row"><div class="period-badge-col">${escapeHtml(p)}</div><div class="slot-content-card"><div class="slot-info-main"><span style="color:#94a3b8;font-size:.78rem;">Créneau libre</span><div class="slot-meta">Aucune activité planifiée</div></div><div class="slot-actions"><button class="btn-secondary focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;" onclick="openSlotModal('${selectedDateISO}','${p}',${dayIdx})">Programmer</button></div></div></div>`;
+                html+=`<div class="day-slot-row"><div class="period-badge-col">${escapeHtml(p)}</div><div class="slot-content-card"><div class="slot-info-main"><span style="color:#94a3b8;font-size:.78rem;">Créneau libre</span><div class="slot-meta">Aucune activité planifiée</div></div><div class="slot-actions"><button class="btn-secondary focus-ring js-open-slot" data-iso="${escapeHtml(selectedDateISO)}" data-period="${escapeHtml(p)}" data-day-index="${dayIdx}" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;">Programmer</button></div></div></div>`;
             }
         });
         dayView.innerHTML=html;
@@ -3297,7 +3306,7 @@ loadIndicatorLibrary();
             const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
             const iso = formatISO(d);
             const isSelected = iso === selectedDateISO;
-            html += `<div class="agenda-header-week ${isSelected ? 'today-column' : ''}" style="grid-column:${idx + 2};grid-row:1;" onclick="jumpToDayView('${iso}')">${days[idx]}<br><span style="font-weight:600;font-size:0.78rem;color:var(--primary);">${dateStr}</span></div>`;
+            html += `<div class="agenda-header-week ${isSelected ? 'today-column' : ''} js-week-day" style="grid-column:${idx + 2};grid-row:1;" data-iso="${escapeHtml(iso)}">${days[idx]}<br><span style="font-weight:600;font-size:0.78rem;color:var(--primary);">${dateStr}</span></div>`;
         });
         periods.forEach((p, periodIdx) => {
             html += `<div class="period-col-week ${periodIdx === 0 ? 'week-current-period' : ''}" style="grid-column:1;grid-row:${periodIdx + 2};"><strong>${p}</strong></div>`;
@@ -3318,13 +3327,13 @@ loadIndicatorLibrary();
                         const encoded=getEncodedForEvent(dayIdx,isoDate,event,db);
                         const cls=getEventClass(event,encoded);
                         const title=getEventLabel(event), meta=getEventMeta(event);
-                        return `<div class="week-event ${cls}" style="margin-bottom:5px;" onclick="event.stopPropagation();openEventActionModal('${isoDate}','${event.startPeriod}',${dayIdx},'${event.eventId}')"><div class="week-event-title">${encoded?'✓ ':''}${escapeHtml(title)}</div>${meta?`<div class="week-event-meta">${escapeHtml(meta)}</div>`:''}<div class="week-event-range">${escapeHtml(event.startPeriod)}${event.endPeriod!==event.startPeriod?' → '+escapeHtml(event.endPeriod):''} · ${event.recurrence==='unique'?'Unique':'Récurrent'}</div></div>`;
+                        return `<div class="week-event ${cls} js-week-event" style="margin-bottom:5px;" data-iso="${escapeHtml(isoDate)}" data-start-period="${escapeHtml(event.startPeriod)}" data-day-index="${dayIdx}" data-event-id="${escapeHtml(event.eventId)}"><div class="week-event-title">${encoded?'✓ ':''}${escapeHtml(title)}</div>${meta?`<div class="week-event-meta">${escapeHtml(meta)}</div>`:''}<div class="week-event-range">${escapeHtml(event.startPeriod)}${event.endPeriod!==event.startPeriod?' → '+escapeHtml(event.endPeriod):''} · ${event.recurrence==='unique'?'Unique':'Récurrent'}</div></div>`;
                     }).join('');
                     html += `<div class="slot-cell-week week-event-cell" style="grid-column:${dayIdx+2};grid-row:${periodIdx+2} / span ${span};"><div>${cards}</div></div>`;
                     periodIdx += span;
                     continue;
                 }
-                if (!allEvents.length) html += `<div class="slot-cell-week week-event-cell" style="grid-column:${dayIdx+2};grid-row:${periodIdx+2};" onclick="openSlotModal('${isoDate}','${p}',${dayIdx})"><div class="week-slot-free">+ Ajouter</div></div>`;
+                if (!allEvents.length) html += `<div class="slot-cell-week week-event-cell js-week-slot" style="grid-column:${dayIdx+2};grid-row:${periodIdx+2};" data-iso="${escapeHtml(isoDate)}" data-period="${escapeHtml(p)}" data-day-index="${dayIdx}"><div class="week-slot-free">+ Ajouter</div></div>`;
                 periodIdx++;
             }
         });
@@ -3465,7 +3474,7 @@ loadIndicatorLibrary();
             }
 
             html += `
-                <div class="month-date-cell ${isToday ? 'today' : ''}" onclick="jumpToDayView('${iso}')">
+                <div class="month-date-cell ${isToday ? 'today' : ''} js-month-day" data-iso="${escapeHtml(iso)}">
                     <div class="month-day-number">${dayNum}</div>
                     <div class="month-indicators">${pills.join('')}</div>
                 </div>
@@ -3960,7 +3969,7 @@ loadIndicatorLibrary();
         wrap.innerHTML=options.length?options.map(x=>{
             const isSelected=selected.has(x);
             const legacy=LEGACY_SUBJECT_OPTIONS.includes(x);
-            return `<button type="button" class="student-subject-item ${isSelected?'is-selected':''}" data-value="${escapeHtml(x)}" aria-pressed="${isSelected?'true':'false'}" onclick="toggleStudentSubject(this.dataset.value)">${escapeHtml(x)}${legacy?' · ancienne appellation à préciser':''}</button>`;
+            return `<button type="button" class="student-subject-item ${isSelected?'is-selected':''} js-student-subject" data-value="${escapeHtml(x)}" aria-pressed="${isSelected?'true':'false'}">${escapeHtml(x)}${legacy?' · ancienne appellation à préciser':''}</button>`;
         }).join(''):'<div class="search-select-empty">Aucune matière trouvée.</div>';
     }
 function toggleStudentSubject(value){const wrap=document.getElementById('student-subject-options');if(!wrap)return;const item=Array.from(wrap.querySelectorAll('.student-subject-item')).find(x=>x.dataset.value===String(value));if(!item)return;const selected=!item.classList.contains('is-selected');item.classList.toggle('is-selected',selected);item.setAttribute('aria-pressed',selected?'true':'false');updateStudentSubjectsSummary();}
@@ -3975,7 +3984,7 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
     function updateMultiSelectSummary(containerId,name){const box=document.getElementById(containerId);if(!box)return;const checked=Array.from(box.querySelectorAll(`input[name="${name}"]:checked`));const summary=box.querySelector('[id$="-summary"]');if(!summary)return;if(!checked.length){summary.className='placeholder';summary.textContent=containerId==='q4-types-select'?'Sélectionner un ou plusieurs éléments…':'Sélectionner une ou plusieurs matières…';}else if(checked.length<=2){summary.className='';summary.textContent=checked.map(x=>x.value).join(' · ');}else{summary.className='count';summary.textContent=`${checked.length} éléments sélectionnés`;}}
     function toggleMultiSelect(containerId){const box=document.getElementById(containerId);if(!box)return;const menu=box.querySelector('.multi-select-menu');if(!menu)return;const hidden=menu.classList.contains('hidden');closeAllChoiceMenus();if(hidden)menu.classList.remove('hidden');}
     function closeAllChoiceMenus(){document.querySelectorAll('.multi-select-menu,.search-select-menu').forEach(el=>el.classList.add('hidden'));}
-    function renderSessionSubjectMenu(filter=''){const menu=document.getElementById('session-subject-menu');if(!menu)return;const student=getStudentByName(document.getElementById('f-eleve')?.value);const main=normalizeSubjectList(student?.matieres);const all=[...main,...SUBJECT_OPTIONS.filter(x=>!main.includes(x))];const q=String(filter||'').trim().toLowerCase();const options=all.filter(x=>!q||x.toLowerCase().includes(q));menu.innerHTML=options.length?options.map((x,i)=>`<button type="button" class="search-select-option ${i<main.length?'active':''}" data-value="${escapeHtml(x)}" onclick="chooseSessionSubject(this.dataset.value)">${escapeHtml(x)}${main.includes(x)?' · matière principale':''}</button>`).join(''):'<div class="search-select-empty">Aucune matière dans la liste. Vous pouvez la saisir librement.</div>';}
+    function renderSessionSubjectMenu(filter=''){const menu=document.getElementById('session-subject-menu');if(!menu)return;const student=getStudentByName(document.getElementById('f-eleve')?.value);const main=normalizeSubjectList(student?.matieres);const all=[...main,...SUBJECT_OPTIONS.filter(x=>!main.includes(x))];const q=String(filter||'').trim().toLowerCase();const options=all.filter(x=>!q||x.toLowerCase().includes(q));menu.innerHTML=options.length?options.map((x,i)=>`<button type="button" class="search-select-option ${i<main.length?'active':''} js-session-subject" data-value="${escapeHtml(x)}">${escapeHtml(x)}${main.includes(x)?' · matière principale':''}</button>`).join(''):'<div class="search-select-empty">Aucune matière dans la liste. Vous pouvez la saisir librement.</div>';}
     function openSessionSubjectMenu(){
         // L'ouverture doit toujours permettre de voir les autres matières,
         // même lorsqu'une matière est déjà sélectionnée.
@@ -4514,7 +4523,7 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
         const wbeContext=Array.isArray(wbe.sequences)&&wbe.sequences.length?wbe.sequences.slice(0,2).join(' · '):'';
         const context=[indicator.domaine,indicator.sous_domaine,wbeContext].filter(Boolean).join(' · ');
         return `<label class="ux-bubble q3-library-bubble${hidden?' is-q3-hidden':''}">
-            <input type="checkbox" name="${name}" value="${escapeHtml(text)}" data-indicator-id="${escapeHtml(id)}" onchange="updateQ3BubbleState(this)">
+            <input type="checkbox" name="${name}" value="${escapeHtml(text)}" data-indicator-id="${escapeHtml(id)}">
             <span class="q3-indicator-text">${escapeHtml(text)}</span>
             ${context?`<span class="q3-indicator-context">${escapeHtml(context)}</span>`:''}
         </label>`;
@@ -4626,7 +4635,7 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
         const safeId=`custom-${Date.now()}-${Math.floor(Math.random()*1000)}`;
         const item=document.createElement('label');
         item.className='q3-custom-item is-active';
-        item.innerHTML=`<input type="checkbox" name="q3-learning" value="${escapeHtml(value)}" data-indicator-id="${safeId}" checked onchange="updateQ3BubbleState(this)"><span>${escapeHtml(value)}</span>`;
+        item.innerHTML=`<input type="checkbox" name="q3-learning" value="${escapeHtml(value)}" data-indicator-id="${safeId}" checked><span>${escapeHtml(value)}</span>`;
         list.appendChild(item);
         input.value='';
         renderQ3Assessments({scrollIntoView:true});
@@ -4910,7 +4919,7 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
         if (filtered.length === 0) { container.innerHTML = '<div class="card"><p style="color:var(--text-sub);margin:0;">Aucun résultat pour cette recherche.</p></div>'; return; }
         container.innerHTML = filtered.map(s => {
             const countObs=db.filter(l=>isJournalSession(l)&&sessionParts(l).eleve===s.nom).length;
-            return `<div class="student-item"><div class="student-main"><div class="student-name">${escapeHtml(s.nom)}</div><div class="student-meta">${escapeHtml(s.classe||'Classe non précisée')}${s.ecole?' · '+escapeHtml(s.ecole):''} · ${countObs} observation${countObs>1?'s':''}</div><div class="student-pia"><strong>Matières principales :</strong> ${escapeHtml(normalizeSubjectList(s.matieres).join(' · ') || 'Aucune matière définie.')}</div><div class="student-pia"><strong>PIA :</strong> ${escapeHtml(s.pia||'Aucun objectif saisi.')}</div></div><div class="student-actions"><button class="btn-secondary focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;" onclick="openStudentProfile(${s.id})">Voir le dossier</button><button class="btn-secondary focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;" onclick="openEditStudentModal(${s.id})">Modifier</button><button class="focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;border:1px solid #fecaca;background:#fff;color:#b91c1c;" onclick="deleteStudent(${s.id})">Supprimer</button></div></div>`;
+            return `<div class="student-item"><div class="student-main"><div class="student-name">${escapeHtml(s.nom)}</div><div class="student-meta">${escapeHtml(s.classe||'Classe non précisée')}${s.ecole?' · '+escapeHtml(s.ecole):''} · ${countObs} observation${countObs>1?'s':''}</div><div class="student-pia"><strong>Matières principales :</strong> ${escapeHtml(normalizeSubjectList(s.matieres).join(' · ') || 'Aucune matière définie.')}</div><div class="student-pia"><strong>PIA :</strong> ${escapeHtml(s.pia||'Aucun objectif saisi.')}</div></div><div class="student-actions"><button class="btn-secondary focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;" data-action="student-profile" data-student-id="${escapeHtml(String(s.id))}">Voir le dossier</button><button class="btn-secondary focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;" data-action="student-edit" data-student-id="${escapeHtml(String(s.id))}">Modifier</button><button class="focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;border:1px solid #fecaca;background:#fff;color:#b91c1c;" data-action="student-delete" data-student-id="${escapeHtml(String(s.id))}">Supprimer</button></div></div>`;
         }).join('');
     }
 
@@ -4991,8 +5000,8 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
                 <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
                     <div><strong>${escapeHtml(p.eleve)} • ${escapeHtml(p.matiere)}</strong> — ${escapeHtml(p.date)} (${escapeHtml(sessionPeriodLabel(l))})</div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-                        <button type="button" class="history-edit-btn" data-session-id="${sid}" onclick="editHistorySession(this.dataset.sessionId)">✏️ Modifier</button>
-                        <button type="button" class="history-delete-btn" data-session-id="${sid}" onclick="deleteHistorySession(this.dataset.sessionId)">Supprimer</button>
+                        <button type="button" class="history-edit-btn" data-session-id="${sid}" data-action="history-edit">✏️ Modifier</button>
+                        <button type="button" class="history-delete-btn" data-session-id="${sid}" data-action="history-delete">Supprimer</button>
                     </div>
                 </div>
                 ${o.objectifLecon||o.objectifProfessionnel?`<div><strong>Objectif :</strong> ${escapeHtml(o.objectifLecon||o.objectifProfessionnel)}</div>`:''}
@@ -5106,7 +5115,7 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
             const id=String(ind.id||`custom-${Date.now()}-${Math.floor(Math.random()*1000)}`);
             const item=document.createElement('label');
             item.className='q3-custom-item is-active';
-            item.innerHTML=`<input type="checkbox" name="q3-learning" value="${escapeHtml(String(ind.texte||''))}" data-indicator-id="${escapeHtml(id)}" checked onchange="updateQ3BubbleState(this)"><span>${escapeHtml(String(ind.texte||''))}</span>`;
+            item.innerHTML=`<input type="checkbox" name="q3-learning" value="${escapeHtml(String(ind.texte||''))}" data-indicator-id="${escapeHtml(id)}" checked><span>${escapeHtml(String(ind.texte||''))}</span>`;
             customList?.appendChild(item);
         });
 
@@ -5908,7 +5917,7 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
             html += `
                 <div class="stat-box">
                     <div class="stat-val">${count} P.</div>
-                    <div class="stat-lbl">${s.nom} (${s.classe})</div>
+                    <div class="stat-lbl">${escapeHtml(s.nom)} (${escapeHtml(s.classe||'')})</div>
                 </div>
             `;
         });
@@ -5982,7 +5991,7 @@ function renderSessionMainSubjectBubbles(){
     const box=document.getElementById('session-main-subject-bubbles'); if(!box) return;
     const student=getStudents().find(s=>Number(s.id)===studentId);
     const subjects=student?normalizeSubjectList(student.matieres):[];
-    box.innerHTML=subjects.map(sub=>`<button type="button" class="ux-main-subject" onclick="chooseSessionSubject('${escapeHtml(sub).replace(/'/g,"&#39;")}')">${escapeHtml(sub)}</button>`).join('');
+    box.innerHTML=subjects.map(sub=>`<button type="button" class="ux-main-subject js-session-subject" data-value="${escapeHtml(sub)}">${escapeHtml(sub)}</button>`).join('');
     const current=(document.getElementById('f-matiere')?.value||'').trim().toLowerCase();
     box.querySelectorAll('.ux-main-subject').forEach(b=>b.classList.toggle('is-active',b.textContent.trim().toLowerCase()===current));
 }
@@ -6463,6 +6472,75 @@ function showAppToast(message,type='info',duration=2600){
 function animateClick(el,state='validating'){
   if(!el) return; el.classList.remove('click-validating','click-success','click-error'); void el.offsetWidth; el.classList.add('click-'+state); setTimeout(()=>el.classList.remove('click-'+state),500);
 }
+/* =========================================================
+   JOURNALIER — XSS HARDENING / DYNAMIC UI EVENTS
+   ---------------------------------------------------------
+   Les contenus générés dynamiquement n'utilisent plus de
+   handlers inline contenant des données applicatives.
+   Les actions passent par délégation d'événements et data-*.
+   ========================================================= */
+document.addEventListener('click',function(e){
+  const target=e.target.closest(
+    '.js-home-event,.js-day-event,.js-quick-form,.js-open-slot,'+
+    '.js-week-day,.js-week-event,.js-week-slot,.js-month-day,'+
+    '.js-student-subject,.js-session-subject,'+
+    '[data-action="student-profile"],[data-action="student-edit"],[data-action="student-delete"],' +
+    '[data-action="history-edit"],[data-action="history-delete"]'
+  );
+  if(!target) return;
+
+  if(target.classList.contains('js-home-event') || target.classList.contains('js-day-event') || target.classList.contains('js-week-event')){
+    const dayIndex=Number(target.dataset.dayIndex);
+    if(!Number.isInteger(dayIndex)) return;
+    e.stopPropagation();
+    openEventActionModal(target.dataset.iso||'',target.dataset.startPeriod||'',dayIndex,target.dataset.eventId||'');
+    return;
+  }
+
+  if(target.classList.contains('js-quick-form')){
+    e.stopPropagation();
+    quickFormForSlot(target.dataset.iso||'',target.dataset.startPeriod||'',target.dataset.eleve||'',target.dataset.matiere||'');
+    return;
+  }
+
+  if(target.classList.contains('js-open-slot') || target.classList.contains('js-week-slot')){
+    const dayIndex=Number(target.dataset.dayIndex);
+    if(!Number.isInteger(dayIndex)) return;
+    openSlotModal(target.dataset.iso||'',target.dataset.period||'',dayIndex);
+    return;
+  }
+
+  if(target.classList.contains('js-week-day') || target.classList.contains('js-month-day')){
+    jumpToDayView(target.dataset.iso||'');
+    return;
+  }
+
+  if(target.classList.contains('js-student-subject')){
+    toggleStudentSubject(target.dataset.value||'');
+    return;
+  }
+
+  if(target.classList.contains('js-session-subject')){
+    chooseSessionSubject(target.dataset.value||'');
+    return;
+  }
+
+  const action=target.dataset.action;
+  const id=target.dataset.studentId;
+  if(action==='student-profile') return openStudentProfile(id);
+  if(action==='student-edit') return openEditStudentModal(id);
+  if(action==='student-delete') return deleteStudent(id);
+
+  const sessionId=target.dataset.sessionId;
+  if(action==='history-edit') return editHistorySession(sessionId);
+  if(action==='history-delete') return deleteHistorySession(sessionId);
+});
+
+document.addEventListener('change',function(e){
+  const input=e.target.closest('input[name="q3-learning"]');
+  if(input) updateQ3BubbleState(input);
+});
+
 document.addEventListener('click',function(e){
   const el=e.target.closest('button,[role=button],.week-event-cell,.home-row,.month-date-cell');
   if(!el || el.disabled || el.getAttribute('aria-disabled')==='true') return;
