@@ -2,15 +2,19 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'none'; base-uri 'none'; script-src 'self'; style-src 'self'; frame-ancestors 'none'; form-action 'none';"
+  >
+
+  <meta name="referrer" content="no-referrer">
+
   <title>Microsoft – Redirection</title>
 </head>
 <body>
   <p>Connexion Microsoft en cours…</p>
-  <script type="module">
-    import { broadcastResponseToMainFrame } from "@azure/msal-browser/redirect-bridge";
-    broadcastResponseToMainFrame().catch((error) => {
-      console.error("Erreur du pont de redirection MSAL :", error);
-    });
-  </script>
+
+  <script type="module" src="./src/msal-redirect.js"></script>
 </body>
 </html>
