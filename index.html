@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-3rjxY95UlEQPF7QfYUHkJCNzEy25wHMEKl5fgcM6Hkk=' 'sha256-Hzvng34J4gtwHb8XtfDpDN81gqoaKczpzIOJB1bDYQw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-3rjxY95UlEQPF7QfYUHkJCNzEy25wHMEKl5fgcM6Hkk=' 'sha256-zHclu6AAxHu8mTcAMbk2EeT2UKK0A+jUQ6eDSC73XbQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pôle Territorial – Agenda & Suivi Orthopédagogique · V72.2</title>
@@ -6621,6 +6621,7 @@ async function graphWriteJsonWithETag(parentId,filename,payload,eTag){
   if(name==='profil.json')validateStrictStudent(payload,'Écriture profil élève');
   else if(name==='agenda.json')validateStrictAgenda(payload,'Écriture agenda');
   else if(name==='sync.json')validateStrictSyncRecord(payload,'Écriture synchronisation');
+  else if(name==='probe.json')validateStrictJsonPayload(payload,'Écriture probe AppFolder',16*1024);
   else if(/\.json$/i.test(name)&&/^[^/]+\.json$/i.test(name))validateStrictSession(payload,'Écriture séance');
   else validateStrictJsonPayload(payload,`Écriture ${name||'JSON'}`);
   const headers={'Content-Type':'text/plain'};
