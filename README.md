@@ -1,6 +1,6 @@
-# Journalier V64 — test Microsoft Graph / OneDrive
+# Journalier V72 — test Microsoft Graph / OneDrive
 
-Ce dossier est autonome pour tester la connexion Entra + Microsoft Graph depuis Journalier V64.
+Ce dossier est autonome pour tester la connexion Entra + Microsoft Graph depuis Journalier V72.
 
 ## 1. Prérequis
 
