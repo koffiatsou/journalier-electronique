@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-3rjxY95UlEQPF7QfYUHkJCNzEy25wHMEKl5fgcM6Hkk=' 'sha256-zHclu6AAxHu8mTcAMbk2EeT2UKK0A+jUQ6eDSC73XbQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-3rjxY95UlEQPF7QfYUHkJCNzEy25wHMEKl5fgcM6Hkk=' 'sha256-JaNLR98Isx7eF49Harszx9AQ3s1jAbWOshjnILnsN4I='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net https://*.files.1drv.com https://*.sharepoint.com; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pôle Territorial – Agenda & Suivi Orthopédagogique · V72.2</title>
@@ -6629,8 +6629,22 @@ async function graphWriteJsonWithETag(parentId,filename,payload,eTag){
   return graphRequest(`/me/drive/items/${encodeURIComponent(parentId)}:/${encodeURIComponent(filename)}:/content`,{method:'PUT',headers,body:JSON.stringify(payload,null,2)});
 }
 function graphWriteJson(parentId,filename,payload){return graphWriteJsonWithETag(parentId,filename,payload,null);}
-async function graphReadItemWithJson(path){const item=await graphGetByPath(path);const raw=await graphRequest(`/me/drive/items/${encodeURIComponent(item.id)}/content`);return{item,json:typeof raw==='object'?raw:JSON.parse(raw)};}
-async function graphReadItemByIdWithJson(itemId){const item=await graphRequest(`/me/drive/items/${encodeURIComponent(itemId)}?$select=id,name,eTag,parentReference,file,folder,lastModifiedDateTime`);const raw=await graphRequest(`/me/drive/items/${encodeURIComponent(itemId)}/content`);return{item,json:typeof raw==='object'?raw:JSON.parse(raw)};}
+async function graphDownloadJsonByItemId(itemId){
+  const meta=await graphRequest(`/me/drive/items/${encodeURIComponent(itemId)}?$select=id,name,eTag,parentReference,file,folder,lastModifiedDateTime,@microsoft.graph.downloadUrl`);
+  const downloadUrl=meta?.['@microsoft.graph.downloadUrl'];
+  if(!downloadUrl)throw new Error('Microsoft Graph n’a pas fourni d’URL de téléchargement pré-authentifiée pour ce fichier.');
+  let parsedUrl;
+  try{parsedUrl=new URL(downloadUrl);}catch(_){throw new Error('URL de téléchargement Microsoft Graph invalide.');}
+  const host=parsedUrl.hostname.toLowerCase();
+  const allowed=host==='files.1drv.com'||host.endsWith('.files.1drv.com')||host==='1drv.com'||host.endsWith('.1drv.com')||host.endsWith('.sharepoint.com');
+  if(parsedUrl.protocol!=='https:'||!allowed)throw new Error('URL de téléchargement Microsoft Graph refusée : domaine inattendu.');
+  const response=await fetch(parsedUrl.toString(),{method:'GET',redirect:'follow',cache:'no-store'});
+  if(!response.ok)throw new Error(`Téléchargement Graph ${response.status} : ${response.statusText||'échec du téléchargement'}.`);
+  const text=await response.text();
+  try{return{item:meta,json:JSON.parse(text)};}catch(_){throw new Error('Le contenu distant n’est pas un JSON valide.');}
+}
+async function graphReadItemWithJson(path){const item=await graphGetByPath(path);return graphDownloadJsonByItemId(item.id);}
+async function graphReadItemByIdWithJson(itemId){return graphDownloadJsonByItemId(itemId);}
 async function graphDeleteItemWithETag(itemId,eTag){const headers={};if(eTag)headers['If-Match']=eTag;return graphRequest(`/me/drive/items/${encodeURIComponent(itemId)}`,{method:'DELETE',headers});}
 async function graphWriteExistingItemWithETag(item,payload){const parentId=item?.parentReference?.id,filename=item?.name;if(!parentId||!filename)throw new Error('Impossible de déterminer le dossier parent du fichier distant.');return graphWriteJsonWithETag(parentId,filename,payload,item.eTag||null);}
 function cloudSafeIdentity(){const identity=DataStore.getIdentity();return{ownerId:identity.ownerId,displayName:msAccount?.name||msAccount?.username||identity.displayName||'Utilisateur Journalier',microsoftAccount:msAccount?.username||null,provider:'microsoft365',architectureVersion:JOURNALIER_ARCHITECTURE_VERSION,updatedAt:new Date().toISOString()};}
