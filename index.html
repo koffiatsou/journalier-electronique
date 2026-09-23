@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-3rjxY95UlEQPF7QfYUHkJCNzEy25wHMEKl5fgcM6Hkk=' 'sha256-JaNLR98Isx7eF49Harszx9AQ3s1jAbWOshjnILnsN4I='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net https://*.files.1drv.com https://*.sharepoint.com; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-3rjxY95UlEQPF7QfYUHkJCNzEy25wHMEKl5fgcM6Hkk=' 'sha256-V5wFqOvz4hUSs/Y4YxCjDO7XGHTLvqNskJOGPjDuAvo='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net https://*.files.1drv.com https://*.sharepoint.com; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pôle Territorial – Agenda & Suivi Orthopédagogique · V72.2</title>
@@ -6630,8 +6630,11 @@ async function graphWriteJsonWithETag(parentId,filename,payload,eTag){
 }
 function graphWriteJson(parentId,filename,payload){return graphWriteJsonWithETag(parentId,filename,payload,null);}
 async function graphDownloadJsonByItemId(itemId){
-  const meta=await graphRequest(`/me/drive/items/${encodeURIComponent(itemId)}?$select=id,name,eTag,parentReference,file,folder,lastModifiedDateTime,@microsoft.graph.downloadUrl`);
-  const downloadUrl=meta?.['@microsoft.graph.downloadUrl'];
+  const meta=await graphRequest(`/me/drive/items/${encodeURIComponent(itemId)}?$select=id,name,eTag,parentReference,file,folder,lastModifiedDateTime`);
+  // @microsoft.graph.downloadUrl est une instance annotation. Microsoft recommande
+  // une requête dédiée avec `select=...` pour la récupérer dans une application JavaScript.
+  const downloadMeta=await graphRequest(`/me/drive/items/${encodeURIComponent(itemId)}?select=id,@microsoft.graph.downloadUrl`);
+  const downloadUrl=downloadMeta?.['@microsoft.graph.downloadUrl'];
   if(!downloadUrl)throw new Error('Microsoft Graph n’a pas fourni d’URL de téléchargement pré-authentifiée pour ce fichier.');
   let parsedUrl;
   try{parsedUrl=new URL(downloadUrl);}catch(_){throw new Error('URL de téléchargement Microsoft Graph invalide.');}
