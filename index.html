@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-H7T5blKpcb/qPM1oppW8OKP0L4UZAfBnEoeHQE2en50=' 'sha256-sJW1NzRk+BdGuD8/WNG1feZTuwJ9qpE5GnqyPb4jQpw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-3rjxY95UlEQPF7QfYUHkJCNzEy25wHMEKl5fgcM6Hkk=' 'sha256-Hzvng34J4gtwHb8XtfDpDN81gqoaKczpzIOJB1bDYQw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pôle Territorial – Agenda & Suivi Orthopédagogique · V72.2</title>
@@ -617,6 +617,22 @@
             font-size: 0.85rem;
             color: #92400e;
         }
+
+        .pia-local-security {
+            margin-top: 10px;
+            padding: 12px 14px;
+            border: 1px solid rgba(10,132,255,.18);
+            border-left: 4px solid var(--primary);
+            border-radius: 10px;
+            background: rgba(10,132,255,.045);
+            color: #334155;
+            font-size: .82rem;
+            line-height: 1.5;
+        }
+        .pia-local-security strong { color: #0f172a; }
+        .pia-local-security ul { margin: 7px 0 0 18px; padding: 0; }
+        .pia-local-security li { margin: 2px 0; }
+        .pia-local-security-status { margin-top: 7px; font-weight: 700; color: #0369a1; }
 
         .btn-primary {
             background: var(--primary);
@@ -2280,6 +2296,16 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
             <input id="student-pia-file" type="file" accept=".pdf,.doc,.docx" class="hidden" data-jr-handlers="h67">
         </div>
         <div id="student-pia-file-name" class="v11-help">Le document original doit être conservé ; l’analyse et les propositions viennent ensuite.</div>
+        <div id="pia-local-security-notice" class="pia-local-security" role="status" aria-live="polite">
+            <strong>🔒 Protection de vos données</strong>
+            <div style="margin-top:4px;">Le document PIA sélectionné est traité directement sur votre appareil.</div>
+            <ul>
+                <li>Le document original n’est pas transmis à un serveur pendant cette étape.</li>
+                <li>Il reste à son emplacement d’origine.</li>
+                <li>Seules les informations que vous validez peuvent ensuite être enregistrées dans votre espace Journalier.</li>
+            </ul>
+            <div id="pia-local-security-status" class="pia-local-security-status">✓ Traitement local activé</div>
+        </div>
         <label style="margin-top:12px;">Repère / objectifs du PIA</label>
         <textarea id="student-modal-pia" rows="3" placeholder="Repères du PIA — sans remplacer le document original…"></textarea>
 
@@ -5003,7 +5029,15 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
     function openAddStudentModal(){document.getElementById('student-modal-title').innerText='Ajouter un Élève';document.getElementById('student-modal-id').value='';document.getElementById('student-modal-nom').value='';document.getElementById('student-modal-classe').value='';document.getElementById('student-modal-ecole').value='';document.getElementById('student-modal-pia').value='';document.getElementById('student-pia-file').value='';document.getElementById('student-pia-file-name').textContent='Le document original doit être conservé ; l’analyse et les propositions viennent ensuite.';initStudentSubjects([]);closeAllChoiceMenus();const modal=document.getElementById('studentModal');modal.classList.remove('hidden');modal.removeAttribute('aria-hidden');modal.style.display='flex';}
     function openEditStudentModal(id){const students=getStudents();const s=students.find(item=>item.id==id);if(s){document.getElementById('student-modal-title').innerText='Modifier l’Élève';document.getElementById('student-modal-id').value=s.id;document.getElementById('student-modal-nom').value=s.nom;document.getElementById('student-modal-classe').value=s.classe||'';document.getElementById('student-modal-ecole').value=s.ecole||'';document.getElementById('student-modal-pia').value=s.pia||'';document.getElementById('student-pia-file').value='';document.getElementById('student-pia-file-name').textContent=s.piaFileName?`PIA sélectionné : ${s.piaFileName} · document original à conserver.`:'Le document original doit être conservé ; l’analyse et les propositions viennent ensuite.';initStudentSubjects(s.matieres||[]);closeAllChoiceMenus();const modal=document.getElementById('studentModal');modal.classList.remove('hidden');modal.removeAttribute('aria-hidden');modal.style.display='flex';}}
     function closeStudentModal(){const modal=document.getElementById('studentModal');if(!modal)return;closeAllChoiceMenus();modal.classList.add('hidden');modal.setAttribute('aria-hidden','true');modal.style.display='none';}
-    function showPIAImportName(input){const name=input?.files?.[0]?.name||'';const target=document.getElementById('student-pia-file-name');if(target)target.textContent=name?`PIA sélectionné : ${name} · document original à conserver.`:'Le document original doit être conservé ; l’analyse et les propositions viennent ensuite.';showAppToast(name?'PIA sélectionné — import détaillé à connecter ensuite.':'Aucun PIA sélectionné.',name?'info':'error');}
+    function showPIAImportName(input){
+        const file=input?.files?.[0]||null;
+        const name=file?.name||'';
+        const target=document.getElementById('student-pia-file-name');
+        const status=document.getElementById('pia-local-security-status');
+        if(target)target.textContent=name?`PIA sélectionné : ${name} · document original à conserver.`:'Le document original doit être conservé ; l’analyse et les propositions viennent ensuite.';
+        if(status)status.textContent=name?'✓ Fichier sélectionné localement — aucune transmission du document original pendant cette étape.':'✓ Traitement local activé';
+        showAppToast(name?'PIA sélectionné — le document original reste sur votre appareil.':'Aucun PIA sélectionné.',name?'info':'error');
+    }
     function saveStudent(e){
         if(e&&e.preventDefault)e.preventDefault();
         const modal=document.getElementById('studentModal');
@@ -6465,7 +6499,24 @@ async function disconnectMicrosoft(){
   finally{updateMicrosoftUI();}
 }
 async function getMicrosoftGraphToken(){if(!await initMicrosoftAuth())throw new Error('MSAL non initialisé.');const account=msAccount||msalInstance.getAllAccounts()[0];if(!account)throw new Error('Aucun compte Microsoft connecté.');msAccount=account;try{return (await msalInstance.acquireTokenSilent({account,scopes:GRAPH_SCOPES})).accessToken;}catch(_){return (await msalInstance.acquireTokenPopup({account,scopes:GRAPH_SCOPES})).accessToken;}}
-async function graphRequest(path,options={}){const token=await getMicrosoftGraphToken();const headers=new Headers(options.headers||{});headers.set('Authorization','Bearer '+token);if(options.body&&!headers.has('Content-Type')&&options.method&&options.method.toUpperCase()!=='GET')headers.set('Content-Type','application/json');const response=await fetch(GRAPH_BASE+path,{...options,headers});if(!response.ok){let data=null,message='';try{data=await response.json();message=data?.error?.message||JSON.stringify(data);}catch(_){message=await response.text();}const code=data?.error?.code||'unknown';const requestId=response.headers.get('request-id')||response.headers.get('client-request-id')||'';throw new Error(`Graph ${response.status} [${code}]${requestId?` request-id=${requestId}`:''} : ${message}`);}const text=await response.text();if(!text)return null;try{return JSON.parse(text);}catch(_){return text;}}
+async function graphRequest(path,options={}){
+  const token=await getMicrosoftGraphToken();
+  const headers=new Headers(options.headers||{});
+  headers.set('Authorization','Bearer '+token);
+  if(options.body&&!headers.has('Content-Type')&&options.method&&options.method.toUpperCase()!=='GET')headers.set('Content-Type','application/json');
+  const requestUrl=String(path||'').startsWith(GRAPH_BASE+'/')?String(path):GRAPH_BASE+path;
+  const response=await fetch(requestUrl,{...options,headers});
+  if(!response.ok){
+    let data=null,message='';
+    try{data=await response.json();message=data?.error?.message||JSON.stringify(data);}catch(_){message=await response.text();}
+    const code=data?.error?.code||'unknown';
+    const requestId=response.headers.get('request-id')||response.headers.get('client-request-id')||'';
+    throw new Error(`Graph ${response.status} [${code}]${requestId?` request-id=${requestId}`:''} : ${message}`);
+  }
+  const text=await response.text();
+  if(!text)return null;
+  try{return JSON.parse(text);}catch(_){return text;}
+}
 function graphEncodePath(path){return path.split('/').filter(Boolean).map(encodeURIComponent).join('/');}
 let graphAppRootCache=null;
 async function graphGetAppRoot(force=false){if(!force&&graphAppRootCache?.id)return graphAppRootCache;graphAppRootCache=await graphRequest(GRAPH_APP_ROOT_PATH);if(!graphAppRootCache?.id)throw new Error('Microsoft Graph n’a pas retourné l’AppFolder root.');return graphAppRootCache;}
@@ -6583,7 +6634,26 @@ async function graphDeleteItemWithETag(itemId,eTag){const headers={};if(eTag)hea
 async function graphWriteExistingItemWithETag(item,payload){const parentId=item?.parentReference?.id,filename=item?.name;if(!parentId||!filename)throw new Error('Impossible de déterminer le dossier parent du fichier distant.');return graphWriteJsonWithETag(parentId,filename,payload,item.eTag||null);}
 function cloudSafeIdentity(){const identity=DataStore.getIdentity();return{ownerId:identity.ownerId,displayName:msAccount?.name||msAccount?.username||identity.displayName||'Utilisateur Journalier',microsoftAccount:msAccount?.username||null,provider:'microsoft365',architectureVersion:JOURNALIER_ARCHITECTURE_VERSION,updatedAt:new Date().toISOString()};}
 async function prepareMicrosoft365Space(){const b=document.getElementById('ms-prepare-cloud-action');if(b)b.disabled=true;setCloudStatus('Préparation de l’espace Journalier…','');try{const s=await graphEnsureJournalierStructure();await graphWriteJson(s.system.id,'sync.json',{schemaVersion:'JOURNALIER-SYNC-1',architectureVersion:JOURNALIER_ARCHITECTURE_VERSION,ownerId:JournalierSecurity.accountKey,provider:'microsoft365',preparedAt:new Date().toISOString(),status:'prepared'});setCloudStatus('✓ Espace Journalier prêt dans OneDrive. Aucune donnée métier n’a été envoyée.','success');}catch(e){setCloudStatus('⚠️ '+(e.message||e),'error');}finally{if(b)b.disabled=!msAccount;}}
-async function graphListChildren(id){return graphRequest(`/me/drive/items/${encodeURIComponent(id)}/children?$select=id,name,folder,file,size,lastModifiedDateTime,eTag`);}
+async function graphListChildren(id){
+  const items=[];
+  let nextUrl=`${GRAPH_BASE}/me/drive/items/${encodeURIComponent(id)}/children?$select=id,name,folder,file,size,lastModifiedDateTime,eTag`;
+  let page=0;
+  const maxPages=100;
+  while(nextUrl){
+    if(++page>maxPages)throw new Error(`Graph : pagination interrompue après ${maxPages} pages pour éviter une boucle inattendue.`);
+    const data=await graphRequest(nextUrl);
+    if(!data||!Array.isArray(data.value))throw new Error('Graph : réponse de pagination des enfants invalide.');
+    items.push(...data.value);
+    const candidate=data['@odata.nextLink'];
+    if(candidate){
+      if(!String(candidate).startsWith(GRAPH_BASE+'/'))throw new Error('Graph : nextLink inattendu ou hors de Microsoft Graph.');
+      nextUrl=String(candidate);
+    }else{
+      nextUrl=null;
+    }
+  }
+  return{value:items};
+}
 
 const JOURNALIER_JSON_LIMITS={maxBytes:1048576,maxDepth:8,maxKeys:120,maxArray:500,maxString:20000};
 function validateJsonValue(value,label='JSON',depth=0,seen=new WeakSet()){
