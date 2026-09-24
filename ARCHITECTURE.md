@@ -303,6 +303,12 @@ Il prend notamment en charge :
 - les duplications ;
 - les conflits d'agenda.
 
+- le rapprochement entre les événements prévisionnels et les séances réellement encodées ;
+- la reconnaissance automatique d'un événement prévisionnel comme enregistré lorsqu'une séance correspondante existe pour le même élève, la même date et des périodes qui se recouvrent.
+
+La fonction `getEncodedForEvent()` utilise volontairement le chevauchement de périodes comme critère de rapprochement. Un chevauchement n'est donc pas considéré comme une anomalie : une activité peut couvrir plusieurs périodes consécutives.
+
+
 ---
 
 # 8. PIA
@@ -758,6 +764,15 @@ Les actions GitHub utilisées dans les workflows sont épinglées sur des SHA co
 
 La branche `main` est protégée par les règles du dépôt.
 
+Le dépôt utilise également :
+
+- Dependabot Alerts et Dependabot Security Updates ;
+- Dependabot Version Updates pour les dépendances npm et les GitHub Actions ;
+- CodeQL / Code scanning pour JavaScript/TypeScript et GitHub Actions.
+
+La première analyse CodeQL effectuée après l'activation s'est terminée avec succès sans alerte de code scanning.
+
+
 ---
 
 # 24. Dépendances principales
@@ -778,6 +793,11 @@ Les audits futurs doivent vérifier séparément :
 - les vulnérabilités connues ;
 - les mises à jour Vite/MSAL ;
 - les changements de comportement liés aux versions.
+
+- l'état des alertes Dependabot ;
+- les Pull Requests de mise à jour proposées par Dependabot ;
+- les éventuelles alertes CodeQL.
+
 
 ---
 

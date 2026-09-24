@@ -8,7 +8,7 @@ Ce document privilégie les changements fonctionnels, architecturaux et de sécu
 
 ## [Non publié]
 
-Travaux documentaires et de sécurité en cours.
+Travaux documentaires et de sécurité intégrés dans la présente mise à jour.
 
 ### Documentation
 
@@ -19,7 +19,11 @@ Travaux documentaires et de sécurité en cours.
 
 ### Sécurité
 
-- Préparation de l'audit et de la configuration des mécanismes de sécurité des dépendances et du dépôt.
+- Configuration de Dependabot Alerts et Dependabot Security Updates.
+- Configuration de Dependabot Version Updates pour npm et les GitHub Actions, avec une fréquence hebdomadaire.
+- Activation de CodeQL / Code scanning pour JavaScript/TypeScript et GitHub Actions.
+- Première analyse CodeQL terminée sans alerte.
+- Vérification du mécanisme de rapprochement entre prévisionnel et séance réelle via `getEncodedForEvent()`.
 
 ---
 
@@ -52,6 +56,12 @@ Travaux documentaires et de sécurité en cours.
 - Vérification de GitHub Secret Scanning.
 - Audit de l'historique Git à la recherche de secrets ou d'anciennes configurations sensibles.
 - Aucun secret exploitable n'a été identifié lors des contrôles effectués.
+
+- Activation de Dependabot Alerts et Dependabot Security Updates.
+- Configuration des mises à jour hebdomadaires Dependabot pour npm et les GitHub Actions.
+- Activation de CodeQL / Code scanning.
+- Première analyse CodeQL terminée sans alerte.
+- Validation du rapprochement prévisionnel → séance réelle via `getEncodedForEvent()`.
 
 ---
 

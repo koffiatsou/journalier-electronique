@@ -277,7 +277,18 @@ Le résultat observé était :
 0 vulnerabilities
 ```
 
-L'audit périodique et la configuration de mécanismes automatisés de surveillance des dépendances constituent néanmoins un point de maintenance à traiter séparément.
+La surveillance automatisée des dépendances est maintenant configurée avec Dependabot.
+
+La configuration couvre :
+
+- les dépendances npm ;
+- les GitHub Actions ;
+- une fréquence hebdomadaire ;
+- jusqu'à 5 Pull Requests Dependabot ouvertes par écosystème.
+
+Les alertes de sécurité et les mises à jour de sécurité Dependabot sont également activées dans les paramètres du dépôt.
+
+Cette automatisation constitue un mécanisme de surveillance continue, mais ne garantit pas l'absence de vulnérabilité future.
 
 ---
 
@@ -291,7 +302,28 @@ La protection de `main` et le contrôle CI réduisent le risque qu'une modificat
 
 ---
 
-## 16. Diagnostic AppFolder
+## 16. Code scanning / CodeQL
+
+Le dépôt utilise GitHub CodeQL avec le **Default setup**.
+
+La configuration actuelle analyse notamment :
+
+- JavaScript / TypeScript ;
+- GitHub Actions.
+
+La première analyse CodeQL effectuée après l'activation s'est terminée avec succès.
+
+Résultat observé :
+
+```text
+0 code scanning alerts
+```
+
+Ce résultat correspond à l'état du dépôt au moment de l'analyse et ne constitue pas une garantie d'absence de vulnérabilité future.
+
+---
+
+## 17. Diagnostic AppFolder
 
 Le projet possède un mécanisme de diagnostic permettant de vérifier le fonctionnement de l'AppFolder.
 
@@ -310,7 +342,7 @@ Le test AppFolder a été validé après correction du mécanisme de lecture Gra
 
 ---
 
-## 17. Contrôles effectués
+## 18. Contrôles effectués
 
 À la date de rédaction de ce document :
 
@@ -329,6 +361,17 @@ Le test AppFolder a été validé après correction du mécanisme de lecture Gra
 - build Vite ;
 - `npm ci` ;
 - absence de vulnérabilités npm lors du dernier audit effectué ;
+- configuration Dependabot Alerts ;
+- configuration Dependabot Security Updates ;
+- configuration Dependabot Version Updates ;
+- surveillance hebdomadaire des dépendances npm ;
+- surveillance hebdomadaire des GitHub Actions ;
+- CodeQL / Code scanning ;
+- première analyse CodeQL ;
+- absence d'alerte CodeQL lors de cette analyse ;
+- vérification du parcours prévision → formulaire → sauvegarde → rapprochement ;
+- validation de `getEncodedForEvent()` ;
+- tests E2E déjà réalisés sur le parcours réel de l'application ;
 - déploiement GitHub Pages ;
 - HTTPS du site publié.
 
@@ -340,20 +383,20 @@ Le test AppFolder a été validé après correction du mécanisme de lecture Gra
 - politique générale des GitHub Actions ;
 - règles de sécurité GitHub ;
 - évolution des permissions Entra / Graph ;
-- évolution des mécanismes de synchronisation.
+- évolution des mécanismes de synchronisation ;
+- nouvelles alertes Dependabot ;
+- nouvelles alertes CodeQL.
 
 ### 🔵 À traiter ultérieurement
 
-- audit et configuration de Dependabot ;
-- approfondissement du security scanning ;
 - éventuelle restriction de la politique « Allow all actions » ;
 - tests de sécurité complémentaires ;
-- tests E2E complets du parcours utilisateur ;
-- validation approfondie de `getEncodedForEvent()`.
+- éventuelle mise en place d'une revue automatisée des dépendances dans les Pull Requests ;
+- évolution vers une architecture institutionnelle partagée si les besoins du projet changent.
 
 ---
 
-## 18. Limites
+## 19. Limites
 
 Les contrôles décrits dans ce document ne constituent pas :
 
@@ -367,7 +410,7 @@ La sécurité réelle dépend également de l'environnement Microsoft 365, du co
 
 ---
 
-## 19. Règles pour les futures modifications
+## 20. Règles pour les futures modifications
 
 Toute modification touchant :
 
@@ -389,7 +432,7 @@ Les nouveaux secrets ne doivent jamais être placés dans le frontend, le dépô
 
 ---
 
-## 20. Principe directeur
+## 21. Principe directeur
 
 Le Journalier doit appliquer le principe suivant :
 

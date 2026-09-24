@@ -52,13 +52,10 @@ L'identité Entra sert notamment à :
 - isoler les données locales par identité ;
 - autoriser l'accès à l'AppFolder OneDrive de l'utilisateur.
 
-L'application utilise actuellement les scopes d'authentification :
+Les permissions Graph utilisées par l'application sont limitées au besoin actuel :
 
 - `openid`
 - `profile`
-
-et la permission Microsoft Graph :
-
 - `Files.ReadWrite.AppFolder`
 
 Aucun secret client n'est embarqué dans l'application web.
@@ -231,6 +228,16 @@ Le dépôt utilise également un workflow CI qui vérifie le build lors des Pull
 
 Les Actions utilisées dans les workflows sont actuellement référencées par **SHA complet** afin de limiter le risque lié au déplacement ultérieur d'un tag d'action.
 
+Le dépôt utilise également les mécanismes GitHub suivants pour la surveillance du code et des dépendances :
+
+- Dependabot Alerts ;
+- Dependabot Security Updates ;
+- Dependabot Version Updates, avec une vérification hebdomadaire des dépendances npm et des GitHub Actions ;
+- CodeQL / Code scanning pour JavaScript/TypeScript et GitHub Actions.
+
+La première analyse CodeQL réalisée après son activation n'a signalé aucune alerte.
+
+
 ---
 
 ## 12. Structure du dépôt
@@ -321,6 +328,9 @@ OneDrive AppFolder
 La synchronisation AppFolder a été testée avec un mécanisme de diagnostic qui crée temporairement un dossier et un fichier JSON, vérifie leur écriture et leur lecture, puis les supprime.
 
 Ce test est distinct du fonctionnement métier normal de l'application.
+
+Le parcours de rapprochement entre un événement prévisionnel et une séance réelle a également été vérifié : lorsqu'une séance réelle correspondante est encodée, l'événement prévisionnel peut être reconnu comme enregistré via `getEncodedForEvent()`.
+
 
 ---
 
