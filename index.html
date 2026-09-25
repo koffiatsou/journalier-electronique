@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-IVLYEmNQqzzbHwbTpNu98yhTn2s4YHeVNqe83qdHjfQ=' 'sha256-SRQjBh5q2p5YK/KLJ3nT58vppXupv4P1XEQfYrhkS3k='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net https://*.files.1drv.com https://*.sharepoint.com; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-nqt4PtvLRjuDkEJK52eYzniB1BNym/M6JOMjA4LHvOE=' 'sha256-27Er6g2nIqsf53T6H8Vl46UuA8/xVw6Vp0QW+ZPlmlg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net https://*.files.1drv.com https://*.sharepoint.com; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pôle Territorial – Agenda & Suivi Orthopédagogique · V72.2</title>
@@ -2832,6 +2832,7 @@ loadIndicatorLibrary();
 
     async function activateJournalierAccount(account){
         await JournalierSecurity.activate(account);
+        window.JournalierV73?.refreshStudents?.();
         renderStudentsView?.(); renderAgenda?.(); updateStudentDropdowns?.(); updateStats?.(); window.updateMicrosoftUI?.();
         return JournalierSecurity.state;
     }
@@ -2852,6 +2853,7 @@ loadIndicatorLibrary();
 
     function saveStudentsList(list) {
         DataStore.saveStudents(Array.isArray(list) ? list : []);
+        window.JournalierV73?.refreshStudents?.();
         updateStudentDropdowns();
         renderStudentsView();
         updateStats();
@@ -3569,10 +3571,6 @@ loadIndicatorLibrary();
                 pills.push(`<div class="month-more-pill">+ ${hiddenCount} autre${hiddenCount > 1 ? 's' : ''}</div>`);
             }
 
-            const countEncoded = db.filter(item => sessionParts(item).date === iso).length;
-            if (countEncoded > 0) {
-                pills.push(`<div class="month-indicator-pill" style="background:#dcfce7; color:#15803d;">✓ ${countEncoded} séance${countEncoded > 1 ? 's' : ''}</div>`);
-            }
 
             html += `
                 <div class="month-date-cell ${isToday ? 'today' : ''} js-month-day" data-iso="${escapeHtml(iso)}">
@@ -6498,7 +6496,7 @@ async function startMicrosoftLogin(){
     if(!await initMicrosoftAuth())throw new Error('MSAL n’est pas initialisé.');
     const response=await msalInstance.loginPopup({scopes:MS_CONFIG.scopes,redirectUri:MS_CONFIG.redirectUri,prompt:'select_account'});
     JournalierSecurity.lock();msAccount=response.account;await activateJournalierAccount(msAccount);journalierResetAutoLockAfterUnlock?.();updateMicrosoftUI();
-    try{const imported=await hydrateMicrosoftDataIfLocalEmpty();if(imported?.imported)showAppToast(`Connexion réussie : ${imported.students||0} élève(s), ${imported.sessions||0} séance(s) et l’agenda ont été récupérés.`,'success');else showAppToast('Connexion Microsoft réussie.','success');}
+    try{const imported=await hydrateMicrosoftDataIfLocalEmpty();window.JournalierV73?.refreshStudents?.();if(imported?.imported)showAppToast(`Connexion réussie : ${imported.students||0} élève(s), ${imported.sessions||0} séance(s) et l’agenda ont été récupérés.`,'success');else showAppToast('Connexion Microsoft réussie.','success');}
     catch(_){setCloudStatus('✓ Compte Microsoft connecté.\n⚠️ Les données OneDrive n’ont pas pu être récupérées automatiquement.','error');showAppToast('Connexion réussie, mais récupération des données OneDrive impossible.','error',5000);}
   }catch(err){journalierClearAutoLockTimers?.();JournalierSecurity.lock();msAccount=null;const msg=err?.errorMessage||err?.message||'Erreur Microsoft inconnue';const code=err?.errorCode||err?.code||'';const detail=code?`[${code}] ${msg}`:msg;if(status){status.className='ms-status-box error';status.textContent='Connexion non effectuée : '+detail;}setCloudStatus('Détail Microsoft : '+detail,'error');showAppToast('La connexion Microsoft n’a pas abouti.','error',6500);}
   finally{if(btn)btn.disabled=false;updateMicrosoftUI();}
@@ -7191,6 +7189,7 @@ document.getElementById('ms-conflict-resolution-list')?.addEventListener('click'
 document.getElementById('ms-cancel-conflict-resolution')?.addEventListener('click',closeConflictResolutionV72);
 document.addEventListener('DOMContentLoaded',async()=>{updateMicrosoftUI();await initMicrosoftAuth();});
 </script>
+<script type="module" src="./src/v73/v73-migration.js"></script>
 <script type="module" src="./src/v73/v73-runtime.js"></script>
 
 </body>
