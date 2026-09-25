@@ -8,6 +8,29 @@
 - **Validation professionnelle conservée comme seule transition vers `VALIDEE`**.
 - **Aucune relation causale Q2–Q6 introduite**.
 
+## V73.1.0 — stabilisation finale de présentation — 25 septembre 2026
+
+### Fonctionnel
+- Import local des PIA précédents en Word `.docx` ou PDF `.pdf`.
+- Extraction structurée des objectifs, ressources, difficultés, adaptations P/O/M et sections reconnues.
+- Export du PIA professionnel en Word ou PDF avec choix du format.
+- Export du modèle dé-identifié en Word ou PDF avec choix du format.
+- Remplacement des accès rapides de l’accueil par tendances descriptives, suivi PIA et mémos personnels.
+- Mémos personnels persistés dans le DataStore local chiffré.
+
+### Sécurité
+- Le document PIA original et son nom de fichier ne sont pas conservés après import.
+- Limites de taille et de décompression pour les documents importés.
+- Dé-identification renforcée des exports : identifiants, dates de preuve, identifiants de séances et métadonnées de génération retirés.
+- Aucune nouvelle permission Graph ni aucun nouveau backend.
+- La CSP existante reste inchangée car V73.1 est livré dans le module externe déjà couvert par `script-src 'self'`.
+
+### Validation
+- Vérification syntaxique du runtime V73.1.
+- Vérification des hashes CSP contre `index.html` : correspondance exacte.
+- Tests locaux des générateurs Word/PDF et de la lecture PDF textuelle, y compris flux PDF compressé.
+- Build Vite à exécuter dans le Codespace avant le prochain PR ; l’environnement d’audit hors Codespace ne dispose pas des dépendances installées.
+
 # Changelog
 
 Historique synthétique des évolutions importantes du Journalier électronique.
