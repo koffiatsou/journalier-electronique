@@ -5,7 +5,13 @@
 const V73 = {
   version: "73.1.0",
   referential: null,
-  state: null
+  state: null,
+  ui: {
+    piaDisplayStudentId: "",
+    piaDisplayMode: "none", // none | draft | active | review
+    piaDraftStudentId: "",
+    piaDraftPersisted: false
+  }
 };
 
 const THEMES = [
@@ -347,24 +353,357 @@ function pdfLiteral(text){return "("+String.fromCharCode(...pdfWinAnsiBytes(text
 function makePdf(lines){const pages=[];const perPage=48;for(let i=0;i<lines.length;i+=perPage)pages.push(lines.slice(i,i+perPage));const objs=[];const add=x=>{objs.push(x);return objs.length;};const fontId=add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");const pageIds=[];for(const pageLines of pages){const content=["BT","/F1 10 Tf","50 790 Td",...pageLines.map((line,i)=>`${pdfLiteral(String(line).slice(0,180))} Tj 0 -15 Td`),"ET"].join("\n");const contentId=add(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`);pageIds.push({contentId});}const pagesId=add("");const catalogId=add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);const pageObjects=pageIds.map(x=>{const id=add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${x.contentId} 0 R >>`);return id;});objs[pagesId-1]=`<< /Type /Pages /Kids [${pageObjects.map(id=>`${id} 0 R`).join(" ")}] /Count ${pageObjects.length} >>`;let out="%PDF-1.4\n%\xFF\xFF\xFF\xFF\n",offsets=[0];for(let i=0;i<objs.length;i++){offsets[i+1]=out.length;out+=`${i+1} 0 obj\n${objs[i]}\nendobj\n`;}const xref=out.length;out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`;for(let i=1;i<offsets.length;i++)out+=String(offsets[i]).padStart(10,"0")+" 00000 n \n";out+=`trailer\n<< /Size ${objs.length+1} /Root ${catalogId} 0 R >>\nstartxref\n${xref}\n%%EOF`;return Uint8Array.from([...out].map(c=>c.charCodeAt(0)&255));}
 function downloadBytes(name,bytes,type){const blob=new Blob([bytes],{type});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 function htmlPIA(pia){return `<pre style="white-space:pre-wrap;font:14px Arial,sans-serif;max-width:900px;margin:40px auto;line-height:1.55">${esc(piaTextSections(pia,false).join("\\n"))}</pre>`;}
-function render(pia){
-  const box=document.getElementById("v73-pia-result"); if(!box)return;
-  const imported=pia.sourceContinuity?.present?importedSummaryHtml(pia.sourceContinuity):"";
-  box.innerHTML=`<div class="v73-summary"><b>PIA V73 prêt</b><span>${pia.sessionsAnalysed} séance(s) analysée(s)</span><span>${pia.propositions.length} proposition(s)</span><span>Cycle : ${esc(pia.meeting1.status)}</span></div>
-  ${imported}<div class="v73-notice">Les objectifs existants sont conservés comme continuité. Les nouvelles formulations sont des <b>PROPOSITIONS</b> tant qu'elles ne sont pas validées.</div>
-  ${pia.propositions.length?`<div class="v73-proposals">${pia.propositions.map((p,i)=>`<label class="v73-prop"><input type="checkbox" data-v73-prop="${i}"><span><b>${esc(p.theme)}</b><br>${esc(p.formulation)}<small>${p.recurrence} occurrence(s), ${p.dates.length} date(s)${p.counterEvidence?" · contre-évidence visible":""}</small></span></label>`).join("")}</div>`:"<p>Aucune convergence suffisante pour formuler une proposition PIA. Les observations restent disponibles dans les séances.</p>"}
-  <div class="v73-export-row"><label>Format d’export <select id="v73-export-format"><option value="docx">Word (.docx)</option><option value="pdf">PDF (.pdf)</option></select></label><button id="v73-export-prof" class="btn-primary">Exporter le PIA professionnel</button><button id="v73-export-deid" class="btn-secondary">Exporter le modèle dé-identifié</button></div>
-  <div class="v73-actions"><button id="v73-validate">Valider les propositions cochées</button><button id="v73-json">Export JSON professionnel</button><button id="v73-deid-json" class="btn-secondary">Export JSON dé-identifié</button></div>`;
-  box.querySelector("#v73-validate").onclick=()=>{
-    const chosen=[...box.querySelectorAll("[data-v73-prop]:checked")].map(x=>pia.propositions[Number(x.dataset.v73Prop)]?.formulation).filter(Boolean);
-    pia.meeting1.objectivesValidated=[...(pia.meeting1.objectivesValidated||[]),...chosen.map(formulation=>{const p=pia.propositions.find(x=>x.formulation===formulation);return {id:p?.id||uid("obj"),themeId:p?.themeId||"",theme:p?.theme||"",formulation,status:"VALIDEE",validatedAt:new Date().toISOString()};})];
-    pia.meeting1.validatedAt=new Date().toISOString(); pia.lifecycle="ACTIF"; pia.meeting1.status="VALIDÉ"; savePia(pia,true).then(()=>render(pia));
-  };
-  const exportPia=async deid=>{try{const fmt=box.querySelector("#v73-export-format")?.value||"docx";const target=piaForExport(pia,deid);const base=deid?"PIA_modele_deidentifie_V73":"PIA_professionnel_V73";if(fmt==="docx")downloadBytes(`${base}.docx`,makeDocx(piaTextSections(target,deid)),"application/vnd.openxmlformats-officedocument.wordprocessingml.document");else downloadBytes(`${base}.pdf`,makePdf(piaTextSections(target,deid)),"application/pdf");window.showAppToast?.(`✓ Export ${fmt.toUpperCase()} généré localement.`,'success',3500);}catch(e){window.showAppToast?.("⚠️ Export impossible : "+(e?.message||e),'error',5000);}};
-  box.querySelector("#v73-export-prof").onclick=()=>exportPia(false); box.querySelector("#v73-export-deid").onclick=()=>exportPia(true);
-  box.querySelector("#v73-json").onclick=()=>download(`PIA_professionnel_V73.json`,JSON.stringify(pia,null,2));
-  box.querySelector("#v73-deid-json").onclick=()=>download(`PIA_modele_deidentifie_V73.json`,JSON.stringify(piaForExport(pia,true),null,2));
+
+function clearPIAResult(){
+  const box=document.getElementById("v73-pia-result");
+  if(box) box.innerHTML="";
+  V73.ui.piaDisplayStudentId="";
+  V73.ui.piaDisplayMode="none";
+  V73.ui.piaDraftStudentId="";
+  V73.ui.piaDraftPersisted=false;
 }
+
+function closePIAProject(){
+  clearPIAResult();
+}
+
+async function deletePIARecord(studentId){
+  const sid=String(studentId||"").trim();
+  if(!sid) return false;
+
+  const ds=window.JournalierDataStore;
+  if(!ds?.isReady?.()) {
+    throw new Error("Connectez-vous à Microsoft avant de supprimer le PIA.");
+  }
+
+  const st=ds.getState();
+  st.meta??={};
+  st.meta.piaRecords??={};
+
+  if(!Object.prototype.hasOwnProperty.call(st.meta.piaRecords,sid)) {
+    return false;
+  }
+
+  delete st.meta.piaRecords[sid];
+
+  /*
+   * Ne jamais supprimer piaImports :
+   * le PIA importé constitue la continuité du suivi.
+   *
+   * Il n'existe actuellement aucun JournalierCloud.deletePia
+   * dans l'application. La suppression distante n'est donc
+   * volontairement pas simulée ici.
+   */
+  await ds.persistState(st);
+
+  return true;
+}
+
+function piaStatusLabel(pia){
+  if(pia?.lifecycle==="ACTIF") return "PIA annuel validé";
+  if(pia?.lifecycle==="EN_REEVALUATION") return "Réévaluation en cours";
+  if(pia?.meeting1?.status==="VALIDÉ") return "PIA annuel validé";
+  if(pia?.lifecycle==="EN_CONSTRUCTION") return "Projet de PIA à examiner";
+  return "Projet de PIA à examiner";
+}
+
+function render(pia){
+  const box=document.getElementById("v73-pia-result");
+  if(!box)return;
+
+  const imported=pia.sourceContinuity?.present?importedSummaryHtml(pia.sourceContinuity):"";
+  const limitedEvidence=Number(pia.sessionsAnalysed||0)<3;
+  const statusLabel=piaStatusLabel(pia);
+  const statusClass=pia.lifecycle==="ACTIF"?"is-success":"is-warning";
+
+  const evidenceNotice=limitedEvidence
+    ? `<div class="v73-notice v73-notice-warning">
+         ⚠️ Éléments encore limités : le projet repose sur un nombre réduit de séances.
+         Il doit être considéré comme un projet à examiner et non comme une évaluation annuelle complète.
+       </div>`
+    : "";
+
+  const proposals=safeArray(pia.propositions);
+
+  box.innerHTML=`
+    <div class="v73-summary">
+      <div class="v73-summary-main">
+        <span class="v73-status-badge ${statusClass}">${esc(statusLabel)}</span>
+      </div>
+      <span>${Number(pia.sessionsAnalysed||0)} séance(s) analysée(s)</span>
+      <span>${proposals.length} proposition(s)</span>
+      <span>Cycle : ${esc(pia.meeting1?.status||"")}</span>
+    </div>
+
+    ${imported}
+    ${evidenceNotice}
+
+    <div class="v73-notice">
+      Les objectifs existants sont conservés comme continuité.
+      Les nouvelles formulations sont des <b>PROPOSITIONS</b> tant qu'elles ne sont pas validées.
+    </div>
+
+    ${
+      proposals.length
+      ? `<div class="v73-proposals">
+          ${proposals.map((p,i)=>`
+            <label class="v73-prop">
+              <span class="v73-prop-select">
+                <input type="checkbox" data-v73-prop="${i}" aria-label="Sélectionner la proposition ${i+1}">
+                <span class="v73-checkmark" aria-hidden="true"></span>
+              </span>
+
+              <span class="v73-prop-body">
+                <span class="v73-prop-title">${esc(p.theme||"Proposition PIA")}</span>
+                <span class="v73-prop-formulation">${esc(p.formulation||"")}</span>
+                <span class="v73-prop-meta">
+                  <span>${Number(p.recurrence||0)} occurrence(s)</span>
+                  <span>${safeArray(p.dates).length} date(s)</span>
+                  ${p.counterEvidence ? "<span class='v73-badge-warning'>Contre-évidence</span>" : ""}
+                </span>
+              </span>
+            </label>
+          `).join("")}
+        </div>`
+      : `<p class="v73-empty">
+           Aucune convergence suffisante pour formuler une proposition PIA.
+           Les observations restent disponibles dans les séances.
+         </p>`
+    }
+
+    ${
+      pia.lifecycle!=="ACTIF"
+      ? `<div class="v73-action-group v73-action-validation">
+           <div class="v73-action-title">Validation</div>
+           <button id="v73-validate" class="v73-btn v73-btn-success">
+             ✓ Valider les propositions sélectionnées
+           </button>
+         </div>`
+      : ""
+    }
+
+    <div class="v73-action-group v73-action-export">
+      <div class="v73-action-title">Export</div>
+
+      <div class="v73-export-row">
+        <label>
+          Format d’export
+          <select id="v73-export-format">
+            <option value="docx">Word (.docx)</option>
+            <option value="pdf">PDF (.pdf)</option>
+          </select>
+        </label>
+
+        <button id="v73-export-prof" class="v73-btn v73-btn-primary">
+          Exporter le PIA professionnel
+        </button>
+
+        <button id="v73-export-deid" class="v73-btn v73-btn-neutral">
+          Exporter le modèle dé-identifié
+        </button>
+      </div>
+
+      <div class="v73-actions">
+        <button id="v73-json" class="v73-btn v73-btn-primary">
+          Export JSON professionnel
+        </button>
+
+        <button id="v73-deid-json" class="v73-btn v73-btn-neutral">
+          Export JSON dé-identifié
+        </button>
+      </div>
+    </div>
+
+    <div class="v73-action-group v73-action-management">
+      <div class="v73-action-title">Projet</div>
+
+      <div class="v73-actions">
+        <button id="v73-close" class="v73-btn v73-btn-neutral">
+          Fermer
+        </button>
+
+        ${
+          pia.lifecycle==="ACTIF"
+          ? `<button id="v73-delete" class="v73-btn v73-btn-danger">
+               Supprimer le PIA annuel
+             </button>`
+          : `<button id="v73-cancel" class="v73-btn v73-btn-neutral">
+               Annuler le projet
+             </button>`
+        }
+      </div>
+    </div>
+  `;
+
+  box.querySelector("#v73-validate")?.addEventListener("click",async()=>{
+    const chosen=[
+      ...box.querySelectorAll("[data-v73-prop]:checked")
+    ].map(x=>pia.propositions[Number(x.dataset.v73Prop)]?.formulation)
+     .filter(Boolean);
+
+    if(!chosen.length){
+      window.showAppToast?.(
+        "Sélectionnez au moins une proposition à valider.",
+        "info",
+        3500
+      );
+      return;
+    }
+
+    pia.meeting1.objectivesValidated=[
+      ...(pia.meeting1.objectivesValidated||[]),
+      ...chosen.map(formulation=>{
+        const p=pia.propositions.find(x=>x.formulation===formulation);
+        return {
+          id:p?.id||uid("obj"),
+          themeId:p?.themeId||"",
+          theme:p?.theme||"",
+          formulation,
+          status:"VALIDEE",
+          validatedAt:new Date().toISOString()
+        };
+      })
+    ];
+
+    pia.meeting1.validatedAt=new Date().toISOString();
+    pia.lifecycle="ACTIF";
+    pia.meeting1.status="VALIDÉ";
+
+    try{
+      await savePia(pia,true);
+      V73.ui.piaDisplayMode="active";
+      V73.ui.piaDraftStudentId="";
+      V73.ui.piaDraftPersisted=true;
+      render(pia);
+    }catch(e){
+      window.showAppToast?.(
+        "⚠️ Validation impossible : "+(e?.message||e),
+        "error",
+        5000
+      );
+    }
+  });
+
+  const exportPia=async deid=>{
+    try{
+      const fmt=box.querySelector("#v73-export-format")?.value||"docx";
+      const target=piaForExport(pia,deid);
+      const base=deid
+        ?"PIA_modele_deidentifie_V73"
+        :"PIA_professionnel_V73";
+
+      if(fmt==="docx"){
+        downloadBytes(
+          `${base}.docx`,
+          makeDocx(piaTextSections(target,deid)),
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        );
+      }else{
+        downloadBytes(
+          `${base}.pdf`,
+          makePdf(piaTextSections(target,deid)),
+          "application/pdf"
+        );
+      }
+
+      window.showAppToast?.(
+        `✓ Export ${fmt.toUpperCase()} généré localement.`,
+        "success",
+        3500
+      );
+
+      closePIAProject();
+    }catch(e){
+      window.showAppToast?.(
+        "⚠️ Export impossible : "+(e?.message||e),
+        "error",
+        5000
+      );
+    }
+  };
+
+  box.querySelector("#v73-export-prof")?.addEventListener("click",()=>exportPia(false));
+  box.querySelector("#v73-export-deid")?.addEventListener("click",()=>exportPia(true));
+
+  box.querySelector("#v73-json")?.addEventListener("click",()=>{
+    download(
+      "PIA_professionnel_V73.json",
+      JSON.stringify(pia,null,2)
+    );
+    closePIAProject();
+  });
+
+  box.querySelector("#v73-deid-json")?.addEventListener("click",()=>{
+    download(
+      "PIA_modele_deidentifie_V73.json",
+      JSON.stringify(piaForExport(pia,true),null,2)
+    );
+    closePIAProject();
+  });
+
+  box.querySelector("#v73-close")?.addEventListener("click",()=>{
+    closePIAProject();
+  });
+
+  box.querySelector("#v73-cancel")?.addEventListener("click",async()=>{
+    const ok=window.confirm(
+      "Annuler ce projet de PIA ?\n\n"+
+      "Le projet non validé sera abandonné.\n"+
+      "Les séances et le PIA importé de continuité resteront conservés."
+    );
+
+    if(!ok)return;
+
+    try{
+      if(pia.lifecycle==="EN_CONSTRUCTION" && pia.studentId && V73.ui.piaDraftPersisted){
+        await deletePIARecord(pia.studentId);
+      }
+
+      clearPIAResult();
+      window.showAppToast?.(
+        "Projet de PIA annulé. Les séances sont conservées.",
+        "info",
+        3500
+      );
+    }catch(e){
+      window.showAppToast?.(
+        "⚠️ Annulation impossible : "+(e?.message||e),
+        "error",
+        5000
+      );
+    }
+  });
+
+  box.querySelector("#v73-delete")?.addEventListener("click",async()=>{
+    const ok=window.confirm(
+      "Supprimer le PIA annuel de cet élève ?\n\n"+
+      "Le PIA enregistré sera supprimé de Journalier.\n"+
+      "Les séances et observations resteront conservées.\n\n"+
+      "Cette action ne doit être utilisée que pour corriger une création ou validation erronée."
+    );
+
+    if(!ok)return;
+
+    try{
+      await deletePIARecord(pia.studentId);
+      clearPIAResult();
+      refreshPIAContinuity();
+
+      window.showAppToast?.(
+        "PIA annuel supprimé. Les séances sont conservées.",
+        "success",
+        4000
+      );
+    }catch(e){
+      window.showAppToast?.(
+        "⚠️ Suppression impossible : "+(e?.message||e),
+        "error",
+        5000
+      );
+    }
+  });
+}
+
 async function savePia(pia,cloud=true){
   const ds=window.JournalierDataStore; const st=ds.getState(); st.meta??={}; st.meta.piaRecords??={}; st.meta.piaImports??={}; st.meta.piaRecords[pia.studentId]=pia;
   if(pia.sourceContinuity?.present) st.meta.piaImports[pia.studentId]=pia.sourceContinuity;
@@ -423,7 +762,10 @@ function addUI(){
   host.parentElement.insertBefore(card,host.nextSibling);
   refreshStudents();
   document.getElementById("v73-build").onclick=()=>run(false); document.getElementById("v73-meeting2").onclick=()=>run(true);
-  document.getElementById("v73-pia-student").addEventListener("change",refreshPIAContinuity);
+  document.getElementById("v73-pia-student").addEventListener("change",()=>{
+    clearPIAResult();
+    refreshPIAContinuity();
+  });
   refreshPIAContinuity(); bindPIAImport(); attachPendingPIAImportWatcher(); bindHomeDashboard();
 }
 function refreshPIAContinuity(){const sid=document.getElementById("v73-pia-student")?.value,host=document.getElementById("v73-pia-continuity");if(!host)return;const imported=getImportedPIA(sid);if(imported?.present||imported?.extracted){const e=imported.extracted||{};host.innerHTML=`<div class="v73-import-summary"><b>✓ PIA précédent disponible</b><span>${esc(imported.format?.toUpperCase()||"DOCUMENT")}</span><span>${safeArray(e.objectives).length} objectif(s)</span><span>${safeArray(e.difficulties).length} difficulté(s)</span><span>${safeArray(e.adaptations).length} adaptation(s)</span></div>`;}else host.innerHTML='<div class="v73-import-help">PIA précédent : utilisez <b>Élèves → dossier de l’élève → Importer le PIA</b>. Le fichier Word/PDF est traité localement ; seul le contenu structuré validé est conservé.</div>';}
@@ -436,23 +778,60 @@ function refreshStudents(){
 }
 async function run(meeting2){
   try{
-    const d=getData(); refreshStudents(); const sid=document.getElementById("v73-pia-student")?.value;
-    const student=d.students.find(s=>String(s.studentId)===String(sid)); if(!student)throw new Error("Aucun élève sélectionné.");
+    const d=getData();
+    refreshStudents();
+
+    const sid=document.getElementById("v73-pia-student")?.value;
+    const student=d.students.find(s=>String(s.studentId)===String(sid));
+    if(!student)throw new Error("Aucun élève sélectionné.");
+
     const until=document.getElementById("v73-pia-date")?.value||new Date().toISOString().slice(0,10);
     const existing=d.state.meta?.piaRecords?.[student.studentId]||null;
     const imported=d.state.meta?.piaImports?.[student.studentId]||null;
     const continuityExisting=existing||((imported)?{sourceContinuity:imported,meeting1:{objectivesPrevious:[]}}:null);
+
     const pia=buildPIA(student,d.sessions,until,continuityExisting);
+
     if(meeting2){
-      pia.meeting2={status:"EN_REEVALUATION",evaluation:evaluateMeeting2(pia,existing),objectivesToContinue:pia.meeting1.objectivesValidated||[],perspectives:[]};
+      pia.meeting2={
+        status:"EN_REEVALUATION",
+        evaluation:evaluateMeeting2(pia,existing),
+        objectivesToContinue:pia.meeting1.objectivesValidated||[],
+        perspectives:[]
+      };
       pia.lifecycle="EN_REEVALUATION";
+    }else{
+      pia.lifecycle="EN_CONSTRUCTION";
     }
-    V73.state=pia; await savePia(pia,true); render(pia);
-    window.showAppToast?.(`✓ ${meeting2?"Réévaluation":"Projet de PIA"} généré pour ${student.nom}.`,"success",4000);
-  }catch(e){window.showAppToast?.("⚠️ "+(e?.message||e),"error",5500);}
+
+    V73.state=pia;
+    V73.ui.piaDisplayStudentId=String(student.studentId);
+    V73.ui.piaDisplayMode=meeting2?"review":"draft";
+    V73.ui.piaDraftStudentId=meeting2?"":String(student.studentId);
+    V73.ui.piaDraftPersisted=false;
+
+    /*
+     * Un projet simple n'est pas persisté avant validation.
+     * La réévaluation conserve le mécanisme de sauvegarde existant.
+     */
+    if(meeting2){
+      await savePia(pia,true);
+    }
+
+    render(pia);
+
+    window.showAppToast?.(
+      `✓ ${meeting2?"Réévaluation":"Projet de PIA"} généré pour ${student.nom}.`,
+      "success",
+      4000
+    );
+  }catch(e){
+    window.showAppToast?.("⚠️ "+(e?.message||e),"error",5500);
+  }
 }
+
 window.JournalierV73={...V73,buildPIA,run,refreshStudents,loadRef,parsePIAFile,extractPIAStructure,renderDashboard};
 const style=document.createElement("style");style.textContent=`
-#v73-pia-card{margin-top:16px}.v73-summary{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.v73-summary span,.v73-summary b{padding:6px 9px;border-radius:8px;background:#f1f5f9}.v73-notice{padding:11px;border-left:4px solid #2563eb;background:#eff6ff;border-radius:8px;margin:10px 0;font-size:.82rem}.v73-proposals{display:grid;gap:8px;margin:12px 0}.v73-prop{display:flex;gap:10px;padding:11px;border:1px solid #dbe3ef;border-radius:10px;background:#fff}.v73-prop small{display:block;color:#64748b;margin-top:5px}.v73-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.v73-actions button{border:0;border-radius:9px;padding:9px 12px;cursor:pointer;background:#0a84ff;color:white}.v73-actions button.btn-secondary{background:#eef2f7;color:#172033}.v73-result{margin-top:14px}.v73-continuity{margin-top:12px}.v73-import-help{padding:11px 13px;border:1px dashed #cbd5e1;border-radius:10px;background:#f8fafc;color:#475569;font-size:.78rem}.v73-import-summary{display:flex;gap:7px;flex-wrap:wrap;padding:10px;border:1px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#166534;font-size:.76rem}.v73-import-summary span,.v73-import-summary b{padding:4px 7px;border-radius:7px;background:rgba(255,255,255,.72)}.v73-export-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:12px;padding:11px;border:1px solid #e2e8f0;border-radius:10px;background:#fafafa}.v73-export-row label{font-size:.75rem;color:#475569;display:grid;gap:5px}.v73-export-row select{padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}.v73-dashboard-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(240px,.7fr) minmax(260px,.85fr);gap:14px}.v73-dashboard-grid>section{padding:16px;border:1px solid var(--border);border-radius:13px;background:#fff;min-width:0}.v73-dash-title{margin:0 0 5px;font-size:1rem}.v73-dash-help{margin:0 0 11px;color:#64748b;font-size:.72rem;line-height:1.45}.v73-trends{display:grid;gap:7px}.v73-trend-row{display:grid;grid-template-columns:minmax(130px,1fr) minmax(80px,1.2fr) auto;gap:8px;align-items:center;border:0;background:transparent;padding:5px 0;text-align:left;color:#172033;cursor:pointer}.v73-trend-bar{height:8px;border-radius:999px;background:#eef2f7;overflow:hidden}.v73-trend-bar i{display:block;height:100%;border-radius:999px;background:#0a84ff}.v73-trend-row strong{font-size:.68rem;color:#64748b;white-space:nowrap}.v73-link{margin-top:10px;border:0;background:transparent;color:#0a84ff;font-weight:700;cursor:pointer;padding:4px 0}.v73-pia-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}.v73-pia-stats div{padding:10px;border-radius:9px;background:#f8fafc;text-align:center}.v73-pia-stats strong{display:block;font-size:1.2rem}.v73-pia-stats span{font-size:.65rem;color:#64748b}.v73-memo-list{display:grid;gap:6px;max-height:150px;overflow:auto}.v73-memo{display:grid;grid-template-columns:auto 1fr auto;gap:7px;align-items:center;padding:7px 8px;background:#f8fafc;border-radius:8px;font-size:.76rem}.v73-memo input:checked+span{text-decoration:line-through;color:#94a3b8}.v73-memo button{border:0;background:transparent;color:#94a3b8;cursor:pointer;font-size:1rem}.v73-memo-add{display:flex;gap:6px;margin-top:8px}.v73-memo-add input{min-width:0;flex:1;margin:0;padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px}.v73-empty{padding:10px 0;color:#64748b;font-size:.76rem}@media(max-width:1100px){.v73-dashboard-grid{grid-template-columns:1fr 1fr}.v73-dashboard-grid>section:first-child{grid-column:1/-1}}@media(max-width:720px){.v73-dashboard-grid{grid-template-columns:1fr}.v73-dashboard-grid>section:first-child{grid-column:auto}.v73-trend-row{grid-template-columns:1fr auto}.v73-trend-bar{grid-column:1/-1}.v73-export-row{align-items:stretch}.v73-export-row>*{width:100%}}
+#v73-pia-card{margin-top:16px}.v73-summary{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;align-items:center}.v73-summary span:not(.v73-status-badge),.v73-summary b{padding:6px 9px;border-radius:8px;background:#f1f5f9}.v73-summary-main{display:flex;align-items:center;gap:8px}.v73-status-badge{display:inline-flex;align-items:center;padding:7px 10px;border-radius:999px;font-weight:750;font-size:.82rem}.v73-status-badge.is-success{background:#dcfce7;color:#166534}.v73-status-badge.is-warning{background:#fef3c7;color:#92400e}.v73-notice{padding:11px;border-left:4px solid #2563eb;background:#eff6ff;border-radius:8px;margin:10px 0;font-size:.82rem;line-height:1.45}.v73-notice-warning{border-left-color:#f59e0b;background:#fffbeb}.v73-proposals{display:grid;gap:12px;margin:14px 0}.v73-prop{display:grid;grid-template-columns:42px minmax(0,1fr);gap:14px;align-items:center;padding:16px;border:1px solid #dbe3ef;border-radius:14px;background:#fff;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease,background .15s ease}.v73-prop:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(15,23,42,.07);border-color:#bfdbfe}.v73-prop:has(input:checked){border-color:#60a5fa;background:#eff6ff;box-shadow:0 4px 14px rgba(37,99,235,.10)}.v73-prop-select{display:grid;place-items:center}.v73-prop-select input{position:absolute;opacity:0;pointer-events:none}.v73-checkmark{width:24px;height:24px;border:2px solid #cbd5e1;border-radius:7px;background:#fff;position:relative;transition:border-color .15s ease,background .15s ease}.v73-prop input:checked+.v73-checkmark{border-color:#2563eb;background:#2563eb}.v73-prop input:checked+.v73-checkmark::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-weight:800;font-size:15px}.v73-prop-body{min-width:0}.v73-prop-title{display:block;font-weight:750;color:#172033;margin-bottom:5px}.v73-prop-formulation{display:block;color:#334155;line-height:1.45}.v73-prop-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;color:#64748b;font-size:.75rem}.v73-prop-meta>span{padding:4px 7px;border-radius:999px;background:#f1f5f9}.v73-badge-warning{background:#fff7ed!important;color:#9a3412!important}.v73-action-group{margin-top:14px;padding:14px;border:1px solid #e2e8f0;border-radius:13px;background:#fff}.v73-action-title{margin-bottom:9px;font-size:.76rem;font-weight:750;color:#64748b;text-transform:uppercase;letter-spacing:.04em}.v73-btn{border:0;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:650;transition:filter .15s ease,transform .15s ease}.v73-btn:hover{filter:brightness(.97);transform:translateY(-1px)}.v73-btn:active{transform:translateY(0)}.v73-btn-primary{background:#0a84ff;color:#fff}.v73-btn-success{background:#16a34a;color:#fff}.v73-btn-warning{background:#f59e0b;color:#fff}.v73-btn-neutral{background:#eef2f7;color:#172033}.v73-btn-danger{background:#dc2626;color:#fff}.v73-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.v73-result{margin-top:14px}.v73-continuity{margin-top:12px}.v73-import-help{padding:11px 13px;border:1px dashed #cbd5e1;border-radius:10px;background:#f8fafc;color:#475569;font-size:.78rem}.v73-import-summary{display:flex;gap:7px;flex-wrap:wrap;padding:10px;border:1px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#166534;font-size:.76rem}.v73-import-summary span,.v73-import-summary b{padding:4px 7px;border-radius:7px;background:rgba(255,255,255,.72)}.v73-export-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:12px;padding:11px;border:1px solid #e2e8f0;border-radius:10px;background:#fafafa}.v73-export-row label{font-size:.75rem;color:#475569;display:grid;gap:5px}.v73-export-row select{padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}.v73-empty{padding:10px 0;color:#64748b;font-size:.76rem}.v73-dashboard-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(240px,.7fr) minmax(260px,.85fr);gap:14px}.v73-dashboard-grid>section{padding:16px;border:1px solid var(--border);border-radius:13px;background:#fff;min-width:0}.v73-dash-title{margin:0 0 5px;font-size:1rem}.v73-dash-help{margin:0 0 11px;color:#64748b;font-size:.72rem;line-height:1.45}.v73-trends{display:grid;gap:7px}.v73-trend-row{display:grid;grid-template-columns:minmax(130px,1fr) minmax(80px,1.2fr) auto;gap:8px;align-items:center;border:0;background:transparent;padding:5px 0;text-align:left;color:#172033;cursor:pointer}.v73-trend-bar{height:8px;border-radius:999px;background:#eef2f7;overflow:hidden}.v73-trend-bar i{display:block;height:100%;border-radius:999px;background:#0a84ff}.v73-trend-row strong{font-size:.68rem;color:#64748b;white-space:nowrap}.v73-link{margin-top:10px;border:0;background:transparent;color:#0a84ff;font-weight:700;cursor:pointer;padding:4px 0}.v73-pia-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}.v73-pia-stats div{padding:10px;border-radius:9px;background:#f8fafc;text-align:center}.v73-pia-stats strong{display:block;font-size:1.2rem}.v73-pia-stats span{font-size:.65rem;color:#64748b}.v73-memo-list{display:grid;gap:6px;max-height:150px;overflow:auto}.v73-memo{display:grid;grid-template-columns:auto 1fr auto;gap:7px;align-items:center;padding:7px 8px;background:#f8fafc;border-radius:8px;font-size:.76rem}.v73-memo input:checked+span{text-decoration:line-through;color:#94a3b8}.v73-memo button{border:0;background:transparent;color:#94a3b8;cursor:pointer;font-size:1rem}.v73-memo-add{display:flex;gap:6px;margin-top:8px}.v73-memo-add input{min-width:0;flex:1;margin:0;padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px}.v73-empty{padding:10px 0;color:#64748b;font-size:.76rem}@media(max-width:1100px){.v73-dashboard-grid{grid-template-columns:1fr 1fr}.v73-dashboard-grid>section:first-child{grid-column:1/-1}}@media(max-width:720px){.v73-dashboard-grid{grid-template-columns:1fr}.v73-dashboard-grid>section:first-child{grid-column:auto}.v73-trend-row{grid-template-columns:1fr auto}.v73-trend-bar{grid-column:1/-1}.v73-export-row{align-items:stretch}.v73-export-row>*{width:100%}}
 `;document.head.appendChild(style);
 (async()=>{await loadRef(); const boot=async()=>{addUI();refreshStudents();bindPIAImport();attachPendingPIAImportWatcher();await scrubLegacyPIAFilenames();bindHomeDashboard()}; if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true}); else boot();})();
