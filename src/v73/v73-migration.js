@@ -49,12 +49,16 @@
     if(!rel)return root;
     return graphRequest(`/me/drive/items/${encodeURIComponent(root.id)}:/${rel.split('/').filter(Boolean).map(encodeURIComponent).join('/')}:`);
   }
-  async function listByAppPath(path){return graphListChildren((await itemByAppPath(path)).id);}
+  async function listChildrenByItemId(itemId){
+    const result=await graphListChildren(itemId);
+    return Array.isArray(result)?result:(Array.isArray(result?.value)?result.value:[]);
+  }
+  async function listByAppPath(path){return listChildrenByItemId((await itemByAppPath(path)).id);}
   async function readJsonByAppPath(path){return graphDownloadJsonByItemId((await itemByAppPath(path)).id);}
 
   async function findLegacyRoot(){
     const root=await graphGetAppRoot();
-    const children=await graphListChildren(root.id);
+    const children=await listChildrenByItemId(root.id);
     return (children||[]).find(x=>x?.folder&&x.name===LEGACY_NAME)||null;
   }
 
@@ -72,7 +76,7 @@
       }
 
       const studentsFolder=await itemByAppPath(`${LEGACY_NAME}/eleves`);
-      const studentFolders=(await graphListChildren(studentsFolder.id)).filter(x=>x?.folder);
+      const studentFolders=(await listChildrenByItemId(studentsFolder.id)).filter(x=>x?.folder);
       const students=[];
       const sessions=[];
       const errors=[];
@@ -90,7 +94,7 @@
 
           try{
             const sf=await itemByAppPath(`${LEGACY_NAME}/eleves/${folder.name}/seances`);
-            const items=(await graphListChildren(sf.id)).filter(x=>x?.file&&/\.json$/i.test(x.name));
+            const items=(await listChildrenByItemId(sf.id)).filter(x=>x?.file&&/\.json$/i.test(x.name));
             for(const item of items){
               try{
                 const raw=await graphDownloadJsonByItemId(item.id);
