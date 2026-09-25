@@ -1659,7 +1659,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
             <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c.5-3.1 2.4-5 5.5-5s5 1.9 5.5 5"/><circle cx="17" cy="9" r="2.2"/><path d="M15.5 14.5c2.6-.2 4.5 1.3 5 4.5"/></svg></span><span>Élèves</span>
         </button>
         <button class="nav-btn focus-ring" id="tab-btn-reports" data-jr-handlers="h6">
-            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3.5h10l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-12A1.5 1.5 0 0 1 4 20V5a1.5 1.5 0 0 1 1-1.5Z"/><path d="M14.5 3.5V8H19M8 12h8M8 15.5h8M8 19h5"/></svg></span><span>Rapports & PV</span>
+            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3.5h10l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-12A1.5 1.5 0 0 1 4 20V5a1.5 1.5 0 0 1 1-1.5Z"/><path d="M14.5 3.5V8H19M8 12h8M8 15.5h8M8 19h5"/></svg></span><span>Rapports & PIA</span>
         </button>
     </div>
 </header>
@@ -1694,7 +1694,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
             <div class="grid-3">
                 <button class="btn-primary primary-action focus-ring" data-jr-handlers="h8">Agenda</button>
                 <button class="btn-secondary primary-action focus-ring" data-jr-handlers="h9">Dossiers élèves</button>
-                <button class="btn-secondary primary-action focus-ring" data-jr-handlers="h10">Rapports & PV</button>
+                <button class="btn-secondary primary-action focus-ring" data-jr-handlers="h10">Rapports & PIA</button>
             </div>
         </div>
     </div>
@@ -3067,7 +3067,7 @@ loadIndicatorLibrary();
     // V37 : les vues inactives sont placées hors du conteneur de contenu.
     // Une seule vue existe physiquement dans .main-container à la fois.
     // Ainsi, aucun élément de la Séance (dont le bouton d'enregistrement)
-    // ne peut apparaître sur Élèves ou Rapports & PV.
+    // ne peut apparaître sur Élèves ou Rapports & PIA.
     let pageStage = null;
     let pageViewPool = null;
     const pageViewCache = {};
@@ -3960,7 +3960,7 @@ loadIndicatorLibrary();
         const text=document.getElementById('session-save-confirmation-text');
         if(!box || !text) return;
         const p=sessionParts(entry); const parts=[p.eleve,p.matiere,p.date,sessionPeriodLabel(entry)].filter(Boolean);
-        text.textContent=parts.join(' · ') + ' — disponible dans Rapports & PV.';
+        text.textContent=parts.join(' · ') + ' — disponible dans Rapports & PIA.';
         box.classList.remove('hidden');
         box.style.display='flex';
     }
