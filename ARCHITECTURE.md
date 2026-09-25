@@ -935,3 +935,94 @@ Le modèle pédagogique doit rester séparé de la couche de synchronisation.
 Les données doivent être comparées et synchronisées de manière explicite, avec détection des conflits plutôt qu'une écriture aveugle.
 
 Les fonctions d'aide et de suggestion doivent rester des outils d'appui au professionnel et ne doivent pas transformer automatiquement une suggestion algorithmique en décision pédagogique.
+
+
+# 29. Extension V73 — PIA annuel
+
+## 29.1 Positionnement
+
+V73 est une extension frontend de l’architecture actuelle. Elle ne crée ni backend, ni base centrale, ni nouveau canal de stockage. Elle s’appuie sur le DataStore et le mécanisme de synchronisation existants.
+
+Chaîne :
+
+```text
+Séances SEANCE
+   ↓
+Q2 → Q6 + textes libres
+   ↓
+extraction / rapprochement conservateur
+   ↓
+convergence longitudinale
+   ↓
+propositions PIA
+   ↓
+validation professionnelle
+   ↓
+piaRecords / OneDrive AppFolder
+```
+
+## 29.2 Cycle annuel
+
+```text
+PIA précédent éventuel + séances
+        ↓
+RÉUNION 1 — DÉCEMBRE
+        ↓
+PIA annuel actualisé
+        ↓
+nouvelles séances
+        ↓
+comparaison avec les objectifs validés
+        ↓
+RÉUNION 2 — FIN D’ANNÉE
+        ↓
+PIA annuel final
+```
+
+Un PIA précédent est une `SOURCE_DE_CONTINUITE`, jamais une preuve de validité automatique. Les objectifs existants peuvent être conservés ou modifiés lors de la réunion 1.
+
+## 29.3 Données de séance
+
+Les « observations en classe » ne constituent pas une seconde source de données : elles proviennent des séances. V73 analyse les champs structurés et les précisions textuelles des séances.
+
+`objectifLecon` reste un objectif de contexte de séance. `objectifProfessionnel`, lorsqu’il est renseigné, reste également contextuel et ne devient pas automatiquement un objectif PIA.
+
+## 29.4 Convergence
+
+Les états de synthèse sont explicables et conservés dans la traçabilité : `OBSERVATION`, `SIGNAL`, `TENDANCE`, `TENDANCE_QUALIFIEE`, `PROPOSITION`.
+
+Le moteur ne crée pas de relation causale entre Q2, Q3, Q4, Q5 et Q6. Une aide renseignée dans la même séance qu’un effet observé constitue une association documentaire, pas une preuve de causalité.
+
+## 29.5 PIA et export
+
+Le modèle interne peut contenir la provenance, les séances, les états et les preuves. Les exports restent organisés autour du modèle PIA professionnel existant : aspects, ressources, difficultés, objectifs, critères, moyens et aménagements P/O/M.
+
+Deux finalités de données sont distinguées :
+
+1. export professionnel nominatif pour le suivi de l’élève ;
+2. export dé-identifié pour constituer des modèles sans données directement identifiantes.
+
+## 29.6 Règles de sécurité V73
+
+- aucune permission Graph supplémentaire ;
+- aucun accès direct V73 à IndexedDB ou Graph ;
+- réutilisation de `JournalierDataStore` pour la persistance ;
+- réutilisation du mécanisme OneDrive/AppFolder existant pour la sauvegarde distante ;
+- aucune donnée pédagogique ne doit être ajoutée au dépôt GitHub ;
+- toute nouvelle fonction V73 doit être ré-auditée selon les contrôles de `SECURITY.md`.
+
+## 29.7 Référentiel V73
+
+Le fichier `public/referentiel_pia_v73_0_3.json` formalise les règles de convergence, les relations sémantiques autorisées/interdites, les règles d’interprétation et les matrices de pertinence Q2→Q6. Il complète la bibliothèque WBE `bibliotheque_indicateurs_v0_5_1.json` ; il ne la remplace pas.
+
+## 29.8 Limites documentées
+
+Le moteur intégré est volontairement conservateur. Il fournit une synthèse exploitable pour le terrain mais ne constitue pas un système NLP exhaustif. Les propositions doivent rester contrôlables par le professionnel et les validations réelles doivent être effectuées avec les données de séances effectivement encodées.
+
+### V73 — Référentiel et cycle de validation
+
+Le runtime V73 lit les paramètres de convergence depuis `public/referentiel_pia_v73_0_3.json`. Les seuils et exceptions du référentiel sont donc la configuration active du moteur ; ils ne sont pas considérés comme une vérité pédagogique et restent calibrables.
+
+Les objectifs issus du PIA précédent restent une `SOURCE_DE_CONTINUITE`. La réunion 1 conserve les objectifs validés avec leur date et leur thème. La réunion 2 compare les nouvelles séances avec ces objectifs validés ; son état reste `A_DISCUSSER` jusqu’à la validation professionnelle.
+
+Le fichier PIA original sélectionné dans le dossier élève reste un document source à conserver. V73 n’affirme pas en analyser automatiquement le PDF/DOCX sans extraction documentaire dédiée ; les repères textuels effectivement présents dans le dossier sont utilisés comme continuité.

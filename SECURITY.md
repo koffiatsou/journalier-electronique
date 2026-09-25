@@ -439,3 +439,53 @@ Le Journalier doit appliquer le principe suivant :
 > **Minimiser les données exposées, limiter les permissions, vérifier les données avant synchronisation et ne jamais remplacer silencieusement une donnée distante lors d'un conflit.**
 
 La sécurité doit être considérée comme une propriété évolutive du projet et non comme un état définitif.
+
+
+# 22. Contrôles spécifiques V73
+
+## 22.1 Périmètre
+
+V73 est une extension côté navigateur. Elle ne doit pas contourner l’authentification, le DataStore ou le SyncManager existants.
+
+## 22.2 Données pédagogiques
+
+Les séances et PIA sont des données potentiellement sensibles. V73 doit conserver les mêmes protections que V72 : identité Entra, isolation par utilisateur, stockage local protégé et synchronisation vers l’AppFolder.
+
+## 22.3 Continuité et validation
+
+Le PIA précédent est utilisé comme source de continuité. Il n’est jamais considéré comme une vérité automatiquement validée. Les objectifs générés par V73 restent à l’état `PROPOSITION` jusqu’à une action du professionnel.
+
+## 22.4 Dé-identification
+
+L’export modèle dé-identifié retire au minimum les champs directement identifiants utilisés par le PIA généré (`eleve`, `studentId`, `ecole`, `classe`) et neutralise la continuité nominative. La dé-identification doit continuer à être auditée si le schéma PIA évolue.
+
+## 22.5 Causalité
+
+V73 ne doit pas transformer la co-présence d’une observation, d’une aide et d’un effet dans une séance en relation causale. Les relations sont documentaires et longitudinales.
+
+## 22.6 Journalisation / traçabilité
+
+Le PIA généré conserve les identifiants de séances et les états de convergence nécessaires à l’explication des propositions. Cette traçabilité est professionnelle et ne doit pas être publiée dans un corpus dé-identifié si elle contient des identifiants.
+
+## 22.7 Règle pour les prochaines évolutions
+
+Toute nouvelle fonction V73/V74 doit vérifier au minimum :
+
+- authentification Entra ;
+- périmètre Graph/AppFolder ;
+- persistance DataStore ;
+- dé-identification des exports ;
+- absence de secret dans le frontend ou le dépôt ;
+- CSP/XSS ;
+- validation des entrées ;
+- conflits/ETag ;
+- absence de causalité ou de décision pédagogique automatique ;
+- cohérence avec le modèle PIA existant.
+
+
+### V73.0.1 — continuité et validation
+- Les données du PIA restent dans le même périmètre de stockage par compte/agent.
+- La validation des propositions est une action explicite du professionnel.
+- Le PIA précédent n’est jamais promu automatiquement au rang de vérité ; il est conservé comme source de continuité.
+- Les exports dé-identifiés retirent les identifiants élève connus par le moteur.
+- Les relations entre questions de séance restent documentaires et non causales.
