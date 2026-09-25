@@ -7,6 +7,53 @@
 
 ---
 
+
+## V73.1.3 — pont de migration entre le frontend principal et le module ES
+
+Le module `src/v73/v73-migration.js` est chargé comme module ES. Une partie du cœur historique du Journalier reste cependant définie dans le script principal de `index.html`.
+
+Les identifiants privés du script principal ne sont donc pas directement accessibles depuis le module ES. La migration utilise désormais un pont explicite :
+
+```text
+index.html
+   │
+   └── window.JournalierMigrationBridge
+          │
+          ├── fonctions Graph nécessaires
+          ├── validate/normalize
+          ├── DataStore
+          ├── JournalierSecurity
+          └── fonctions de synchronisation V72
+                    │
+                    ▼
+          src/v73/v73-migration.js
+```
+
+Le pont est limité aux dépendances réellement utilisées par la migration. Il ne constitue pas une nouvelle couche de stockage et n'ajoute aucune permission Microsoft Graph.
+
+### Migration legacy
+
+La migration respecte le principe suivant :
+
+```text
+Ancien Mes fichiers/Journalier
+          │
+          │ copie manuelle de l'utilisateur
+          ▼
+AppFolder/Journalier-legacy
+          │
+          ├── validation
+          ├── normalisation
+          ├── détection des conflits
+          ▼
+AppFolder/Journalier
+```
+
+`Journalier-legacy` est conservé comme copie source. La migration n'effectue aucune suppression distante.
+
+Le `studentId` historique est conservé. Le propriétaire technique est remplacé par l'identité Entra actuellement connectée lors de la normalisation. Les anciennes données ne sont pas transformées automatiquement en PIA annuel validé.
+
+
 ## 1. Vue d'ensemble
 
 Le Journalier électronique est une application web SPA (Single Page Application) destinée à l'encodage, à la consultation et à la synthèse d'observations et de séances d'accompagnement.
