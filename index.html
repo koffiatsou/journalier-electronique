@@ -2826,6 +2826,10 @@ loadIndicatorLibrary();
         diagnostics(){const s=this.state;return{architectureVersion:s.version,accountScoped:true,encryptedLocalStore:true,students:this.getStudents().length,sessions:this.getSessions().length,agendaEntries:Object.keys(this.getAgenda()).length,sync:s.sync,syncRegistry:s.syncRegistry};}
     };
 
+    // Interface publique V73 vers le DataStore V72 réel.
+    // Aucun nouveau stockage : V73 utilise le store existant.
+    window.JournalierDataStore = DataStore;
+
     async function activateJournalierAccount(account){
         await JournalierSecurity.activate(account);
         renderStudentsView?.(); renderAgenda?.(); updateStudentDropdowns?.(); updateStats?.(); window.updateMicrosoftUI?.();
@@ -7157,7 +7161,6 @@ async function v73SavePIACloud(pia){
   await graphWriteJsonWithETag(folder.id,'pia.json',pia,existing?.eTag||null);
   return await graphReadItemWithJson(path);
 }
-window.JournalierDataStore=DataStore;
 window.JournalierCloud={savePia:v73SavePIACloud};
 
 window.updateMicrosoftUI = updateMicrosoftUI;
