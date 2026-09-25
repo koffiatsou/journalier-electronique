@@ -2,6 +2,33 @@
 
 > Référence de sécurité du Journalier électronique — état au 24 septembre 2026.
 
+## V73.1.3 — contrôle de la migration legacy
+
+La migration des anciennes données est conçue comme une opération **non destructive et à permission minimale**.
+
+- Elle utilise uniquement `Files.ReadWrite.AppFolder`.
+- Elle ne tente pas de lire directement `Mes fichiers/Journalier`.
+- L'utilisateur doit fournir une copie `Journalier-legacy` dans l'AppFolder.
+- La copie source n'est pas supprimée.
+- Les données sont validées avant import.
+- Les conflits avec des données déjà présentes dans `Journalier/` bloquent l'import au lieu d'écraser silencieusement les données.
+- Le `studentId` historique est conservé pour assurer la continuité des séances.
+- Le `ownerId` technique est normalisé vers l'identité du compte actuellement connecté.
+- Une ancienne valeur PIA n'est pas convertie automatiquement en PIA annuel validé.
+- Aucune opération de suppression distante n'est exposée par le module de migration.
+
+### Isolation du module de migration
+
+`src/v73/v73-migration.js` est un module ES. Il n'accède pas directement aux variables privées du script principal. Un `window.JournalierMigrationBridge` explicite expose uniquement les fonctions nécessaires.
+
+Le pont comprend notamment les fonctions Graph, les validateurs/normaliseurs, le DataStore et les fonctions de synchronisation V72 nécessaires à l'import.
+
+Cette limitation réduit la surface exposée au module et évite de contourner la séparation de portée JavaScript.
+
+### CSP
+
+La modification du script inline de `index.html` nécessite un nouveau hash CSP. La V73.1.3 utilise trois hashes SHA-256 correspondant aux trois scripts inline réellement présents et ne réintroduit pas `unsafe-inline` dans `script-src`.
+
 ## 1. Objet
 
 Ce document décrit les mécanismes de sécurité actuellement présents dans le projet, les contrôles effectués et les limites connues.

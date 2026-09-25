@@ -27,6 +27,27 @@ L'application doit rester un **outil d'appui au professionnel**. Les suggestions
 
 ---
 
+## V73.1.3 — migration sécurisée des anciennes données
+
+La V73.1.3 corrige l'intégration du module de migration legacy avec le code Graph/DataStore existant.
+
+### Migration des données historiques
+
+La migration est volontairement **contrôlée et non destructive** :
+
+1. l'ancien dossier `Mes fichiers/Journalier` n'est pas lu directement par l'application ;
+2. l'utilisateur copie manuellement ce dossier dans l'AppFolder ;
+3. la copie est renommée `Journalier-legacy` ;
+4. Journalier analyse cette copie ;
+5. les profils, séances et l'agenda sont validés et normalisés ;
+6. les conflits avec les données déjà présentes sont bloquants ;
+7. les données validées sont importées dans `Journalier/` ;
+8. la copie `Journalier-legacy` et le dossier original ne sont pas supprimés.
+
+La migration ne demande **aucune permission Graph supplémentaire**. Elle reste limitée à `Files.ReadWrite.AppFolder`.
+
+Le module de migration utilise un pont explicite (`JournalierMigrationBridge`) pour accéder uniquement aux fonctions V72 nécessaires. Ce pont évite de dépendre directement du scope privé du script principal.
+
 ## V73 — PIA annuel et synthèse des séances
 
 La V73 ajoute une couche de synthèse PIA directement dans l’application sans modifier l’architecture de stockage et de synchronisation existante.

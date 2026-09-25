@@ -3,7 +3,7 @@
 
 - **Référentiel V73 réellement utilisé** pour les seuils de convergence (signal, tendance, proposition), au lieu de laisser les seuils uniquement codés dans le runtime.
 - **Correction du thème `raisonnement_procedure`** dans les formulations de propositions.
-- **Continuité PIA renforcée** : les objectifs existants/repères du dossier élève sont conservés comme `SOURCE_DE_CONTINUITE` et distingués des propositions V73. Le nom du document PIA sélectionné est conservé comme trace, sans prétendre analyser automatiquement son contenu binaire.
+- **Continuité PIA renforcée** : les objectifs existants/repères du dossier élève sont conservés comme `SOURCE_DE_CONTINUITE` et distingués des propositions V73. Le nom du document PIA sélectionné était conservé comme trace. Cette logique a ensuite été supprimée dans V73.1.0 afin de ne pas conserver de métadonnée nominative ou de référence au document source., sans prétendre analyser automatiquement son contenu binaire.
 - **Réunion 2 alignée sur les objectifs validés en Réunion 1** : les objectifs validés sont conservés avec leur thème et leur date de validation ; la réévaluation exploite les éléments postérieurs à cette validation et reste à discuter.
 - **Validation professionnelle conservée comme seule transition vers `VALIDEE`**.
 - **Aucune relation causale Q2–Q6 introduite**.
@@ -32,6 +32,27 @@
 - Build Vite à exécuter dans le Codespace avant le prochain PR ; l’environnement d’audit hors Codespace ne dispose pas des dépendances installées.
 
 # Changelog
+
+## V73.1.3 — correction migration legacy — 25 septembre 2026
+
+### Correction
+- Correction de l'erreur `graphGetAppRoot is not defined` rencontrée lors de l'ouverture de l'espace sécurisé de migration.
+- Ajout d'un `JournalierMigrationBridge` explicite entre le script principal et `src/v73/v73-migration.js`.
+- Les dépendances de migration sont désormais limitées aux fonctions Graph, validateurs, normaliseurs, DataStore, sécurité et synchronisation V72 effectivement nécessaires.
+- `msAccount` est lu dynamiquement via un getter afin de refléter l'identité connectée après authentification.
+
+### Migration
+- Conservation du `studentId` historique.
+- Remplacement du propriétaire technique par l'identité du compte connecté.
+- Détection des conflits avant import.
+- Conservation de `Journalier-legacy` et absence de suppression distante.
+- Aucune nouvelle permission Graph.
+
+### Sécurité / validation
+- Mise à jour du hash CSP correspondant au script inline modifié.
+- Contrôle de cohérence du nombre de scripts inline et des hashes CSP à refaire après chaque modification future de `index.html`.
+
+
 
 Historique synthétique des évolutions importantes du Journalier électronique.
 

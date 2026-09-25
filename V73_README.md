@@ -1,4 +1,13 @@
-# Journalier V73.1 — stabilisation interface et PIA — 25 septembre 2026
+# Journalier V73.1.3 — migration sécurisée et stabilisation PIA — 25 septembre 2026
+
+## V73.1.3 — correction migration legacy
+
+- Correction du problème de portée JavaScript entre `index.html` et `src/v73/v73-migration.js`.
+- Ajout du pont `window.JournalierMigrationBridge`.
+- Lecture dynamique de l'identité Microsoft connectée pour la migration.
+- Aucune permission Graph supplémentaire.
+- Migration non destructive : la copie `Journalier-legacy` reste conservée.
+- Les conflits sont bloquants afin d'éviter un écrasement silencieux.
 
 ## État
 

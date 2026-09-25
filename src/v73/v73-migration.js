@@ -9,6 +9,30 @@
 (function(){
   'use strict';
 
+  const {
+    graphDownloadJsonByItemId,
+    graphGetAppRoot,
+    graphGetByPath,
+    graphListChildren,
+    graphRequest,
+    secureNormalizeAgenda,
+    secureNormalizeSession,
+    secureNormalizeStudent,
+    syncStableValue,
+    syncWithoutVolatileMeta,
+    v72SyncAgenda,
+    v72SyncSession,
+    v72SyncStudent,
+    validateStrictAgenda,
+    validateStrictSession,
+    validateStrictStudent,
+    DataStore,
+    JournalierSecurity,
+    JOURNALIER_ARCHITECTURE_VERSION
+  } = window.JournalierMigrationBridge || {};
+
+  const getMsAccount = () => window.JournalierMigrationBridge?.msAccount || null;
+
   const LEGACY_NAME = 'Journalier-legacy';
   const ACTIVE_ROOT = 'Journalier';
   const state = { analyzed:null, running:false };
@@ -38,7 +62,7 @@
     if(state.running)return;
     state.running=true;
     try{
-      if(!msAccount)throw new Error('Connectez-vous à Microsoft avant d’analyser la migration.');
+      if(!getMsAccount())throw new Error('Connectez-vous à Microsoft avant d’analyser la migration.');
       msg('Analyse de la copie legacy dans l’AppFolder…');
       const legacy=await findLegacyRoot();
       if(!legacy){
@@ -193,9 +217,9 @@
     const a=document.getElementById('v73-migration-analyze');
     const i=document.getElementById('v73-migration-import');
     const o=document.getElementById('v73-migration-open');
-    if(a)a.disabled=!msAccount||state.running;
-    if(i)i.disabled=!msAccount||state.running||!state.analyzed||Boolean(state.analyzed.errors.length);
-    if(o)o.disabled=!msAccount||state.running;
+    if(a)a.disabled=!getMsAccount()||state.running;
+    if(i)i.disabled=!getMsAccount()||state.running||!state.analyzed||Boolean(state.analyzed.errors.length);
+    if(o)o.disabled=!getMsAccount()||state.running;
   }
 
   function mount(){
