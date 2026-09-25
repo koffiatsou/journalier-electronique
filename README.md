@@ -16,8 +16,9 @@ Le projet vise notamment à permettre :
 - la gestion des élèves et de leurs informations de suivi ;
 - la gestion d'un agenda de travail ;
 - l'exploitation de repères et indicateurs WBE ;
-- l'utilisation d'informations issues des PIA sans transmettre automatiquement le document original ;
+- l'import local de PIA précédents au format Word (`.docx`) ou PDF (`.pdf`) sans transmettre ni conserver le document original ;
 - la génération de rapports et de synthèses ;
+- un tableau de bord d’accueil avec tendances descriptives, suivi PIA et mémos personnels ;
 - la conservation locale chiffrée des données ;
 - la synchronisation contrôlée des données vers OneDrive ;
 - la détection des conflits lors des synchronisations.
@@ -49,9 +50,10 @@ Les rapprochements entre Q2, Q3, Q4, Q5 et Q6 sont documentaires et ne permetten
 
 ### Exports
 
-- PIA professionnel nominatif (`.json`) ;
-- PIA imprimable (`.html`) ;
-- modèle PIA dé-identifié (`.json`) pour alimenter une bibliothèque de modèles sans données directement identifiantes.
+- PIA professionnel nominatif au format Word (`.docx`) ou PDF (`.pdf`), au choix ;
+- export JSON professionnel technique ;
+- modèle PIA dé-identifié au format Word (`.docx`) ou PDF (`.pdf`), au choix ;
+- export JSON dé-identifié technique pour alimenter une bibliothèque de modèles sans données directement identifiantes.
 
 Le PIA nominatif reste lié au suivi de l’élève. Le modèle dé-identifié ne doit pas contenir les identifiants de l’élève, de l’école ou du dossier.
 

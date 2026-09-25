@@ -457,17 +457,21 @@ Le PIA précédent est utilisé comme source de continuité. Il n’est jamais c
 
 ## 22.4 Dé-identification
 
-L’export modèle dé-identifié retire au minimum les champs directement identifiants utilisés par le PIA généré (`eleve`, `studentId`, `ecole`, `classe`) et neutralise la continuité nominative. La dé-identification doit continuer à être auditée si le schéma PIA évolue.
+L’export modèle dé-identifié retire les identifiants directs (`eleve`, `studentId`, `ecole`, `classe`) et neutralise la continuité nominative. V73.1 retire également les dates de preuve, identifiants de séances, métadonnées de génération et nom de fichier source. La dé-identification doit continuer à être auditée si le schéma PIA évolue.
 
-## 22.5 Causalité
+## 22.5 Import documentaire local
+
+Les PIA précédents sont acceptés en Word `.docx` ou PDF `.pdf`. Le document est traité localement et n’est pas transmis à Microsoft Graph pendant l’analyse. V73.1 ne conserve pas le fichier original ni son nom de fichier. Des limites de taille et de décompression sont appliquées pour réduire les risques de consommation excessive de mémoire. Un PDF scanné sans couche texte exploitable est refusé plutôt que soumis à une interprétation incertaine.
+
+## 22.6 Causalité
 
 V73 ne doit pas transformer la co-présence d’une observation, d’une aide et d’un effet dans une séance en relation causale. Les relations sont documentaires et longitudinales.
 
-## 22.6 Journalisation / traçabilité
+## 22.7 Journalisation / traçabilité
 
 Le PIA généré conserve les identifiants de séances et les états de convergence nécessaires à l’explication des propositions. Cette traçabilité est professionnelle et ne doit pas être publiée dans un corpus dé-identifié si elle contient des identifiants.
 
-## 22.7 Règle pour les prochaines évolutions
+## 22.8 Règle pour les prochaines évolutions
 
 Toute nouvelle fonction V73/V74 doit vérifier au minimum :
 
@@ -482,6 +486,14 @@ Toute nouvelle fonction V73/V74 doit vérifier au minimum :
 - absence de causalité ou de décision pédagogique automatique ;
 - cohérence avec le modèle PIA existant.
 
+
+### V73.1.0 — interface, import/export et sécurité documentaire
+- Les imports Word/PDF restent locaux et sont convertis en structure PIA.
+- Le document original et son nom de fichier ne sont pas conservés par Journalier.
+- Les exports Word/PDF sont produits localement à partir de la structure interne.
+- Les exports dé-identifiés retirent également les dates, identifiants de séances et métadonnées de génération.
+- Le tableau de bord d’accueil ne produit aucun score pédagogique : il affiche des fréquences descriptives.
+- Les mémos personnels utilisent le DataStore local chiffré.
 
 ### V73.0.1 — continuité et validation
 - Les données du PIA restent dans le même périmètre de stockage par compte/agent.

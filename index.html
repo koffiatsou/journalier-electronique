@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-2PFuWgLUJJyKkAvn9GFxJ8IZL2F33lLFHJWoleWHKF4=' 'sha256-SRQjBh5q2p5YK/KLJ3nT58vppXupv4P1XEQfYrhkS3k='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net https://*.files.1drv.com https://*.sharepoint.com; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-IVLYEmNQqzzbHwbTpNu98yhTn2s4YHeVNqe83qdHjfQ=' 'sha256-SRQjBh5q2p5YK/KLJ3nT58vppXupv4P1XEQfYrhkS3k='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net https://*.files.1drv.com https://*.sharepoint.com; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pôle Territorial – Agenda & Suivi Orthopédagogique · V72.2</title>
@@ -2293,9 +2293,9 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
         <label style="margin-top:12px;">PIA</label>
         <div style="display:flex;gap:8px;align-items:center;">
             <button type="button" class="btn-secondary focus-ring" data-jr-handlers="h66">📄 Importer le PIA</button>
-            <input id="student-pia-file" type="file" accept=".pdf,.doc,.docx" class="hidden" data-jr-handlers="h67">
+            <input id="student-pia-file" type="file" accept=".pdf,.docx" class="hidden" data-jr-handlers="h67">
         </div>
-        <div id="student-pia-file-name" class="v11-help">Le document original doit être conservé ; l’analyse et les propositions viennent ensuite.</div>
+        <div id="student-pia-file-name" class="v11-help">Le PIA est traité localement ; le document original et son nom de fichier ne sont pas conservés par Journalier.</div>
         <div id="pia-local-security-notice" class="pia-local-security" role="status" aria-live="polite">
             <strong>🔒 Protection de vos données</strong>
             <div style="margin-top:4px;">Le document PIA sélectionné est traité directement sur votre appareil.</div>
@@ -5032,15 +5032,15 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
     }
     function closeStudentProfile(){document.getElementById('studentProfileModal').classList.add('hidden');}
 
-    function openAddStudentModal(){document.getElementById('student-modal-title').innerText='Ajouter un Élève';document.getElementById('student-modal-id').value='';document.getElementById('student-modal-nom').value='';document.getElementById('student-modal-classe').value='';document.getElementById('student-modal-ecole').value='';document.getElementById('student-modal-pia').value='';document.getElementById('student-pia-file').value='';document.getElementById('student-pia-file-name').textContent='Le document original doit être conservé ; l’analyse et les propositions viennent ensuite.';initStudentSubjects([]);closeAllChoiceMenus();const modal=document.getElementById('studentModal');modal.classList.remove('hidden');modal.removeAttribute('aria-hidden');modal.style.display='flex';}
-    function openEditStudentModal(id){const students=getStudents();const s=students.find(item=>item.id==id);if(s){document.getElementById('student-modal-title').innerText='Modifier l’Élève';document.getElementById('student-modal-id').value=s.id;document.getElementById('student-modal-nom').value=s.nom;document.getElementById('student-modal-classe').value=s.classe||'';document.getElementById('student-modal-ecole').value=s.ecole||'';document.getElementById('student-modal-pia').value=s.pia||'';document.getElementById('student-pia-file').value='';document.getElementById('student-pia-file-name').textContent=s.piaFileName?`PIA sélectionné : ${s.piaFileName} · document original à conserver.`:'Le document original doit être conservé ; l’analyse et les propositions viennent ensuite.';initStudentSubjects(s.matieres||[]);closeAllChoiceMenus();const modal=document.getElementById('studentModal');modal.classList.remove('hidden');modal.removeAttribute('aria-hidden');modal.style.display='flex';}}
+    function openAddStudentModal(){document.getElementById('student-modal-title').innerText='Ajouter un Élève';document.getElementById('student-modal-id').value='';document.getElementById('student-modal-nom').value='';document.getElementById('student-modal-classe').value='';document.getElementById('student-modal-ecole').value='';document.getElementById('student-modal-pia').value='';document.getElementById('student-pia-file').value='';document.getElementById('student-pia-file-name').textContent='Le PIA est traité localement ; le document original et son nom de fichier ne sont pas conservés par Journalier.';initStudentSubjects([]);closeAllChoiceMenus();const modal=document.getElementById('studentModal');modal.classList.remove('hidden');modal.removeAttribute('aria-hidden');modal.style.display='flex';}
+    function openEditStudentModal(id){const students=getStudents();const s=students.find(item=>item.id==id);if(s){document.getElementById('student-modal-title').innerText='Modifier l’Élève';document.getElementById('student-modal-id').value=s.id;document.getElementById('student-modal-nom').value=s.nom;document.getElementById('student-modal-classe').value=s.classe||'';document.getElementById('student-modal-ecole').value=s.ecole||'';document.getElementById('student-modal-pia').value=s.pia||'';document.getElementById('student-pia-file').value='';document.getElementById('student-pia-file-name').textContent=s.piaFileName?`PIA structuré disponible : ${s.piaFileName ? "source déjà sélectionnée" : "source structurée"}.`:'Le PIA est traité localement ; le document original et son nom de fichier ne sont pas conservés par Journalier.';initStudentSubjects(s.matieres||[]);closeAllChoiceMenus();const modal=document.getElementById('studentModal');modal.classList.remove('hidden');modal.removeAttribute('aria-hidden');modal.style.display='flex';}}
     function closeStudentModal(){const modal=document.getElementById('studentModal');if(!modal)return;closeAllChoiceMenus();modal.classList.add('hidden');modal.setAttribute('aria-hidden','true');modal.style.display='none';}
     function showPIAImportName(input){
         const file=input?.files?.[0]||null;
         const name=file?.name||'';
         const target=document.getElementById('student-pia-file-name');
         const status=document.getElementById('pia-local-security-status');
-        if(target)target.textContent=name?`PIA sélectionné : ${name} · document original à conserver.`:'Le document original doit être conservé ; l’analyse et les propositions viennent ensuite.';
+        if(target)target.textContent=name?`PIA sélectionné : ${name} · traitement local, sans conservation du fichier original.`:'Le PIA est traité localement ; le document original et son nom de fichier ne sont pas conservés par Journalier.';
         if(status)status.textContent=name?'✓ Fichier sélectionné localement — aucune transmission du document original pendant cette étape.':'✓ Traitement local activé';
         showAppToast(name?'PIA sélectionné — le document original reste sur votre appareil.':'Aucun PIA sélectionné.',name?'info':'error');
     }
@@ -5059,9 +5059,14 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
             let students=getStudents();
             if(id){
                 const previous=students.find(s=>s.id==id)||{};
-                students=students.map(s=>s.id==id?{...s,id:parseInt(id,10),nom,classe,ecole,matieres,pia,piaFileName:piaFile?.name||previous.piaFileName||''}:s);
+                students=students.map(s=>s.id==id?{...s,id:parseInt(id,10),nom,classe,ecole,matieres,pia}:s);
             }else{
-                students.push({id:Date.now(),nom,classe,ecole,matieres,pia,piaFileName:piaFile?.name||''});
+                const newId=Date.now();
+                students.push({id:newId,studentId:String(newId),nom,classe,ecole,matieres,pia});
+                const pending=window.__journalierPendingPIAImport;
+                if(pending && !String(pending.studentId||'').trim()){
+                    pending.studentId=String(newId);
+                }
             }
             saveStudentsList(students);
         }finally{

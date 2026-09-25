@@ -1025,4 +1025,37 @@ Le runtime V73 lit les paramètres de convergence depuis `public/referentiel_pia
 
 Les objectifs issus du PIA précédent restent une `SOURCE_DE_CONTINUITE`. La réunion 1 conserve les objectifs validés avec leur date et leur thème. La réunion 2 compare les nouvelles séances avec ces objectifs validés ; son état reste `A_DISCUSSER` jusqu’à la validation professionnelle.
 
-Le fichier PIA original sélectionné dans le dossier élève reste un document source à conserver. V73 n’affirme pas en analyser automatiquement le PDF/DOCX sans extraction documentaire dédiée ; les repères textuels effectivement présents dans le dossier sont utilisés comme continuité.
+Le fichier PIA Word/PDF sélectionné est traité localement dans le navigateur. Journalier n’enregistre pas le document original ni son nom de fichier comme donnée de continuité. Seule une structure extraite et limitée aux éléments utiles au suivi PIA est conservée dans le DataStore chiffré. Les PDF scannés/image sans couche texte exploitable nécessitent un OCR, qui n’est pas intégré à cette version.
+
+
+## 29.9 V73.1 — import/export documentaire et interface d’accueil
+
+### Import PIA précédent
+
+Le dossier élève accepte les formats :
+
+- Word `.docx` ;
+- PDF `.pdf`.
+
+Le traitement est local. Le document est lu en mémoire, les éléments PIA utiles sont extraits, puis le fichier source est abandonné. Le nom du fichier n’est pas conservé.
+
+La structure conservée distingue notamment les objectifs précédents, ressources, difficultés, adaptations P/O/M et sections PIA reconnues. Elle reste une `SOURCE_DE_CONTINUITE` à réévaluer, jamais une validation automatique.
+
+### Export
+
+Le PIA interne reste JSON structuré. L’interface permet de choisir le format de restitution :
+
+- Word `.docx` ;
+- PDF `.pdf`.
+
+Les exports professionnels peuvent rester nominatifs. Les exports dé-identifiés suppriment les identifiants élève/école/classe, la continuité nominative, les identifiants de séances, les dates de preuve et les métadonnées de génération.
+
+### Accueil
+
+La zone `Accès rapide`, redondante avec la navigation principale, est remplacée par un tableau de bord fonctionnel :
+
+- tendances descriptives des 30 derniers jours ;
+- suivi du cycle PIA ;
+- mémos personnels.
+
+Les tendances sont des fréquences de séances documentées, pas des scores de difficulté.

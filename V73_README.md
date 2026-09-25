@@ -1,4 +1,4 @@
-# Journalier V73 — présentation du 25 septembre 2026
+# Journalier V73.1 — stabilisation interface et PIA — 25 septembre 2026
 
 ## État
 
@@ -7,6 +7,7 @@ Cette version intègre V73 directement dans le Journalier existant. Aucun module
 ## Fonctionnalités V73
 
 - PIA annuel ;
+- import local du PIA précédent en Word (`.docx`) ou PDF (`.pdf`) ;
 - continuité avec un PIA précédent ;
 - réunion 1 / décembre ;
 - réunion 2 / fin d’année ;
@@ -18,9 +19,11 @@ Cette version intègre V73 directement dans le Journalier existant. Aucun module
 - validation professionnelle des propositions ;
 - sauvegarde dans le DataStore existant ;
 - sauvegarde OneDrive via le mécanisme existant ;
-- export professionnel JSON ;
-- export imprimable HTML ;
-- export de modèle dé-identifié JSON.
+- export professionnel Word ou PDF, au choix ;
+- export professionnel JSON technique ;
+- export du modèle dé-identifié Word ou PDF, au choix ;
+- export du modèle dé-identifié JSON technique ;
+- tableau de bord d’accueil : tendances descriptives, suivi PIA et mémos personnels.
 
 ## Architecture
 
@@ -39,6 +42,14 @@ V73 ne remplace pas l’architecture V72.2 : GitHub Pages + Entra ID + Graph + O
 
 Le moteur V73 fournit des propositions. Il ne valide pas automatiquement un objectif PIA et n’affirme pas de causalité entre une adaptation et une évolution observée.
 
+
+### V73.1.0 — stabilisation finale de présentation (25/09/2026)
+- Import PIA Word/PDF traité localement et conversion en structure PIA ; le document original et son nom de fichier ne sont pas conservés par Journalier.
+- Exports PIA Word/PDF générés localement à partir de la structure interne.
+- Export dé-identifié renforcé : suppression des identifiants élève/école/classe, dates, identifiants de séances, continuité nominative et métadonnées de génération.
+- Remplacement des accès rapides redondants de l’accueil par un tableau de bord fonctionnel.
+- Ajout de tendances descriptives sur les 30 derniers jours, d’un suivi PIA et de mémos personnels stockés dans le DataStore chiffré local.
+- Renforcement des limites d’import local : taille de fichier, nombre d’entrées DOCX et volume après décompression.
 
 ### Correctifs V73.0.1 (25/09/2026)
 - Les seuils de convergence sont lus depuis `public/referentiel_pia_v73_0_3.json`.
