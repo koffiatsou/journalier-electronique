@@ -1,0 +1,883 @@
+{
+  "meta": {
+    "id": "referentiel_pia_v73",
+    "nom": "Référentiel PIA Journalier V73",
+    "version": "0.3.0",
+    "statut": "DRAFT_REVISE_APRES_RETEST_V0_4",
+    "langue": "fr-BE",
+    "description": "Référentiel de structuration, convergence et proposition PIA pour Journalier V73. Le référentiel conserve le modèle PIA existant et encadre les propositions du moteur sans automatiser la validation professionnelle.",
+    "changelog": [
+      "AUD-01: ajout du SIGNAL local explicite à fréquence documentée",
+      "AUD-02: ajout de la voie PROPOSITION multi-source intra-séance, sans validation automatique",
+      "AUD-03: ajout de la relation FREQUENCE",
+      "AUD-04: ajout des fonctions sémantiques de AIDE et des règles de fusion",
+      "AUD-05: élargissement du SIGNAL local aux unités fortement caractérisées sans fréquence numérique",
+      "AUD-06: ajout des marqueurs linguistiques de récurrence implicite",
+      "AUD-07: ajout du rapprochement transversal qualifié des fonctions AIDE sans fusion abusive"
+    ]
+  },
+  "principes": {
+    "pia_annuel": true,
+    "un_eleve_un_pia_vivant_par_annee": true,
+    "sessions_source_des_observations": true,
+    "observations_et_seances_ne_sont_pas_deux_sources": true,
+    "objectif_lecon_n_est_pas_objectif_pia": true,
+    "objectif_professionnel_est_contextuel_et_optionnel": true,
+    "aide_ne_veut_pas_dire_dependance": true,
+    "erreur_isolee_ne_veut_pas_dire_difficulte_stable": true,
+    "adaptation_ne_prouve_pas_causalite": true,
+    "indicateur_wbe_ne_devient_pas_automatiquement_difficulte_pia": true,
+    "pia_precedent_est_source_de_continuite": true,
+    "validation_humaine_obligatoire": true,
+    "validation_ne_peut_pas_etre_produite_par_le_moteur": true,
+    "relations_q2_q6_sont_documentaires_et_non_causales": true
+  },
+  "cycle_pia": {
+    "etats": [
+      "NON_EXISTANT",
+      "EN_CONSTRUCTION",
+      "ACTIF",
+      "EN_REEVALUATION",
+      "ARCHIVE"
+    ],
+    "sequence": [
+      "DEBUT_ANNEE",
+      "CONSTRUCTION",
+      "REUNION_1_DECEMBRE",
+      "PIA_ANNUEL",
+      "SEANCES",
+      "REUNION_2_FIN_ANNEE",
+      "PIA_ANNUEL_FINAL"
+    ],
+    "regles": {
+      "decembre_est_une_reevaluation": true,
+      "export_decembre_est_un_snapshot_intermediaire": true,
+      "export_decembre_ne_supprime_pas_le_pia": true,
+      "fin_annee_produit_export_annuel_complet": true,
+      "pas_de_suppression_apres_export_decembre": true
+    }
+  },
+  "modele_pia_existant": {
+    "source_contractuelle": "modèles PIA fournis par les professionnels",
+    "sections_initiales": [
+      "Aspect",
+      "Ressources",
+      "Difficultés",
+      "Objectifs à poursuivre"
+    ],
+    "aspects": [
+      {
+        "id": "PHYSIQUE_PSYCHOMOTEUR",
+        "libelle": "Physique et psychomoteur"
+      },
+      {
+        "id": "AUTONOMIE",
+        "libelle": "Lié à l’autonomie"
+      },
+      {
+        "id": "COMPORTEMENTAL_AFFECTIF",
+        "libelle": "Comportemental et affectif"
+      },
+      {
+        "id": "COMMUNICATION",
+        "libelle": "Communication"
+      },
+      {
+        "id": "COGNITIF_PEDAGOGIQUE",
+        "libelle": "Cognitif (pédagogique)"
+      }
+    ],
+    "reunion": {
+      "axes_difficulte": [
+        "SOCIOAFFECTIF_RELATIONNEL",
+        "COGNITIF_PEDAGOGIQUE",
+        "CORPOREL_PSYCHOMOTEUR_SENSORIMOTEUR",
+        "LANGAGES_VERBAL_NON_VERBAL"
+      ],
+      "sections": [
+        "Difficulté majeure se situe au niveau de l’axe",
+        "Objectifs visés pour la période et critères d’évaluation",
+        "Ressources et moyens complémentaires",
+        "Retours des parents",
+        "Retours de la direction et de l’équipe pédagogique",
+        "Retours de l’élève",
+        "Retours du centre PMS",
+        "Retours de l’agent d’intégration",
+        "Retours des autres intervenants",
+        "Aménagements proposés pour l’élève"
+      ]
+    },
+    "amenagements": {
+      "categories": [
+        {
+          "id": "P",
+          "libelle": "Pédagogique"
+        },
+        {
+          "id": "O",
+          "libelle": "Organisationnel"
+        },
+        {
+          "id": "M",
+          "libelle": "Matériel"
+        }
+      ],
+      "nombre_lignes_modele": 10,
+      "classification_automatique": "PROPOSITION_EDITABLE"
+    }
+  },
+  "sources": {
+    "priorites": [
+      "SEANCE",
+      "PIA_PRECEDENT",
+      "REUNION",
+      "DOCUMENT_COMPLEMENTAIRE"
+    ],
+    "seance": {
+      "questions": [
+        "Q2",
+        "Q3",
+        "Q4",
+        "Q5",
+        "Q6"
+      ],
+      "champs_a_analyser": [
+        "tous_les_champs_structures",
+        "precision",
+        "objectifLecon",
+        "objectifProfessionnel"
+      ],
+      "regle_objectif_lecon": "CONTEXTE_ANALYTIQUE",
+      "regle_objectif_professionnel": "CONTEXTE_ANALYTIQUE_OPTIONNEL"
+    },
+    "pia_precedent": {
+      "role": "SOURCE_DE_CONTINUITE",
+      "relations_autorisees": [
+        "CONTINUITE",
+        "EVOLUTION",
+        "DIVERGENCE",
+        "ABSENCE_DE_CORRESPONDANCE"
+      ]
+    },
+    "reunion": {
+      "role": "SOURCE_DE_VALIDATION_ET_DE_COMPLEMENT",
+      "ne_doit_pas_etre_inferree_depuis_une_seance": true
+    },
+    "document_complementaire": {
+      "role": "SOURCE_COMPLEMENTAIRE",
+      "exemples": [
+        "bilan",
+        "rapport",
+        "document_scolaire"
+      ]
+    }
+  },
+  "unite_information": {
+    "description": "Unité minimale issue d'une séance, d'un PIA précédent ou d'une source complémentaire, conservant son origine et son contexte.",
+    "champs_obligatoires": [
+      "id",
+      "source",
+      "phenomene",
+      "relations",
+      "contexte",
+      "statut"
+    ],
+    "source": {
+      "types": [
+        "SEANCE",
+        "PIA_PRECEDENT",
+        "REUNION",
+        "DOCUMENT_COMPLEMENTAIRE"
+      ],
+      "champs": [
+        "type",
+        "sessionId",
+        "question",
+        "champ",
+        "date",
+        "extrait"
+      ]
+    },
+    "phenomene": {
+      "champs": [
+        "id",
+        "libelle",
+        "aspect"
+      ]
+    },
+    "relations_autorisees": [
+      "PORTE_SUR",
+      "CONDITION",
+      "AIDE",
+      "EFFET_OBSERVE",
+      "RESSOURCE",
+      "DIFFICULTE",
+      "AUTONOMIE",
+      "TRANSFERT",
+      "ADAPTATION",
+      "CONTEXTE",
+      "EVOLUTION",
+      "COMPARAISON",
+      "COLLABORATION",
+      "FREQUENCE",
+      "OBJECTIF_CONTEXTUEL"
+    ],
+    "relations_interdites": [
+      "CAUSE",
+      "CAUSE_PROUVEE",
+      "RESPONSABLE_DE"
+    ],
+    "statuts_relation": [
+      "OBSERVE",
+      "EXPLICITE",
+      "INFERRE",
+      "NON_DETERMINE"
+    ],
+    "quantification": {
+      "valeurs": [
+        "UNE_FOIS",
+        "PARFOIS",
+        "REGULIERE",
+        "FREQUENTE",
+        "SYSTEMATIQUE",
+        "INCONNUE"
+      ],
+      "sources": [
+        "EXPLICITE",
+        "INFERREE",
+        "ABSENTE"
+      ]
+    },
+    "temporalite": {
+      "types": [
+        "ACTUELLE",
+        "ANTERIEURE",
+        "PROGRESSIVE",
+        "COMPARATIVE",
+        "INCONNUE"
+      ]
+    },
+    "statuts": [
+      "OBSERVE",
+      "SIGNAL",
+      "TENDANCE",
+      "PROPOSITION",
+      "VALIDEE"
+    ],
+    "relations_definitions": {
+      "FREQUENCE": {
+        "libelle": "Fréquence ou répétition explicitement documentée",
+        "description": "Quantification ou répétition exprimée dans la source, sans extrapolation.",
+        "exemples": [
+          "à chaque étape",
+          "plusieurs fois",
+          "3-4 fois",
+          "régulièrement"
+        ],
+        "source": "EXPLICITE",
+        "interdit": "Ne pas inventer une fréquence absente.",
+        "marqueurs_recurrence_implicite": [
+          "encore",
+          "toujours",
+          "de nouveau",
+          "à nouveau",
+          "reste nécessaire",
+          "continue à",
+          "continue de",
+          "faut encore",
+          "doit encore",
+          "à nouveau"
+        ],
+        "regle": "Un marqueur lexical de récurrence peut être traité comme FREQUENCE explicite du point de vue linguistique lorsqu'il porte clairement sur le phénomène décrit; ne pas en déduire une fréquence numérique."
+      }
+    },
+    "sous_types_semantiques": {
+      "AIDE": {
+        "fonctions": [
+          {
+            "id": "COMPRENDRE",
+            "libelle": "Aide à comprendre une consigne, notion ou information"
+          },
+          {
+            "id": "DEMARRER",
+            "libelle": "Aide à initier ou reprendre la tâche"
+          },
+          {
+            "id": "VERIFIER",
+            "libelle": "Aide à vérifier une réponse ou une étape"
+          },
+          {
+            "id": "VALIDER",
+            "libelle": "Demande de validation avant de poursuivre"
+          },
+          {
+            "id": "REFORMULER",
+            "libelle": "Aide ou reformulation nécessaire pour accéder à la consigne"
+          },
+          {
+            "id": "AUTRE",
+            "libelle": "Fonction d'aide non déterminée"
+          }
+        ],
+        "regle_fusion": "Deux unités contenant AIDE ne peuvent être fusionnées comme même phénomène que si leur fonction d'aide est compatible ou si le contexte et les relations permettent explicitement de démontrer leur équivalence.",
+        "regle_interpretation": [
+          "AIDE ne signifie pas DEPENDANCE.",
+          "Une aide pour comprendre n'est pas automatiquement une aide pour démarrer.",
+          "Une aide pour vérifier n'est pas automatiquement une absence d'autonomie.",
+          "La fonction non déterminée reste INCONNUE."
+        ],
+        "regle_rapprochement_transversal": {
+          "autorisee": true,
+          "principe": "Des fonctions AIDE différentes peuvent contribuer à une même tendance qualifiée si elles partagent un phénomène fonctionnel supérieur explicitement identifiable.",
+          "exemple": "COMPRENDRE + VERIFIER + DEMARRER peuvent converger vers un besoin d'étayage fonctionnel, sans être fusionnées en une seule fonction d'aide.",
+          "sortie": "TENDANCE_QUALIFIEE",
+          "interdiction": "Ne pas transformer ce rapprochement en dépendance générale à l'adulte."
+        }
+      }
+    }
+  },
+  "convergence": {
+    "description": "Regroupement explicable d'unités d'information portant sur un même phénomène.",
+    "dimensions": [
+      "recurrence",
+      "comparabilite",
+      "temporalite",
+      "diversite_sources",
+      "contexte",
+      "contre_preuves",
+      "pia_precedent",
+      "donnees_manquantes"
+    ],
+    "champs": [
+      "id",
+      "phenomeneId",
+      "unitesInformationIds",
+      "recurrence",
+      "comparabilite",
+      "temporalite",
+      "diversiteSources",
+      "contrePreuves",
+      "piaPrecedent",
+      "donneesManquantes",
+      "etat",
+      "justification"
+    ],
+    "recurrence": {
+      "independance": "Une même séance ne compte pas comme plusieurs observations indépendantes.",
+      "champs": [
+        "nbSessionsDistinctes",
+        "nbOccurrences"
+      ]
+    },
+    "comparabilite": {
+      "champs": [
+        "nbContextesComparables",
+        "nbContextesDistincts",
+        "niveau"
+      ],
+      "niveaux": [
+        "FORT",
+        "MOYEN",
+        "FAIBLE",
+        "INCONNU"
+      ],
+      "criteres": [
+        "meme_phenomene_semantique",
+        "fonction_des_relations_compatible",
+        "contexte_non_incompatible",
+        "condition_comparable_ou_explicitement_qualifiee"
+      ]
+    },
+    "temporalite": {
+      "directions": [
+        "STABLE",
+        "AMELIORATION",
+        "DEGRADATION",
+        "VARIABLE",
+        "INCONNUE"
+      ]
+    },
+    "diversite_sources": {
+      "questions": [
+        "Q2",
+        "Q3",
+        "Q4",
+        "Q5",
+        "Q6"
+      ],
+      "minimum_independant": "Les champs d'une même séance ne sont pas comptés comme plusieurs séances."
+    },
+    "contre_preuves": {
+      "types": [
+        "REUSSITE_DANS_CONTEXTE_COMPARABLE",
+        "EVOLUTION_FAVORABLE",
+        "EVOLUTION_DEFAVORABLE",
+        "OBSERVATION_CONTRADICTOIRE",
+        "CONTEXTE_DIFFERENT"
+      ]
+    },
+    "etats": [
+      "OBSERVATION",
+      "SIGNAL",
+      "SIGNAL_A_QUALIFIER",
+      "TENDANCE",
+      "TENDANCE_QUALIFIEE",
+      "PROPOSITION",
+      "AUCUNE_CONCLUSION_PIA",
+      "VALIDEE"
+    ],
+    "regles_initiales": {
+      "observation": "Une information isolée reste une OBSERVATION.",
+      "signal": "Un phénomène peut devenir SIGNAL soit après au moins deux séances distinctes suffisamment comparables, soit dans une seule séance lorsque la fréquence ou la répétition est explicitement documentée et que le contexte est suffisamment précis. Le signal local reste limité au phénomène et au contexte documentés.",
+      "tendance": "Une répétition dans plusieurs séances distinctes et suffisamment comparables peut devenir TENDANCE.",
+      "tendance_qualifiee": "Une tendance doit être qualifiée lorsque la condition, le contexte ou une variabilité importante modifie son interprétation.",
+      "proposition": "Une PROPOSITION nécessite une convergence suffisante et une formulation PIA explicable; elle reste soumise à validation.",
+      "aucune_conclusion": "Si les données sont insuffisantes, contradictoires ou non comparables, le moteur ne doit pas forcer une conclusion PIA.",
+      "validation": "Seul le professionnel peut transformer une PROPOSITION en VALIDEE.",
+      "proposition_multi_source_intra_session": {
+        "autorisee": true,
+        "conditions": [
+          "au_moins_deux_sources_q_distinctes_pertinentes",
+          "phenomene_coherent",
+          "besoin_pia_formulable",
+          "aucune_relation_interdite",
+          "aucune_donnee_manquante_critique_pour_la_formulation",
+          "statut_reste_PROPOSITION"
+        ],
+        "exclusions": [
+          "ne_pas_inventer_Q5_ou_Q6_absent",
+          "ne_pas_conclure_sur_autonomie_si_non_documentee",
+          "ne_pas_conclure_sur_transfert_si_non_documente",
+          "ne_pas_produire_VALIDEE"
+        ]
+      },
+      "signal_local_fortement_caracterise": {
+        "autorisee": true,
+        "description": "Une seule séance peut produire un SIGNAL local lorsqu'une unité est fortement caractérisée par plusieurs relations sémantiques convergentes autour d'un phénomène fonctionnel identifiable, même sans fréquence explicite.",
+        "conditions": [
+          "phenomene_fonctionnel_identifiable",
+          "au_moins_deux_relations_semantiques_coherentes",
+          "contexte_suffisamment_precis_ou_condition_explicitement_documentee",
+          "absence_de_relation_interdite"
+        ],
+        "exemples_de_structure": [
+          "AIDE + AUTONOMIE + RESSOURCE",
+          "DIFFICULTE + CONDITION + RESSOURCE",
+          "RESSOURCE + DIFFICULTE + ADAPTATION + CONDITION"
+        ],
+        "limites": [
+          "ne_compte_pas comme plusieurs seances independantes",
+          "ne_permet_pas une generalisation transversale non documentee",
+          "ne_permet_pas une validation PIA automatique"
+        ]
+      }
+    },
+    "seuils": {
+      "statut": "PARAMETRES_INITIAUX_A_CALIBRER",
+      "signal_min_sessions_distinctes": 2,
+      "tendance_min_sessions_distinctes": 3,
+      "attention": "Ces seuils structurent les premiers tests; ils ne constituent pas une vérité clinique ou pédagogique et devront être calibrés sur le corpus.",
+      "signal_exception_local": {
+        "autorisee": true,
+        "conditions": [
+          "frequence_ou_repetition_explicite",
+          "marqueur_recurrence_implicite_explicitement_identifiable",
+          "ou_convergence_semantique_forte_intra_seance",
+          "contexte_suffisamment_precis_ou_condition_explicitement_documentee",
+          "phenomene_identifiable"
+        ],
+        "ne_permet_pas": [
+          "generalisation_transversale",
+          "difficulte_stable_hors_contexte",
+          "validation_pia"
+        ]
+      },
+      "proposition_exception_intra_session": {
+        "autorisee": true,
+        "minimum_sources_q_distinctes": 2
+      }
+    },
+    "regles_fusion_semantique": {
+      "principe": "La proximité lexicale seule ne suffit pas.",
+      "doit_verifier": [
+        "phenomene",
+        "relations",
+        "sous_type_semantique",
+        "contexte",
+        "condition"
+      ],
+      "si_incompatibilite": "SIGNAL_A_QUALIFIER",
+      "si_equivalence_paraphrastique": "fusion_possible",
+      "rapprochement_transversal_qualifie": {
+        "autorise": true,
+        "conditions": [
+          "phenomene_superieur_explicitement_identifiable",
+          "fonctions_aide_distinctes_conservees",
+          "contextes_non_incompatibles",
+          "tendance_documentee_sur_plusieurs_seances"
+        ],
+        "sortie": "TENDANCE_QUALIFIEE",
+        "interdit": [
+          "fusion_lexicale_simple",
+          "assimilation_des_fonctions",
+          "conclusion_dependance_generale"
+        ]
+      }
+    }
+  },
+  "matrice_sources_pia": {
+    "legende": {
+      "A": "Direct: peut alimenter une proposition",
+      "B": "Contextuel: nécessite répétition/convergence",
+      "C": "Indicateur: signal uniquement",
+      "D": "Interdit sans autre élément"
+    },
+    "rubriques": {
+      "PHYSIQUE_PSYCHOMOTEUR": {
+        "Q2": "A",
+        "Q3": "C",
+        "Q4": "B",
+        "Q5": "C",
+        "Q6": "C",
+        "PIA_PRECEDENT": "A",
+        "REUNION": "A"
+      },
+      "AUTONOMIE": {
+        "Q2": "A",
+        "Q3": "B",
+        "Q4": "A",
+        "Q5": "A",
+        "Q6": "A",
+        "PIA_PRECEDENT": "A",
+        "REUNION": "A"
+      },
+      "COMPORTEMENTAL_AFFECTIF": {
+        "Q2": "A",
+        "Q3": "C",
+        "Q4": "B",
+        "Q5": "B",
+        "Q6": "B",
+        "PIA_PRECEDENT": "A",
+        "REUNION": "A"
+      },
+      "COMMUNICATION": {
+        "Q2": "A",
+        "Q3": "B",
+        "Q4": "B",
+        "Q5": "B",
+        "Q6": "C",
+        "PIA_PRECEDENT": "A",
+        "REUNION": "A"
+      },
+      "COGNITIF_PEDAGOGIQUE": {
+        "Q2": "B",
+        "Q3": "A",
+        "Q4": "B",
+        "Q5": "A",
+        "Q6": "B",
+        "PIA_PRECEDENT": "A",
+        "REUNION": "A"
+      },
+      "RESSOURCES": {
+        "Q2": "A",
+        "Q3": "B",
+        "Q4": "A",
+        "Q5": "B",
+        "Q6": "B",
+        "PIA_PRECEDENT": "A",
+        "REUNION": "A"
+      },
+      "DIFFICULTES": {
+        "Q2": "A/B",
+        "Q3": "A/B",
+        "Q4": "C",
+        "Q5": "B",
+        "Q6": "C",
+        "PIA_PRECEDENT": "A",
+        "REUNION": "A"
+      },
+      "OBJECTIFS_A_POURSUIVRE": {
+        "Q2": "B",
+        "Q3": "B",
+        "Q4": "B",
+        "Q5": "A/B",
+        "Q6": "B",
+        "PIA_PRECEDENT": "A",
+        "REUNION": "A"
+      },
+      "CRITERES_EVALUATION": {
+        "Q2": "B",
+        "Q3": "B",
+        "Q4": "B",
+        "Q5": "A/B",
+        "Q6": "B",
+        "PIA_PRECEDENT": "A",
+        "REUNION": "A"
+      },
+      "RESSOURCES_MOYENS_COMPLEMENTAIRES": {
+        "Q2": "B",
+        "Q3": "B",
+        "Q4": "A",
+        "Q5": "B",
+        "Q6": "A",
+        "PIA_PRECEDENT": "A",
+        "REUNION": "A"
+      },
+      "AMENAGEMENTS": {
+        "Q2": "B",
+        "Q3": "C",
+        "Q4": "A",
+        "Q5": "B",
+        "Q6": "A",
+        "PIA_PRECEDENT": "B",
+        "REUNION": "A"
+      },
+      "P_O_M": {
+        "Q2": "C",
+        "Q3": "D",
+        "Q4": "B",
+        "Q5": "C",
+        "Q6": "B",
+        "PIA_PRECEDENT": "B",
+        "REUNION": "A"
+      },
+      "EVOLUTION": {
+        "Q2": "B",
+        "Q3": "B",
+        "Q4": "B",
+        "Q5": "A",
+        "Q6": "B",
+        "PIA_PRECEDENT": "A",
+        "REUNION": "A"
+      },
+      "PERSPECTIVES": {
+        "Q2": "C",
+        "Q3": "C",
+        "Q4": "B",
+        "Q5": "B",
+        "Q6": "A",
+        "PIA_PRECEDENT": "A",
+        "REUNION": "A"
+      }
+    }
+  },
+  "regles_aspects": {
+    "PHYSIQUE_PSYCHOMOTEUR": {
+      "signaux_directs": [
+        "manipulation d'outils",
+        "geste graphique",
+        "organisation spatiale",
+        "slowness fonctionnelle explicitement observée",
+        "fatigabilité explicitement observée",
+        "manipulation du matériel"
+      ],
+      "interdits": [
+        "déduire une difficulté motrice d'une erreur académique générique",
+        "déduire une difficulté motrice du seul usage d'une tablette"
+      ]
+    },
+    "AUTONOMIE": {
+      "signaux_directs": [
+        "niveau d'aide",
+        "initiative",
+        "maintien de la tâche",
+        "transfert",
+        "demande d'aide",
+        "relances",
+        "vérification",
+        "démarrage",
+        "fin de tâche",
+        "organisation",
+        "prise de notes"
+      ],
+      "interdits": [
+        "une seule demande d'aide ne signifie pas manque d'autonomie"
+      ]
+    },
+    "COMPORTEMENTAL_AFFECTIF": {
+      "signaux_directs": [
+        "engagement",
+        "participation",
+        "motivation explicitement exprimée",
+        "frustration",
+        "découragement",
+        "persévérance",
+        "évitement",
+        "refus",
+        "réaction à l'erreur ou à l'aide",
+        "interaction"
+      ],
+      "interdits": [
+        "transformer un événement contextuel en trait stable"
+      ]
+    },
+    "COMMUNICATION": {
+      "signaux_directs": [
+        "compréhension d'une consigne orale",
+        "vocabulaire",
+        "expression orale",
+        "expression écrite",
+        "reformulation",
+        "explication du raisonnement",
+        "terminologie spécifique",
+        "communication avec adulte ou pairs"
+      ],
+      "interdits": [
+        "confondre difficulté de communication et difficulté cognitive de la matière"
+      ]
+    },
+    "COGNITIF_PEDAGOGIQUE": {
+      "signaux_directs": [
+        "compréhension",
+        "mémoire",
+        "procédure",
+        "stratégie",
+        "résolution de problème",
+        "sélection d'informations",
+        "raisonnement",
+        "calcul",
+        "vocabulaire disciplinaire",
+        "planification",
+        "automatisation",
+        "transfert",
+        "erreurs récurrentes"
+      ],
+      "interdits": [
+        "un indicateur WBE ne constitue pas à lui seul une difficulté PIA"
+      ]
+    }
+  },
+  "proposition_pia": {
+    "description": "Proposition structurée à partir d'une convergence. Elle n'est jamais une validation automatique.",
+    "rubriques_autorisees": [
+      "RESSOURCES",
+      "DIFFICULTES",
+      "OBJECTIFS_A_POURSUIVRE",
+      "CRITERES_EVALUATION",
+      "RESSOURCES_MOYENS_COMPLEMENTAIRES",
+      "AMENAGEMENTS"
+    ],
+    "champs": [
+      "id",
+      "rubrique",
+      "aspect",
+      "formulation",
+      "criteresEvaluation",
+      "sourcesConvergenceIds",
+      "statut",
+      "validation"
+    ],
+    "statuts": [
+      "PROPOSITION",
+      "A_COMPLETER",
+      "MODIFIEE_PAR_PROFESSIONNEL",
+      "REFUSEE",
+      "VALIDEE"
+    ],
+    "validation": {
+      "statuts": [
+        "A_VALIDER",
+        "VALIDEE",
+        "MODIFIEE",
+        "REFUSEE",
+        "REPORTEE"
+      ],
+      "acteur": "PROFESSIONNEL"
+    },
+    "regles_formulation": [
+      "Ne pas copier une observation brute comme objectif PIA.",
+      "Formuler un besoin ou un axe de progression.",
+      "Conserver le contexte utile.",
+      "Ne pas introduire de diagnostic non documenté.",
+      "Ne pas présenter une adaptation comme ayant causé un effet.",
+      "Ne pas présenter une proposition comme déjà validée.",
+      "Associer les critères d'évaluation uniquement lorsqu'ils sont suffisamment fondés.",
+      "Une proposition issue d'une seule séance doit rester explicitement contextualisée si elle repose sur une répétition locale.",
+      "Une proposition multi-source intra-séance ne peut utiliser que les informations effectivement renseignées.",
+      "L'absence d'une question Q5 ou Q6 doit être enregistrée comme donnée manquante et ne peut être compensée par une invention.",
+      "Une proposition peut être ciblée sur une procédure ou une difficulté documentée sans conclure sur l'autonomie ou le transfert si ces dimensions ne sont pas renseignées."
+    ]
+  },
+  "amenagements": {
+    "workflow": [
+      "ADAPTATION_OBSERVEE",
+      "REPETITION",
+      "CONVERGENCE",
+      "PROPOSITION",
+      "CLASSIFICATION_P_O_M",
+      "VALIDATION_PROFESSIONNELLE"
+    ],
+    "regle": "La classification P/O/M produite par le moteur est une proposition éditable.",
+    "categories": {
+      "P": "Pédagogique",
+      "O": "Organisationnel",
+      "M": "Matériel"
+    }
+  },
+  "retours_reunion": {
+    "statut": "MANUEL",
+    "champs": [
+      "parents",
+      "direction_equipe_pedagogique",
+      "eleve",
+      "pms",
+      "agent_integration",
+      "autres_intervenants"
+    ],
+    "regle": "Ces retours ne sont pas générés à partir des séances. Ils sont saisis ou importés comme informations de réunion."
+  },
+  "securite_interpretation": {
+    "interdictions": [
+      "diagnostic non documenté",
+      "causalité non démontrée",
+      "responsabilité attribuée à un acteur",
+      "conclusion à partir d'une seule erreur",
+      "conclusion à partir d'une seule réussite",
+      "assimilation aide = dépendance",
+      "assimilation objectif de leçon = objectif PIA",
+      "validation automatique d'une proposition"
+    ],
+    "transparence": {
+      "conserver_extrait_source": true,
+      "conserver_session_source": true,
+      "conserver_date_source": true,
+      "conserver_contexte": true,
+      "expliquer_points_forts": true,
+      "expliquer_limites": true,
+      "afficher_contre_preuves": true,
+      "afficher_donnees_manquantes": true
+    }
+  },
+  "exports": {
+    "professionnel": {
+      "type": "PIA_NOMINATIF_COMPLET",
+      "destination": "OneDrive professionnel de l'agent",
+      "structure": "MODELE_PIA_ORIGINAL"
+    },
+    "de_identifie": {
+      "type": "MODELE_PIA_DE_IDENTIFIE",
+      "destination": "bibliotheque de modeles PIA",
+      "identifiants_eleve": false,
+      "metadonnees_identifiantes": false,
+      "usage": "amélioration des suggestions futures",
+      "validation_humaine_requise": true
+    }
+  },
+  "audit_v73": {
+    "points_a_verifier_avant_integration": [
+      "Compatibilité avec le JSON réel des séances V72/V72.2",
+      "Compatibilité avec bibliotheque_indicateurs_v0_5_1.json",
+      "Compatibilité avec les modèles PIA existants",
+      "Absence de causalité automatique",
+      "Absence de validation automatique",
+      "Prise en compte du champ precision",
+      "Prise en compte de Q2 à Q6",
+      "Gestion des contre-preuves",
+      "Gestion des données manquantes",
+      "Rapprochement sémantique sans faux rapprochement",
+      "Conservation de la provenance",
+      "Export nominatif conforme au modèle original",
+      "Export dé-identifié sans données identifiantes"
+    ]
+  }
+}

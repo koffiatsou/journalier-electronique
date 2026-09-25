@@ -1,8 +1,54 @@
+
+## V73.0.1 — corrections d’intégration avant présentation — 25 septembre 2026
+
+- **Référentiel V73 réellement utilisé** pour les seuils de convergence (signal, tendance, proposition), au lieu de laisser les seuils uniquement codés dans le runtime.
+- **Correction du thème `raisonnement_procedure`** dans les formulations de propositions.
+- **Continuité PIA renforcée** : les objectifs existants/repères du dossier élève sont conservés comme `SOURCE_DE_CONTINUITE` et distingués des propositions V73. Le nom du document PIA sélectionné est conservé comme trace, sans prétendre analyser automatiquement son contenu binaire.
+- **Réunion 2 alignée sur les objectifs validés en Réunion 1** : les objectifs validés sont conservés avec leur thème et leur date de validation ; la réévaluation exploite les éléments postérieurs à cette validation et reste à discuter.
+- **Validation professionnelle conservée comme seule transition vers `VALIDEE`**.
+- **Aucune relation causale Q2–Q6 introduite**.
+
 # Changelog
 
 Historique synthétique des évolutions importantes du Journalier électronique.
 
 Ce document privilégie les changements fonctionnels, architecturaux et de sécurité qui permettent de comprendre l'évolution du projet. Il ne cherche pas à reproduire chaque commit Git.
+
+---
+
+## [V73 — 24 septembre 2026] — Préparation présentation
+
+### Fonctionnel
+
+- Ajout du cycle annuel de PIA : construction/réévaluation en réunion 1 (décembre) puis réévaluation en fin d’année.
+- Conservation du PIA précédent comme `SOURCE_DE_CONTINUITE` lorsqu’il existe.
+- Prise en compte des séances `SEANCE` comme source des observations ; les champs structurés Q2→Q6 et les précisions textuelles sont exploités.
+- Génération de propositions de difficultés, ressources, objectifs et aménagements P/O/M à partir des éléments documentés.
+- Les propositions restent explicitement à valider par le professionnel ; une proposition n’est jamais considérée comme une validation automatique.
+- Ajout de la traçabilité des séances et des états de convergence dans le PIA généré.
+- Ajout des exports PIA professionnel JSON, PIA imprimable HTML et modèle PIA dé-identifié JSON.
+- Enregistrement du PIA dans le DataStore existant et tentative de sauvegarde distante via le mécanisme OneDrive existant.
+
+### Pédagogie / règles d’interprétation
+
+- Le moteur conserve la distinction entre objectif de leçon, objectif professionnel de séance et objectif PIA annuel.
+- Les rapprochements entre Q2–Q6 sont documentaires : aucune causalité n’est affirmée automatiquement.
+- La continuité avec un PIA précédent ne constitue pas une validation de son contenu.
+- Les états de convergence utilisés par V73 restent explicables (`OBSERVATION`, `SIGNAL`, `TENDANCE`, `TENDANCE_QUALIFIEE`, `PROPOSITION`).
+- Les contre-évidences et le contexte des séances sont conservés dans la trace de génération.
+
+### Sécurité / architecture
+
+- V73 reste une extension frontend de l’architecture V72 : SPA statique, Entra ID, Microsoft Graph, IndexedDB/DataStore et OneDrive AppFolder.
+- Aucun backend, serveur de données central ou nouvelle permission Graph n’est introduit par V73.
+- Le moteur V73 ne lit ni n’écrit directement IndexedDB ou Graph : il passe par les mécanismes existants du Journalier.
+- La documentation d’architecture et de sécurité est mise à jour pour intégrer V73 et rappeler les contrôles à reprendre à chaque évolution.
+
+### Validation / limites
+
+- Le moteur V73 est intégré au projet pour la présentation et l’usage terrain.
+- Les contrôles conceptuels du corpus V73 servent de garde-fous de conception ; ils ne remplacent pas une validation NLP exhaustive sur des données réelles.
+- La validation terrain avec de vraies séances reste prévue dans le cycle réel, notamment avant la réunion de décembre.
 
 ---
 

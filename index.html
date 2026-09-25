@@ -2565,7 +2565,7 @@ loadIndicatorLibrary();
             agenda: {},
             sync: { status:'local-only', lastSyncAt:null, pendingChanges:0 },
             syncRegistry: { version:'1', students:{}, sessions:{}, agenda:null },
-            meta: { securityArchitecture:'account-scoped-encrypted-store', createdAt:new Date().toISOString() }
+            meta: { securityArchitecture:'account-scoped-encrypted-store', createdAt:new Date().toISOString(), piaRecords:{} }
         };
     }
 
@@ -2661,7 +2661,7 @@ loadIndicatorLibrary();
             state.version=JOURNALIER_ARCHITECTURE_VERSION;
             state.ownerId=accountKey;
             state.identity={...(state.identity||{}),accountKey,provider:'microsoft365',displayName:account?.name||account?.username||state.identity?.displayName||'Utilisateur Journalier',microsoftAccount:account?.username||state.identity?.microsoftAccount||null};
-            v72EnsureSyncRegistry(state);
+            v72EnsureSyncRegistry(state); state.meta??={}; state.meta.piaRecords??={};
             this.accountKey=accountKey; this.account=account; this.key=key; this.state=state; this.ready=true;
             return state;
         },
@@ -2803,6 +2803,8 @@ loadIndicatorLibrary();
             const s=JournalierSecurity.state;v72EnsureSyncRegistry(s);return s;
         },
         getIdentity(){return this.state.identity;},
+        getState(){return this.state;},
+        persistState(state){return securePersistState(state);},
         isReady(){return JournalierSecurity.ready;},
         getStudents(){return this.state.students.filter(s=>s.ownerId===this.state.ownerId);},
         saveStudents(list){
@@ -6524,7 +6526,7 @@ function graphRelativeAppPath(path){const normalized=String(path||'').replace(/^
 async function graphGetByPath(path){const relative=graphRelativeAppPath(path);const root=await graphGetAppRoot();if(!relative)return root;return graphRequest(`/me/drive/items/${encodeURIComponent(root.id)}:/${graphEncodePath(relative)}:`);}
 async function graphCreateChildFolder(parentId,name){return graphRequest(`/me/drive/items/${encodeURIComponent(parentId)}/children`,{method:'POST',body:JSON.stringify({name,folder:{},'@microsoft.graph.conflictBehavior':'fail'})});}
 async function graphGetOrCreateFolder(parentId,name,parentPath){try{return await graphGetByPath(parentPath?`${parentPath}/${name}`:name);}catch(err){if(!String(err.message||err).includes('Graph 404'))throw err;try{return await graphCreateChildFolder(parentId,name);}catch(e){if(String(e.message||e).includes('Graph 409'))return await graphGetByPath(parentPath?`${parentPath}/${name}`:name);throw e;}}}
-async function graphEnsureJournalierStructure(){const root=await graphGetAppRoot();const profil=await graphGetOrCreateFolder(root.id,'profil',GRAPH_ROOT_FOLDER),eleves=await graphGetOrCreateFolder(root.id,'eleves',GRAPH_ROOT_FOLDER),agenda=await graphGetOrCreateFolder(root.id,'agenda',GRAPH_ROOT_FOLDER),system=await graphGetOrCreateFolder(root.id,'system',GRAPH_ROOT_FOLDER);return{root,profil,eleves,agenda,system};}
+async function graphEnsureJournalierStructure(){const root=await graphGetAppRoot();const profil=await graphGetOrCreateFolder(root.id,'profil',GRAPH_ROOT_FOLDER),eleves=await graphGetOrCreateFolder(root.id,'eleves',GRAPH_ROOT_FOLDER),agenda=await graphGetOrCreateFolder(root.id,'agenda',GRAPH_ROOT_FOLDER),pia=await graphGetOrCreateFolder(root.id,'pia',GRAPH_ROOT_FOLDER),system=await graphGetOrCreateFolder(root.id,'system',GRAPH_ROOT_FOLDER);return{root,profil,eleves,agenda,pia,system};}
 async function graphGetItemMetaById(itemId){
   return graphRequest(`/me/drive/items/${encodeURIComponent(itemId)}?$select=id,name,eTag,parentReference,file,folder,lastModifiedDateTime`);
 }
@@ -7142,6 +7144,22 @@ document.addEventListener('click',function(e){
 },true);
 
 
+
+async function v73SavePIACloud(pia){
+  if(!msAccount) throw new Error('Compte Microsoft non connecté.');
+  const structure=await graphEnsureJournalierStructure();
+  const sid=String(pia.studentId||'').trim(); if(!sid) throw new Error('Identifiant élève absent du PIA.');
+  let folder;
+  try{folder=await graphGetByPath(`${GRAPH_ROOT_FOLDER}/pia/${encodeURIComponent(sid)}`);}
+  catch(e){if(!String(e?.message||e).includes('Graph 404'))throw e; folder=await graphCreateChildFolder(structure.pia.id,sid);}
+  const path=`${GRAPH_ROOT_FOLDER}/pia/${encodeURIComponent(sid)}/pia.json`;
+  const existing=await graphGetByPath(path).catch(()=>null);
+  await graphWriteJsonWithETag(folder.id,'pia.json',pia,existing?.eTag||null);
+  return await graphReadItemWithJson(path);
+}
+window.JournalierDataStore=DataStore;
+window.JournalierCloud={savePia:v73SavePIACloud};
+
 window.updateMicrosoftUI = updateMicrosoftUI;
 Object.assign(window,{openMicrosoftConnection,closeMicrosoftConnection,startMicrosoftLogin,disconnectMicrosoft,prepareMicrosoft365Space,verifyMicrosoft365Space,testMicrosoftAppFolder,diagnoseSyncManagerV72,syncPendingLocalChangesV72,openConflictResolutionV72,deleteHistorySession,showAppToast,syncFingerprint,syncWithoutVolatileMeta});
 document.getElementById('ms-conflict-resolution-list')?.addEventListener('click',async e=>{
@@ -7165,5 +7183,7 @@ document.getElementById('ms-conflict-resolution-list')?.addEventListener('click'
 document.getElementById('ms-cancel-conflict-resolution')?.addEventListener('click',closeConflictResolutionV72);
 document.addEventListener('DOMContentLoaded',async()=>{updateMicrosoftUI();await initMicrosoftAuth();});
 </script>
+<script type="module" src="./src/v73/v73-runtime.js"></script>
+
 </body>
 </html>

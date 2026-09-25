@@ -26,6 +26,36 @@ L'application doit rester un **outil d'appui au professionnel**. Les suggestions
 
 ---
 
+## V73 — PIA annuel et synthèse des séances
+
+La V73 ajoute une couche de synthèse PIA directement dans l’application sans modifier l’architecture de stockage et de synchronisation existante.
+
+### Cycle PIA
+
+- **Réunion 1 — décembre** : réévaluation du PIA précédent lorsqu’il existe, ou construction d’un premier projet lorsqu’il n’existe pas.
+- Les objectifs déjà présents peuvent être maintenus, reformulés, ajustés, remplacés ou complétés ; V73 ne choisit pas à la place du professionnel.
+- **Pendant l’année** : les séances alimentent les éléments de preuve et les évolutions observées.
+- **Réunion 2 — fin d’année** : réévaluation des objectifs à partir des nouvelles séances et définition des suites.
+
+### Sources exploitées
+
+Les observations de classe proviennent des **séances**. V73 exploite les données structurées Q2→Q6 ainsi que les champs `precision` et les autres textes renseignés. Les objectifs de leçon restent du contexte de séance et ne deviennent pas automatiquement des objectifs PIA.
+
+### États de synthèse
+
+V73 utilise des états explicables : `OBSERVATION`, `SIGNAL`, `TENDANCE`, `TENDANCE_QUALIFIEE` et `PROPOSITION`. Une `PROPOSITION` doit être validée par le professionnel pour devenir un élément du PIA annuel.
+
+Les rapprochements entre Q2, Q3, Q4, Q5 et Q6 sont documentaires et ne permettent pas au moteur d’affirmer une causalité.
+
+### Exports
+
+- PIA professionnel nominatif (`.json`) ;
+- PIA imprimable (`.html`) ;
+- modèle PIA dé-identifié (`.json`) pour alimenter une bibliothèque de modèles sans données directement identifiantes.
+
+Le PIA nominatif reste lié au suivi de l’élève. Le modèle dé-identifié ne doit pas contenir les identifiants de l’élève, de l’école ou du dossier.
+
+
 ## 2. Architecture générale
 
 L'application est une SPA (Single Page Application) construite avec :
