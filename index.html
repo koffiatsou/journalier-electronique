@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-cYvJqioownLez+GTZaWtubXH4lcoDBJ0hPqAe7Ct2pc=' 'sha256-2VXoqkGo/SnASYZTjVZiVP4KwV4Lw7ZSmqgOUESRh/I='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net https://*.files.1drv.com https://*.sharepoint.com; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-CEjDnlJ99wDVMB6LuoK7XPUegjmArMJMjRqXQ+uA59Y=' 'sha256-HDKQK9yGK6MR3nxpYAr8Z9phA5408E2J1zZZuy14ugU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net https://*.files.1drv.com https://*.sharepoint.com; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -212,6 +212,20 @@
             align-items: center;
         }
 
+        .day-timeline.day-timeline-grid{display:grid;grid-template-columns:76px minmax(0,1fr);grid-template-rows:repeat(8,minmax(76px,auto));gap:7px 10px;align-items:stretch}
+        .day-period-label{display:grid;place-items:center;padding:8px 5px;border-radius:9px;background:#f8fafc;color:#334155;font-size:.78rem;font-weight:750}
+        .day-free-slot{display:flex;justify-content:space-between;align-items:center;gap:12px;min-width:0;padding:10px 13px;border:1px dashed var(--border);border-radius:10px;background:rgba(255,255,255,.64)}
+        .day-free-slot>span{color:#8a94a2;font-size:.76rem}
+        .day-event-layer{position:relative;z-index:2;min-width:0;min-height:0;pointer-events:none}
+        .day-event-card{position:absolute;top:3px;bottom:3px;left:calc(var(--event-lane-left,0%) + 3px);width:calc(var(--event-lane-width,100%) - 6px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;padding:10px 14px;border:1px solid rgba(60,60,67,.10);border-left:4px solid var(--primary);border-radius:12px;background:linear-gradient(145deg,rgba(10,132,255,.14),rgba(100,210,255,.09));box-shadow:0 3px 10px rgba(0,0,0,.045);text-align:center;pointer-events:auto;cursor:pointer;overflow:auto}
+        .day-event-card.event-encoded{border-left-color:#16a34a;background:linear-gradient(145deg,rgba(48,209,88,.14),rgba(100,210,255,.07))}
+        .day-event-card.event-formation{border-left-color:#d97706;background:linear-gradient(145deg,rgba(255,159,10,.15),rgba(255,204,128,.08))}
+        .day-event-card.event-collab,.day-event-card.event-admin{border-left-color:#9333ea;background:linear-gradient(145deg,rgba(191,90,242,.13),rgba(94,92,230,.07))}
+        .day-event-card .slot-info-main{display:grid;justify-items:center;gap:4px;min-width:0;width:100%;flex:0 1 auto}
+        .day-event-card .slot-title{margin:0;font-size:.88rem}
+        .day-event-card .slot-meta{overflow-wrap:anywhere;text-align:center}
+        .day-event-encode{position:absolute;right:12px;bottom:8px;z-index:3;pointer-events:auto}
+
         .period-badge-col {
             text-align: center;
             font-weight: 800;
@@ -315,6 +329,9 @@
             background: #eff6ff;
             transition: transform .12s ease, box-shadow .12s ease;
         }
+
+        .week-event{align-items:center;text-align:center}
+        .week-event-title,.week-event-meta,.week-event-range{text-align:center}
 
         .week-event:hover {
             transform: translateY(-1px);
@@ -540,6 +557,8 @@
             background: #eff6ff;
             color: #1d4ed8;
         }
+        .month-planned-label{min-width:0;overflow:hidden;text-overflow:ellipsis}
+        .month-period-range{flex:0 0 auto;margin-left:auto;padding-left:2px;color:inherit;font-size:.57rem;font-weight:750}
         .month-planned-dot {
             width: 6px;
             height: 6px;
@@ -1073,6 +1092,7 @@ header{
   border:2px solid rgba(10,132,255,.62);
   background:linear-gradient(145deg,rgba(10,132,255,.10),rgba(100,210,255,.06));
 }
+.month-date-cell .month-indicators{flex:1;justify-content:center}
 
 .home-today{gap:16px}
 .today-card{
@@ -1480,6 +1500,64 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
 #view-form .v15-subsection h4,#view-form .v15-q6-group h4{
   margin:0 0 9px;
 }
+#view-form .q2-theme,#view-form .q6-theme{
+    --group-accent:#3977ce;
+    --group-wash:rgba(37,99,235,.035);
+    position:relative;
+    margin:12px 0 14px;
+    padding:14px 15px 13px!important;
+    border:1px solid rgba(68,91,125,.13);
+    border-left:3px solid var(--group-accent);
+    border-radius:12px;
+    background:linear-gradient(120deg,var(--group-wash),rgba(255,255,255,.92) 72%);
+    box-shadow:0 2px 8px rgba(23,39,63,.025);
+}
+#view-form .q2-theme h4,#view-form .q6-theme h4{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:0 0 11px;
+    color:#334158;
+    font-size:.84rem;
+}
+#view-form .q2-theme h4::before,#view-form .q6-theme h4::before{
+    content:"";
+    width:7px;
+    height:7px;
+    flex:0 0 7px;
+    border-radius:50%;
+    background:var(--group-accent);
+    box-shadow:0 0 0 3px var(--group-wash);
+}
+#view-form .q2-theme-comprehension{--group-accent:#3977ce;--group-wash:rgba(37,99,235,.045)}
+#view-form .q2-theme-organisation{--group-accent:#745bc7;--group-wash:rgba(116,91,199,.045)}
+#view-form .q2-theme-realisation{--group-accent:#168b83;--group-wash:rgba(22,139,131,.045)}
+#view-form .q2-theme-engagement{--group-accent:#b87817;--group-wash:rgba(184,120,23,.05)}
+#view-form .q2-theme .q2-observation-list{gap:8px}
+#view-form .q2-theme .q2-observation-item{background:rgba(255,255,255,.9)}
+#view-form .q2-theme .q2-observation-item.is-observed{border-color:var(--group-accent);color:#263750}
+#view-form .q2-theme .q2-observation-item::before{background:color-mix(in srgb,var(--group-accent) 12%,transparent)}
+#view-form .q2-theme .q2-level-head strong{color:var(--group-accent)}
+#view-form .q4-choice-panel,#view-form .q4-effect-panel,#view-form .q6-choice-panel{
+    min-width:0;
+    padding:13px 14px;
+    border:1px solid rgba(68,91,125,.13);
+    border-radius:11px;
+    background:#f8fafc;
+}
+#view-form .q3-indicator-panel,#view-form .q3-add-panel{padding:13px 14px;border:1px solid rgba(68,91,125,.13);border-radius:11px;background:rgba(37,99,235,.025)}
+#view-form .q3-add-panel{margin-top:10px;background:#fafbfc}
+#view-form .q3-indicator-panel .q3-assessment-section{border-top-color:rgba(57,119,206,.18)}
+#view-form .q4-situation-panel{border-top:2px solid #3977ce}
+#view-form .q4-types-panel{border-top:2px solid #168b83}
+#view-form .q4-effect-panel{margin-top:12px;background:rgba(37,99,235,.025)}
+#view-form .q6-choice-panel{background:#fafbfc}
+#view-form .q6-modality-panel{border-top:2px solid #745bc7}
+#view-form .q6-objective-panel{border-top:2px solid #168b83}
+#view-form .q6-theme-actions{--group-accent:#3977ce;--group-wash:rgba(37,99,235,.04)}
+#view-form .q6-theme-collaboration{--group-accent:#745bc7;--group-wash:rgba(116,91,199,.045)}
+#view-form .q4-choice-panel .ux-select-bubbles,#view-form .q6-choice-panel .ux-select-bubbles{grid-template-columns:repeat(auto-fit,minmax(125px,1fr))}
+@media(max-width:760px){#view-form .q2-theme{padding:12px!important}#view-form .q2-theme .q2-observation-list{grid-template-columns:1fr}.compact-choice-grid.q4-choice-groups,.compact-choice-grid.q6-choice-groups{grid-template-columns:1fr}}
 </style>
 
 
@@ -1624,6 +1702,227 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
         .natural-report .report-section p:last-child{margin-bottom:0}
         .report-evidence-note{background:#f8fafc!important}
         .report-disclaimer{color:#64748b!important;font-size:.75rem!important}
+        .reports-workspace-header{display:grid;grid-template-columns:minmax(0,1fr) minmax(420px,570px);gap:24px;align-items:end;padding:2px 0 22px;border-bottom:1px solid var(--border)}
+        .reports-workspace-header.is-export-open{position:relative;z-index:60}
+        .reports-workspace-header.is-export-open{position:relative;z-index:80}
+        .reports-workspace-title{margin:3px 0 5px;font-size:1.55rem;line-height:1.2;font-weight:760;color:var(--text-main)}
+        .reports-workspace-subtitle{max-width:660px;margin:0;color:var(--text-sub);font-size:.88rem;line-height:1.55}
+        .reports-context{display:grid;gap:6px;min-width:0}
+        .reports-context label{font-size:.72rem;font-weight:700;color:var(--text-sub)}
+        .reports-context select{width:100%;min-height:42px}
+        .reports-header-actions{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr) auto;gap:8px;align-items:end}
+        .reports-date-controls{grid-column:1/3;grid-row:2;gap:8px;margin:0}
+        .reports-date-controls>div{min-width:0}
+        .reports-anchor-control{grid-column:1/3;grid-row:2;display:grid;gap:5px;align-content:end;margin:0}
+        .reports-anchor-control label{font-size:.72rem;font-weight:700;color:var(--text-sub)}
+        .reports-export-menu{position:relative;flex:0 0 auto}
+        .reports-export-menu[open]{z-index:81}
+        .reports-header-actions>.reports-export-menu{grid-column:3;grid-row:1 / span 2;align-self:end;z-index:2}
+        .reports-export-menu>summary{list-style:none;cursor:pointer}
+        .reports-export-menu>summary::-webkit-details-marker{display:none}
+        .reports-export-panel{position:absolute;z-index:82;right:0;top:calc(100% + 8px);width:min(420px,calc(100vw - 32px));max-height:min(70vh,520px);overflow:auto;padding:16px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 32px rgba(15,23,42,.16)}
+        .reports-export-panel .card-title{margin:0 0 12px}
+        .reports-subnav{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--border);margin:0 0 22px;padding:0 2px;scrollbar-width:thin}
+        .reports-subnav button{flex:0 0 auto;position:relative;border:0;border-radius:7px 7px 0 0;background:transparent;padding:12px 15px;color:var(--text-sub);font:inherit;font-size:.82rem;font-weight:650;white-space:nowrap;cursor:pointer}
+        .reports-subnav button:hover,.reports-subnav button:focus-visible{color:var(--primary);background:rgba(37,99,235,.045);outline:none}
+        .reports-subnav button[aria-selected="true"]{color:var(--primary);background:rgba(37,99,235,.07)}
+        .reports-subnav button[aria-selected="true"]::after{content:"";position:absolute;right:12px;bottom:-1px;left:12px;height:2px;background:var(--primary);border-radius:2px}
+        .reports-panel{min-width:0;scroll-margin-top:18px}
+        .student-record{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px 18px;border:1px solid rgba(60,60,67,.10);border-radius:12px;background:rgba(255,255,255,.94);box-shadow:0 3px 12px rgba(26,42,65,.04);transition:box-shadow .16s ease,border-color .16s ease}
+        .student-record:hover{border-color:rgba(37,99,235,.22);box-shadow:0 7px 18px rgba(26,42,65,.07)}
+        .student-record-main{min-width:0}
+        .student-record-head{display:flex;align-items:center;gap:11px;min-width:0}
+        .student-avatar{display:grid;place-items:center;width:42px;height:42px;flex:0 0 42px;border:1px solid #d7e5fb;border-radius:12px;background:#edf4ff;color:#35629e;font-size:.78rem;font-weight:800}
+        .student-record-identity{min-width:0;flex:1}
+        .student-record-identity .student-name{margin:0;font-size:.91rem;line-height:1.3}
+        .student-record-identity .student-meta{margin-top:3px;line-height:1.35}
+        .student-session-count{flex:0 0 auto;padding:5px 8px;border-radius:999px;background:#f1f4f8;color:#59677c;font-size:.66rem;font-weight:700}
+        .student-record-section{margin:13px 0 0 53px}
+        .student-record-section h4,.student-pia-panel h4{margin:0 0 7px;color:#627087;font-size:.67rem;font-weight:750;text-transform:uppercase}
+        .student-subject-pills{display:flex;flex-wrap:wrap;gap:6px}
+        .student-subject-pill{display:inline-flex;align-items:center;max-width:100%;padding:5px 9px;border:1px solid transparent;border-radius:999px;font-size:.68rem;font-weight:650;line-height:1.3;overflow-wrap:anywhere}
+        .student-subject-pill.tone-0{border-color:#dce8fb;background:#eef5ff;color:#365f98}
+        .student-subject-pill.tone-1{border-color:#d8eee8;background:#eff8f5;color:#286d60}
+        .student-subject-pill.tone-2{border-color:#f2e4c9;background:#fff8ec;color:#89621f}
+        .student-subject-pill.tone-3{border-color:#e5dff4;background:#f6f3fb;color:#64558e}
+        .student-record-empty{color:#8994a4;font-size:.72rem}
+        .student-pia-panel{margin:12px 0 0 53px;padding:10px 12px;border-left:3px solid #745bc7;border-radius:6px;background:#f6f3fb}
+        .student-pia-panel p{margin:0;color:#4f4b63;font-size:.75rem;line-height:1.5;overflow-wrap:anywhere}
+        .student-record .student-actions{align-self:center;display:grid;grid-template-columns:1fr;gap:6px;min-width:116px}
+        .student-record .student-actions button{min-height:34px;padding:7px 10px;border-radius:7px;font-size:.71rem;cursor:pointer}
+        .student-delete-action{border:1px solid #f1d7d9;background:#fff;color:#a44149}
+        .student-delete-action:hover{background:#fff5f5;border-color:#e9bcc0}
+        .profile-summary{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+        .profile-stat{border:1px solid transparent;border-radius:9px;background:#f3f6fa;text-align:left}
+        .profile-stat.tone-blue{background:#eff5ff;border-color:#dce8fb;color:#365f98}
+        .profile-stat.tone-purple{background:#f5f2fb;border-color:#e5dff4;color:#64558e}
+        .profile-stat.tone-green{background:#eff8f5;border-color:#d8eee8;color:#286d60}
+        .profile-stat strong{font-size:1.1rem}
+        .profile-subject-block,.profile-pia-block{padding:12px 13px;border:1px solid rgba(68,91,125,.10);border-left:3px solid #3977ce;border-radius:8px;background:#f3f7fc}
+        .profile-pia-block{border-left-color:#745bc7;background:#f6f3fb}
+        .profile-subject-block h4,.profile-pia-block h4{margin:0 0 8px;font-size:.72rem;color:#53647b}
+        .profile-pia-block p{margin:0;color:#4f4b63;font-size:.78rem;line-height:1.5}
+        .profile-recent-section{margin-top:16px}
+        .profile-recent-section>header{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:9px}
+        .profile-recent-section>header h4{margin:0;font-size:.9rem}
+        .profile-recent-section>header>span{padding:4px 7px;border-radius:999px;background:#f1f4f8;color:#66748a;font-size:.65rem;font-weight:700}
+        .profile-session-list{display:grid;gap:9px}
+        .profile-session-card{padding:12px 13px;border:1px solid rgba(68,91,125,.11);border-radius:9px;background:#fff;box-shadow:0 2px 8px rgba(26,42,65,.035)}
+        .profile-session-card>header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+        .profile-session-card>header>div{display:grid;gap:2px;min-width:0}
+        .profile-session-card>header strong{font-size:.73rem;color:#35445a}
+        .profile-session-card>header span{font-size:.65rem;color:#7a8798}
+        .profile-session-card>header button{flex:0 0 auto;padding:5px 8px;border-radius:6px;font-size:.65rem}
+        .profile-session-card>h4{margin:8px 0 9px;font-size:.84rem;line-height:1.4}
+        .profile-session-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+        .profile-session-group{--profile-accent:#3977ce;--profile-wash:#f0f6ff;min-width:0;padding:8px 9px;border-left:2px solid var(--profile-accent);border-radius:5px;background:var(--profile-wash)}
+        .profile-session-group.is-learning{--profile-accent:#168b83;--profile-wash:#eff8f6}
+        .profile-session-group.is-adaptation{--profile-accent:#bd7d1a;--profile-wash:#fff8ed}
+        .profile-session-group.is-effect{--profile-accent:#23865f;--profile-wash:#eff8f3}
+        .profile-session-group.is-transfer{--profile-accent:#2187a3;--profile-wash:#eff8fa}
+        .profile-session-group.is-followup{--profile-accent:#745bc7;--profile-wash:#f5f2fb}
+        .profile-session-group h5{margin:0 0 6px;color:var(--profile-accent);font-size:.62rem;font-weight:750}
+        .profile-session-group>div{display:flex;flex-wrap:wrap;gap:4px}
+        .profile-session-pill{display:inline-flex;align-items:flex-start;gap:5px;max-width:100%;padding:4px 6px;border:1px solid rgba(68,91,125,.09);border-radius:5px;background:rgba(255,255,255,.84);color:#44536a;font-size:.64rem;line-height:1.4;overflow-wrap:anywhere}
+        .profile-session-pill b{align-self:center;flex:0 0 auto;padding:2px 5px;border-radius:999px;background:#edf4ff;color:#4166a7;font-size:.58rem;white-space:nowrap}
+        .profile-session-pill b.is-effect-none{background:#f1f4f8;color:#687588}
+        .profile-session-pill b.is-effect-partial{background:#fff1d9;color:#8d5a12}
+        .profile-session-pill b.is-effect-positive{background:#e8f6ef;color:#176b4e}
+        @media(max-width:760px){.student-record{grid-template-columns:1fr;gap:12px}.student-record-section,.student-pia-panel{margin-left:0}.student-record .student-actions{grid-template-columns:repeat(3,minmax(0,1fr));min-width:0}.profile-session-groups{grid-template-columns:1fr}}
+        .reports-section-head{margin:0 0 14px}
+        .reports-meeting-head{display:flex;justify-content:space-between;align-items:end;gap:20px;margin-bottom:16px}
+        .reports-meeting-head .reports-section-head{margin:0}
+        .reports-meeting-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+        .reports-section-title{margin:2px 0 5px;font-size:1.16rem;line-height:1.3;color:var(--text-main)}
+        .reports-section-description{margin:0;color:var(--text-sub);font-size:.82rem;line-height:1.5}
+        .reports-panel[hidden]{display:none!important}
+        .reports-synthesis-tool{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:end;padding:17px 19px;border:1px solid var(--border);border-radius:8px;background:#fff;box-shadow:0 4px 14px rgba(26,42,65,.035)}
+        .reports-synthesis-copy{min-width:0}
+        .reports-synthesis-copy .reports-section-description{max-width:760px}
+        .reports-result-surface{margin-top:14px;padding:17px 19px;border:1px solid var(--border);border-radius:8px;background:#fff;box-shadow:0 5px 18px rgba(26,42,65,.04)}
+        .reports-view-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+        .reports-view-actions [aria-pressed="true"]{border-color:var(--primary);color:var(--primary);background:#eff6ff}
+        .reports-synthesis-actions{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-top:15px}
+        .reports-synthesis-actions>.btn-primary{min-height:42px}
+        .reports-synthesis-actions .reports-view-actions{margin:0}
+        .reports-output-title{margin:0 0 12px;font-size:1rem;color:var(--text-main)}
+        .reports-output-content{line-height:1.6;color:var(--text-main)}
+        .reports-output-content .report-evidence-grid{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 18px}
+        .reports-output-content .report-evidence{display:flex;align-items:baseline;gap:6px;padding:4px 0;background:transparent;border:0;color:var(--text-sub);font-size:.74rem}
+        .reports-output-content .report-evidence strong{font-size:.86rem;color:var(--text-main)}
+        .reports-output-content .natural-report{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 26px;margin-top:8px}
+        .reports-output-content .report-section{--report-accent:#3977ce;--report-wash:#f3f7fc;padding:13px 15px;border:1px solid rgba(68,91,125,.10);border-left:3px solid var(--report-accent);border-radius:8px;background:linear-gradient(115deg,var(--report-wash),rgba(255,255,255,.94) 78%);margin:0 0 8px}
+        .reports-output-content .report-section:first-child{grid-column:1/-1;padding:15px 17px;margin:2px 0 10px;border-color:rgba(57,119,206,.16);border-left:4px solid #3977ce;border-radius:8px;background:linear-gradient(110deg,#edf4ff,#f8fbff 72%)}
+        .reports-output-content .report-section:nth-child(2){--report-accent:#168b83;--report-wash:#eff8f6}
+        .reports-output-content .report-section:nth-child(3){--report-accent:#745bc7;--report-wash:#f5f2fb}
+        .reports-output-content .report-section:nth-child(4){--report-accent:#55718e;--report-wash:#f2f6f8}
+        .reports-output-content .report-section:nth-child(5){--report-accent:#23865f;--report-wash:#eff8f3}
+        .reports-output-content .report-section:nth-child(6){--report-accent:#bd7d1a;--report-wash:#fff8ed}
+        .reports-output-content .report-section:nth-child(7){--report-accent:#60748d;--report-wash:#f3f6f9}
+        .reports-output-content .report-section:nth-child(8){--report-accent:#2187a3;--report-wash:#eff8fa}
+        .reports-output-content .report-section:nth-child(9){--report-accent:#6654a6;--report-wash:#f5f3fa}
+        .reports-output-content .report-section:last-child{grid-column:1/-1;margin-top:4px;padding:12px 14px;border:1px solid #e8ebf0;border-left:3px solid #8b96a5;border-radius:7px;background:#f6f7f9}
+        .reports-output-content .report-section h4{font-size:.85rem;color:var(--text-main)}
+        .reports-output-content .report-section p,.reports-output-content .report-section li{font-size:.82rem;line-height:1.58}
+        .reports-history-list{border-top:1px solid var(--border)}
+        .history-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,260px);gap:12px;margin:14px 0}
+        .history-controls label{display:grid;gap:5px;font-size:.72rem;font-weight:650;color:var(--text-sub)}
+        .history-controls input,.history-controls select{width:100%;min-height:40px}
+        .history-load-more{display:flex;justify-content:center;padding:16px 0}
+        .history-workspace{display:grid;grid-template-columns:minmax(320px,390px) minmax(0,1fr);gap:14px;align-items:start}
+        .history-list-pane,.history-detail-panel{min-width:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 5px 18px rgba(26,42,65,.045)}
+        .history-list-head,.history-detail-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 15px;border-bottom:1px solid #edf0f4}
+        .history-list-head strong{font-size:.78rem;color:var(--text-main)}
+        .history-list-head span{font-size:.69rem;color:var(--text-sub)}
+        .history-master-list{display:grid;gap:3px;padding:7px}
+        .history-master-row{display:grid;width:100%;grid-template-columns:43px minmax(0,1fr) 12px;gap:10px;align-items:center;padding:11px 9px;border:0;border-radius:6px;background:transparent;text-align:left;color:var(--text-main);cursor:pointer;transition:background .16s ease,border-color .16s ease}
+        .history-master-row:hover{background:#f5f7fa}
+        .history-master-row[aria-current="true"]{background:#e8f1ff;box-shadow:inset 3px 0 #2670dc}
+        .history-master-row:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
+        .history-date-rail{display:grid;justify-items:center;align-content:center;min-height:47px;border-right:1px solid #e7eaf0;padding-right:7px}
+        .history-date-rail strong{font-size:1.12rem;line-height:1;color:var(--text-main)}
+        .history-date-rail span{margin-top:4px;font-size:.62rem;font-weight:750;text-transform:uppercase;color:var(--text-sub)}
+        .history-master-content{display:grid;min-width:0;gap:3px}
+        .history-master-title{font-size:.77rem;font-weight:700}
+        .history-master-meta{margin-left:5px;color:var(--text-sub);font-size:.67rem;font-weight:500}
+        .history-master-objective{overflow:hidden;color:#47566c;font-size:.72rem;line-height:1.4;text-overflow:ellipsis;white-space:nowrap}
+        .history-master-signals{display:flex;gap:5px;flex-wrap:wrap;margin-top:3px}
+        .history-signal{max-width:100%;display:inline-flex;align-items:flex-start;gap:6px;padding:5px 8px;border:1px solid rgba(68,91,125,.08);border-radius:7px;background:#f2f5f9;color:#43536a;font-size:.66rem;line-height:1.4;overflow-wrap:anywhere}
+        .history-signal-label{flex:0 0 auto;padding:2px 6px;border-radius:999px;background:rgba(255,255,255,.94);font-size:.59rem;font-weight:750;white-space:nowrap}
+        .history-signal-text{min-width:0}
+        .history-signal-level{flex:0 0 auto;align-self:center;padding:2px 6px;border:1px solid rgba(65,102,167,.12);border-radius:999px;background:rgba(255,255,255,.94);color:#315a86;font-size:.59rem;font-weight:750;white-space:nowrap}
+        .history-signal.is-observation{background:#edf4ff;color:#4166a7}
+        .history-signal.is-adaptation{background:#fff4e5;color:#946014}
+        .history-signal.is-transfer{background:#eaf7f1;color:#167451}
+        .history-master-chevron{justify-self:end;color:#8390a1;font-size:1.15rem}
+        .history-detail-panel{position:sticky;top:12px;min-height:320px;overflow:hidden}
+        .history-detail-head{align-items:flex-start}
+        .history-detail-heading{display:grid;gap:3px;min-width:0}
+        .history-detail-heading strong{font-size:.72rem;color:var(--text-sub);font-weight:600}
+        .history-detail-actions{display:flex;flex:0 0 auto;gap:6px;align-items:center}
+        .history-detail-back{display:none}
+        .history-detail-body{padding:17px 19px}
+        .history-detail-subject{margin:0;color:#5d76a5;font-size:.7rem;font-weight:700}
+        .history-detail-title{margin:4px 0 3px;font-size:1.03rem;line-height:1.35;color:var(--text-main)}
+        .history-detail-period{color:var(--text-sub);font-size:.69rem}
+        .history-detail-section{--history-accent:#3977ce;--history-wash:#f0f6ff;display:grid;grid-template-columns:112px minmax(0,1fr);gap:10px;padding:11px 12px;margin-top:8px;border:1px solid rgba(68,91,125,.10);border-left:3px solid var(--history-accent);border-radius:7px;background:var(--history-wash)}
+        .history-detail-section.is-learning{--history-accent:#168b83;--history-wash:#eff8f6}
+        .history-detail-section.is-adaptation{--history-accent:#bd7d1a;--history-wash:#fff8ed}
+        .history-detail-section.is-effect{--history-accent:#23865f;--history-wash:#eff8f3}
+        .history-detail-section.is-transfer{--history-accent:#2187a3;--history-wash:#eff8fa}
+        .history-detail-section.is-followup{--history-accent:#745bc7;--history-wash:#f5f2fb}
+        .history-detail-section.is-reference{--history-accent:#60748d;--history-wash:#f3f6f9}
+        .history-detail-section h4{align-self:start;margin:2px 0;font-size:.7rem;color:var(--history-accent);font-weight:750}
+        .history-evidence-list{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+        .history-evidence-chip{display:inline-flex;align-items:flex-start;gap:6px;max-width:100%;padding:5px 8px;border:1px solid rgba(68,91,125,.10);border-radius:7px;background:rgba(255,255,255,.84);color:#39475c;font-size:.73rem;line-height:1.45;overflow-wrap:anywhere}
+        .history-evidence-level{flex:0 0 auto;padding:2px 6px;border-radius:999px;background:#edf4ff;color:#4166a7;font-size:.62rem;font-weight:750;white-space:nowrap}
+        .history-evidence-level.is-effect-none{background:#f1f4f8;color:#687588}
+        .history-evidence-level.is-effect-partial{background:#fff1d9;color:#8d5a12}
+        .history-evidence-level.is-effect-positive{background:#e8f6ef;color:#176b4e}
+        .history-detail-section p{margin:0;color:#39475c;font-size:.76rem;line-height:1.55;overflow-wrap:anywhere}
+        .history-detail-empty{display:grid;min-height:280px;place-content:center;padding:24px;text-align:center;color:var(--text-sub);font-size:.78rem}
+        .history-detail-note{margin:16px 0 0;padding:10px 12px;border-radius:6px;background:#f5f7fa;color:#6b7789;font-size:.68rem;line-height:1.5}
+        .history-workspace.is-detail-open .history-detail-panel{display:block}
+        .meeting-prep-output .natural-report{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px}
+        .meeting-prep-output .report-section{--report-accent:#3977ce;padding:13px 14px;border:1px solid rgba(68,91,125,.09);border-left:3px solid var(--report-accent);border-radius:7px;background:#f7f9fc;margin:0 0 8px}
+        .meeting-prep-output .report-section:nth-child(2){--report-accent:#bd7d1a;background:#fff9f0}
+        .meeting-prep-output .report-section:nth-child(3){--report-accent:#745bc7;background:#f7f4fc}
+        .meeting-prep-output .report-section:nth-child(4){--report-accent:#168b83;background:#f0f8f6}
+        .meeting-prep-output .report-section:nth-child(5){--report-accent:#2187a3;background:#f1f8fa}
+        .meeting-prep-output .report-section:nth-child(6){--report-accent:#a86713;background:#fff8ed}
+        .reports-export-controls{display:grid;grid-template-columns:1fr 1fr auto;gap:8px 10px;align-items:end}
+        .reports-export-controls label{display:grid;gap:5px;font-size:.75rem;font-weight:650;color:var(--text-sub)}
+        .reports-export-controls select{width:100%}
+        .reports-export-controls label{font-size:.82rem;font-weight:650}
+        .history-data-row{padding:14px 2px;border-bottom:1px solid var(--border)}
+        .history-data-row:last-child{border-bottom:0}
+        .history-data-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+        .history-data-head>div:first-child{display:flex;gap:9px;align-items:baseline;flex-wrap:wrap}
+        .history-data-head>div:first-child span{font-size:.76rem;color:var(--text-sub)}
+        .history-data-actions{display:flex;gap:7px;flex-wrap:wrap}
+        .history-data-objective{margin:8px 0 0;font-size:.92rem;font-weight:650;line-height:1.4;color:var(--text-main)}
+        .history-data-preview{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:7px 18px;margin-top:8px}
+        .history-data-preview>div{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px;align-items:start;font-size:.78rem;line-height:1.45}
+        .history-data-preview strong{color:var(--text-sub);font-size:.72rem}
+        .history-data-preview span{overflow-wrap:anywhere}
+        .history-data-details{margin-top:10px}
+        .history-data-details>summary{width:max-content;max-width:100%;color:var(--primary);font-size:.76rem;font-weight:650;cursor:pointer}
+        .history-data-details[open] .history-data-summary{padding-top:10px}
+        .history-more-actions{position:relative}
+        .history-more-actions>summary{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--border);border-radius:7px;color:var(--text-sub);font-size:1.2rem;line-height:1;list-style:none;cursor:pointer}
+        .history-more-actions>summary::-webkit-details-marker{display:none}
+        .history-more-actions>button{position:absolute;z-index:2;right:0;top:calc(100% + 4px);padding:8px 11px;border:1px solid #fecaca;border-radius:7px;background:#fff;color:#b91c1c;white-space:nowrap;cursor:pointer;box-shadow:0 5px 16px rgba(15,23,42,.1)}
+        .history-data-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:8px 18px;margin-top:10px}
+        .history-data-summary>div{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px;align-items:start;font-size:.79rem;line-height:1.45}
+        .history-data-summary strong{color:var(--text-sub);font-size:.72rem}
+        .history-data-summary span{overflow-wrap:anywhere}
+        .report-section[hidden]{display:none}
+        @media(max-width:960px){.reports-workspace-header{grid-template-columns:1fr;gap:14px;align-items:start}}
+        @media(max-width:900px){.history-workspace{grid-template-columns:minmax(280px,34%) minmax(0,1fr);gap:10px}.history-detail-body{padding:15px}.history-detail-section{grid-template-columns:90px minmax(0,1fr);gap:8px}}
+        @media(max-width:720px){.history-controls{grid-template-columns:1fr 1fr}.history-workspace{grid-template-columns:1fr}.history-detail-panel{display:none;position:static;min-height:0}.history-workspace.is-detail-open .history-list-pane{display:none}.history-workspace.is-detail-open .history-detail-panel{display:block}.history-detail-back{display:inline-flex}.history-detail-body{padding:15px}.history-detail-section{grid-template-columns:1fr;gap:7px}}
+        @media(max-width:720px){.reports-header-actions{grid-template-columns:minmax(0,1fr) auto;justify-content:stretch}.reports-header-actions>.reports-context:first-child{grid-column:1;grid-row:1}.reports-header-actions>.reports-context:nth-child(2){grid-column:1;grid-row:2}.reports-header-actions>.reports-export-menu{grid-column:2;grid-row:1;align-self:end}.reports-date-controls,.reports-anchor-control{grid-column:1/-1;grid-row:3}.reports-export-menu{width:auto}.reports-export-panel{position:absolute;width:min(420px,calc(100vw - 32px));margin-top:8px}.reports-subnav{gap:2px;margin-bottom:18px}.reports-subnav button{padding:11px 12px}.reports-synthesis-tool{grid-template-columns:1fr;gap:12px;padding:14px}.reports-synthesis-actions{align-items:stretch}.reports-synthesis-actions>.btn-primary{width:100%}.reports-view-actions{width:100%}.reports-result-surface{padding:14px}.reports-output-content .natural-report{grid-template-columns:1fr}.reports-output-content .report-section:first-child,.reports-output-content .report-section:last-child{grid-column:auto}.reports-meeting-head{align-items:stretch;flex-direction:column}.reports-meeting-actions{justify-content:stretch}.reports-meeting-actions button{width:100%}.reports-export-controls{grid-template-columns:1fr}.meeting-prep-output .natural-report{grid-template-columns:1fr}.history-data-head{align-items:flex-start}.history-data-preview>div,.history-data-summary>div{grid-template-columns:78px minmax(0,1fr)}}
+        .agenda-grid-week .week-event-cell.week-event-overlay{position:relative;display:block;min-height:0;padding:0!important;border:0;background:transparent;overflow:visible;cursor:default;pointer-events:none;z-index:4}
+        .agenda-grid-week .week-event-overlay>.week-event{position:absolute;top:3px;bottom:3px;left:calc(var(--event-lane-left) + 3px);width:calc(var(--event-lane-width) - 6px);height:auto;min-height:0;margin:0!important;box-sizing:border-box;overflow:auto;pointer-events:auto;align-items:center;justify-content:center;text-align:center;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -1836,7 +2135,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                     Sélectionner les éléments effectivement observés. Pour les trois premiers groupes, préciser le niveau constaté si nécessaire.
                 </p>
 
-                <div class="v15-subsection">
+                <div class="v15-subsection q2-theme q2-theme-comprehension">
                     <h4>Compréhension / traitement</h4>
                     <div class="q2-observation-list">
                         <label class="q2-observation-item"><input type="checkbox" name="q2-comprehension" value="Identifie ce qui est demandé dans la consigne"><span class="q2-observation-label">Identifie ce qui est demandé dans la consigne</span><span class="q2-level" aria-hidden="true"><span class="q2-level-head"><span>Niveau constaté</span><strong>À préciser</strong></span><span class="q2-range-wrap"><span>Partiellement</span><input type="range" min="0" max="2" step="1" value="1" aria-label="Niveau pour Identifie ce qui est demandé dans la consigne"><span>Totalement</span></span></span></label>
@@ -1847,7 +2146,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                     </div>
                 </div>
 
-                <div class="v15-subsection">
+                <div class="v15-subsection q2-theme q2-theme-organisation">
                     <h4>Organisation / fonctions exécutives</h4>
                     <div class="q2-observation-list">
                         <label class="q2-observation-item"><input type="checkbox" name="q2-organisation" value="Entre dans la tâche"><span class="q2-observation-label">Entre dans la tâche</span><span class="q2-level" aria-hidden="true"><span class="q2-level-head"><span>Niveau constaté</span><strong>À préciser</strong></span><span class="q2-range-wrap"><span>Partiellement</span><input type="range" min="0" max="2" step="1" value="1" aria-label="Niveau pour Entre dans la tâche"><span>Totalement</span></span></span></label>
@@ -1858,7 +2157,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                     </div>
                 </div>
 
-                <div class="v15-subsection">
+                <div class="v15-subsection q2-theme q2-theme-realisation">
                     <h4>Réalisation</h4>
                     <div class="q2-observation-list">
                         <label class="q2-observation-item"><input type="checkbox" name="q2-realisation" value="Met en œuvre la procédure travaillée"><span class="q2-observation-label">Met en œuvre la procédure travaillée</span><span class="q2-level" aria-hidden="true"><span class="q2-level-head"><span>Niveau constaté</span><strong>À préciser</strong></span><span class="q2-range-wrap"><span>Partiellement</span><input type="range" min="0" max="2" step="1" value="1" aria-label="Niveau pour Met en œuvre la procédure travaillée"><span>Totalement</span></span></span></label>
@@ -1868,7 +2167,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                     </div>
                 </div>
 
-                <div class="v15-subsection">
+                <div class="v15-subsection q2-theme q2-theme-engagement">
                     <h4>Rapport à l’aide / engagement</h4>
                     <div class="ux-bubble-grid q2-aide-bubble-grid">
                         <label class="ux-bubble"><input type="checkbox" name="q2-aide" value="Demande de l’aide"><span class="ux-bubble-label">Demande de l’aide</span></label>
@@ -1894,7 +2193,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                     Pointer un élément précis de l’apprentissage. La sélection reste facultative.
                 </p>
 
-                <div class="v11-field full">
+                <div class="v11-field full q3-indicator-panel">
                     <label class="q3-subtitle">Indicateurs d’apprentissage</label>
                     <div id="q3-wbe-validated-note" class="q3-wbe-validated-note hidden" aria-live="polite"></div>
                     <div id="q3-learning-suggestions" class="ux-bubble-grid q3-library-grid" aria-label="Suggestions d’indicateurs d’apprentissage"></div>
@@ -1908,7 +2207,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                     </div>
                 </div>
 
-                <div class="v11-field full q3-add-field">
+                <div class="v11-field full q3-add-field q3-add-panel">
                     <label for="q3-add-input">Ajouter un indicateur <span class="v11-optional">(facultatif)</span></label>
                     <div class="q3-add-row">
                         <input type="text" id="q3-add-input" placeholder="Saisir un indicateur à ajouter…" autocomplete="off">
@@ -1927,8 +2226,8 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
             <div class="card">
                 <div class="card-title">4. Adaptation / médiation</div>
                 <p class="form-section-intro">Décrire ce qui a réellement été utilisé ou envisagé. Les adaptations déjà présentes dans le PIA peuvent servir de repère.</p>
-                <div class="compact-choice-grid">
-                    <div class="v11-field">
+                <div class="compact-choice-grid q4-choice-groups">
+                    <div class="v11-field q4-choice-panel q4-situation-panel">
                         <label>Situation</label>
                         <select id="q4-status-value" class="choice-select ux-hidden-select">
                             <option value="none">Aucune</option><option value="existing_adaptation">Adaptation déjà en place</option><option value="existing_mediation">Médiation déjà en place</option><option value="new">Nouvelle adaptation / médiation</option><option value="later">Piste pour plus tard</option>
@@ -1942,7 +2241,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                         </div>
                         <div class="choice-caption">Une seule situation peut être retenue pour cette séance.</div>
                     </div>
-                    <div class="v11-field">
+                    <div class="v11-field q4-choice-panel q4-types-panel">
                         <label>Type(s) d’adaptation / médiation</label>
                         <div class="ux-bubble-grid" id="q4-types-select">
                             <label class="ux-bubble"><input type="checkbox" name="q4-type" value="Reformulation"><span class="ux-bubble-label">Reformulation</span></label>
@@ -1961,7 +2260,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                     </div>
                 </div>
                 <div class="v11-grid" style="margin-top:12px;">
-                    <div class="v11-field full q4-effect-note">
+                    <div class="v11-field full q4-effect-note q4-effect-panel">
                     <div class="q4-effect-caption">Pour chaque adaptation / médiation sélectionnée, préciser l’effet constaté.</div>
                     <div id="q4-effect-sliders" class="q4-effect-sliders" aria-live="polite"></div>
                 </div>
@@ -1996,7 +2295,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                     Qu’est-ce que cette séance implique pour la suite de l’accompagnement ?
                 </p>
 
-                <div class="v15-q6-group">
+                <div class="v15-q6-group q6-theme q6-theme-actions">
                     <h4>Suite de l’accompagnement</h4>
                     <div class="v11-field full">
                         <label>Action(s) à retenir</label>
@@ -2011,8 +2310,8 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                     </div>
                 </div>
 
-                <div class="compact-choice-grid">
-                    <div class="v11-field">
+                <div class="compact-choice-grid q6-choice-groups">
+                    <div class="v11-field q6-choice-panel q6-modality-panel">
                         <label>Évolution de la modalité</label>
                         <select id="q6-modality-value" class="choice-select ux-hidden-select">
                             <option value="">Sans changement</option><option value="Maintenir l’individuel">Maintenir l’individuel</option><option value="Groupe">Groupe</option><option value="Cointervention">Cointervention</option><option value="Coenseignement">Coenseignement</option>
@@ -2021,7 +2320,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                             <button type="button" class="ux-select-bubble" data-value="" data-jr-handlers="h42">Sans changement</button><button type="button" class="ux-select-bubble" data-value="Maintenir l’individuel" data-jr-handlers="h43">Maintenir l’individuel</button><button type="button" class="ux-select-bubble" data-value="Groupe" data-jr-handlers="h44">Groupe</button><button type="button" class="ux-select-bubble" data-value="Cointervention" data-jr-handlers="h45">Cointervention</button><button type="button" class="ux-select-bubble" data-value="Coenseignement" data-jr-handlers="h46">Coenseignement</button>
                         </div>
                     </div>
-                    <div class="v11-field">
+                    <div class="v11-field q6-choice-panel q6-objective-panel">
                         <label>Objectif / PIA</label>
                         <select id="q6-objective-value" class="choice-select ux-hidden-select">
                             <option value="">Sans changement</option><option value="Maintenir les objectifs">Maintenir les objectifs</option><option value="Ajuster l’objectif de travail">Ajuster l’objectif de travail</option><option value="Évolution du PIA à discuter">Évolution du PIA à discuter</option>
@@ -2032,7 +2331,7 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
                     </div>
                 </div>
 
-                <div class="v15-q6-group">
+                <div class="v15-q6-group q6-theme q6-theme-collaboration">
                     <h4>Collaboration / concertation <span class="v11-optional">(si nécessaire)</span></h4>
                     <div class="v11-field full">
                         <div class="ux-bubble-grid" id="q6-collab-select">
@@ -2085,42 +2384,139 @@ button:not(:disabled):active, [role="button"]:active, .week-event-cell:active, .
 
     <!-- TAB 5 : DOSSIERS & RAPPORTS PERIODIQUES -->
     <div id="view-reports" class="hidden">
-        <div class="card">
-            <div class="page-kicker">Restitution des séances</div><h2 class="page-title" style="font-size:1.15rem;margin-bottom:6px;">Synthèses pédagogiques & PV</h2><div class="report-intro">La synthèse rassemble les données effectivement encodées sur la période choisie. Les tendances et pistes doivent être relues avant toute utilisation dans un PV ou un PIA.</div>
-            <div class="grid-2">
-                <div>
-                    <label for="r-eleve">Sélectionner l'élève</label>
+        <header class="reports-workspace-header">
+            <div class="reports-workspace-copy">
+                <div class="page-kicker">Suivi pédagogique</div>
+                <h2 class="reports-workspace-title">Rapports &amp; PIA</h2>
+                <p class="reports-workspace-subtitle">Transformer les observations du Journalier en synthèses utiles au suivi de l’élève.</p>
+            </div>
+            <div class="reports-header-actions">
+                <div class="reports-context">
+                    <label for="r-eleve">Élève accompagné</label>
                     <select id="r-eleve" data-jr-handlers="h53"></select>
                 </div>
-                <div>
-                    <label for="r-periode">Type de Rapport souhaité</label>
+                <div class="reports-context">
+                    <label for="r-periode">Période des séances</label>
                     <select id="r-periode">
-                        <option value="HEBDO">Synthèse hebdomadaire</option>
-                        <option value="MENSUEL">Bilan mensuel</option>
+                        <option value="LIBRE">Dates personnalisées</option>
+                        <option value="HEBDO">Semaine</option>
+                        <option value="MENSUEL">Mois</option>
                         <option value="PV1">Procès-verbal 1 · Intégration / point d’étape</option>
                         <option value="PV2">Procès-verbal 2 · Bilan / fin de suivi</option>
                     </select>
                 </div>
-            </div>
-            <div class="report-filters">
-                <div>
-                    <label for="r-date-anchor">Date de référence pour la synthèse</label>
+                <div id="r-custom-range" class="reports-date-controls grid-2">
+                    <div><label for="r-date-start">Date de début</label><input type="date" id="r-date-start" min="2026-08-24" max="2027-07-02"></div>
+                    <div><label for="r-date-end">Date de fin</label><input type="date" id="r-date-end" min="2026-08-24" max="2027-07-02"></div>
+                </div>
+                <div class="report-filters hidden reports-anchor-control" id="r-anchor-range">
+                    <label for="r-date-anchor">Date de référence</label>
                     <input type="date" id="r-date-anchor" min="2026-08-24" max="2027-07-02" value="" data-jr-handlers="h54">
-                    <div class="v11-help">Hebdomadaire = semaine de la date choisie · Mensuel = mois de la date choisie · PV = ensemble des observations disponibles jusqu’à la date choisie.</div>
+                </div>
+                <details class="reports-export-menu" id="reports-exports">
+                    <summary class="btn-secondary">Exporter</summary>
+                    <div class="reports-export-panel">
+                        <div class="card-title">Exporter les données</div>
+                        <div class="reports-export-controls">
+                            <label for="reports-export-kind">Contenu
+                                <select id="reports-export-kind">
+                                        <optgroup label="Rapports et séances">
+                                    <option value="sessions">Séances de la période</option>
+                                    <option value="synthesis">Synthèse générée</option>
+                                    <option value="meeting">Préparation de réunion</option>
+                                        </optgroup>
+                                        <optgroup label="PIA annuel">
+                                            <option value="pia-professional">PIA professionnel</option>
+                                            <option value="pia-deidentified">Modèle PIA dé-identifié</option>
+                                            <option value="pia-json">JSON professionnel</option>
+                                            <option value="pia-deidentified-json">JSON dé-identifié</option>
+                                        </optgroup>
+                                </select>
+                            </label>
+                            <label for="reports-export-format" id="reports-export-format-field">Format
+                                <select id="reports-export-format">
+                                    <option value="docx">Word (.docx)</option>
+                                    <option value="pdf">PDF (.pdf)</option>
+                                </select>
+                            </label>
+                            <button type="button" class="btn-secondary" id="reports-export-btn">Exporter</button>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </header>
+
+        <nav class="reports-subnav" id="reports-navigation" role="tablist" aria-label="Rapports et PIA" aria-orientation="horizontal">
+            <button type="button" role="tab" id="reports-tab-synthesis" aria-controls="reports-panel-synthesis" aria-selected="true" tabindex="0" data-reports-tab="synthesis">Synthèse</button>
+            <button type="button" role="tab" id="reports-tab-history" aria-controls="reports-panel-history" aria-selected="false" tabindex="-1" data-reports-tab="history">Historique</button>
+            <button type="button" role="tab" id="reports-tab-meeting" aria-controls="reports-panel-meeting" aria-selected="false" tabindex="-1" data-reports-tab="meeting">Réunion</button>
+            <button type="button" role="tab" id="reports-tab-pia" aria-controls="reports-panel-pia" aria-selected="false" tabindex="-1" data-reports-tab="pia">PIA annuel</button>
+        </nav>
+
+        <section class="reports-panel" id="reports-panel-synthesis" data-reports-panel="synthesis" role="tabpanel" aria-labelledby="reports-tab-synthesis" tabindex="0">
+            <div class="reports-synthesis-tool">
+                <div class="reports-synthesis-copy">
+                <div class="page-kicker">Analyse des séances</div>
+                <h2 class="reports-section-title" id="reports-synthesis">Synthèse pédagogique</h2>
+                <p class="reports-section-description">La période sélectionnée dans l’en-tête s’applique aux synthèses et aux exports de séances. Elle est indépendante de l’année scolaire du PIA. Les constats restent descriptifs et les pistes sont à relire.</p>
+                </div>
+                <div class="reports-synthesis-actions">
+                    <button class="btn-primary" data-jr-handlers="h55">Générer la synthèse</button>
+                    <div class="reports-view-actions" role="group" aria-label="Niveau de détail de la synthèse">
+                        <button type="button" class="btn-secondary" id="r-preview-btn">Aperçu</button>
+                        <button type="button" class="btn-secondary" id="r-full-btn">Synthèse complète</button>
+                    </div>
                 </div>
             </div>
-            <button class="btn-primary" style="background:#059669;" data-jr-handlers="h55">Générer la synthèse</button>
-
-            <div id="report-output-box" class="report-box hidden" style="background:#f0fdf4; border:1px solid #bbf7d0; padding:16px; border-radius:12px; margin-top:16px;">
-                <h4 style="margin-top:0; color:#166534;">Document prêt à être copié dans Word / SharePoint :</h4>
-                <div id="report-text" style="color:#166534; line-height:1.5;"></div>
+            <div id="report-output-box" class="report-box reports-result-surface hidden">
+                    <h3 class="reports-output-title">Synthèse générée</h3>
+                    <div id="report-text" class="reports-output-content"></div>
             </div>
-        </div>
+        </section>
 
-        <div class="card">
-            <div class="card-title">Historique chronologique des séances</div>
-            <div id="student-history-list">Sélectionnez un élève pour afficher son dossier.</div>
-        </div>
+        <section class="reports-panel" id="reports-panel-history" data-reports-panel="history" role="tabpanel" aria-labelledby="reports-tab-history" tabindex="0" hidden>
+            <header class="reports-section-head">
+                <div class="page-kicker">Séances enregistrées</div>
+                <h2 class="reports-section-title" id="reports-history">Historique</h2>
+                <p class="reports-section-description">Le résumé reste visible pour consulter rapidement chaque séance; ouvrez-la seulement pour la modifier ou en voir le détail.</p>
+            </header>
+            <div class="history-controls">
+                <label for="history-search">Rechercher une séance
+                    <input id="history-search" type="search" placeholder="Date, objectif ou observation" autocomplete="off">
+                </label>
+                <label for="history-subject-filter">Matière
+                    <select id="history-subject-filter"><option value="">Toutes les matières</option></select>
+                </label>
+            </div>
+            <div class="history-workspace" id="history-workspace">
+                <section class="history-list-pane" aria-label="Séances de la période">
+                    <header class="history-list-head"><strong>Séances enregistrées</strong><span id="history-visible-count"></span></header>
+                    <div id="student-history-list" class="reports-history-list history-master-list">Sélectionnez un élève pour afficher son dossier.</div>
+                </section>
+                <aside id="student-history-detail" class="history-detail-panel" aria-label="Détail de la séance sélectionnée" aria-live="polite">
+                    <div class="history-detail-empty">Sélectionnez une séance pour consulter son détail.</div>
+                </aside>
+            </div>
+        </section>
+
+        <section class="reports-panel" id="reports-panel-meeting" data-reports-panel="meeting" role="tabpanel" aria-labelledby="reports-tab-meeting" tabindex="0" hidden>
+            <header class="reports-meeting-head">
+                <div class="reports-section-head">
+                    <div class="page-kicker">À partir des séances</div>
+                    <h2 class="reports-section-title" id="reports-meeting-prep">Préparer une réunion</h2>
+                    <p class="reports-section-description">La trame reprend les éléments de l’élève et de la période actifs. Elle ne constitue pas le compte rendu de la rencontre.</p>
+                </div>
+                <div class="reports-meeting-actions">
+                    <button type="button" class="btn-secondary" id="meeting-open-pia">Saisir les éléments de la rencontre</button>
+                    <button type="button" class="btn-primary" data-jr-handlers="h55">Générer la préparation</button>
+                </div>
+            </header>
+            <div id="meeting-prep-output" class="meeting-prep-output"><p class="reports-empty-state">Générez la préparation pour organiser les éléments réellement renseignés dans les séances.</p></div>
+        </section>
+
+        <section class="reports-panel" id="reports-panel-pia" data-reports-panel="pia" role="tabpanel" aria-labelledby="reports-tab-pia" tabindex="0" hidden>
+            <div id="reports-pia-mount"></div>
+        </section>
     </div>
 
 </div>
@@ -2713,7 +3109,7 @@ loadIndicatorLibrary();
             await JournalierSecurity.persist(JournalierSecurity.state);
             JournalierSecurity.lock();
             journalierLockedByTimeout=true;
-            try{msAccount=null;updateMicrosoftUI?.();updateStudentDropdowns?.();renderStudentsView?.();renderAgenda?.();updateStats?.();}catch(_){}
+            try{msAccount=null;updateMicrosoftUI?.();updateStudentDropdowns?.();renderStudentsView?.();renderAgenda?.();updateStats?.();window.JournalierV73?.renderDashboard?.();}catch(_){}
             try{setCloudStatus?.('🔒 Journalier a été verrouillé après 15 minutes d’inactivité. Reconnectez-vous avec Microsoft pour reprendre la session.','info');showAppToast?.('🔒 Session Journalier verrouillée automatiquement.','success',6500);}catch(_){}
         }catch(_){
             journalierScheduleAutoLock();
@@ -2834,7 +3230,7 @@ loadIndicatorLibrary();
     async function activateJournalierAccount(account){
         await JournalierSecurity.activate(account);
         window.JournalierV73?.refreshStudents?.();
-        renderStudentsView?.(); renderAgenda?.(); updateStudentDropdowns?.(); updateStats?.(); window.updateMicrosoftUI?.();
+        renderStudentsView?.(); renderAgenda?.(); updateStudentDropdowns?.(); updateStats?.(); window.JournalierV73?.renderDashboard?.(); window.updateMicrosoftUI?.();
         return JournalierSecurity.state;
     }
 
@@ -3135,6 +3531,7 @@ loadIndicatorLibrary();
                 const last=getDB().find(item=>item.type==='SEANCE');
                 if(last) reportStudent.value=last.identification?.eleve || '';
             }
+            reportStudent?.dispatchEvent(new CustomEvent('journalier:student-context-change',{bubbles:true}));
             loadStudentHistory();
         }
         if (tabName === 'form') {
@@ -3229,28 +3626,62 @@ loadIndicatorLibrary();
         const db = getDB(), prev = getPrevisionnel();
         const dayIdx = getDayIndexFromISO(selectedDateISO);
         const weekend = dayIdx > 4;
-        let html = weekend ? `<div style="padding:10px 0 14px;color:#64748b;font-size:.78rem;">Week-end : seuls les événements uniques sont affichés.</div>` : '';
-        const seen=new Set();
-        periods.forEach(p=>{
-            const events=getEventsForDatePeriod(selectedDateISO,p,prev);
-            const visible=events.filter(ev=>!seen.has(ev.eventId));
-            visible.forEach(ev=>seen.add(ev.eventId));
-            if(visible.length){
-                visible.forEach(ev=>{
-                    const enc=getEncodedForEvent(dayIdx,selectedDateISO,ev,db);
-                    const status=enc?'Séance enregistrée':'Planifié';
-                    const badge=enc?'badge-encoded':'badge-prev';
-                    html+=`<div class="day-slot-row" style="align-items:stretch;"><div class="period-badge-col">${escapeHtml(ev.startPeriod)}${ev.startPeriod!==ev.endPeriod?'<br>↓<br>'+escapeHtml(ev.endPeriod):''}</div><div class="slot-content-card"><div class="slot-info-main"><span class="status-badge ${badge}">${status}</span><div class="slot-title">${escapeHtml(getEventLabel(ev))}</div><div class="slot-meta">${escapeHtml(getEventMeta(ev)||'Mission Pôle Territorial')}${ev.type==='ELEVE'&&enc?' · Séance enregistrée':''} · ${ev.recurrence==='unique'?'Unique':'Récurrent'}</div></div><div class="slot-actions" style="margin-top:8px;"><button class="btn-secondary focus-ring js-day-event" data-iso="${escapeHtml(selectedDateISO)}" data-start-period="${escapeHtml(ev.startPeriod)}" data-day-index="${dayIdx}" data-event-id="${escapeHtml(ev.eventId)}" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;">Voir / agir</button>${ev.type==='ELEVE'&&!enc?`<button class="btn-primary focus-ring js-quick-form" data-iso="${escapeHtml(selectedDateISO)}" data-start-period="${escapeHtml(ev.startPeriod)}" data-eleve="${escapeHtml(ev.eleve)}" data-matiere="${escapeHtml(ev.matiere||'')}" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;">Encoder</button>`:''}</div></div></div>`;
-                });
-            } else {
-                html+=`<div class="day-slot-row"><div class="period-badge-col">${escapeHtml(p)}</div><div class="slot-content-card"><div class="slot-info-main"><span style="color:#94a3b8;font-size:.78rem;">Créneau libre</span><div class="slot-meta">Aucune activité planifiée</div></div><div class="slot-actions"><button class="btn-secondary focus-ring js-open-slot" data-iso="${escapeHtml(selectedDateISO)}" data-period="${escapeHtml(p)}" data-day-index="${dayIdx}" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;">Programmer</button></div></div></div>`;
-            }
+        let html=weekend?`<div class="day-weekend-note" style="grid-column:1/-1;padding:4px 0 8px;color:#64748b;font-size:.78rem;">Week-end : seuls les événements uniques sont affichés.</div>`:'';
+        const eventsById=new Map();
+        periods.forEach(period=>getEventsForDatePeriod(selectedDateISO,period,prev).forEach(event=>{
+            const startIndex=Number.isInteger(event.startIndex)?event.startIndex:periodIndex(event.startPeriod);
+            const endIndex=Number.isInteger(event.endIndex)?event.endIndex:periodIndex(event.endPeriod||event.startPeriod);
+            if(startIndex<0||endIndex<startIndex||startIndex>=periods.length)return;
+            const eventId=String(event.eventId||`day_${startIndex}_${endIndex}`);
+            if(!eventsById.has(eventId))eventsById.set(eventId,{...event,eventId,startIndex,endIndex:Math.min(endIndex,periods.length-1)});
+        }));
+        const events=[...eventsById.values()].sort((a,b)=>a.startIndex-b.startIndex||a.endIndex-b.endIndex||a.eventId.localeCompare(b.eventId));
+        const laneEnds=[],occupiedPeriods=new Set();
+        events.forEach(event=>{
+            let lane=laneEnds.findIndex(endIndex=>endIndex<event.startIndex);
+            if(lane<0)lane=laneEnds.length;
+            laneEnds[lane]=event.endIndex;
+            event.lane=lane;
+            for(let index=event.startIndex;index<=event.endIndex;index++)occupiedPeriods.add(index);
+        });
+        const laneCount=Math.max(1,laneEnds.length);
+        periods.forEach((period,index)=>{
+            html+=`<div class="day-period-label" style="grid-column:1;grid-row:${index+1};">${escapeHtml(period)}</div>`;
+            if(!occupiedPeriods.has(index))html+=`<div class="day-free-slot" style="grid-column:2;grid-row:${index+1};"><span>Créneau libre · aucune activité planifiée</span><button class="btn-secondary focus-ring js-open-slot" data-iso="${escapeHtml(selectedDateISO)}" data-period="${escapeHtml(period)}" data-day-index="${dayIdx}" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;">Programmer</button></div>`;
+        });
+        events.forEach(event=>{
+            const encoded=getEncodedForEvent(dayIdx,selectedDateISO,event,db);
+            const status=encoded?'Séance enregistrée':'Planifié';
+            const badge=encoded?'badge-encoded':'badge-prev';
+            const span=event.endIndex-event.startIndex+1;
+            const range=event.startPeriod===event.endPeriod?event.startPeriod:`${event.startPeriod} → ${event.endPeriod}`;
+            const typeClass=getEventClass(event,encoded);
+            const meta=getEventMeta(event)||'Mission Pôle Territorial';
+            html+=`<div class="day-event-layer" style="grid-column:2;grid-row:${event.startIndex+1} / span ${span};--event-lane-left:${event.lane*100/laneCount}%;--event-lane-width:${100/laneCount}%;">
+                <button type="button" class="day-event-card ${typeClass} js-day-event" data-iso="${escapeHtml(selectedDateISO)}" data-start-period="${escapeHtml(event.startPeriod)}" data-day-index="${dayIdx}" data-event-id="${escapeHtml(event.eventId)}" aria-label="${escapeHtml(`${getEventLabel(event)} · ${range} · ${status}`)}">
+                    <span class="status-badge ${badge}">${status}</span>
+                    <span class="slot-info-main"><span class="slot-title">${escapeHtml(getEventLabel(event))}</span><span class="slot-meta">${escapeHtml(meta)}${event.recurrence==='unique'?' · Événement unique':' · Récurrent'}</span></span>
+                    <span class="week-event-range">${escapeHtml(range)}</span>
+                </button>
+                ${event.type==='ELEVE'&&!encoded?`<button type="button" class="day-event-encode btn-primary focus-ring js-quick-form" data-iso="${escapeHtml(selectedDateISO)}" data-start-period="${escapeHtml(event.startPeriod)}" data-eleve="${escapeHtml(event.eleve)}" data-matiere="${escapeHtml(event.matiere||'')}" style="padding:6px 9px;font-size:.7rem;border-radius:7px;cursor:pointer;">Encoder</button>`:''}
+            </div>`;
         });
         dayView.innerHTML=html;
+        dayView.classList.add('day-timeline-grid');
     }
 
     function periodIndex(period) {
         return periods.indexOf(period);
+    }
+
+    function syncSessionPeriodRange(){
+        const start=document.getElementById('f-periode-start');
+        const end=document.getElementById('f-periode-end');
+        if(!start||!end)return;
+        const startIndex=periodIndex(start.value),endIndex=periodIndex(end.value);
+        if(startIndex<0)return;
+        if(endIndex<startIndex)end.value=start.value;
+        [...end.options].forEach((option,index)=>{option.disabled=index<startIndex;});
     }
 
     function getSlotKey(dayIdx, period) {
@@ -3405,29 +3836,41 @@ loadIndicatorLibrary();
         });
         weekDates.forEach((d, dayIdx) => {
             const isoDate = formatISO(d);
-            let periodIdx = 0;
-            const rendered = new Set();
-            while (periodIdx < periods.length) {
-                const p = periods[periodIdx];
-                const allEvents = getEventsForDatePeriod(isoDate,p,prev);
-                const events = allEvents.filter(ev => !rendered.has(ev.eventId) && ev.startIndex <= periodIdx && ev.endIndex >= periodIdx);
-                if (events.length) {
-                    events.forEach(ev => rendered.add(ev.eventId));
-                    const maxEnd=Math.max(...events.map(ev=>ev.endIndex));
-                    const span=Math.max(1,Math.min(periods.length-periodIdx,maxEnd-periodIdx+1));
-                    const cards=events.map(event=>{
-                        const encoded=getEncodedForEvent(dayIdx,isoDate,event,db);
-                        const cls=getEventClass(event,encoded);
-                        const title=getEventLabel(event), meta=getEventMeta(event);
-                        return `<div class="week-event ${cls} js-week-event" style="margin-bottom:5px;" data-iso="${escapeHtml(isoDate)}" data-start-period="${escapeHtml(event.startPeriod)}" data-day-index="${dayIdx}" data-event-id="${escapeHtml(event.eventId)}"><div class="week-event-title">${encoded?'✓ ':''}${escapeHtml(title)}</div>${meta?`<div class="week-event-meta">${escapeHtml(meta)}</div>`:''}<div class="week-event-range">${escapeHtml(event.startPeriod)}${event.endPeriod!==event.startPeriod?' → '+escapeHtml(event.endPeriod):''} · ${event.recurrence==='unique'?'Unique':'Récurrent'}</div></div>`;
-                    }).join('');
-                    html += `<div class="slot-cell-week week-event-cell" style="grid-column:${dayIdx+2};grid-row:${periodIdx+2} / span ${span};"><div>${cards}</div></div>`;
-                    periodIdx += span;
-                    continue;
+            const eventsById=new Map();
+            periods.forEach(period=>getEventsForDatePeriod(isoDate,period,prev).forEach(event=>{
+                const eventId=String(event.eventId||'');
+                const startIndex=Number.isInteger(event.startIndex)?event.startIndex:periodIndex(event.startPeriod);
+                const endIndex=Number.isInteger(event.endIndex)?event.endIndex:periodIndex(event.endPeriod||event.startPeriod);
+                if(!eventId||startIndex<0||endIndex<startIndex||startIndex>=periods.length)return;
+                eventsById.set(eventId,{...event,eventId,startIndex,endIndex:Math.min(endIndex,periods.length-1)});
+            }));
+            const events=[...eventsById.values()].sort((a,b)=>a.startIndex-b.startIndex||a.endIndex-b.endIndex||a.eventId.localeCompare(b.eventId));
+            const laneEnds=[],occupiedPeriods=new Set();
+            events.forEach(event=>{
+                let lane=laneEnds.findIndex(endIndex=>endIndex<event.startIndex);
+                if(lane<0)lane=laneEnds.length;
+                laneEnds[lane]=event.endIndex;
+                event.lane=lane;
+                for(let periodIdx=event.startIndex;periodIdx<=event.endIndex;periodIdx++)occupiedPeriods.add(periodIdx);
+            });
+            events.forEach(event=>{
+                event.lanes=1;
+                for(let periodIdx=event.startIndex;periodIdx<=event.endIndex;periodIdx++){
+                    const concurrent=events.filter(other=>other.startIndex<=periodIdx&&other.endIndex>=periodIdx).length;
+                    event.lanes=Math.max(event.lanes,concurrent);
                 }
-                if (!allEvents.length) html += `<div class="slot-cell-week week-event-cell js-week-slot" style="grid-column:${dayIdx+2};grid-row:${periodIdx+2};" data-iso="${escapeHtml(isoDate)}" data-period="${escapeHtml(p)}" data-day-index="${dayIdx}"><div class="week-slot-free">+ Ajouter</div></div>`;
-                periodIdx++;
-            }
+            });
+            events.forEach(event=>{
+                const span=event.endIndex-event.startIndex+1;
+                const encoded=getEncodedForEvent(dayIdx,isoDate,event,db);
+                const cls=getEventClass(event,encoded);
+                const title=getEventLabel(event),meta=getEventMeta(event);
+                html+=`<div class="slot-cell-week week-event-cell week-event-overlay" style="grid-column:${dayIdx+2};grid-row:${event.startIndex+2} / span ${span};--event-lane-left:${event.lane*100/event.lanes}%;--event-lane-width:${100/event.lanes}%;"><div class="week-event ${cls} js-week-event" data-iso="${escapeHtml(isoDate)}" data-start-period="${escapeHtml(event.startPeriod)}" data-day-index="${dayIdx}" data-event-id="${escapeHtml(event.eventId)}"><div class="week-event-title">${encoded?'✓ ':''}${escapeHtml(title)}</div>${meta?`<div class="week-event-meta">${escapeHtml(meta)}</div>`:''}<div class="week-event-range">${escapeHtml(event.startPeriod)}${event.endPeriod!==event.startPeriod?' → '+escapeHtml(event.endPeriod):''} · ${event.recurrence==='unique'?'Unique':'Récurrent'}</div></div></div>`;
+            });
+            periods.forEach((period,periodIdx)=>{
+                if(occupiedPeriods.has(periodIdx))return;
+                html+=`<div class="slot-cell-week week-event-cell js-week-slot" style="grid-column:${dayIdx+2};grid-row:${periodIdx+2};" data-iso="${escapeHtml(isoDate)}" data-period="${escapeHtml(period)}" data-day-index="${dayIdx}"><div class="week-slot-free">+ Ajouter</div></div>`;
+            });
         });
         weekView.innerHTML = html;
     }
@@ -3564,7 +4007,9 @@ loadIndicatorLibrary();
                 const shortLabel = event.type === 'ELEVE'
                     ? `${label}${meta ? ' · ' + meta : ''}`
                     : label;
-                pills.push(`<div class="month-indicator-pill month-planned-pill ${typeClass}" title="${escapeHtml(shortLabel)} — ${escapeHtml(event.startPeriod)}${event.endPeriod && event.endPeriod !== event.startPeriod ? ' → ' + escapeHtml(event.endPeriod) : ''}"><span class="month-planned-dot"></span><span>${encoded ? '✓ ' : ''}${escapeHtml(shortLabel)}</span></div>`);
+                const hasRange=event.startPeriod&&event.endPeriod&&event.startPeriod!==event.endPeriod;
+                const rangeLabel=hasRange?`${event.startPeriod}–${event.endPeriod}`:event.startPeriod||'';
+                pills.push(`<div class="month-indicator-pill month-planned-pill ${typeClass}" title="${escapeHtml(shortLabel)} — ${escapeHtml(hasRange?`${event.startPeriod} → ${event.endPeriod}`:event.startPeriod||'')}"><span class="month-planned-dot"></span><span class="month-planned-label">${encoded ? '✓ ' : ''}${escapeHtml(shortLabel)}</span>${hasRange?`<span class="month-period-range">${escapeHtml(rangeLabel)}</span>`:''}</div>`);
             });
 
             const hiddenCount = Math.max(0, plannedEvents.length - maxVisible);
@@ -3602,6 +4047,7 @@ loadIndicatorLibrary();
         document.getElementById('f-date').value = dateIso;
         document.getElementById('f-periode-start').value = period;
         document.getElementById('f-periode-end').value = period;
+        syncSessionPeriodRange();
         if (eleve) document.getElementById('f-eleve').value = eleve;
         if (matiere) {
             const subjectInput=document.getElementById('f-matiere');
@@ -4010,6 +4456,7 @@ loadIndicatorLibrary();
         document.getElementById('f-date').value = selectedDateISO || getInitialDateISO();
         document.getElementById('f-periode-start').value = '1e H';
         document.getElementById('f-periode-end').value = '1e H';
+        syncSessionPeriodRange();
         document.getElementById('f-matiere').value = '';
         document.getElementById('f-matiere').dataset.selectedSubject = '';
         const subjectNote=document.getElementById('session-subject-selected-note');
@@ -4995,7 +5442,7 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
             clearObservationForm();
             updateStudentDropdowns();
             const rs=document.getElementById('r-eleve');
-            if(rs)rs.value=student;
+            if(rs&&rs.value!==student){rs.value=student;rs.dispatchEvent(new CustomEvent('journalier:student-context-change',{bubbles:true}));}
             loadStudentHistory();
             showTab('form');
             showSessionSaveConfirmation(newEntry);
@@ -5019,14 +5466,60 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
         if (filtered.length === 0) { container.innerHTML = '<div class="card"><p style="color:var(--text-sub);margin:0;">Aucun résultat pour cette recherche.</p></div>'; return; }
         container.innerHTML = filtered.map(s => {
             const countObs=db.filter(l=>isJournalSession(l)&&sessionParts(l).eleve===s.nom).length;
-            return `<div class="student-item"><div class="student-main"><div class="student-name">${escapeHtml(s.nom)}</div><div class="student-meta">${escapeHtml(s.classe||'Classe non précisée')}${s.ecole?' · '+escapeHtml(s.ecole):''} · ${countObs} observation${countObs>1?'s':''}</div><div class="student-pia"><strong>Matières principales :</strong> ${escapeHtml(normalizeSubjectList(s.matieres).join(' · ') || 'Aucune matière définie.')}</div><div class="student-pia"><strong>PIA :</strong> ${escapeHtml(s.pia||'Aucun objectif saisi.')}</div></div><div class="student-actions"><button class="btn-secondary focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;" data-action="student-profile" data-student-id="${escapeHtml(String(s.id))}">Voir le dossier</button><button class="btn-secondary focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;" data-action="student-edit" data-student-id="${escapeHtml(String(s.id))}">Modifier</button><button class="focus-ring" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;border:1px solid #fecaca;background:#fff;color:#b91c1c;" data-action="student-delete" data-student-id="${escapeHtml(String(s.id))}">Supprimer</button></div></div>`;
+            const subjects=normalizeSubjectList(s.matieres);
+            const initials=String(s.nom||'').trim().split(/\s+/).filter(Boolean).slice(0,2).map(part=>Array.from(part)[0]||'').join('').toLocaleUpperCase('fr');
+            return `<article class="student-item student-record">
+                <div class="student-main">
+                    <header class="student-record-head">
+                        <span class="student-avatar" aria-hidden="true">${escapeHtml(initials||'•')}</span>
+                        <div class="student-record-identity"><h3 class="student-name">${escapeHtml(s.nom)}</h3><p class="student-meta">${escapeHtml(s.classe||'Classe non précisée')}${s.ecole?` · ${escapeHtml(s.ecole)}`:''}</p></div>
+                        <span class="student-session-count">${countObs} séance${countObs===1?'':'s'}</span>
+                    </header>
+                    <section class="student-record-section">
+                        <h4>Matières principales</h4>
+                        <div class="student-subject-pills">${subjects.length?subjects.map((subject,index)=>`<span class="student-subject-pill tone-${index%4}">${escapeHtml(subject)}</span>`).join(''):'<span class="student-record-empty">Aucune matière définie</span>'}</div>
+                    </section>
+                    <section class="student-pia-panel">
+                        <h4>Repère PIA du dossier</h4>
+                        <p>${escapeHtml(s.pia||'Aucun objectif saisi dans le dossier.')}</p>
+                    </section>
+                </div>
+                <div class="student-actions">
+                    <button class="btn-secondary focus-ring" type="button" data-action="student-profile" data-student-id="${escapeHtml(String(s.id))}">Ouvrir le dossier</button>
+                    <button class="btn-quiet focus-ring" type="button" data-action="student-edit" data-student-id="${escapeHtml(String(s.id))}">Modifier</button>
+                    <button class="student-delete-action focus-ring" type="button" data-action="student-delete" data-student-id="${escapeHtml(String(s.id))}">Supprimer</button>
+                </div>
+            </article>`;
         }).join('');
     }
 
     function openStudentProfile(id){
-        const st=getStudents().find(x=>x.id==id);if(!st)return;const logs=getDB().filter(l=>isJournalSession(l)&&sessionParts(l).eleve===st.nom).sort((a,b)=>sessionSortKey(b).localeCompare(sessionSortKey(a)));
-        const observations=logs.flatMap(l=>(l.q2?.observations||[]).map(x=>x.observation)),adaptations=logs.flatMap(l=>l.q4?.types||[]),recent=logs.slice(0,5);
-        const body=`<div class="profile-summary"><div class="profile-stat"><strong>${logs.length}</strong><span>séances</span></div><div class="profile-stat"><strong>${new Set(observations).size}</strong><span>observations</span></div><div class="profile-stat"><strong>${new Set(adaptations).size}</strong><span>adaptations</span></div><div class="profile-stat"><strong>${recent.length}</strong><span>notes récentes</span></div></div><div class="profile-block"><h4>Matières principales</h4><p>${escapeHtml(normalizeSubjectList(st.matieres).join(' · ')||'Aucune matière définie.')}</p></div><div class="profile-block"><h4>Objectifs PIA</h4><p>${escapeHtml(st.pia||'Aucun objectif saisi.')}</p></div><div class="profile-block"><h4>Observations récentes</h4>${recent.length?recent.map(l=>{const x=sessionParts(l);return `<p style="margin-top:7px;"><strong>${escapeHtml(x.date)} · ${escapeHtml(x.matiere)}</strong><br>${escapeHtml(l.q2?.precision||l.q3?.precision||'Séance enregistrée.')}</p>`;}).join(''):'<p>Aucune observation enregistrée.</p>'}</div>`;
+        const st=getStudents().find(x=>x.id==id);if(!st)return;
+        const logs=getDB().filter(l=>isJournalSession(l)&&sessionParts(l).eleve===st.nom).sort((a,b)=>sessionSortKey(b).localeCompare(sessionSortKey(a)));
+        const observations=logs.flatMap(l=>(l.q2?.observations||[]).map(x=>x.observation)),adaptations=logs.flatMap(l=>l.q4?.types||[]),recent=logs.slice(0,5),subjects=normalizeSubjectList(st.matieres);
+        const q2LevelLabels=['Partiellement','Suffisamment','Totalement'],q4EffectLabels=['Aucun effet','Effet partiel','Effet positif'];
+        const recentCards=recent.map(log=>{
+            const parts=sessionParts(log),q2=log.q2||{},q3=log.q3||{},q4=log.q4||{},q5=log.q5||{},q6=log.q6||{};
+            const observationsQ2=(q2.observations||[]).map(item=>({text:item.observation,level:q2LevelLabels[Number(item.niveau)]||''})).filter(item=>item.text);
+            const effects=Object.entries(q4.effets||{}).map(([name,value])=>({text:name,level:q4EffectLabels[Number(value)]||`Niveau encodé : ${value}`,tone:`is-effect-${['none','partial','positive'][Number(value)]||'none'}`}));
+            const groups=[
+                ['Observation · Q2',observationsQ2,'is-observation'],
+                ['Apprentissage · Q3',(q3.indicateurs||[]).map(item=>({text:item.texte})).filter(item=>item.text),'is-learning'],
+                ['Adaptation · Q4',(q4.types||[]).map(text=>({text})),'is-adaptation'],
+                ['Effets · Q4',effects,'is-effect'],
+                ['Transfert · Q5',q5.statut?[{text:q5.statut}]:[],'is-transfer'],
+                ['Suite · Q6',(q6.actions||[]).map(text=>({text})),'is-followup']
+            ].filter(([,items])=>items.length);
+            return `<article class="profile-session-card">
+                <header><div><strong>${escapeHtml(parts.date)} · ${escapeHtml(parts.matiere)}</strong><span>${escapeHtml(sessionPeriodLabel(log))}</span></div><button class="btn-quiet focus-ring" type="button" data-action="history-edit" data-session-id="${escapeHtml(String(log.id))}">Modifier</button></header>
+                <h4>${escapeHtml(log.objectif?.objectifLecon||log.objectif?.objectifProfessionnel||'Séance enregistrée')}</h4>
+                <div class="profile-session-groups">${groups.length?groups.map(([title,items,tone])=>`<section class="profile-session-group ${tone}"><h5>${escapeHtml(title)}</h5><div>${items.map(item=>`<span class="profile-session-pill">${escapeHtml(item.text)}${item.level?`<b class="${item.tone||''}">${escapeHtml(item.level)}</b>`:''}</span>`).join('')}</div></section>`).join(''):'<p class="student-record-empty">Aucun élément Q2–Q6 renseigné pour cette séance.</p>'}</div>
+            </article>`;
+        }).join('');
+        const body=`<div class="profile-summary"><div class="profile-stat tone-blue"><strong>${logs.length}</strong><span>séances</span></div><div class="profile-stat tone-purple"><strong>${new Set(observations).size}</strong><span>observations distinctes</span></div><div class="profile-stat tone-green"><strong>${new Set(adaptations).size}</strong><span>adaptations renseignées</span></div></div>
+            <section class="profile-block profile-subject-block"><h4>Matières principales</h4><div class="student-subject-pills">${subjects.length?subjects.map((subject,index)=>`<span class="student-subject-pill tone-${index%4}">${escapeHtml(subject)}</span>`).join(''):'<span class="student-record-empty">Aucune matière définie</span>'}</div></section>
+            <section class="profile-block profile-pia-block"><h4>Repère PIA du dossier</h4><p>${escapeHtml(st.pia||'Aucun objectif saisi dans le dossier.')}</p></section>
+            <section class="profile-recent-section"><header><div><div class="page-kicker">Données enregistrées</div><h4>Séances récentes</h4></div><span>${recent.length} / ${logs.length}</span></header>${recent.length?`<div class="profile-session-list">${recentCards}</div>`:'<p class="student-record-empty">Aucune séance enregistrée pour cet élève.</p>'}</section>`;
         document.getElementById('student-profile-title').textContent=st.nom;document.getElementById('student-profile-meta').textContent=`${st.classe||'Classe non précisée'}${st.ecole?' · '+st.ecole:''}`;document.getElementById('student-profile-body').innerHTML=body;document.getElementById('studentProfileModal').classList.remove('hidden');
     }
     function closeStudentProfile(){document.getElementById('studentProfileModal').classList.add('hidden');}
@@ -5100,31 +5593,102 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
         return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
     }
 
+    function historyQ2LevelLabel(value){
+        if(value===null||value===undefined||value==='')return '';
+        const labels=['Partiellement','Suffisamment','Totalement'],level=Number(value);
+        return Number.isInteger(level)&&level>=0&&level<labels.length?labels[level]:`Niveau encodé : ${String(value)}`;
+    }
+
+    function historyQ4EffectLabel(value){
+        if(value===null||value===undefined||value==='')return '';
+        const labels=['Aucun effet','Effet partiel','Effet positif'],level=Number(value);
+        return Number.isInteger(level)&&level>=0&&level<labels.length?labels[level]:`Niveau encodé : ${String(value)}`;
+    }
+
+    function renderHistoryDetail(entry){
+        const host=document.getElementById('student-history-detail');
+        if(!host)return;
+        if(!entry){host.innerHTML='<div class="history-detail-empty">Aucune séance à afficher pour ces filtres.</div>';return;}
+        const parts=sessionParts(entry),q2=entry.q2||{},q3=entry.q3||{},q4=entry.q4||{},q5=entry.q5||{},q6=entry.q6||{},objective=entry.objectif||{};
+        const q2Observations=[...(q2.observations||[]).map(item=>({text:item.observation,level:historyQ2LevelLabel(item.niveau)})),...(q2.precision?[q2.precision]:[])].filter(item=>typeof item==='string'||item.text);
+        const q4Effects=Object.entries(q4.effets||{}).map(([name,value])=>({text:name,level:historyQ4EffectLabel(value),levelClass:`is-effect-${['none','partial','positive'][Number(value)]||'none'}`}));
+        const sections=[
+            ['Observation · Q2',q2Observations,'is-observation'],
+            ['Apprentissage · Q3',[...(q3.indicateurs||[]).map(item=>item.texte),q3.precision].filter(Boolean),'is-learning'],
+            ['Adaptation · Q4',[...(q4.types||[]),q4.precision].filter(Boolean),'is-adaptation'],
+            ['Effets consignés · Q4',q4Effects,'is-effect'],
+            ['Transfert · Q5',[q5.statut,q5.precision].filter(Boolean),'is-transfer'],
+            ['Suite · Q6',[...(q6.actions||[]),q6.precision].filter(Boolean),'is-followup'],
+            ['Repères WBE', [q3.repereWBE?.hit||q3.repereWBE?.signature].filter(Boolean),'is-reference']
+        ].filter(([,values])=>values.length);
+        const sid=escapeHtml(String(entry.id));
+        host.innerHTML=`
+            <header class="history-detail-head">
+                <button type="button" class="btn-secondary history-detail-back" data-history-back>‹ Historique</button>
+                <div class="history-detail-heading"><strong>${escapeHtml(parts.date)} · ${escapeHtml(parts.matiere)}</strong><span>${escapeHtml(sessionPeriodLabel(entry))}</span></div>
+                <div class="history-detail-actions">
+                    <button type="button" class="history-edit-btn" data-session-id="${sid}" data-action="history-edit">Modifier</button>
+                    <details class="history-more-actions"><summary aria-label="Autres actions" title="Autres actions">⋯</summary><button type="button" data-session-id="${sid}" data-action="history-delete">Supprimer</button></details>
+                </div>
+            </header>
+            <div class="history-detail-body">
+                <p class="history-detail-subject">Séance observée</p>
+                <h3 class="history-detail-title">${escapeHtml(objective.objectifLecon||objective.objectifProfessionnel||'Objectif non renseigné')}</h3>
+                <span class="history-detail-period">${escapeHtml(sessionPeriodLabel(entry))}</span>
+                ${sections.length?sections.map(([title,values,tone])=>`<section class="history-detail-section ${tone}"><h4>${escapeHtml(title)}</h4><div class="history-evidence-list">${values.map(value=>typeof value==='string'?`<span class="history-evidence-chip">${escapeHtml(value)}</span>`:`<span class="history-evidence-chip"><span>${escapeHtml(value.text)}</span>${value.level?`<span class="history-evidence-level ${value.levelClass||''}">${escapeHtml(value.level)}</span>`:''}</span>`).join('')}</div></section>`).join(''):'<p class="reports-section-description">Aucun élément Q2–Q6 n’a été renseigné pour cette séance.</p>'}
+                <p class="history-detail-note">Les éléments sont présentés tels qu’encodés dans la séance. Leur association ne constitue pas une conclusion causale.</p>
+            </div>`;
+    }
+
     function loadStudentHistory(){
         const student=document.getElementById('r-eleve')?.value||'',container=document.getElementById('student-history-list');
         if(!container)return;
-        const logs=getDB().filter(l=>isJournalSession(l)&&sessionParts(l).eleve===student).sort((a,b)=>sessionSortKey(b).localeCompare(sessionSortKey(a)));
-        if(!student){container.innerHTML='<p style="color:var(--text-sub);">Sélectionnez un élève pour afficher son historique.</p>';return;}
-        if(!logs.length){container.innerHTML='<p style="color:var(--text-sub);">Aucune note enregistrée pour cet élève.</p>';return;}
-        container.innerHTML=logs.map(l=>{
-            const p=sessionParts(l),o=l.objectif||{},q2=l.q2||{},q3=l.q3||{},q4=l.q4||{},q5=l.q5||{},q6=l.q6||{};
-            const sid=escapeHtml(String(l.id));
-            return `<div class="card history-session-card" style="margin-bottom:10px;padding:14px;">
-                <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
-                    <div><strong>${escapeHtml(p.eleve)} • ${escapeHtml(p.matiere)}</strong> — ${escapeHtml(p.date)} (${escapeHtml(sessionPeriodLabel(l))})</div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-                        <button type="button" class="history-edit-btn" data-session-id="${sid}" data-action="history-edit">✏️ Modifier</button>
-                        <button type="button" class="history-delete-btn" data-session-id="${sid}" data-action="history-delete">Supprimer</button>
-                    </div>
-                </div>
-                ${o.objectifLecon||o.objectifProfessionnel?`<div><strong>Objectif :</strong> ${escapeHtml(o.objectifLecon||o.objectifProfessionnel)}</div>`:''}
-                ${(q2.observations||[]).length||q2.precision?`<div><strong>Fonctionnement :</strong> ${escapeHtml((q2.observations||[]).map(x=>x.observation).join(', '))}${q2.precision?` — ${escapeHtml(q2.precision)}`:''}</div>`:''}
-                ${(q3.indicateurs||[]).length||q3.precision?`<div><strong>Apprentissage :</strong> ${escapeHtml((q3.indicateurs||[]).map(x=>x.texte).join(', '))}${q3.precision?` — ${escapeHtml(q3.precision)}`:''}</div>`:''}
-                ${(q4.types||[]).length||q4.precision?`<div><strong>Adaptation :</strong> ${escapeHtml((q4.types||[]).join(', '))}${q4.precision?` — ${escapeHtml(q4.precision)}`:''}</div>`:''}
-                ${q5.statut||q5.precision?`<div><strong>Transfert :</strong> ${escapeHtml(q5.statut||'')}${q5.precision?` — ${escapeHtml(q5.precision)}`:''}</div>`:''}
-                ${(q6.actions||[]).length||q6.precision?`<div><strong>Suite :</strong> ${escapeHtml((q6.actions||[]).join(', '))}${q6.precision?` — ${escapeHtml(q6.precision)}`:''}</div>`:''}
-            </div>`;
-        }).join('');
+        const workspace=document.getElementById('history-workspace'),detail=document.getElementById('student-history-detail'),count=document.getElementById('history-visible-count');
+        const allLogs=getDB().filter(log=>isJournalSession(log)&&sessionParts(log).eleve===student).sort((a,b)=>sessionSortKey(b).localeCompare(sessionSortKey(a)));
+        if(container.dataset.student!==student){container.dataset.student=student;container.dataset.visibleLimit='15';container.dataset.selectedSession='';}
+        if(!student){container.innerHTML='<p class="reports-empty-state">Sélectionnez un élève pour afficher son historique.</p>';if(count)count.textContent='';if(detail)detail.innerHTML='<div class="history-detail-empty">Le détail des séances apparaîtra ici après la sélection d’un élève.</div>';workspace?.classList.remove('is-detail-open');return;}
+        const subjectSelect=document.getElementById('history-subject-filter'),currentSubject=subjectSelect?.value||'';
+        const subjects=[...new Set(allLogs.map(log=>sessionParts(log).matiere).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr'));
+        if(subjectSelect){
+            subjectSelect.innerHTML='<option value="">Toutes les matières</option>'+subjects.map(subject=>`<option value="${escapeHtml(subject)}">${escapeHtml(subject)}</option>`).join('');
+            subjectSelect.value=subjects.includes(currentSubject)?currentSubject:'';
+        }
+        const selectedSubject=subjectSelect?.value||'',query=(document.getElementById('history-search')?.value||'').trim().toLocaleLowerCase('fr');
+        const filteredLogs=allLogs.filter(log=>{
+            const parts=sessionParts(log),q2=log.q2||{},q3=log.q3||{},q4=log.q4||{},q5=log.q5||{},q6=log.q6||{};
+            if(selectedSubject&&parts.matiere!==selectedSubject)return false;
+            if(!query)return true;
+            const searchable=[parts.date,parts.matiere,sessionPeriodLabel(log),log.objectif?.objectifLecon,log.objectif?.objectifProfessionnel,...(q2.observations||[]).map(item=>item.observation),q2.precision,...(q3.indicateurs||[]).map(item=>item.texte),q3.precision,...(q4.types||[]),q4.precision,q5.statut,q5.precision,...(q6.actions||[]),q6.precision].filter(Boolean).join(' ').toLocaleLowerCase('fr');
+            return searchable.includes(query);
+        });
+        if(!allLogs.length){container.innerHTML='<p class="reports-empty-state">Aucune séance enregistrée pour cet élève.</p>';if(count)count.textContent='0 séance';renderHistoryDetail(null);return;}
+        if(!filteredLogs.length){container.innerHTML='<p class="reports-empty-state">Aucune séance ne correspond à ces filtres.</p>';if(count)count.textContent='0 séance';renderHistoryDetail(null);return;}
+        const visibleLimit=Math.max(15,Number(container.dataset.visibleLimit)||15),visibleLogs=filteredLogs.slice(0,visibleLimit);
+        const selected=visibleLogs.find(log=>String(log.id)===container.dataset.selectedSession)||visibleLogs[0];
+        container.dataset.selectedSession=String(selected.id);
+        if(count)count.textContent=`${filteredLogs.length} séance${filteredLogs.length===1?'':'s'}`;
+        container.innerHTML=visibleLogs.map(log=>{
+            const parts=sessionParts(log),objective=log.objectif||{},q2=log.q2||{},q4=log.q4||{},q5=log.q5||{};
+            const dateMatch=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(parts.date||''));
+            const dateDay=dateMatch?dateMatch[3]:escapeHtml(parts.date||'');
+            const dateMonth=dateMatch?new Date(Number(dateMatch[1]),Number(dateMatch[2])-1,1).toLocaleDateString('fr-FR',{month:'short'}).replace('.',''):'Séance';
+            const signals=[
+                ...(q2.observations||[]).map(item=>{
+                    const level=historyQ2LevelLabel(item.niveau);
+                    return {text:item.observation,level:level?.toLocaleLowerCase('fr')||'',tone:'is-observation',label:'Observation'};
+                }),
+                ...(q4.types||[]).map(item=>({text:item,tone:'is-adaptation',label:'Adaptation'})),
+                ...(q5.statut?[{text:q5.statut,tone:'is-transfer',label:'Transfert'}]:[])
+            ].filter(item=>item.text).slice(0,2);
+            const title=objective.objectifLecon||objective.objectifProfessionnel||'Objectif non renseigné';
+            const id=escapeHtml(String(log.id)),isSelected=String(log.id)===String(selected.id);
+            return `<button type="button" class="history-master-row" data-history-select="${id}" aria-current="${isSelected?'true':'false'}" aria-label="${escapeHtml(`${dateDay} ${dateMonth}, ${parts.matiere}, ${title}`)}">
+                <span class="history-date-rail"><strong>${dateDay}</strong><span>${escapeHtml(dateMonth)}</span></span>
+                <span class="history-master-content"><span><span class="history-master-title">${escapeHtml(parts.matiere||'Matière non renseignée')}</span><span class="history-master-meta">${escapeHtml(sessionPeriodLabel(log))}</span></span><span class="history-master-objective">${escapeHtml(title)}</span>${signals.length?`<span class="history-master-signals">${signals.map(signal=>`<span class="history-signal ${signal.tone}"><span class="history-signal-label">${escapeHtml(signal.label)}</span><span class="history-signal-text">${escapeHtml(signal.text)}</span>${signal.level?`<span class="history-signal-level">${escapeHtml(signal.level)}</span>`:''}</span>`).join('')}</span>`:''}</span>
+                <span class="history-master-chevron" aria-hidden="true">›</span>
+            </button>`;
+        }).join('')+(filteredLogs.length>visibleLogs.length?`<div class="history-load-more"><button type="button" class="btn-secondary" data-history-load-more>Afficher 15 séances de plus · ${filteredLogs.length-visibleLogs.length} restantes</button></div>`:'');
+        renderHistoryDetail(selected);
     }
 
     function editHistorySession(sessionId){
@@ -5147,6 +5711,7 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
         setValue('f-date',p.date);
         setValue('f-periode-start',p.start);
         setValue('f-periode-end',p.end);
+        syncSessionPeriodRange();
         setValue('f-eleve',p.eleve);
         setValue('f-matiere',p.matiere);
         const subjectInput=document.getElementById('f-matiere');
@@ -5304,6 +5869,7 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
     }
 
     function getReportRange(type) {
+        if(type==='LIBRE') return {start:document.getElementById('r-date-start')?.value||'',end:document.getElementById('r-date-end')?.value||''};
         const anchor = parseISODate(selectedDateISO);
         let start = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
         let end = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
@@ -5318,6 +5884,197 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
             end = anchor;
         }
         return { start: formatISO(start), end: formatISO(end) };
+    }
+
+    function renderMeetingPrep(evidence,relations){
+        const host=document.getElementById('meeting-prep-output');if(!host)return;
+        const observationCounts=new Map();
+        evidence.forEach(item=>item.observations.forEach(observation=>{
+            const text=String(observation.text||'').trim();if(text)observationCounts.set(text,(observationCounts.get(text)||0)+1);
+        }));
+        const recurring=[...(relations.recurrences||[]).map(item=>reportTheme(item.theme).label),...[...observationCounts].filter(([,count])=>count>1).map(([text,count])=>`${text} (${count} séances)`)];
+        const variable=[...observationCounts].filter(([,count])=>count===1).map(([text])=>text);
+        const adaptations=reportUnique(evidence.flatMap(item=>[...item.adaptations,item.adaptationPrecision]).filter(Boolean));
+        const transfer=reportUnique(evidence.flatMap(item=>[item.transfer,item.transferPrecision]).filter(Boolean));
+        const followUp=reportUnique(evidence.flatMap(item=>[...item.actions,item.actionObjective,item.actionPrecision]).filter(Boolean));
+        const discussion=reportUnique([
+            ...evidence.map(item=>item.actionObjective?`Objectif de suite renseigné : ${item.actionObjective}`:''),
+            adaptations.length?'Relire les adaptations et effets Q4 consignés dans les séances, sans en inférer de causalité.':'',
+            new Set(transfer).size>1?'Les statuts de transfert Q5 varient selon les séances : préciser les contextes concernés.':''
+        ].filter(Boolean));
+        const section=(title,items)=>`<section class="report-section"><h4>${title}</h4>${items.length?`<ul>${reportUnique(items).map(item=>`<li>${escapeHtml(item)}</li>`).join('')}</ul>`:'<p>Aucun élément renseigné dans les séances de cette période.</p>'}</section>`;
+        host.innerHTML=`<div class="natural-report">${section('Points récurrents',recurring)}${section('Points variables',variable)}${section('Adaptations',adaptations)}${section('Transfert',transfer)}${section('Suites Q6',followUp)}${section('Points à discuter',discussion)}</div>`;
+    }
+
+    function reportElementText(element){
+        if(!element)return '';
+        const clone=element.cloneNode(true),lines=[],blockTags=new Set(['DIV','SECTION','P','H1','H2','H3','H4','UL','OL','LI']);
+        clone.querySelectorAll('[hidden]').forEach(node=>node.removeAttribute('hidden'));
+        const visit=node=>{
+            if(node.nodeType===Node.TEXT_NODE){
+                const value=String(node.nodeValue||'').replace(/\s+/g,' ').trim();
+                if(value){if(lines.length&&lines.at(-1)!=='')lines[lines.length-1]+=' ';if(!lines.length)lines.push('');lines[lines.length-1]+=value;}
+                return;
+            }
+            if(node.nodeType!==Node.ELEMENT_NODE)return;
+            if(node.tagName==='BR'){if(!lines.length||lines.at(-1)!=='')lines.push('');return;}
+            const isBlock=blockTags.has(node.tagName);
+            if(isBlock&&lines.length&&lines.at(-1)!=='')lines.push('');
+            node.childNodes.forEach(visit);
+            if(isBlock&&lines.length&&lines.at(-1)!=='')lines.push('');
+        };
+        visit(clone);
+        return lines.map(line=>line.trim()).filter((line,index,array)=>line||array[index-1]).join('\n').trim();
+    }
+
+    function setReportsTab(name){
+        const tabs=[...document.querySelectorAll('#reports-navigation [role="tab"]')];
+        const panels=[...document.querySelectorAll('#view-reports [data-reports-panel]')];
+        const active=tabs.find(tab=>tab.dataset.reportsTab===name);
+        if(!active)return;
+        tabs.forEach(tab=>{
+            const selected=tab===active;
+            tab.setAttribute('aria-selected',String(selected));
+            tab.tabIndex=selected?0:-1;
+        });
+        panels.forEach(panel=>{panel.hidden=panel.dataset.reportsPanel!==name;});
+        document.getElementById('reports-exports')?.removeAttribute('open');
+    }
+
+    function setReportView(full){
+        const sections=[...document.querySelectorAll('#report-text .natural-report .report-section')];
+        sections.forEach((section,index)=>{section.hidden=!full&&index>=(sections.length>10?4:6);});
+        document.getElementById('r-preview-btn')?.setAttribute('aria-pressed',String(!full));
+        document.getElementById('r-full-btn')?.setAttribute('aria-pressed',String(full));
+    }
+
+    function bindReportsUX(){
+        const period=document.getElementById('r-periode'),custom=document.getElementById('r-custom-range');
+        const anchor=document.getElementById('r-anchor-range');
+        const exportKind=document.getElementById('reports-export-kind'),exportFormatField=document.getElementById('reports-export-format-field');
+        const exportMenu=document.getElementById('reports-exports'),workspaceHeader=exportMenu?.closest('.reports-workspace-header');
+        const syncExportLayer=()=>workspaceHeader?.classList.toggle('is-export-open',!!exportMenu?.open);
+        exportMenu?.addEventListener('toggle',syncExportLayer);
+        document.addEventListener('pointerdown',event=>{
+            if(!exportMenu?.open||exportMenu.contains(event.target))return;
+            exportMenu.removeAttribute('open');
+            syncExportLayer();
+        });
+        document.addEventListener('keydown',event=>{
+            if(event.key!=='Escape'||!exportMenu?.open)return;
+            exportMenu.removeAttribute('open');
+            syncExportLayer();
+            exportMenu.querySelector('summary')?.focus();
+        });
+        const nav=document.getElementById('reports-navigation');
+        if(nav&&!nav.dataset.bound){
+            nav.dataset.bound='true';
+            nav.addEventListener('click',event=>{
+                const tab=event.target.closest('[data-reports-tab]');
+                if(tab)setReportsTab(tab.dataset.reportsTab);
+            });
+            nav.addEventListener('keydown',event=>{
+                const tabs=[...nav.querySelectorAll('[role="tab"]')];
+                const current=tabs.indexOf(document.activeElement);
+                if(current<0)return;
+                let next=current;
+                if(event.key==='ArrowRight')next=(current+1)%tabs.length;
+                else if(event.key==='ArrowLeft')next=(current-1+tabs.length)%tabs.length;
+                else if(event.key==='Home')next=0;
+                else if(event.key==='End')next=tabs.length-1;
+                else return;
+                event.preventDefault();
+                tabs[next].focus();
+                setReportsTab(tabs[next].dataset.reportsTab);
+            });
+        }
+        document.getElementById('meeting-open-pia')?.addEventListener('click',()=>{
+            setReportsTab('pia');
+            window.JournalierV73?.requestPIASection?.('meetings');
+        });
+        const updateRangeControls=()=>{
+            const customRange=period?.value==='LIBRE';
+            custom?.classList.toggle('hidden',!customRange);
+            anchor?.classList.toggle('hidden',customRange);
+        };
+        period?.addEventListener('change',updateRangeControls);
+        updateRangeControls();
+        const updateExportControls=()=>{if(exportFormatField)exportFormatField.hidden=String(exportKind?.value||'').includes('json');};
+        exportKind?.addEventListener('change',updateExportControls);
+        updateExportControls();
+        setReportsTab('synthesis');
+        document.getElementById('r-preview-btn')?.addEventListener('click',()=>setReportView(false));
+        document.getElementById('r-full-btn')?.addEventListener('click',()=>setReportView(true));
+        const historyContainer=document.getElementById('student-history-list');
+        const refreshHistoryFilters=()=>{if(historyContainer)historyContainer.dataset.visibleLimit='15';loadStudentHistory();};
+        document.getElementById('history-search')?.addEventListener('input',refreshHistoryFilters);
+        document.getElementById('history-subject-filter')?.addEventListener('change',refreshHistoryFilters);
+        historyContainer?.addEventListener('click',event=>{
+            const row=event.target.closest('[data-history-select]');
+            if(row){
+                historyContainer.dataset.selectedSession=row.dataset.historySelect||'';
+                if(window.matchMedia('(max-width: 720px)').matches)document.getElementById('history-workspace')?.classList.add('is-detail-open');
+                loadStudentHistory();
+                return;
+            }
+            if(event.target.closest('[data-history-load-more]')){
+                historyContainer.dataset.visibleLimit=String((Number(historyContainer.dataset.visibleLimit)||15)+15);
+                loadStudentHistory();
+            }
+        });
+        document.getElementById('student-history-detail')?.addEventListener('click',event=>{
+            if(!event.target.closest('[data-history-back]'))return;
+            document.getElementById('history-workspace')?.classList.remove('is-detail-open');
+            historyContainer?.querySelector('[data-history-select][aria-current="true"]')?.focus();
+        });
+        document.getElementById('reports-export-btn')?.addEventListener('click',()=>{
+            const kind=document.getElementById('reports-export-kind')?.value,format=document.getElementById('reports-export-format')?.value||'docx',student=document.getElementById('r-eleve')?.value||'';
+            let filename='',content='';
+            const piaExports={'pia-professional':'v73-export-prof','pia-deidentified':'v73-export-deid','pia-json':'v73-json','pia-deidentified-json':'v73-deid-json'};
+            if(piaExports[kind]){
+                const button=document.getElementById(piaExports[kind]);
+                if(!button){alert('Générez le PIA annuel avant de demander son export.');return;}
+                const piaFormat=document.getElementById('v73-export-format');
+                if(piaFormat)piaFormat.value=format;
+                button.click();
+                document.getElementById('reports-exports')?.removeAttribute('open');
+                return;
+            }
+            if(kind==='synthesis'){
+                const report=document.getElementById('report-text');
+                content=reportElementText(report);
+                if(!content){alert('Générez d’abord une synthèse.');return;}
+                filename='synthese-pedagogique';
+            }else if(kind==='meeting'){
+                const meeting=document.querySelector('#meeting-prep-output .natural-report');
+                content=reportElementText(meeting);
+                if(!content){alert('Générez d’abord la préparation à partir d’une synthèse.');return;}
+                filename='preparation-reunion';
+            }else{
+                if(!student){alert('Sélectionnez un élève.');return;}
+                const range=getReportRange(document.getElementById('r-periode')?.value||'');
+                if(!range.start||!range.end||range.start>range.end){alert('Choisissez une période valide pour les séances à exporter.');return;}
+                const logs=getDB().filter(log=>isJournalSession(log)&&sessionParts(log).eleve===student&&sessionParts(log).date>=range.start&&sessionParts(log).date<=range.end).sort((a,b)=>sessionSortKey(a).localeCompare(sessionSortKey(b)));
+                if(!logs.length){alert('Aucune séance à exporter pour cet élève et cette période.');return;}
+                const lines=['Historique des séances',`Période : ${range.start} → ${range.end}`];
+                logs.forEach(log=>{
+                    const parts=sessionParts(log),q2=log.q2||{},q3=log.q3||{},q4=log.q4||{},q5=log.q5||{},q6=log.q6||{};
+                    const add=(label,value)=>{if(value)lines.push(`${label} : ${value}`);};
+                    lines.push('',`${parts.date} — ${parts.matiere} (${sessionPeriodLabel(log)})`);
+                    add('Objectif',log.objectif?.objectifLecon||log.objectif?.objectifProfessionnel||'');
+                    add('Fonctionnement Q2',[...(q2.observations||[]).map(item=>`${item.observation}${historyQ2LevelLabel(item.niveau)?` — niveau constaté : ${historyQ2LevelLabel(item.niveau).toLocaleLowerCase('fr')}`:''}`),q2.precision].filter(Boolean).join(' — '));
+                    add('Apprentissages Q3',[...(q3.indicateurs||[]).map(item=>item.texte),q3.precision].filter(Boolean).join(' — '));
+                    add('Adaptations Q4',[...(q4.types||[]),...Object.entries(q4.effets||{}).map(([name,value])=>`${name} : ${historyQ4EffectLabel(value)}`),q4.precision].filter(Boolean).join(' — '));
+                    add('Transfert Q5',[q5.statut,q5.precision].filter(Boolean).join(' — '));
+                    add('Suites Q6',[...(q6.actions||[]),q6.precision].filter(Boolean).join(' — '));
+                });
+                filename='seances';content=lines.join('\n');
+            }
+            const exporter=window.JournalierV73?.exportTextDocument;
+            if(typeof exporter!=='function'){alert('Le module d’export Word/PDF n’est pas encore prêt. Réessayez dans quelques secondes.');return;}
+            try{exporter(filename,content,format);}
+            catch(error){alert(`Export impossible : ${error?.message||error}`);}
+        });
     }
 
     /* =========================================================
@@ -5977,9 +6734,11 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
       const student=document.getElementById('r-eleve')?.value||'',type=document.getElementById('r-periode')?.value||'';
       if(!student){alert('Sélectionnez un élève.');return;}
       const range=getReportRange(type);
+    if(!range.start||!range.end||range.start>range.end){alert('Vérifiez les dates de début et de fin de la période.');return;}
       const logs=getDB().filter(l=>isJournalSession(l)&&sessionParts(l).eleve===student&&sessionParts(l).date>=range.start&&sessionParts(l).date<=range.end).sort((a,b)=>sessionSortKey(a).localeCompare(sessionSortKey(b)));
       if(!logs.length){alert(`Aucune observation pour ${student} entre le ${range.start} et le ${range.end}.`);return;}
       const evidence=logs.map(reportSessionEvidence), units=reportExtractUnits(evidence), relations=reportRelations(units);
+    renderMeetingPrep(evidence,relations);
       if(type==='PV1'||type==='PV2'){
         const integration=reportIntegrationReport(evidence,units,relations,student,type);
         document.getElementById('report-text').innerHTML=`<div class="report-output-head"><div><strong>${escapeHtml(reportIntegrationLabel(type))} — ${escapeHtml(student)}</strong><div style="font-size:.72rem;color:#64748b;margin-top:2px;">Corpus disponible jusqu’au ${escapeHtml(range.end)}</div></div><span class="v11-mini-tag">${logs.length} séance${logs.length>1?'s':''}</span></div>${integration}`;
@@ -6010,6 +6769,7 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
       const metrics=[objectives.length,indicators.length,observations.length,adaptations.length];
       document.getElementById('report-text').innerHTML=`<div class="report-output-head"><div><strong>Synthèse naturelle — ${escapeHtml(student)}</strong><div style="font-size:.72rem;color:#64748b;margin-top:2px;">${escapeHtml(type)} · ${range.start} → ${range.end}</div></div><span class="v11-mini-tag">${logs.length} séance${logs.length>1?'s':''}</span></div><div class="report-evidence-grid"><div class="report-evidence"><strong>${metrics[0]}</strong><span>objectifs distincts</span></div><div class="report-evidence"><strong>${metrics[1]}</strong><span>indicateurs</span></div><div class="report-evidence"><strong>${metrics[2]}</strong><span>observations distinctes</span></div><div class="report-evidence"><strong>${metrics[3]}</strong><span>adaptations</span></div></div>${natural}`;
       document.getElementById('report-output-box')?.classList.remove('hidden');
+    setReportView(false);
     }
 
     function updateStats() {
@@ -6063,6 +6823,10 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
     document.getElementById('f-date').value = selectedDateISO;
     const reportDate = document.getElementById('r-date-anchor');
     if (reportDate) reportDate.value = selectedDateISO;
+    const reportStart=document.getElementById('r-date-start'),reportEnd=document.getElementById('r-date-end');
+    if(reportStart&&!reportStart.value)reportStart.value=selectedDateISO;
+    if(reportEnd&&!reportEnd.value)reportEnd.value=selectedDateISO;
+    bindReportsUX();
     renderAgenda();
     renderHome();
     runIntegrityChecks();
@@ -6190,10 +6954,10 @@ JR_HANDLERS["h21"] = {attr:"onchange", fn:function(event){
 updateObservationSuggestions()
 }};
 JR_HANDLERS["h22"] = {attr:"onchange", fn:function(event){
-updateObservationSuggestions()
+syncSessionPeriodRange(); updateObservationSuggestions()
 }};
 JR_HANDLERS["h23"] = {attr:"onchange", fn:function(event){
-updateObservationSuggestions()
+syncSessionPeriodRange(); updateObservationSuggestions()
 }};
 JR_HANDLERS["h24"] = {attr:"onfocus", fn:function(event){
 openSessionSubjectMenu()
@@ -6499,14 +7263,14 @@ async function startMicrosoftLogin(){
     if(!await initMicrosoftAuth())throw new Error('MSAL n’est pas initialisé.');
     const response=await msalInstance.loginPopup({scopes:MS_CONFIG.scopes,redirectUri:MS_CONFIG.redirectUri,prompt:'select_account'});
     JournalierSecurity.lock();msAccount=response.account;await activateJournalierAccount(msAccount);journalierResetAutoLockAfterUnlock?.();updateMicrosoftUI();
-    try{const imported=await hydrateMicrosoftDataIfLocalEmpty();window.JournalierV73?.refreshStudents?.();if(imported?.imported)showAppToast(`Connexion réussie : ${imported.students||0} élève(s), ${imported.sessions||0} séance(s) et l’agenda ont été récupérés.`,'success');else showAppToast('Connexion Microsoft réussie.','success');}
+    try{const imported=await hydrateMicrosoftDataIfLocalEmpty();window.JournalierV73?.refreshStudents?.();window.JournalierV73?.renderDashboard?.();if(imported?.imported)showAppToast(`Connexion réussie : ${imported.students||0} élève(s), ${imported.sessions||0} séance(s) et l’agenda ont été récupérés.`,'success');else showAppToast('Connexion Microsoft réussie.','success');}
     catch(_){setCloudStatus('✓ Compte Microsoft connecté.\n⚠️ Les données OneDrive n’ont pas pu être récupérées automatiquement.','error');showAppToast('Connexion réussie, mais récupération des données OneDrive impossible.','error',5000);}
-  }catch(err){journalierClearAutoLockTimers?.();JournalierSecurity.lock();msAccount=null;const msg=err?.errorMessage||err?.message||'Erreur Microsoft inconnue';const code=err?.errorCode||err?.code||'';const detail=code?`[${code}] ${msg}`:msg;if(status){status.className='ms-status-box error';status.textContent='Connexion non effectuée : '+detail;}setCloudStatus('Détail Microsoft : '+detail,'error');showAppToast('La connexion Microsoft n’a pas abouti.','error',6500);}
+    }catch(err){journalierClearAutoLockTimers?.();JournalierSecurity.lock();msAccount=null;window.JournalierV73?.renderDashboard?.();const msg=err?.errorMessage||err?.message||'Erreur Microsoft inconnue';const code=err?.errorCode||err?.code||'';const detail=code?`[${code}] ${msg}`:msg;if(status){status.className='ms-status-box error';status.textContent='Connexion non effectuée : '+detail;}setCloudStatus('Détail Microsoft : '+detail,'error');showAppToast('La connexion Microsoft n’a pas abouti.','error',6500);}
   finally{if(btn)btn.disabled=false;updateMicrosoftUI();}
 }
 async function disconnectMicrosoft(){
   const btn=document.getElementById('ms-logout-action');if(btn)btn.disabled=true;
-  try{if(!msalInstance)await initMicrosoftAuth();const account=msAccount||msalInstance?.getAllAccounts?.()[0]||null;if(msalInstance&&account)await msalInstance.logoutPopup({account,postLogoutRedirectUri:MS_CONFIG.postLogoutRedirectUri});journalierClearAutoLockTimers?.();JournalierSecurity.lock();msAccount=null;journalierLockedByTimeout=false;updateStudentDropdowns?.();renderStudentsView?.();renderAgenda?.();updateStats?.();updateMicrosoftUI();setCloudStatus('Microsoft déconnecté. Les données locales restent chiffrées et sont inaccessibles sans réauthentification.','success');showAppToast('Déconnexion Microsoft effectuée.','success');}
+    try{if(!msalInstance)await initMicrosoftAuth();const account=msAccount||msalInstance?.getAllAccounts?.()[0]||null;if(msalInstance&&account)await msalInstance.logoutPopup({account,postLogoutRedirectUri:MS_CONFIG.postLogoutRedirectUri});journalierClearAutoLockTimers?.();JournalierSecurity.lock();msAccount=null;journalierLockedByTimeout=false;updateStudentDropdowns?.();renderStudentsView?.();renderAgenda?.();updateStats?.();window.JournalierV73?.renderDashboard?.();updateMicrosoftUI();setCloudStatus('Microsoft déconnecté. Les données locales restent chiffrées et sont inaccessibles sans réauthentification.','success');showAppToast('Déconnexion Microsoft effectuée.','success');}
   catch(err){const msg=err?.errorMessage||err?.message||'Erreur lors de la déconnexion Microsoft.';if(btn)btn.disabled=false;setCloudStatus('Déconnexion Microsoft non confirmée : '+msg,'error');showAppToast('La déconnexion Microsoft n’a pas abouti.','error',4500);}
   finally{updateMicrosoftUI();}
 }
@@ -6916,6 +7680,7 @@ function v72PathForSession(session,students){const studentId=session.identificat
 function v72StatusCount(registry){let c={synced:0,local:0,remote:0,conflict:0,missing:0};for(const x of Object.values(registry.students||{})){if(x.status==='synced')c.synced++;else if(x.status==='local-changed'||x.status==='local-pending')c.local++;else if(x.status==='remote-changed')c.remote++;else if(x.status==='conflict')c.conflict++;}for(const x of Object.values(registry.sessions||{})){if(x.status==='synced')c.synced++;else if(x.status==='local-changed'||x.status==='local-pending')c.local++;else if(x.status==='remote-changed')c.remote++;else if(x.status==='conflict')c.conflict++;}if(registry.agenda){if(registry.agenda.status==='synced')c.synced++;else if(registry.agenda.status==='local-changed'||registry.agenda.status==='local-pending')c.local++;else if(registry.agenda.status==='remote-changed')c.remote++;else if(registry.agenda.status==='conflict')c.conflict++;}return c;}
 function v72Classify(previous,localFp,remoteFp,remoteMissing=false){
   if(remoteMissing)return 'local-changed';
+  if(localFp===remoteFp)return 'synced';
   // Un conflit doit rester explicitement bloqué jusqu'à une résolution utilisateur.
   if(previous?.status==='conflict')return 'conflict';
   if(!previous)return localFp===remoteFp?'synced':'conflict';

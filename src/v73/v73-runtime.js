@@ -167,6 +167,18 @@ function parsePreviousObjectives(student,existing){
   if(!legacy)return [];
   return legacy.split(/\n|;|•/).map(x=>x.trim()).filter(Boolean).map(x=>({formulation:x,status:"EXISTANT_A_REEVALUER",source:"PIA_PRECEDENT_LEGACY"}));
 }
+function piaMeetingRecord(previous,type,status){
+  const current=previous||{},participants=current.participants||{},feedback=current.feedback||{};
+  return {
+    ...current,type:current.type||type,status:current.status||status,source:"REUNION",
+    date:current.date||"",context:current.context||"",
+    participants:Object.fromEntries(PIA_MEETING_ACTORS.map(actor=>[actor.id,Boolean(participants[actor.id])])),
+    feedback:Object.fromEntries(PIA_MEETING_ACTORS.map(actor=>[actor.id,String(feedback[actor.id]||"")])),
+    decisions:current.decisions||"",objectivesModified:current.objectivesModified||"",
+    means:current.means||"",adaptations:current.adaptations||"",
+    information:current.information||"",notes:current.notes||""
+  };
+}
 function continuityFromExisting(student,existing){
   const current=existing?.sourceContinuity;
   if(current?.present){
@@ -179,23 +191,82 @@ function continuityFromExisting(student,existing){
   if(!legacy) return {present:false,role:"SOURCE_DE_CONTINUITE",format:"",fileName:"",importedAt:"",extracted:{}};
   return {present:true,role:"SOURCE_DE_CONTINUITE",format:"legacy",fileName:"",importedAt:"",extracted:{objectives:legacy.split(/\n|;|•/).map(x=>x.trim()).filter(Boolean)}};
 }
+function piaSchoolYearBounds(startYear){
+  const lastAugustDay=new Date(startYear,7,31);
+  const lastAugustSunday=new Date(startYear,7,31-lastAugustDay.getDay());
+  const start=new Date(lastAugustSunday);start.setDate(start.getDate()-6);
+  const julyFirst=new Date(startYear+1,6,1),firstWeekMonday=new Date(julyFirst);
+  firstWeekMonday.setDate(firstWeekMonday.getDate()-((julyFirst.getDay()+6)%7));
+  const end=new Date(firstWeekMonday);end.setDate(end.getDate()+4);
+  const iso=date=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+  return {schoolYear:`${startYear}-${startYear+1}`,start:iso(start),end:iso(end)};
+}
+function piaSchoolYear(dateValue){
+  const value=String(dateValue||""),match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if(!match)return "";
+  const date=new Date(`${value}T12:00:00`),year=Number(match[1]);
+  if(date.getFullYear()!==year||date.getMonth()+1!==Number(match[2])||date.getDate()!==Number(match[3]))return "";
+  for(const startYear of [year-1,year]){
+    const bounds=piaSchoolYearBounds(startYear);
+    if(value>=bounds.start&&value<=bounds.end)return bounds.schoolYear;
+  }
+  return "";
+}
+function currentPIASchoolYearBounds(){
+  const now=new Date(),today=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+  const active=piaSchoolYear(today);if(active)return piaSchoolYearBounds(Number(active.slice(0,4)));
+  for(const year of [now.getFullYear()-1,now.getFullYear(),now.getFullYear()+1]){
+    const bounds=piaSchoolYearBounds(year);if(today<bounds.start)return bounds;
+  }
+  return piaSchoolYearBounds(now.getFullYear());
+}
+function applySchoolYearDateLimits(){
+  const bounds=currentPIASchoolYearBounds();
+  document.querySelectorAll('input[type="date"]').forEach(input=>{input.min=bounds.start;input.max=bounds.end;});
+}
+function normalizePIALifecycle(pia){
+  if(pia?.lifecycle==="FINALISE")return "FINALISE";
+  if(pia?.lifecycle==="ACTIF"||["VALIDÉ","VALIDÉE"].includes(pia?.meeting1?.status))return "EN_VIGUEUR";
+  return pia?.lifecycle||"EN_CONSTRUCTION";
+}
 function buildPIA(student,sessions,until,existing){
+  const schoolYear=piaSchoolYear(until);
+  if(!schoolYear)throw new Error("La date de référence doit appartenir à une année scolaire en cours.");
   const logs=studentSessions(student,sessions,until);
   const units=logs.flatMap(extractUnits);
   const groups=compareUnits(units);
   const aspects=["Physique et psychomoteur","Lié à l’autonomie","Comportemental et affectif","Communication","Cognitif (pédagogique)"];
+  const previousSections=new Map(safeArray(existing?.sections).map(section=>[section.aspect,section]));
   const sections=aspects.map(aspect=>{
     const gs=groups.filter(g=>g.aspect===aspect);
     const difficulties=gs.filter(g=>["SIGNAL","TENDANCE","TENDANCE_QUALIFIEE","PROPOSITION"].includes(g.state)).slice(0,6);
     const resources=gs.filter(g=>g.positive>0).slice(0,6);
-    return {aspect,ressources:resources.map(g=>g.theme),difficultes:difficulties.map(g=>`${g.theme} — ${g.sessionCount} séance(s) distincte(s) sur ${g.dates.length} date(s)`),objectifs:[]};
+    const previous=previousSections.get(aspect)||{};
+    const evolution=gs.filter(g=>g.dates.length).map(g=>`${g.theme} : ${g.sessionCount} séance(s) distincte(s), ${g.dates.length} date(s) documentée(s).`);
+    return {
+      ...previous,aspect,
+      ressources:[...new Set([...safeArray(previous.ressources),...resources.map(g=>g.theme)])],
+      difficultes:[...new Set([...safeArray(previous.difficultes),...difficulties.map(g=>`${g.theme} — ${g.sessionCount} séance(s) distincte(s) sur ${g.dates.length} date(s)`)])],
+      objectifs:safeArray(previous.objectifs),
+      criteres:safeArray(previous.criteres),
+      moyens:safeArray(previous.moyens),
+      evolution:[...new Set([...safeArray(previous.evolution),...evolution])]
+    };
   });
-  const proposals=groups.filter(g=>g.state==="PROPOSITION").map(g=>({
-    id:uid("prop"),theme:g.theme,themeId:g.themeId,aspect:g.aspect,state:"PROPOSITION",
-    formulation:proposalText(g),evidence:g.units.map(u=>({sessionId:u.sessionId,date:u.date,matiere:u.matiere})),
-    counterEvidence:g.counterEvidence,recurrence:g.recurrence,sessionCount:g.sessionCount,dates:g.dates,
-    convergence:g.justification
-  }));
+  const previousProposals=safeArray(existing?.propositions);
+  const previouslyValidated=safeArray(existing?.meeting1?.objectivesValidated);
+  const proposals=groups.filter(g=>g.state==="PROPOSITION").map(g=>{
+    const previous=previousProposals.find(item=>item.themeId===g.themeId);
+    const wasValidated=previouslyValidated.some(item=>typeof item==="object"&&(item.themeId===g.themeId||item.formulation===previous?.formulation));
+    return {
+      id:previous?.id||uid("prop"),theme:g.theme,themeId:g.themeId,aspect:g.aspect,state:"PROPOSITION",
+      decisionStatus:previous?.decisionStatus||(wasValidated?"VALIDEE":"A_EXAMINER"),formulation:previous?.formulation||proposalText(g),
+      provenance:{source:"SEANCE",sessionIds:[...new Set(g.units.map(u=>u.sessionId))],sourceKeys:g.justification.sources||[]},
+      evidence:g.units.map(u=>({sessionId:u.sessionId,date:u.date,matiere:u.matiere})),
+      counterEvidence:g.counterEvidence,recurrence:g.recurrence,sessionCount:g.sessionCount,dates:g.dates,
+      convergence:g.justification
+    };
+  });
   const amenagementMap=new Map();
   logs.forEach(s=>{
     const raw=[...safeArray(s.q4?.types),s.q4?.precision,...safeArray(s.q6?.actions),s.q6?.precision].filter(Boolean).join(" ");
@@ -211,17 +282,17 @@ function buildPIA(student,sessions,until,existing){
   return {
     schemaVersion:"73.0.0",type:"PIA_ANNUEL",id:existing?.id||uid("pia"),studentId:student.studentId,
     eleve:student.nom,classe:student.classe||"",ecole:student.ecole||"",
-    schoolYear:`${new Date().getFullYear()}-${new Date().getFullYear()+1}`,
-    generatedAt:new Date().toISOString(),until:until||"",lifecycle:existing?.lifecycle||"EN_CONSTRUCTION",
+    schoolYear,
+    generatedAt:new Date().toISOString(),until:until||"",lifecycle:normalizePIALifecycle(existing),
     sourceContinuity:continuityFromExisting(student,existing),
     sessionsAnalysed:logs.length,sections,
     meeting1:{
-      status:existing?.meeting1?.status||"A_REEVALUER",
+      ...piaMeetingRecord(existing?.meeting1,"REUNION_1_DECEMBRE","A_REEVALUER"),
       objectivesPrevious:existing?.meeting1?.objectivesPrevious||previousObjectives,
       proposals,objectivesValidated:existing?.meeting1?.objectivesValidated||[],
-      validatedAt:existing?.meeting1?.validatedAt||"",notes:existing?.meeting1?.notes||""
+      validatedAt:existing?.meeting1?.validatedAt||""
     },
-    meeting2:existing?.meeting2||{status:"A_VENIR",evaluation:[],objectivesToContinue:[],perspectives:[]},
+    meeting2:{...piaMeetingRecord(existing?.meeting2,"REUNION_2_FIN_ANNEE","A_VENIR"),evaluation:safeArray(existing?.meeting2?.evaluation),objectivesToContinue:safeArray(existing?.meeting2?.objectivesToContinue),perspectives:safeArray(existing?.meeting2?.perspectives)},
     amenagements,propositions:proposals,
     traceability:{sessionIds:logs.map(s=>String(s.id)),states:groups.map(g=>({theme:g.theme,themeId:g.themeId,state:g.state,recurrence:g.recurrence,sessionCount:g.sessionCount,dates:g.dates,comparable:g.comparable,counterEvidence:g.counterEvidence,localSignal:g.localSignal,sourceKeys:g.sourceKeys})),
       rule:"Une proposition n'est jamais une validation. Les relations séance sont documentaires et non causales. Les objectifs du PIA précédent sont une source de continuité à réévaluer."}
@@ -240,22 +311,38 @@ function evaluateMeeting2(pia,existing){
   });
 }
 
+const PIA_DEIDENTIFIED_DROP_KEYS=new Set(["id","studentid","sessionid","sessionids","ownerid","eleve","ecole","classe","schoolyear","generatedat","updatedat","createdat","importedat","validatedat","finalizedat","date","dates","until","filename","displayname","sourcecontinuity","evidence","feedback","notes","context","information","decisions","objectivesmodified"]);
+function redactPIAValue(value,identifiers){
+  if(typeof value==="string"){
+    let text=value.replace(/\b\d{4}-\d{2}-\d{2}(?:[Tt][0-9:.+-]+Z?)?\b|\b\d{1,2}[./-]\d{1,2}[./-]\d{2,4}\b|\b\d{1,2}\s+(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4}\b/gi,"[date retirée]");
+    identifiers.forEach(identifier=>{text=text.replace(new RegExp(identifier.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"[identité retirée]");});
+    return text;
+  }
+  if(Array.isArray(value))return value.map(item=>redactPIAValue(item,identifiers));
+  if(value&&typeof value==="object")return Object.fromEntries(Object.entries(value).filter(([key])=>!PIA_DEIDENTIFIED_DROP_KEYS.has(norm(key).replace(/[\s_-]/g,""))).map(([key,item])=>[key,redactPIAValue(item,identifiers)]));
+  return value;
+}
 function piaForExport(pia,deidentified=false){
   const d=JSON.parse(JSON.stringify(pia));
   if(!deidentified)return d;
-  delete d.id; delete d.eleve; delete d.studentId; delete d.ecole; delete d.classe; delete d.schoolYear; delete d.generatedAt; delete d.until;
+  const identifiers=[pia?.eleve,pia?.ecole,pia?.classe,pia?.studentId,pia?.id,...safeArray(pia?.traceability?.sessionIds)].map(x=>String(x||"").trim()).filter(Boolean).sort((a,b)=>b.length-a.length);
   d.type="PIA_MODELE_DEIDENTIFIE";
-  d.sourceContinuity={present:false,role:"SOURCE_DE_CONTINUITE",format:"",fileName:"",importedAt:"",extracted:{}};
-  d.traceability={states:d.traceability?.states||[],rule:"Trace dé-identifiée : aucun identifiant de séance, date ou élève."};
-  d.meeting1={...(d.meeting1||{}),validatedAt:"",notes:""};
-  d.meeting2={...(d.meeting2||{}),evaluation:safeArray(d.meeting2?.evaluation).map(x=>({...x,evidence:[]}))};
-  d.propositions=safeArray(d.propositions).map(p=>{const x={...p};delete x.evidence;delete x.dates;return x;});
-  d.sections=safeArray(d.sections).map(sec=>({...sec}));
-  return d;
+  return redactPIAValue(d,identifiers);
+}
+function appendMeetingText(lines,title,meeting){
+  lines.push(title,`Type : ${meeting?.type||"À préciser"}`,`Date : ${meeting?.date||"À préciser"}`,`Contexte : ${meeting?.context||"À compléter"}`);
+  const participants=PIA_MEETING_ACTORS.filter(actor=>meeting?.participants?.[actor.id]).map(actor=>actor.label);
+  lines.push("Participants :",...(participants.length?participants.map(x=>`• ${x}`):["• À préciser."]));
+  lines.push("Retours des participants :");
+  const feedback=PIA_MEETING_ACTORS.filter(actor=>meeting?.feedback?.[actor.id]).map(actor=>`• ${actor.label} : ${meeting.feedback[actor.id]}`);
+  lines.push(...(feedback.length?feedback:["• À compléter."]));
+  for(const [key,label] of [["decisions","Décisions"],["objectivesModified","Objectifs modifiés"],["means","Moyens"],["adaptations","Adaptations P/O/M"],["information","Informations complémentaires"],["notes","Notes"]])lines.push(`${label} : ${meeting?.[key]||"À compléter."}`);
+  lines.push("");
 }
 function piaTextSections(pia,deidentified=false){
   const d=piaForExport(pia,deidentified), lines=[];
   lines.push(deidentified?"PIA — modèle dé-identifié":"PIA annuel — document professionnel");
+  lines.push(`Statut : ${piaStatusLabel(d)}`);
   if(!deidentified){
     lines.push(`${d.eleve||""}${d.classe?` · ${d.classe}`:""}${d.ecole?` · ${d.ecole}`:""}`.trim());
     lines.push(`Année scolaire : ${d.schoolYear||""}`);
@@ -279,28 +366,24 @@ function piaTextSections(pia,deidentified=false){
     lines.push(...(safeArray(sec.difficultes).length?safeArray(sec.difficultes).map(x=>`• ${x}`):["• À compléter à partir des données disponibles."]));
     lines.push("Objectifs à poursuivre");
     lines.push(...(safeArray(sec.objectifs).length?safeArray(sec.objectifs).map(x=>`• ${x}`):["• Les propositions ci-dessous restent à discuter et valider."]));
+    for(const [key,label] of [["criteres","Critères d’évaluation"],["moyens","Moyens / adaptations"],["evolution","Évolution documentée"]]){
+      lines.push(label);
+      lines.push(...(safeArray(sec[key]).length?safeArray(sec[key]).map(x=>`• ${x}`):["• À compléter."]));
+    }
     lines.push("");
   }
   lines.push("Objectifs visés pour la période et critères d’évaluation");
   const prev=safeArray(d.meeting1?.objectivesPrevious), val=safeArray(d.meeting1?.objectivesValidated), props=safeArray(d.propositions);
   if(prev.length) lines.push("Objectifs existants / à réévaluer :",...prev.map(x=>`• ${typeof x==='string'?x:x.formulation||""}`));
   if(val.length) lines.push("Objectifs validés :",...val.map(x=>`• ${typeof x==='string'?x:x.formulation||""}`));
-  if(props.length) lines.push("Propositions V73 :",...props.map(x=>`• ${x.formulation||""} [PROPOSITION]`));
+  if(props.length) lines.push("Propositions V74 :",...props.map(x=>`• ${x.formulation||""} [${({A_EXAMINER:"À EXAMINER",VALIDEE:"VALIDÉE",REFUSEE:"REFUSÉE"}[x.decisionStatus]||"À EXAMINER")}]`));
   if(!prev.length&&!val.length&&!props.length) lines.push("• À compléter.");
   lines.push("");
   lines.push("Ressources / moyens complémentaires et aménagements P/O/M");
   lines.push(...(safeArray(d.amenagements).length?safeArray(d.amenagements).map(a=>`• ${a.type||""} — ${a.texte||""} [PROPOSITION]`):["• À compléter sur base des éléments effectivement documentés."]));
   lines.push("");
-  lines.push("Retours des acteurs / réunion");
-  lines.push("• À compléter lors de la réunion : parents, école/direction/équipe, élève, PMS, agent d’intégration et autres intervenants.");
-  lines.push("");
-  lines.push("Réunion 1 — Décembre");
-  lines.push(`• État : ${d.meeting1?.status||"A_REEVALUER"}`);
-  lines.push("• Les objectifs existants peuvent être maintenus, reformulés, ajustés, remplacés ou complétés après discussion et validation professionnelle.");
-  lines.push("");
-  lines.push("Réunion 2 — Fin d’année");
-  lines.push(`• État : ${d.meeting2?.status||"A_VENIR"}`);
-  lines.push("• Évaluation à compléter sur base des éléments postérieurs à la réunion 1.");
+  appendMeetingText(lines,"Réunion de décembre",d.meeting1||{});
+  appendMeetingText(lines,"Réunion de fin d’année",d.meeting2||{});
   return lines;
 }
 function xmlEsc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;");}
@@ -352,6 +435,13 @@ function pdfWinAnsiBytes(text){const map={"€":0x80,"‚":0x82,"ƒ":0x83,"„":
 function pdfLiteral(text){return "("+String.fromCharCode(...pdfWinAnsiBytes(text).flatMap(b=>b===40||b===41||b===92?[92,b]:[b]))+")";}
 function makePdf(lines){const pages=[];const perPage=48;for(let i=0;i<lines.length;i+=perPage)pages.push(lines.slice(i,i+perPage));const objs=[];const add=x=>{objs.push(x);return objs.length;};const fontId=add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");const pageIds=[];for(const pageLines of pages){const content=["BT","/F1 10 Tf","50 790 Td",...pageLines.map((line,i)=>`${pdfLiteral(String(line).slice(0,180))} Tj 0 -15 Td`),"ET"].join("\n");const contentId=add(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`);pageIds.push({contentId});}const pagesId=add("");const catalogId=add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);const pageObjects=pageIds.map(x=>{const id=add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${x.contentId} 0 R >>`);return id;});objs[pagesId-1]=`<< /Type /Pages /Kids [${pageObjects.map(id=>`${id} 0 R`).join(" ")}] /Count ${pageObjects.length} >>`;let out="%PDF-1.4\n%\xFF\xFF\xFF\xFF\n",offsets=[0];for(let i=0;i<objs.length;i++){offsets[i+1]=out.length;out+=`${i+1} 0 obj\n${objs[i]}\nendobj\n`;}const xref=out.length;out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`;for(let i=1;i<offsets.length;i++)out+=String(offsets[i]).padStart(10,"0")+" 00000 n \n";out+=`trailer\n<< /Size ${objs.length+1} /Root ${catalogId} 0 R >>\nstartxref\n${xref}\n%%EOF`;return Uint8Array.from([...out].map(c=>c.charCodeAt(0)&255));}
 function downloadBytes(name,bytes,type){const blob=new Blob([bytes],{type});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+function exportTextDocument(filename,content,format="docx"){
+  if(!["docx","pdf"].includes(format))throw new Error("Format d’export non pris en charge.");
+  const lines=String(content||"").replace(/\r/g,"").split("\n");
+  if(!lines.some(line=>line.trim()))throw new Error("Le document ne contient aucun contenu à exporter.");
+  const mime=format==="docx"?"application/vnd.openxmlformats-officedocument.wordprocessingml.document":"application/pdf";
+  downloadBytes(`${filename}.${format}`,format==="docx"?makeDocx(lines):makePdf(lines),mime);
+}
 function htmlPIA(pia){return `<pre style="white-space:pre-wrap;font:14px Arial,sans-serif;max-width:900px;margin:40px auto;line-height:1.55">${esc(piaTextSections(pia,false).join("\\n"))}</pre>`;}
 
 function clearPIAResult(){
@@ -400,21 +490,153 @@ async function deletePIARecord(studentId){
 }
 
 function piaStatusLabel(pia){
-  if(pia?.lifecycle==="ACTIF") return "PIA annuel validé";
+  if(pia?.lifecycle==="FINALISE") return "PIA annuel finalisé";
+  if(pia?.lifecycle==="EN_VIGUEUR"||pia?.lifecycle==="ACTIF") return "PIA annuel en vigueur";
   if(pia?.lifecycle==="EN_REEVALUATION") return "Réévaluation en cours";
-  if(pia?.meeting1?.status==="VALIDÉ") return "PIA annuel validé";
+  if(pia?.meeting1?.status==="VALIDÉ"||pia?.meeting1?.status==="VALIDÉE") return "PIA annuel en vigueur";
   if(pia?.lifecycle==="EN_CONSTRUCTION") return "Projet de PIA à examiner";
   return "Projet de PIA à examiner";
 }
 
+const PIA_MEETING_ACTORS=[
+  {id:"eleve",label:"Élève"},{id:"parents",label:"Parents"},
+  {id:"ecole",label:"École / équipe"},{id:"direction",label:"Direction"},
+  {id:"pms",label:"CPMS / PMS"},{id:"integration",label:"Agent d’intégration"},
+  {id:"autres",label:"Autres intervenants"}
+];
+const PIA_DOMAIN_FIELDS=[
+  ["ressources","Ressources"],["difficultes","Besoins / difficultés"],
+  ["objectifs","Objectifs"],["criteres","Critères d’évaluation"],
+  ["moyens","Moyens / adaptations"],["evolution","Évolution documentée"]
+];
+function piaDomainIcon(aspect,index){
+  const name=String(aspect||"").toLocaleLowerCase("fr");
+  if(name.includes("cogn"))return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M6 13.5c6-2.3 12-.8 18 3.3v23c-6-4.1-12-5.6-18-3.3zM42 13.5c-6-2.3-12-.8-18 3.3v23c6-4.1 12-5.6 18-3.3z"/><path d="M11 20c3-.8 6-.3 9 1.2M11 26c3-.7 6-.2 9 1.2M37 20c-3-.8-6-.3-9 1.2M37 26c-3-.7-6-.2-9 1.2"/></svg>`;
+  if(name.includes("commun"))return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M7 10.5h24a5 5 0 0 1 5 5v11a5 5 0 0 1-5 5H19l-8 6v-6h-4a5 5 0 0 1-5-5v-11a5 5 0 0 1 5-5z"/><path d="M15 19h13M15 24h9"/><path d="M31 17h5a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5h-1v5l-7-5"/></svg>`;
+  if(name.includes("comport")||name.includes("affect"))return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M24 39s-16-9.5-16-21a9 9 0 0 1 16-5.8A9 9 0 0 1 40 18c0 11.5-16 21-16 21z"/><path d="M16 23h.1M32 23h.1M19 29c1.4 1.6 3.1 2.4 5 2.4s3.6-.8 5-2.4"/></svg>`;
+  if(name.includes("autonom"))return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle cx="24" cy="24" r="17"/><path d="m31 17-4.5 10.5L17 32l4.5-10.5z"/><circle cx="24" cy="24" r="2"/></svg>`;
+  if(name.includes("phys")||name.includes("psychom"))return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle cx="29" cy="9" r="4"/><path d="m24 17 7 4 6-2M27 20l-6 9 8 4 5 9M21 29l-8 3-4 8M14 15l7 2 4-4"/><path d="m31 17 4 4"/></svg>`;
+  const fallback=index%2?`<circle cx="24" cy="24" r="15"/><path d="M24 16v16M16 24h16"/>`:`<circle cx="24" cy="24" r="15"/><circle cx="24" cy="24" r="6"/>`;
+  return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">${fallback}</svg>`;
+}
+function piaDomainObjectives(pia,section){
+  const validated=safeArray(pia.meeting1?.objectivesValidated)
+    .filter(item=>item&&typeof item==="object"&&(item.aspect===section.aspect||(item.theme&&safeArray(pia.propositions).some(proposal=>proposal.aspect===section.aspect&&proposal.theme===item.theme))))
+    .map(item=>item.formulation||"").filter(Boolean);
+  return [...new Set([...safeArray(section.objectifs),...validated])];
+}
+function piaDomainTone(aspect){
+  const name=String(aspect||"").toLocaleLowerCase("fr");
+  if(name.includes("cogn"))return "cognitive";
+  if(name.includes("commun"))return "communication";
+  if(name.includes("comport")||name.includes("affect"))return "affective";
+  if(name.includes("autonom"))return "autonomy";
+  if(name.includes("phys")||name.includes("psychom"))return "physical";
+  return "neutral";
+}
+function piaDomainCard(pia,section,index){
+  const objectives=piaDomainObjectives(pia,section);
+  const field=([key,label])=>{
+    const items=key==="objectifs"?objectives:safeArray(section[key]);
+    const content=items.length?`<div class="v73-domain-value-list">${items.map(item=>`<span class="v73-domain-value">${esc(item)}</span>`).join("")}</div>`:'<p class="v73-domain-empty">Aucun élément renseigné.</p>';
+    return `<details class="v73-domain-fieldset is-${key}"><summary>${label}<span>${items.length||""}</span></summary><div class="v73-domain-field-content">${content}<label class="v73-domain-field"><span>Modifier cette rubrique</span><textarea rows="2" data-v73-domain-index="${index}" data-v73-domain-field="${key}" aria-label="${label} — ${esc(section.aspect)}" placeholder="À compléter">${esc(items.join("\n"))}</textarea></label></div></details>`;
+  };
+  return `<div class="v73-domain-record" id="v73-domain-${index}">
+    <header class="v73-domain-record-head tone-${piaDomainTone(section.aspect)}"><div><div class="page-kicker">Domaine PIA</div><h3>${esc(section.aspect||"Domaine")}</h3></div><span>${safeArray(section.difficultes).length} besoin(s) · ${objectives.length} objectif(s) · ${safeArray(section.moyens).length} moyen(s)</span></header>
+    <div class="v73-domain-fields">${PIA_DOMAIN_FIELDS.map(field).join("")}</div>
+  </div>`;
+}
+function piaMeetingEditor(pia,key,title,type){
+  const meeting=pia[key]||{},participants=meeting.participants||{},feedback=meeting.feedback||{};
+  const schoolYearBounds=piaSchoolYearBounds(Number(String(pia.schoolYear||"").slice(0,4)));
+  const input=(field,label,value,kind="textarea")=>kind==="input"
+    ? `<label class="v73-meeting-field"><span>${label}</span><input data-v73-meeting="${key}" data-v73-meeting-field="${field}" value="${esc(value||"")}" maxlength="4000"></label>`
+    : `<label class="v73-meeting-field"><span>${label}</span><textarea rows="2" data-v73-meeting="${key}" data-v73-meeting-field="${field}" maxlength="8000">${esc(value||"")}</textarea></label>`;
+  return `<details class="v73-meeting">
+    <summary><span>${title}</span><span class="v73-meeting-status">${esc(meeting.status||"À préparer")}</span></summary>
+    <div class="v73-meeting-fields">
+      <label class="v73-meeting-field"><span>Type</span><select data-v73-meeting="${key}" data-v73-meeting-field="type"><option value="${type}" selected>${title}</option></select></label>
+      <label class="v73-meeting-field"><span>Date</span><input type="date" min="${schoolYearBounds.start}" max="${schoolYearBounds.end}" data-v73-meeting="${key}" data-v73-meeting-field="date" value="${esc(meeting.date||"")}"></label>
+      ${input("context","Contexte",meeting.context)}
+      <fieldset class="v73-participants"><legend>Participants</legend>${PIA_MEETING_ACTORS.map(actor=>`<label><input type="checkbox" data-v73-meeting="${key}" data-v73-participant="${actor.id}" ${participants[actor.id]?"checked":""}><span>${actor.label}</span></label>`).join("")}</fieldset>
+      <div class="v73-feedback-grid"><div class="v73-meeting-subtitle">Retours des participants</div>${PIA_MEETING_ACTORS.map(actor=>input(`feedback.${actor.id}`,actor.label,feedback[actor.id])).join("")}</div>
+      ${input("decisions","Décisions",meeting.decisions)}
+      ${input("objectivesModified","Objectifs modifiés",meeting.objectivesModified)}
+      ${input("means","Moyens",meeting.means)}
+      ${input("adaptations","Adaptations P/O/M",meeting.adaptations)}
+      ${input("information","Informations complémentaires",meeting.information)}
+      ${input("notes","Notes",meeting.notes)}
+    </div>
+  </details>`;
+}
+function piaAnnualTracking(pia){
+  const validated=safeArray(pia.meeting1?.objectivesValidated),evaluation=safeArray(pia.meeting2?.evaluation);
+  const list=(items,empty)=>items.length?`<ul>${items.map(item=>`<li>${esc(typeof item==="string"?item:item.formulation||item.objectif||"")}</li>`).join("")}</ul>`:`<p>${empty}</p>`;
+  return `<section class="v73-annual-tracking"><h3>Suivi annuel</h3><p>${esc(piaStatusLabel(pia))} · ${Number(pia.sessionsAnalysed||0)} séance(s) analysée(s)</p><h4>Objectifs validés</h4>${list(validated,"Aucun objectif validé à ce stade.")}<h4>Éléments de réévaluation</h4>${list(evaluation,"La réévaluation de fin d’année n’a pas encore été préparée.")}</section>`;
+}
+async function persistPIAEdit(pia,persistDraft=false){
+  if(pia.lifecycle==="EN_CONSTRUCTION"&&!persistDraft&&!V73.ui.piaDraftPersisted)return;
+  if(pia.lifecycle==="EN_CONSTRUCTION")V73.ui.piaDraftPersisted=true;
+  await savePia(pia,pia.lifecycle!=="EN_CONSTRUCTION",false);
+}
+function decidePIAProposal(pia,index,decision){
+  const proposal=pia.propositions?.[index];if(!proposal||!['VALIDEE','REFUSEE'].includes(decision))return false;
+  if(decision==="VALIDEE"){
+    const inReview=pia.lifecycle==="EN_REEVALUATION";
+    const field=document.querySelector(`[data-v73-prop-formulation="${index}"]`),formulation=String(field?.value??proposal.formulation??"").trim();
+    if(!formulation)return false;
+    proposal.formulation=formulation;
+    const objectives=safeArray(pia.meeting1.objectivesValidated);
+    if(!objectives.some(item=>(typeof item==="string"?item:item.id)===proposal.id||item?.themeId===proposal.themeId))objectives.push({id:proposal.id,themeId:proposal.themeId,theme:proposal.theme,aspect:proposal.aspect,formulation,status:"VALIDEE",source:"REUNION",validatedAt:new Date().toISOString()});
+    pia.meeting1.objectivesValidated=objectives;
+    if(inReview)pia.meeting2.objectivesToContinue=objectives;
+    else{
+      pia.meeting1.validatedAt=new Date().toISOString();
+      pia.meeting1.status="VALIDÉE";
+      pia.lifecycle="EN_VIGUEUR";
+    }
+  }
+  proposal.decisionStatus=decision;
+  proposal.decidedAt=new Date().toISOString();
+  return true;
+}
+
+function setPIASection(box,name){
+  const tabs=[...box.querySelectorAll("[data-v73-pia-tab]")],panels=[...box.querySelectorAll("[data-v73-pia-panel]")];
+  const active=tabs.find(tab=>tab.dataset.v73PiaTab===name);if(!active)return;
+  tabs.forEach(tab=>{const selected=tab===active;tab.setAttribute("aria-selected",String(selected));tab.tabIndex=selected?0:-1;});
+  panels.forEach(panel=>{panel.hidden=panel.dataset.v73PiaPanel!==name;});
+}
+function bindPIASectionTabs(box){
+  const nav=box.querySelector(".v73-pia-nav");if(!nav)return;
+  nav.addEventListener("click",event=>{const tab=event.target.closest("[data-v73-pia-tab]");if(tab)setPIASection(box,tab.dataset.v73PiaTab);});
+  nav.addEventListener("keydown",event=>{
+    const tabs=[...nav.querySelectorAll("[data-v73-pia-tab]")],index=tabs.indexOf(document.activeElement);if(index<0)return;
+    let next=index;if(event.key==="ArrowRight")next=(index+1)%tabs.length;else if(event.key==="ArrowLeft")next=(index-1+tabs.length)%tabs.length;else if(event.key==="Home")next=0;else if(event.key==="End")next=tabs.length-1;else return;
+    event.preventDefault();tabs[next].focus();setPIASection(box,tabs[next].dataset.v73PiaTab);
+  });
+}
+function requestPIASection(name){
+  if(!["domains","proposals","meetings","tracking"].includes(name))return false;
+  V73.ui??={};V73.ui.pendingSection=name;
+  const box=document.getElementById("v73-pia-result");
+  if(box?.querySelector("[data-v73-pia-tab]")){
+    setPIASection(box,name);
+    V73.ui.pendingSection="";
+    return true;
+  }
+  return false;
+}
 function render(pia){
   const box=document.getElementById("v73-pia-result");
   if(!box)return;
+  const activeSection=V73.ui?.pendingSection||box.querySelector('[data-v73-pia-tab][aria-selected="true"]')?.dataset.v73PiaTab||"domains";
+  if(V73.ui?.pendingSection)V73.ui.pendingSection="";
 
   const imported=pia.sourceContinuity?.present?importedSummaryHtml(pia.sourceContinuity):"";
   const limitedEvidence=Number(pia.sessionsAnalysed||0)<3;
   const statusLabel=piaStatusLabel(pia);
-  const statusClass=pia.lifecycle==="ACTIF"?"is-success":"is-warning";
+  const statusClass=["ACTIF","EN_VIGUEUR","FINALISE"].includes(pia.lifecycle)?"is-success":"is-warning";
 
   const evidenceNotice=limitedEvidence
     ? `<div class="v73-notice v73-notice-warning">
@@ -424,6 +646,22 @@ function render(pia){
     : "";
 
   const proposals=safeArray(pia.propositions);
+  const domains=safeArray(pia.sections);
+  const storedDomainIndex=box.dataset.v73ActiveDomain;
+  const activeDomainIndex=storedDomainIndex!==undefined&&storedDomainIndex!==""?Number(storedDomainIndex):-1;
+  const activeDomain=Number.isInteger(activeDomainIndex)?domains[activeDomainIndex]:null;
+  const domainOverview=domains.map((section,index)=>{
+    const objectives=piaDomainObjectives(pia,section);
+    const needs=safeArray(section.difficultes).length,means=safeArray(section.moyens).length;
+    return `<button type="button" class="v73-domain-overview tone-${piaDomainTone(section.aspect)}" data-v73-domain-jump="${index}" aria-label="Afficher le domaine ${esc(section.aspect||"")} et son détail"><span class="v73-domain-icon">${piaDomainIcon(section.aspect,index)}</span><strong>${esc(section.aspect||"Domaine")}</strong><span class="v73-domain-metrics"><span><b>${needs}</b> besoins</span><span><b>${objectives.length}</b> objectifs</span><span><b>${means}</b> moyens</span></span><span class="v73-domain-action">Consulter le domaine <span aria-hidden="true">›</span></span></button>`;
+  }).join("");
+  const domainDetail=activeDomain?`<div class="v73-domain-detail-view" id="v73-domain-detail-view">
+    <button type="button" class="v73-domain-back" data-v73-domain-back>‹ Tous les domaines</button>
+    <div class="v73-domain-detail-layout">
+      <nav class="v73-domain-menu" aria-label="Choisir un domaine">${domains.map((section,index)=>`<button type="button" data-v73-domain-select="${index}" aria-current="${index===activeDomainIndex?"true":"false"}">${esc(section.aspect||"Domaine")}</button>`).join("")}</nav>
+      ${piaDomainCard(pia,activeDomain,activeDomainIndex)}
+    </div>
+  </div>`:"";
 
   box.innerHTML=`
     <div class="v73-summary">
@@ -432,7 +670,6 @@ function render(pia){
       </div>
       <span>${Number(pia.sessionsAnalysed||0)} séance(s) analysée(s)</span>
       <span>${proposals.length} proposition(s)</span>
-      <span>Cycle : ${esc(pia.meeting1?.status||"")}</span>
     </div>
 
     ${imported}
@@ -443,36 +680,59 @@ function render(pia){
       Les nouvelles formulations sont des <b>PROPOSITIONS</b> tant qu'elles ne sont pas validées.
     </div>
 
-    ${
+    <nav class="v73-pia-nav" role="tablist" aria-label="Sections du PIA annuel" aria-orientation="horizontal">
+      <button type="button" role="tab" id="v73-tab-domains" aria-controls="v73-panel-domains" aria-selected="true" tabindex="0" data-v73-pia-tab="domains">Domaines</button>
+      <button type="button" role="tab" id="v73-tab-proposals" aria-controls="v73-panel-proposals" aria-selected="false" tabindex="-1" data-v73-pia-tab="proposals">Propositions <span>${proposals.length}</span></button>
+      <button type="button" role="tab" id="v73-tab-meetings" aria-controls="v73-panel-meetings" aria-selected="false" tabindex="-1" data-v73-pia-tab="meetings">Réunions</button>
+      <button type="button" role="tab" id="v73-tab-tracking" aria-controls="v73-panel-tracking" aria-selected="false" tabindex="-1" data-v73-pia-tab="tracking">Suivi annuel</button>
+    </nav>
+
+    <section class="v73-pia-panel v73-domain-section" id="v73-panel-domains" role="tabpanel" aria-labelledby="v73-tab-domains" tabindex="0" data-v73-pia-panel="domains">
+      <div class="v73-domain-overview-view" ${activeDomain?"hidden":""}>
+        <h3>Les cinq domaines</h3>
+        ${domains.length?`<div class="v73-domain-overview-grid">${domainOverview}</div>`:'<p class="v73-empty">Aucun domaine disponible pour ce PIA.</p>'}
+      </div>
+      ${domainDetail}
+    </section>
+
+    <section class="v73-pia-panel" id="v73-panel-proposals" role="tabpanel" aria-labelledby="v73-tab-proposals" tabindex="0" data-v73-pia-panel="proposals" hidden>
+      ${
       proposals.length
       ? `<div class="v73-proposals">
-          ${proposals.map((p,i)=>`
-            <label class="v73-prop">
-              <span class="v73-prop-select">
-                <input type="checkbox" data-v73-prop="${i}" aria-label="Sélectionner la proposition ${i+1}">
+          ${proposals.map((p,i)=>{
+            const status=p.decisionStatus||"A_EXAMINER";
+            const statusLabel={A_EXAMINER:"À examiner",VALIDEE:"Validée",REFUSEE:"Refusée"}[status]||"À examiner";
+            const statusClass={A_EXAMINER:"is-pending",VALIDEE:"is-validated",REFUSEE:"is-refused"}[status]||"is-pending";
+            const contributors=[...new Set(safeArray(p.evidence).map(item=>[item.date,item.matiere].filter(Boolean).join(" · ")))];
+            return `<article class="v73-prop ${statusClass}">
+              <label class="v73-prop-select" aria-label="Sélectionner la proposition ${i+1}">
+                <input type="checkbox" data-v73-prop="${i}" ${status!=="A_EXAMINER"?"disabled":""}>
                 <span class="v73-checkmark" aria-hidden="true"></span>
-              </span>
-
-              <span class="v73-prop-body">
+              </label>
+              <div class="v73-prop-body">
                 <span class="v73-prop-title">${esc(p.theme||"Proposition PIA")}</span>
-                <span class="v73-prop-formulation">${esc(p.formulation||"")}</span>
+                <span class="v73-prop-meta"><span>${esc(p.aspect||"")}</span><span class="v73-prop-state ${statusClass}">${statusLabel}</span></span>
+                <label class="v73-prop-edit">Formulation<textarea rows="2" data-v73-prop-formulation="${i}" ${status!=="A_EXAMINER"?"readonly":""}>${esc(p.formulation||"")}</textarea></label>
                 <span class="v73-prop-meta">
                   <span>${Number(p.recurrence||0)} occurrence(s)</span>
-                  <span>${safeArray(p.dates).length} date(s)</span>
+                  <span>${Number(p.sessionCount||0)} séance(s) contributrice(s)</span>
                   ${p.counterEvidence ? "<span class='v73-badge-warning'>Contre-évidence</span>" : ""}
                 </span>
-              </span>
-            </label>
-          `).join("")}
+                <span class="v73-prop-meta"><span>Provenance : séances Q2–Q6 (${safeArray(p.provenance?.sourceKeys).join(", ")||"données documentées"})</span></span>
+                ${contributors.length?`<ul class="v73-prop-evidence">${contributors.map(item=>`<li>${esc(item)}</li>`).join("")}</ul>`:""}
+                ${status==="A_EXAMINER"?`<div class="v73-prop-actions"><button type="button" class="v73-btn v73-btn-neutral" data-v73-proposal-save="${i}">Enregistrer la formulation</button><button type="button" class="v73-btn v73-btn-success" data-v73-proposal-accept="${i}">Valider</button><button type="button" class="v73-btn v73-btn-danger" data-v73-proposal-reject="${i}">Refuser</button></div>`:""}
+              </div>
+            </article>`;
+          }).join("")}
         </div>`
       : `<p class="v73-empty">
            Aucune convergence suffisante pour formuler une proposition PIA.
            Les observations restent disponibles dans les séances.
          </p>`
-    }
+      }
 
-    ${
-      pia.lifecycle!=="ACTIF"
+      ${
+      !["ACTIF","EN_VIGUEUR","FINALISE"].includes(pia.lifecycle)
       ? `<div class="v73-action-group v73-action-validation">
            <div class="v73-action-title">Validation</div>
            <button id="v73-validate" class="v73-btn v73-btn-success">
@@ -480,10 +740,26 @@ function render(pia){
            </button>
          </div>`
       : ""
-    }
+      }
+    </section>
 
-    <div class="v73-action-group v73-action-export">
-      <div class="v73-action-title">Export</div>
+    <section class="v73-pia-panel v73-meetings-section" id="v73-panel-meetings" role="tabpanel" aria-labelledby="v73-tab-meetings" tabindex="0" data-v73-pia-panel="meetings" hidden>
+      <h3>Réunion de décembre</h3>
+      ${piaMeetingEditor(pia,"meeting1","Réunion de décembre","REUNION_1_DECEMBRE")}
+      <h3>Réunion de fin d’année</h3>
+      ${piaMeetingEditor(pia,"meeting2","Réunion de fin d’année","REUNION_2_FIN_ANNEE")}
+      ${pia.lifecycle==="EN_REEVALUATION"?`<div class="v73-actions"><button type="button" id="v73-review-confirm" class="v73-btn v73-btn-success">Confirmer la réévaluation et maintenir en vigueur</button></div>`:""}
+      ${pia.lifecycle==="EN_VIGUEUR"&&pia.meeting2?.status==="REEVALUATION_VALIDEE"?`<div class="v73-actions"><button type="button" id="v73-finalize" class="v73-btn v73-btn-primary">Finaliser l’année</button></div>`:""}
+    </section>
+
+    <section class="v73-pia-panel" id="v73-panel-tracking" role="tabpanel" aria-labelledby="v73-tab-tracking" tabindex="0" data-v73-pia-panel="tracking" hidden>
+      ${piaAnnualTracking(pia)}
+    </section>
+
+    <details class="v73-export-disclosure">
+      <summary>Exporter le PIA</summary>
+      <div class="v73-action-group v73-action-export">
+        <div class="v73-action-title">Formats d’export</div>
 
       <div class="v73-export-row">
         <label>
@@ -512,10 +788,13 @@ function render(pia){
           Export JSON dé-identifié
         </button>
       </div>
-    </div>
+      </div>
+    </details>
 
-    <div class="v73-action-group v73-action-management">
-      <div class="v73-action-title">Projet</div>
+    <details class="v73-export-disclosure v73-management-disclosure">
+      <summary>Actions sur le projet</summary>
+      <div class="v73-action-group v73-action-management">
+        <div class="v73-action-title">Projet</div>
 
       <div class="v73-actions">
         <button id="v73-close" class="v73-btn v73-btn-neutral">
@@ -523,7 +802,7 @@ function render(pia){
         </button>
 
         ${
-          pia.lifecycle==="ACTIF"
+          ["ACTIF","EN_VIGUEUR","FINALISE"].includes(pia.lifecycle)
           ? `<button id="v73-delete" class="v73-btn v73-btn-danger">
                Supprimer le PIA annuel
              </button>`
@@ -532,14 +811,58 @@ function render(pia){
              </button>`
         }
       </div>
-    </div>
+      </div>
+    </details>
   `;
 
+  bindPIASectionTabs(box);
+  setPIASection(box,activeSection);
+
+  box.querySelectorAll("[data-v73-domain-index]").forEach(field=>field.addEventListener("change",async()=>{
+    const section=pia.sections[Number(field.dataset.v73DomainIndex)],key=field.dataset.v73DomainField;
+    if(!section||!PIA_DOMAIN_FIELDS.some(([fieldKey])=>fieldKey===key))return;
+    section[key]=field.value.split(/\r?\n/).map(value=>value.trim()).filter(Boolean);
+    try{await persistPIAEdit(pia);window.showAppToast?.("Modifications du domaine enregistrées.","success",2200);}catch(e){window.showAppToast?.("⚠️ Enregistrement impossible : "+(e?.message||e),"error",4500);}
+  }));
+  box.querySelectorAll("[data-v73-meeting-field]").forEach(field=>field.addEventListener("change",async()=>{
+    const meeting=pia[field.dataset.v73Meeting],path=String(field.dataset.v73MeetingField||"").split("."),leaf=path.pop();
+    if(!meeting||!leaf)return;
+    let target=meeting;path.forEach(key=>{target[key]??={};target=target[key];});target[leaf]=field.value;meeting.source="REUNION";meeting.updatedAt=new Date().toISOString();
+    try{await persistPIAEdit(pia);window.showAppToast?.("Éléments de réunion enregistrés.","success",2200);}catch(e){window.showAppToast?.("⚠️ Enregistrement impossible : "+(e?.message||e),"error",4500);}
+  }));
+  box.querySelectorAll("[data-v73-participant]").forEach(field=>field.addEventListener("change",async()=>{
+    const meeting=pia[field.dataset.v73Meeting];if(!meeting)return;
+    meeting.participants??={};meeting.participants[field.dataset.v73Participant]=field.checked;meeting.source="REUNION";meeting.updatedAt=new Date().toISOString();
+    try{await persistPIAEdit(pia);}catch(e){window.showAppToast?.("⚠️ Enregistrement impossible : "+(e?.message||e),"error",4500);}
+  }));
+  const showDomain=index=>{
+    if(!Number.isInteger(index)||!domains[index])return;
+    box.dataset.v73ActiveDomain=String(index);
+    render(pia);
+    box.querySelector(`[data-v73-domain-select="${index}"]`)?.focus();
+  };
+  box.querySelectorAll("[data-v73-domain-jump]").forEach(button=>button.addEventListener("click",()=>showDomain(Number(button.dataset.v73DomainJump))));
+  box.querySelectorAll("[data-v73-domain-select]").forEach(button=>button.addEventListener("click",()=>showDomain(Number(button.dataset.v73DomainSelect))));
+  box.querySelector("[data-v73-domain-back]")?.addEventListener("click",()=>{
+    box.dataset.v73ActiveDomain="";
+    render(pia);
+    box.querySelector("[data-v73-domain-jump]")?.focus();
+  });
+  box.querySelectorAll("[data-v73-proposal-save]").forEach(button=>button.addEventListener("click",async()=>{
+    const index=Number(button.dataset.v73ProposalSave),proposal=pia.propositions[index],field=box.querySelector(`[data-v73-prop-formulation="${index}"]`),formulation=String(field?.value||"").trim();
+    if(!proposal||!formulation){window.showAppToast?.("La formulation ne peut pas être vide.","info",3000);return;}
+    proposal.formulation=formulation;
+    try{await persistPIAEdit(pia,true);render(pia);window.showAppToast?.("Formulation enregistrée.","success",2500);}catch(e){window.showAppToast?.("⚠️ Enregistrement impossible : "+(e?.message||e),"error",4500);}
+  }));
+  box.querySelectorAll("[data-v73-proposal-accept],[data-v73-proposal-reject]").forEach(button=>button.addEventListener("click",async()=>{
+    const accepting=button.hasAttribute("data-v73-proposal-accept"),index=Number(button.dataset.v73ProposalAccept??button.dataset.v73ProposalReject);
+    if(!decidePIAProposal(pia,index,accepting?"VALIDEE":"REFUSEE")){window.showAppToast?.("Vérifiez la formulation de la proposition.","info",3000);return;}
+    try{await persistPIAEdit(pia,true);V73.ui.piaDraftPersisted=true;render(pia);}catch(e){window.showAppToast?.("⚠️ Enregistrement impossible : "+(e?.message||e),"error",4500);}
+  }));
+  box.querySelectorAll("[data-v73-domain-jump]").forEach(button=>button.setAttribute("aria-label",`Afficher ${domains[Number(button.dataset.v73DomainJump)]?.aspect||"le domaine"}`));
+
   box.querySelector("#v73-validate")?.addEventListener("click",async()=>{
-    const chosen=[
-      ...box.querySelectorAll("[data-v73-prop]:checked")
-    ].map(x=>pia.propositions[Number(x.dataset.v73Prop)]?.formulation)
-     .filter(Boolean);
+    const chosen=[...box.querySelectorAll("[data-v73-prop]:checked")].map(field=>Number(field.dataset.v73Prop));
 
     if(!chosen.length){
       window.showAppToast?.(
@@ -552,22 +875,9 @@ function render(pia){
 
     pia.meeting1.objectivesValidated=[
       ...(pia.meeting1.objectivesValidated||[]),
-      ...chosen.map(formulation=>{
-        const p=pia.propositions.find(x=>x.formulation===formulation);
-        return {
-          id:p?.id||uid("obj"),
-          themeId:p?.themeId||"",
-          theme:p?.theme||"",
-          formulation,
-          status:"VALIDEE",
-          validatedAt:new Date().toISOString()
-        };
-      })
     ];
-
-    pia.meeting1.validatedAt=new Date().toISOString();
-    pia.lifecycle="ACTIF";
-    pia.meeting1.status="VALIDÉ";
+    const accepted=chosen.map(index=>decidePIAProposal(pia,index,"VALIDEE"));
+    if(!accepted.some(Boolean))return;
 
     try{
       await savePia(pia,true);
@@ -582,6 +892,16 @@ function render(pia){
         5000
       );
     }
+  });
+
+  box.querySelector("#v73-review-confirm")?.addEventListener("click",async()=>{
+    pia.lifecycle="EN_VIGUEUR";pia.meeting2.status="REEVALUATION_VALIDEE";pia.meeting2.validatedAt=new Date().toISOString();
+    try{await savePia(pia,true);render(pia);}catch(e){window.showAppToast?.("⚠️ Enregistrement impossible : "+(e?.message||e),"error",4500);}
+  });
+  box.querySelector("#v73-finalize")?.addEventListener("click",async()=>{
+    const ok=window.confirm("Finaliser ce PIA annuel ?\n\nLe dossier restera consultable et son export professionnel pourra être produit.");if(!ok)return;
+    pia.lifecycle="FINALISE";pia.finalizedAt=new Date().toISOString();pia.meeting2.status="FINALISE";
+    try{await savePia(pia,true);render(pia);}catch(e){window.showAppToast?.("⚠️ Finalisation impossible : "+(e?.message||e),"error",4500);}
   });
 
   const exportPia=async deid=>{
@@ -704,13 +1024,13 @@ function render(pia){
   });
 }
 
-async function savePia(pia,cloud=true){
+async function savePia(pia,cloud=true,notify=true){
   const ds=window.JournalierDataStore; const st=ds.getState(); st.meta??={}; st.meta.piaRecords??={}; st.meta.piaImports??={}; st.meta.piaRecords[pia.studentId]=pia;
   if(pia.sourceContinuity?.present) st.meta.piaImports[pia.studentId]=pia.sourceContinuity;
   await ds.persistState(st);
   if(cloud && window.JournalierCloud?.savePia) {
-    try{await window.JournalierCloud.savePia(pia); window.showAppToast?.("✓ PIA enregistré localement et dans OneDrive.","success",4000);}
-    catch(e){window.showAppToast?.("✓ PIA enregistré localement. OneDrive sera réessayé depuis la synchronisation.","info",4500);}
+    try{await window.JournalierCloud.savePia(pia); if(notify)window.showAppToast?.("✓ PIA enregistré localement et dans OneDrive.","success",4000);}
+    catch(e){if(notify)window.showAppToast?.("✓ PIA enregistré localement. OneDrive sera réessayé depuis la synchronisation.","info",4500);}
   }
 }
 async function loadRef(){
@@ -727,20 +1047,40 @@ function dashboardTrendData(){
   const map={}; for(const s of recent){for(const u of extractUnits(s)){if(u.themeId==="mathematiques")continue;const k=u.themeId;map[k]??={theme:u.theme,sessionIds:new Set()};map[k].sessionIds.add(String(u.sessionId));}}
   return Object.values(map).map(x=>({...x,count:x.sessionIds.size})).sort((a,b)=>b.count-a.count).slice(0,5);
 }
-function dashboardPiaData(){const d=getData(), records=Object.values(d.state.meta?.piaRecords||{});return {active:records.filter(p=>["ACTIF","EN_REEVALUATION"].includes(p.lifecycle)).length,toComplete:records.filter(p=>p.lifecycle==="EN_CONSTRUCTION").length,toReview:records.filter(p=>p.lifecycle==="EN_REEVALUATION").length};}
+function dashboardPiaData(){const d=getData(), records=Object.values(d.state.meta?.piaRecords||{});return {active:records.filter(p=>["ACTIF","EN_VIGUEUR"].includes(p.lifecycle)).length,toComplete:records.filter(p=>p.lifecycle==="EN_CONSTRUCTION").length,toReview:records.filter(p=>p.lifecycle==="EN_REEVALUATION").length,finalized:records.filter(p=>p.lifecycle==="FINALISE").length};}
+async function updateDashboardMemos(update){
+  const ds=window.JournalierDataStore;
+  if(!ds?.isReady?.()){
+    window.showAppToast?.("Déverrouillez votre session Microsoft pour modifier les mémos.","info",3500);
+    renderDashboard();
+    return;
+  }
+  try{
+    const state=ds.getState();state.meta??={};state.meta.dashboardMemos=safeArray(state.meta.dashboardMemos);
+    update(state.meta.dashboardMemos);
+    await ds.persistState(state);
+    renderDashboard();
+  }catch(_){window.showAppToast?.("⚠️ Le mémo n’a pas pu être enregistré. Réessayez après avoir vérifié la session.","error",4500);}
+}
 function renderDashboard(){
   const host=Array.from(document.querySelectorAll("#view-accueil > .card")).find(x=>norm(x.textContent||"").includes("acces rapide"));if(!host)return;
+  const ds=window.JournalierDataStore;
+  if(!ds?.isReady?.()){
+    const connected=document.getElementById("ms-dot")?.classList.contains("connected");
+    host.innerHTML=`<div class="v73-dashboard-state"><div class="page-kicker">Tableau de bord</div><div class="v73-empty">${connected?"Ouverture du coffre local sécurisé…":"Connectez-vous avec Microsoft pour afficher les tendances, le suivi PIA et vos mémos."}</div></div>`;
+    return;
+  }
   try{
     const trends=dashboardTrendData(),pia=dashboardPiaData(),memos=safeArray(getData().state.meta?.dashboardMemos);
     host.innerHTML=`<div class="v73-dashboard-grid"><section><div class="page-kicker">Tendances observées · 30 derniers jours</div><h3 class="v73-dash-title">Ce qui ressort des séances</h3><p class="v73-dash-help">Synthèse descriptive des observations enregistrées. Elle ne constitue pas une évaluation ni un score de difficulté.</p>${trends.length?`<div class="v73-trends">${trends.map(t=>`<button class="v73-trend-row" data-v73-trend="${esc(t.theme)}"><span>${esc(t.theme)}</span><span class="v73-trend-bar"><i style="width:${Math.min(100,Math.max(12,t.count*18))}%"></i></span><strong>${t.count} séance${t.count>1?"s":""}</strong></button>`).join("")}</div>`:`<div class="v73-empty">Pas encore assez de séances pour dégager une tendance. Les synthèses apparaîtront au fur et à mesure des observations.</div>`}<button class="v73-link" data-v73-go-reports>Voir les rapports →</button></section>
-    <section><div class="page-kicker">Suivi PIA</div><h3 class="v73-dash-title">PIA annuel</h3><div class="v73-pia-stats"><div><strong>${pia.active}</strong><span>actif(s)</span></div><div><strong>${pia.toComplete}</strong><span>à compléter</span></div><div><strong>${pia.toReview}</strong><span>à réévaluer</span></div></div><button class="v73-link" data-v73-go-reports>Ouvrir le suivi PIA →</button></section>
+    <section><div class="page-kicker">Suivi PIA</div><h3 class="v73-dash-title">PIA annuel</h3><div class="v73-pia-stats"><div><strong>${pia.active}</strong><span>en vigueur</span></div><div><strong>${pia.toComplete}</strong><span>à compléter</span></div><div><strong>${pia.toReview}</strong><span>à réévaluer</span></div><div><strong>${pia.finalized}</strong><span>finalisé(s)</span></div></div><button class="v73-link" data-v73-go-reports>Ouvrir le suivi PIA →</button></section>
     <section><div class="page-kicker">Mes mémos</div><h3 class="v73-dash-title">À ne pas oublier</h3><div class="v73-memo-list">${memos.length?memos.map((m,i)=>`<label class="v73-memo"><input type="checkbox" data-v73-memo-done="${i}" ${m.done?'checked':''}><span>${esc(m.text)}</span><button type="button" data-v73-memo-delete="${i}" aria-label="Supprimer le mémo">×</button></label>`).join(""):"<div class=\"v73-empty\">Aucun mémo personnel.</div>"}</div><div class="v73-memo-add"><input id="v73-memo-input" type="text" maxlength="180" placeholder="Ajouter un mémo…"><button class="btn-secondary" id="v73-memo-add">Ajouter</button></div></section></div>`;
     host.querySelectorAll("[data-v73-go-reports]").forEach(b=>b.onclick=()=>document.getElementById("tab-btn-reports")?.click());
     host.querySelectorAll("[data-v73-trend]").forEach(b=>b.onclick=()=>document.getElementById("tab-btn-reports")?.click());
-    host.querySelector("#v73-memo-add")?.addEventListener("click",async()=>{const input=host.querySelector("#v73-memo-input"),text=String(input?.value||"").trim();if(!text)return;const ds=window.JournalierDataStore,st=ds.getState();st.meta??={};st.meta.dashboardMemos??=[];st.meta.dashboardMemos.push({id:uid("memo"),text,done:false,createdAt:new Date().toISOString()});await ds.persistState(st);renderDashboard();});
-    host.querySelectorAll("[data-v73-memo-done]").forEach(x=>x.addEventListener("change",async()=>{const i=Number(x.dataset.v73MemoDone),ds=window.JournalierDataStore,st=ds.getState();st.meta.dashboardMemos[i]&&(st.meta.dashboardMemos[i].done=x.checked);await ds.persistState(st);renderDashboard();}));
-    host.querySelectorAll("[data-v73-memo-delete]").forEach(x=>x.addEventListener("click",async()=>{const i=Number(x.dataset.v73MemoDelete),ds=window.JournalierDataStore,st=ds.getState();st.meta.dashboardMemos.splice(i,1);await ds.persistState(st);renderDashboard();}));
-  }catch(_){host.innerHTML='<div class="page-kicker">Tableau de bord</div><div class="v73-empty">Connectez-vous pour afficher les tendances, le suivi PIA et vos mémos.</div>';}
+    host.querySelector("#v73-memo-add")?.addEventListener("click",()=>{const input=host.querySelector("#v73-memo-input"),text=String(input?.value||"").trim();if(!text)return;updateDashboardMemos(memos=>memos.push({id:uid("memo"),text,done:false,createdAt:new Date().toISOString()}));});
+    host.querySelectorAll("[data-v73-memo-done]").forEach(x=>x.addEventListener("change",()=>updateDashboardMemos(memos=>{const memo=memos[Number(x.dataset.v73MemoDone)];if(memo)memo.done=x.checked;})));
+    host.querySelectorAll("[data-v73-memo-delete]").forEach(x=>x.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();updateDashboardMemos(memos=>memos.splice(Number(x.dataset.v73MemoDelete),1));}));
+  }catch(_){host.innerHTML='<div class="v73-dashboard-state"><div class="page-kicker">Tableau de bord</div><div class="v73-empty">Le tableau de bord est momentanément indisponible.</div><button type="button" class="v73-link" data-v73-dashboard-retry>Réessayer</button></div>';host.querySelector('[data-v73-dashboard-retry]')?.addEventListener("click",renderDashboard);}
 }
 function openPIAFilePicker(){document.getElementById("student-pia-file")?.click();}
 async function handlePIAFileForStudent(file,studentId){const parsed=await parsePIAFile(file);parsed.displayName=file.name;await persistImportedPIA(String(studentId),parsed);window.showAppToast?.("✓ PIA importé et structuré localement. Le document original n’est pas conservé par Journalier.","success",5000);return parsed;}
@@ -750,31 +1090,62 @@ function attachPendingPIAImportWatcher(){const modal=document.getElementById("st
 async function scrubLegacyPIAFilenames(){try{const ds=window.JournalierDataStore;if(!ds?.isReady?.())return;const st=ds.getState();let changed=false;const students=st.students.map(s=>{if(!s?.piaFileName)return s;const x={...s};delete x.piaFileName;changed=true;return x;});if(changed){ds.saveStudents(students);await ds.persistState(st);}}catch(_){}}
 function bindHomeDashboard(){renderDashboard();const list=document.getElementById("home-today-list");if(list&&!list.__v73Obs){const obs=new MutationObserver(()=>renderDashboard());obs.observe(list,{childList:true});list.__v73Obs=obs;}document.getElementById("tab-btn-accueil")?.addEventListener("click",()=>setTimeout(renderDashboard,0));}
 function addUI(){
-  const host=document.querySelector("#view-reports .card");
+  const host=document.getElementById("reports-pia-mount");
   if(!host || document.getElementById("v73-pia-card"))return;
   const card=document.createElement("div"); card.id="v73-pia-card"; card.className="card";
-  card.innerHTML=`<div class="page-kicker">PIA annuel V73</div><h2 class="page-title" style="font-size:1.15rem">Construire / réévaluer le PIA</h2>
+  card.innerHTML=`<div class="page-kicker">PIA ANNUEL</div><h2 class="page-title" style="font-size:1.15rem">Construire / réévaluer le PIA</h2>
   <div class="report-intro">Le PIA est annuel. Les séances alimentent les éléments de preuve. La réunion 1 (décembre) réévalue les objectifs existants ou permet de co-construire un premier PIA ; la réunion 2 évalue la trajectoire en fin d’année.</div>
-  <div class="grid-2"><div><label>Élève</label><select id="v73-pia-student"></select></div><div><label>Date de référence</label><input id="v73-pia-date" type="date"></div></div>
+  <div class="grid-2"><div class="v73-pia-student-context"><span>PIA de l’élève sélectionné</span><strong id="v73-pia-selected-student">Choisissez un élève dans l’en-tête.</strong><select id="v73-pia-student" hidden aria-hidden="true" tabindex="-1"></select></div><div><label for="v73-pia-date">Date de référence</label><input id="v73-pia-date" type="date"></div></div>
   <div id="v73-pia-continuity" class="v73-continuity"></div>
   <div class="v73-actions"><button id="v73-build" class="btn-primary">Générer le projet de PIA</button><button id="v73-meeting2" class="btn-secondary">Préparer la réévaluation fin d’année</button></div>
   <div id="v73-pia-result" class="v73-result"></div>`;
-  host.parentElement.insertBefore(card,host.nextSibling);
+  host.appendChild(card);
   refreshStudents();
   document.getElementById("v73-build").onclick=()=>run(false); document.getElementById("v73-meeting2").onclick=()=>run(true);
   document.getElementById("v73-pia-student").addEventListener("change",()=>{
     clearPIAResult();
     refreshPIAContinuity();
   });
+  const reportStudent=document.getElementById("r-eleve");
+  reportStudent?.addEventListener("change",syncPIAStudentFromReports);
+  reportStudent?.addEventListener("journalier:student-context-change",syncPIAStudentFromReports);
+  syncPIAStudentFromReports();
   refreshPIAContinuity(); bindPIAImport(); attachPendingPIAImportWatcher(); bindHomeDashboard();
 }
-function refreshPIAContinuity(){const sid=document.getElementById("v73-pia-student")?.value,host=document.getElementById("v73-pia-continuity");if(!host)return;const imported=getImportedPIA(sid);if(imported?.present||imported?.extracted){const e=imported.extracted||{};host.innerHTML=`<div class="v73-import-summary"><b>✓ PIA précédent disponible</b><span>${esc(imported.format?.toUpperCase()||"DOCUMENT")}</span><span>${safeArray(e.objectives).length} objectif(s)</span><span>${safeArray(e.difficulties).length} difficulté(s)</span><span>${safeArray(e.adaptations).length} adaptation(s)</span></div>`;}else host.innerHTML='<div class="v73-import-help">PIA précédent : utilisez <b>Élèves → dossier de l’élève → Importer le PIA</b>. Le fichier Word/PDF est traité localement ; seul le contenu structuré validé est conservé.</div>';}
+function refreshPIAContinuity(){
+  const sid=document.getElementById("v73-pia-student")?.value,host=document.getElementById("v73-pia-continuity");
+  if(!host)return;
+  if(!sid){host.innerHTML='<div class="v73-import-help">Choisissez un élève pour afficher la continuité PIA disponible.</div>';return;}
+  const imported=getImportedPIA(sid);
+  if(imported?.present||imported?.extracted){
+    const e=imported.extracted||{};
+    host.innerHTML=`<div class="v73-import-summary"><b>✓ PIA précédent disponible</b><span>${esc(imported.format?.toUpperCase()||"DOCUMENT")}</span><span>${safeArray(e.objectives).length} objectif(s)</span><span>${safeArray(e.difficulties).length} difficulté(s)</span><span>${safeArray(e.adaptations).length} adaptation(s)</span></div>`;
+  }else{
+    host.innerHTML='<div class="v73-import-help">PIA précédent : utilisez <b>Élèves → dossier de l’élève → Importer le PIA</b>. Le fichier Word/PDF est traité localement ; seul le contenu structuré validé est conservé.</div>';
+  }
+}
+function syncPIAStudentFromReports(){
+  const select=document.getElementById("v73-pia-student"),label=document.getElementById("v73-pia-selected-student");
+  if(!select)return;
+  const previous=select.value,name=document.getElementById("r-eleve")?.value||"";
+  let data;try{data=getData()}catch(_){return;}
+  const student=data.students.find(item=>String(item.nom||"")===String(name));
+  refreshStudents();
+  if(label)label.textContent=student?.nom||"Choisissez un élève dans l’en-tête.";
+  if(previous!==select.value)select.dispatchEvent(new Event("change",{bubbles:true}));
+}
 function refreshStudents(){
   const sel=document.getElementById("v73-pia-student"); if(!sel)return;
   let d; try{d=getData()}catch(_){return;}
-  const current=sel.value; sel.innerHTML=d.students.map(s=>`<option value="${esc(s.studentId)}">${esc(s.nom)}</option>`).join("");
-  if(current && [...sel.options].some(o=>o.value===current))sel.value=current;
-  const date=document.getElementById("v73-pia-date"); if(date&&!date.value)date.value=new Date().toISOString().slice(0,10); refreshPIAContinuity();
+  const reportName=document.getElementById("r-eleve")?.value||"";
+  const student=d.students.find(item=>String(item.nom||"")===String(reportName));
+  sel.innerHTML=`<option value="">Sélectionnez un élève</option>${d.students.map(s=>`<option value="${esc(s.studentId)}">${esc(s.nom)}</option>`).join("")}`;
+  sel.value=student?String(student.studentId):"";
+  const selectedLabel=document.getElementById("v73-pia-selected-student");
+  if(selectedLabel)selectedLabel.textContent=student?.nom||"Choisissez un élève dans l’en-tête.";
+  const date=document.getElementById("v73-pia-date"),bounds=currentPIASchoolYearBounds();
+  if(date){date.min=bounds.start;date.max=bounds.end;if(!date.value){const now=new Date(),today=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;date.value=today>=bounds.start&&today<=bounds.end?today:bounds.start;}}
+  refreshPIAContinuity();
 }
 async function run(meeting2){
   try{
@@ -786,21 +1157,42 @@ async function run(meeting2){
     if(!student)throw new Error("Aucun élève sélectionné.");
 
     const until=document.getElementById("v73-pia-date")?.value||new Date().toISOString().slice(0,10);
-    const existing=d.state.meta?.piaRecords?.[student.studentId]||null;
+    const schoolYear=piaSchoolYear(until);
+    if(!schoolYear){const bounds=currentPIASchoolYearBounds();throw new Error(`Choisissez une date comprise entre le ${bounds.start} et le ${bounds.end}.`);}
+    const stored=d.state.meta?.piaRecords?.[student.studentId]||null;
+    const existing=stored&&(!stored.schoolYear||stored.schoolYear===schoolYear)?stored:null;
+    const previousYear=stored&&stored.schoolYear&&stored.schoolYear!==schoolYear?stored:null;
     const imported=d.state.meta?.piaImports?.[student.studentId]||null;
-    const continuityExisting=existing||((imported)?{sourceContinuity:imported,meeting1:{objectivesPrevious:[]}}:null);
+    const previousAnnualContinuity=previousYear?(()=>{
+      const objectives=parsePreviousObjectives(student,previousYear).map(item=>typeof item==="string"?item:item.formulation||"").filter(Boolean);
+      const sections=safeArray(previousYear.sections);
+      return {
+        lifecycle:"EN_CONSTRUCTION",
+        sourceContinuity:{present:true,role:"SOURCE_DE_CONTINUITE",format:"PIA_JOURNALIER",fileName:"",importedAt:previousYear.finalizedAt||previousYear.generatedAt||"",extracted:{
+          objectives,resources:[...new Set(sections.flatMap(section=>safeArray(section.ressources)))],
+          difficulties:[...new Set(sections.flatMap(section=>safeArray(section.difficultes)))],
+          adaptations:safeArray(previousYear.amenagements).map(item=>`${item.type||""} — ${item.texte||""}`.trim())
+        }},
+        meeting1:{objectivesPrevious:objectives.map(formulation=>({formulation,status:"EXISTANT_A_REEVALUER",source:"PIA_PRECEDENT"}))}
+      };
+    })():null;
+    const continuityExisting=existing||previousAnnualContinuity||(imported?{sourceContinuity:imported,meeting1:{objectivesPrevious:[]}}:null);
+
+    if(meeting2&&!existing)throw new Error("La réévaluation de fin d’année nécessite le PIA en vigueur de la même année scolaire.");
+    if(meeting2&&!['EN_VIGUEUR','EN_REEVALUATION'].includes(normalizePIALifecycle(existing)))throw new Error("Validez d’abord le PIA de décembre avant de préparer la réévaluation de fin d’année.");
 
     const pia=buildPIA(student,d.sessions,until,continuityExisting);
 
     if(meeting2){
       pia.meeting2={
+        ...pia.meeting2,
         status:"EN_REEVALUATION",
         evaluation:evaluateMeeting2(pia,existing),
         objectivesToContinue:pia.meeting1.objectivesValidated||[],
-        perspectives:[]
+        perspectives:pia.meeting2?.perspectives||[]
       };
       pia.lifecycle="EN_REEVALUATION";
-    }else{
+    }else if(!["EN_VIGUEUR","FINALISE"].includes(pia.lifecycle)){
       pia.lifecycle="EN_CONSTRUCTION";
     }
 
@@ -830,8 +1222,110 @@ async function run(meeting2){
   }
 }
 
-window.JournalierV73={...V73,buildPIA,run,refreshStudents,loadRef,parsePIAFile,extractPIAStructure,renderDashboard};
+window.JournalierV73={...V73,buildPIA,run,refreshStudents,loadRef,parsePIAFile,extractPIAStructure,renderDashboard,piaSchoolYear,piaSchoolYearBounds,exportTextDocument,requestPIASection};
 const style=document.createElement("style");style.textContent=`
 #v73-pia-card{margin-top:16px}.v73-summary{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;align-items:center}.v73-summary span:not(.v73-status-badge),.v73-summary b{padding:6px 9px;border-radius:8px;background:#f1f5f9}.v73-summary-main{display:flex;align-items:center;gap:8px}.v73-status-badge{display:inline-flex;align-items:center;padding:7px 10px;border-radius:999px;font-weight:750;font-size:.82rem}.v73-status-badge.is-success{background:#dcfce7;color:#166534}.v73-status-badge.is-warning{background:#fef3c7;color:#92400e}.v73-notice{padding:11px;border-left:4px solid #2563eb;background:#eff6ff;border-radius:8px;margin:10px 0;font-size:.82rem;line-height:1.45}.v73-notice-warning{border-left-color:#f59e0b;background:#fffbeb}.v73-proposals{display:grid;gap:12px;margin:14px 0}.v73-prop{display:grid;grid-template-columns:42px minmax(0,1fr);gap:14px;align-items:center;padding:16px;border:1px solid #dbe3ef;border-radius:14px;background:#fff;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease,background .15s ease}.v73-prop:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(15,23,42,.07);border-color:#bfdbfe}.v73-prop:has(input:checked){border-color:#60a5fa;background:#eff6ff;box-shadow:0 4px 14px rgba(37,99,235,.10)}.v73-prop-select{display:grid;place-items:center}.v73-prop-select input{position:absolute;opacity:0;pointer-events:none}.v73-checkmark{width:24px;height:24px;border:2px solid #cbd5e1;border-radius:7px;background:#fff;position:relative;transition:border-color .15s ease,background .15s ease}.v73-prop input:checked+.v73-checkmark{border-color:#2563eb;background:#2563eb}.v73-prop input:checked+.v73-checkmark::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-weight:800;font-size:15px}.v73-prop-body{min-width:0}.v73-prop-title{display:block;font-weight:750;color:#172033;margin-bottom:5px}.v73-prop-formulation{display:block;color:#334155;line-height:1.45}.v73-prop-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;color:#64748b;font-size:.75rem}.v73-prop-meta>span{padding:4px 7px;border-radius:999px;background:#f1f5f9}.v73-badge-warning{background:#fff7ed!important;color:#9a3412!important}.v73-action-group{margin-top:14px;padding:14px;border:1px solid #e2e8f0;border-radius:13px;background:#fff}.v73-action-title{margin-bottom:9px;font-size:.76rem;font-weight:750;color:#64748b;text-transform:uppercase;letter-spacing:.04em}.v73-btn{border:0;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:650;transition:filter .15s ease,transform .15s ease}.v73-btn:hover{filter:brightness(.97);transform:translateY(-1px)}.v73-btn:active{transform:translateY(0)}.v73-btn-primary{background:#0a84ff;color:#fff}.v73-btn-success{background:#16a34a;color:#fff}.v73-btn-warning{background:#f59e0b;color:#fff}.v73-btn-neutral{background:#eef2f7;color:#172033}.v73-btn-danger{background:#dc2626;color:#fff}.v73-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.v73-result{margin-top:14px}.v73-continuity{margin-top:12px}.v73-import-help{padding:11px 13px;border:1px dashed #cbd5e1;border-radius:10px;background:#f8fafc;color:#475569;font-size:.78rem}.v73-import-summary{display:flex;gap:7px;flex-wrap:wrap;padding:10px;border:1px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#166534;font-size:.76rem}.v73-import-summary span,.v73-import-summary b{padding:4px 7px;border-radius:7px;background:rgba(255,255,255,.72)}.v73-export-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:12px;padding:11px;border:1px solid #e2e8f0;border-radius:10px;background:#fafafa}.v73-export-row label{font-size:.75rem;color:#475569;display:grid;gap:5px}.v73-export-row select{padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}.v73-empty{padding:10px 0;color:#64748b;font-size:.76rem}.v73-dashboard-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(240px,.7fr) minmax(260px,.85fr);gap:14px}.v73-dashboard-grid>section{padding:16px;border:1px solid var(--border);border-radius:13px;background:#fff;min-width:0}.v73-dash-title{margin:0 0 5px;font-size:1rem}.v73-dash-help{margin:0 0 11px;color:#64748b;font-size:.72rem;line-height:1.45}.v73-trends{display:grid;gap:7px}.v73-trend-row{display:grid;grid-template-columns:minmax(130px,1fr) minmax(80px,1.2fr) auto;gap:8px;align-items:center;border:0;background:transparent;padding:5px 0;text-align:left;color:#172033;cursor:pointer}.v73-trend-bar{height:8px;border-radius:999px;background:#eef2f7;overflow:hidden}.v73-trend-bar i{display:block;height:100%;border-radius:999px;background:#0a84ff}.v73-trend-row strong{font-size:.68rem;color:#64748b;white-space:nowrap}.v73-link{margin-top:10px;border:0;background:transparent;color:#0a84ff;font-weight:700;cursor:pointer;padding:4px 0}.v73-pia-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}.v73-pia-stats div{padding:10px;border-radius:9px;background:#f8fafc;text-align:center}.v73-pia-stats strong{display:block;font-size:1.2rem}.v73-pia-stats span{font-size:.65rem;color:#64748b}.v73-memo-list{display:grid;gap:6px;max-height:150px;overflow:auto}.v73-memo{display:grid;grid-template-columns:auto 1fr auto;gap:7px;align-items:center;padding:7px 8px;background:#f8fafc;border-radius:8px;font-size:.76rem}.v73-memo input:checked+span{text-decoration:line-through;color:#94a3b8}.v73-memo button{border:0;background:transparent;color:#94a3b8;cursor:pointer;font-size:1rem}.v73-memo-add{display:flex;gap:6px;margin-top:8px}.v73-memo-add input{min-width:0;flex:1;margin:0;padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px}.v73-empty{padding:10px 0;color:#64748b;font-size:.76rem}@media(max-width:1100px){.v73-dashboard-grid{grid-template-columns:1fr 1fr}.v73-dashboard-grid>section:first-child{grid-column:1/-1}}@media(max-width:720px){.v73-dashboard-grid{grid-template-columns:1fr}.v73-dashboard-grid>section:first-child{grid-column:auto}.v73-trend-row{grid-template-columns:1fr auto}.v73-trend-bar{grid-column:1/-1}.v73-export-row{align-items:stretch}.v73-export-row>*{width:100%}}
 `;document.head.appendChild(style);
-(async()=>{await loadRef(); const boot=async()=>{addUI();refreshStudents();bindPIAImport();attachPendingPIAImportWatcher();await scrubLegacyPIAFilenames();bindHomeDashboard()}; if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true}); else boot();})();
+const piaLayoutStyle=document.createElement("style");piaLayoutStyle.textContent=`
+.v73-domain-section,.v73-meetings-section{margin:20px 0}
+.v73-pia-nav{display:flex;gap:3px;overflow-x:auto;margin:15px 0 18px;border-bottom:1px solid #dbe3ef;scrollbar-width:thin}
+.v73-pia-nav [role="tab"]{position:relative;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;border:0;border-radius:6px 6px 0 0;background:transparent;padding:11px 13px;color:#64748b;font:inherit;font-size:.78rem;font-weight:650;white-space:nowrap;cursor:pointer}
+.v73-pia-nav [role="tab"]:hover,.v73-pia-nav [role="tab"]:focus-visible{color:#1d4ed8;background:#eff6ff;outline:none}
+.v73-pia-nav [role="tab"][aria-selected="true"]{color:#1d4ed8;background:#eff6ff}
+.v73-pia-nav [role="tab"][aria-selected="true"]::after{content:"";position:absolute;right:10px;bottom:-1px;left:10px;height:2px;border-radius:2px;background:#2563eb}
+.v73-pia-nav [role="tab"] span{font-size:.68rem;color:inherit;opacity:.76}
+.v73-pia-panel[hidden]{display:none!important}
+.v73-pia-panel{min-width:0;scroll-margin-top:16px}
+.v73-summary{padding:2px 0 12px;border-bottom:1px solid #e7eaf0}
+.v73-summary>span:not(.v73-status-badge){padding:0;border-radius:0;background:transparent;color:#64748b;font-size:.74rem}
+.v73-proposals{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));align-items:start}
+.v73-prop{border-radius:8px;box-shadow:0 2px 9px rgba(15,23,42,.045)}
+.v73-prop:hover{transform:none;box-shadow:0 4px 12px rgba(15,23,42,.07);border-color:#bfdbfe}
+.v73-prop.is-pending{border-left:3px solid #bd7d1a;background:#fff}
+.v73-prop.is-validated{border-left:3px solid #23865f;background:#fff}
+.v73-prop.is-refused{border-left:3px solid #b34b52;background:#fff}
+.v73-prop-state{display:inline-flex;align-items:center;width:max-content;padding:3px 7px;border-radius:999px;background:#f1f4f8;color:#5b687a;font-size:.66rem;font-weight:700}
+.v73-prop-state.is-pending{background:#fff0d9;color:#8d5a12}
+.v73-prop-state.is-validated{background:#e8f6ef;color:#176b4e}
+.v73-prop-state.is-refused{background:#fdebed;color:#9c3b43}
+.v73-export-disclosure{margin-top:14px;border-top:1px solid #dbe3ef}
+.v73-export-disclosure>summary{width:max-content;max-width:100%;padding:12px 2px;color:#2563eb;font-size:.78rem;font-weight:650;cursor:pointer}
+.v73-export-disclosure .v73-action-group{margin-top:0}
+.v73-management-disclosure{margin-top:8px}
+.v73-pia-student-context{display:grid;align-content:center;gap:5px;min-height:42px}
+.v73-pia-student-context span{font-size:.72rem;font-weight:700;color:#64748b}
+.v73-pia-student-context strong{font-size:.88rem;font-weight:650;color:#172033}
+.v73-pia-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.v73-domain-section h3,.v73-meetings-section h3{font-size:.95rem;margin:18px 0 9px;color:#26364a}
+.v73-domain-overview-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;align-items:stretch}
+.v73-domain-overview,.v73-domain-record-head{--domain-accent:#51657c;--domain-ink:#3f536b;--domain-wash:#f2f5f8}
+.v73-domain-overview.tone-cognitive,.v73-domain-record-head.tone-cognitive{--domain-accent:#6654a6;--domain-ink:#5c4d91;--domain-wash:#f3f0fb}
+.v73-domain-overview.tone-communication,.v73-domain-record-head.tone-communication{--domain-accent:#168b83;--domain-ink:#23685f;--domain-wash:#edf8f6}
+.v73-domain-overview.tone-affective,.v73-domain-record-head.tone-affective{--domain-accent:#b45a62;--domain-ink:#8c4d55;--domain-wash:#fff2f2}
+.v73-domain-overview.tone-autonomy,.v73-domain-record-head.tone-autonomy{--domain-accent:#bd7d1a;--domain-ink:#805c20;--domain-wash:#fff7e9}
+.v73-domain-overview.tone-physical,.v73-domain-record-head.tone-physical{--domain-accent:#3977ce;--domain-ink:#2d548e;--domain-wash:#eff5ff}
+.v73-domain-overview{display:grid;grid-template-rows:auto auto 1fr auto;align-content:start;gap:9px;min-width:0;min-height:232px;padding:16px;border:1px solid transparent;border-radius:12px;text-align:left;color:var(--domain-ink);background:var(--domain-wash);cursor:pointer;box-shadow:0 3px 12px rgba(25,39,62,.045);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+.v73-domain-overview:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(25,39,62,.09)}
+.v73-domain-icon{display:grid;place-items:center;width:48px;height:48px;border:1px solid rgba(255,255,255,.85);border-radius:14px;background:rgba(255,255,255,.82);color:inherit;box-shadow:0 2px 7px rgba(25,39,62,.055)}
+.v73-domain-icon svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.v73-domain-overview:hover{border-color:var(--domain-accent);filter:brightness(.985)}
+.v73-domain-overview:focus-visible{outline:3px solid color-mix(in srgb,var(--domain-accent) 28%,transparent);outline-offset:2px}
+.v73-domain-overview strong{font-size:.88rem;line-height:1.3}
+.v73-domain-overview .v73-domain-metrics{display:flex;flex-wrap:wrap;align-content:start;gap:5px}
+.v73-domain-overview .v73-domain-metrics span{padding:4px 6px;border:1px solid rgba(68,91,125,.09);border-radius:5px;background:rgba(255,255,255,.72);color:#58677b;font-size:.64rem;line-height:1.25}
+.v73-domain-overview .v73-domain-metrics b{color:inherit;font-size:.71rem}
+.v73-domain-overview .v73-domain-action{display:flex;justify-content:space-between;align-items:center;align-self:end;margin-top:8px;padding-top:8px;border-top:1px solid rgba(68,91,125,.12);color:var(--domain-ink);font-size:.68rem;font-weight:700}
+.v73-domain-overview-view[hidden]{display:none!important}
+.v73-domain-detail-view{min-width:0}
+.v73-domain-back{margin:0 0 12px;padding:7px 0;border:0;background:transparent;color:#2563eb;font:inherit;font-size:.74rem;font-weight:650;cursor:pointer}
+.v73-domain-detail-layout{display:grid;grid-template-columns:minmax(180px,230px) minmax(0,1fr);gap:14px;align-items:start}
+.v73-domain-menu{display:grid;gap:3px;padding:7px;border-radius:8px;background:#f2f4f7}
+.v73-domain-menu button{width:100%;padding:9px 10px;border:0;border-radius:6px;background:transparent;color:#59677c;text-align:left;font:inherit;font-size:.74rem;line-height:1.35;cursor:pointer}
+.v73-domain-menu button:hover{background:#e9edf3}
+.v73-domain-menu button[aria-current="true"]{background:#fff;color:#1d4ed8;font-weight:700;box-shadow:0 1px 3px rgba(25,39,62,.06)}
+.v73-domain-record{min-width:0;padding:14px;border:1px solid #e7eaf0;border-radius:9px;background:#fff;box-shadow:0 3px 12px rgba(25,39,62,.035)}
+.v73-domain-record-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:10px;padding:12px 13px;border-left:3px solid var(--domain-accent);border-radius:7px;background:var(--domain-wash)}
+.v73-domain-record-head h3{margin:2px 0 0;font-size:1rem;color:var(--domain-ink)}
+.v73-domain-record-head>span{padding:4px 7px;border-radius:5px;background:#f1f4f8;color:#64748b;font-size:.67rem;white-space:nowrap}
+.v73-domain-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:8px}
+.v73-domain-fieldset{--field-accent:#3977ce;--field-wash:#f3f7fc;min-width:0;align-self:start;border:1px solid rgba(68,91,125,.11);border-left:3px solid var(--field-accent);border-radius:7px;background:var(--field-wash);overflow:hidden}
+.v73-domain-fieldset.is-ressources{--field-accent:#168b83;--field-wash:#eff8f6}
+.v73-domain-fieldset.is-difficultes{--field-accent:#bd7d1a;--field-wash:#fff8ed}
+.v73-domain-fieldset.is-objectifs{--field-accent:#3977ce;--field-wash:#eff5ff}
+.v73-domain-fieldset.is-criteres{--field-accent:#2187a3;--field-wash:#eff8fa}
+.v73-domain-fieldset.is-moyens{--field-accent:#745bc7;--field-wash:#f5f2fb}
+.v73-domain-fieldset.is-evolution{--field-accent:#23865f;--field-wash:#eff8f3}
+.v73-domain-fieldset>summary{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px 12px;color:#27364b;font-size:.76rem;font-weight:700;cursor:pointer;list-style:none}
+.v73-domain-fieldset[open]>summary{color:var(--field-accent)}
+.v73-domain-fieldset>summary::-webkit-details-marker{display:none}
+.v73-domain-fieldset>summary::after{content:"⌄";color:#7b8797;font-size:.85rem}
+.v73-domain-fieldset[open]>summary::after{content:"⌃"}
+.v73-domain-fieldset>summary span{margin-left:auto;color:#778398;font-size:.68rem;font-weight:500}
+.v73-domain-field-content{display:grid;gap:10px;padding:0 11px 12px}
+.v73-domain-value-list{display:flex;flex-wrap:wrap;gap:6px}
+.v73-domain-value{display:inline-flex;max-width:100%;padding:6px 9px;border:1px solid rgba(68,91,125,.10);border-left:2px solid var(--field-accent);border-radius:6px;background:rgba(255,255,255,.9);color:#39475c;font-size:.73rem;line-height:1.4;overflow-wrap:anywhere}
+.v73-domain-empty{margin:0 0 10px;color:#7b8797;font-size:.74rem}
+.v73-domain-field{display:grid;gap:5px;font-size:.69rem;font-weight:650;color:#66748a}
+.v73-domain,.v73-meeting{border-top:1px solid #dbe3ef}
+.v73-domain:last-child,.v73-meeting:last-child{border-bottom:1px solid #dbe3ef}
+.v73-domain>summary,.v73-meeting>summary{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 4px;cursor:pointer;font-weight:700;color:#172033}
+.v73-domain-fields,.v73-meeting-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:4px 0 14px}
+.v73-domain-field,.v73-meeting-field{display:grid;gap:5px;min-width:0;font-size:.76rem;font-weight:650;color:#334155}
+.v73-domain-field textarea,.v73-meeting-field textarea,.v73-meeting-field input,.v73-meeting-field select,.v73-prop-edit textarea{width:100%;min-width:0;border:1px solid #cbd5e1;border-radius:6px;padding:8px;font:inherit;font-weight:400;color:#172033;background:#fff;resize:vertical}
+.v73-participants{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;border:1px solid #dbe3ef;border-radius:6px;padding:10px}
+.v73-participants legend,.v73-meeting-subtitle{font-size:.78rem;font-weight:700;color:#334155}
+.v73-participants label{display:flex;gap:7px;align-items:center;font-size:.78rem}
+.v73-feedback-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.v73-meeting-subtitle{grid-column:1/-1}
+.v73-meeting-status{font-size:.72rem;font-weight:600;color:#64748b}
+.v73-annual-tracking{padding:12px 0;border-block:1px solid #dbe3ef}
+.v73-annual-tracking h3{margin-top:0}.v73-annual-tracking h4{font-size:.8rem;margin:12px 0 5px}.v73-annual-tracking p,.v73-annual-tracking li{font-size:.78rem;line-height:1.45;color:#475569}
+.v73-prop{align-items:start}.v73-prop-select{padding-top:4px}.v73-prop-edit{display:grid;gap:5px;margin:9px 0;font-size:.74rem;font-weight:650;color:#475569}
+.v73-prop-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.v73-prop-actions .v73-btn{font-size:.76rem;padding:8px 10px}
+.v73-prop-evidence{margin:7px 0;padding-left:18px;color:#64748b;font-size:.73rem;line-height:1.5}
+@media(max-width:1100px){.v73-domain-overview-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.v73-domain-detail-layout{grid-template-columns:minmax(155px,195px) minmax(0,1fr)}}
+@media(max-width:720px){.v73-domain-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.v73-domain-overview{min-height:218px;padding:13px}.v73-domain-detail-layout{grid-template-columns:1fr}.v73-domain-menu{display:flex;overflow-x:auto;scrollbar-width:thin}.v73-domain-menu button{width:auto;flex:0 0 auto;white-space:nowrap}.v73-domain-record{padding:13px}.v73-domain-record-head{display:grid}.v73-domain-fields,.v73-meeting-fields,.v73-feedback-grid{grid-template-columns:1fr}.v73-domain-count{max-width:46%;text-align:right}}
+@media(max-width:460px){.v73-domain-overview-grid{grid-template-columns:1fr}.v73-domain-overview{min-height:190px}}
+`;
+document.head.appendChild(piaLayoutStyle);
+(async()=>{await loadRef(); const boot=async()=>{applySchoolYearDateLimits();addUI();refreshStudents();bindPIAImport();attachPendingPIAImportWatcher();await scrubLegacyPIAFilenames();bindHomeDashboard()}; if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true}); else boot();})();
