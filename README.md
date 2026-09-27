@@ -6,6 +6,12 @@ Le Journalier électronique permet d'organiser les observations, séances, élè
 
 L'application est conçue selon une approche **local-first** : les données de travail sont d'abord gérées localement dans le navigateur, puis synchronisées explicitement vers l'espace OneDrive de l'utilisateur via Microsoft Graph.
 
+## État actuel — V74
+
+L'espace Rapports réunit l'historique des séances, les synthèses sur une période choisie, la préparation de réunion et les exports. Le PIA annuel dispose d'un cycle de suivi explicite, de réunions structurées et d'exports professionnels ou dé-identifiés. Les propositions restent soumises à la validation du professionnel.
+
+V74 conserve les mécanismes existants de stockage, d'authentification et de synchronisation. L'architecture technique et les limites connues sont détaillées dans [`ARCHITECTURE.md`](ARCHITECTURE.md) et [`SECURITY.md`](SECURITY.md).
+
 ---
 
 ## 1. Objectifs
@@ -145,6 +151,7 @@ AppFolder
     ├── profil/
     ├── eleves/
     ├── agenda/
+   ├── pia/{studentId}/pia.json
     └── system/
 ```
 
@@ -183,14 +190,15 @@ Le détail du traitement PIA est documenté dans `ARCHITECTURE.md`.
 
 ## 7. Bibliothèque d'indicateurs et repères
 
-Le dépôt contient une bibliothèque JSON utilisée par l'application :
+Le dépôt contient deux référentiels JSON utilisés par l'application :
 
 ```text
 public/
-└── bibliotheque_indicateurs_v0_5_1.json
+├── bibliotheque_indicateurs_v0_5_1.json
+└── referentiel_pia_v73_0_3.json
 ```
 
-Cette bibliothèque participe au mécanisme de recherche et de rapprochement entre les observations, objectifs, matières et indicateurs.
+La bibliothèque d'indicateurs participe au rapprochement entre observations, objectifs, matières et indicateurs. Le référentiel PIA fournit les règles et seuils utilisés par le runtime V73.
 
 Le fonctionnement pédagogique détaillé est décrit dans `ARCHITECTURE.md`.
 
@@ -298,15 +306,31 @@ La première analyse CodeQL réalisée après son activation n'a signalé aucune
 ```text
 .
 ├── .github/
+│   ├── dependabot.yml
 │   └── workflows/
 │       ├── ci.yml
 │       └── main.yml
 ├── public/
-│   └── bibliotheque_indicateurs_v0_5_1.json
+│   ├── bibliotheque_indicateurs_v0_5_1.json
+│   └── referentiel_pia_v73_0_3.json
+├── docs/
+│   └── v74-design/
+│       ├── CAHIER_DES_CHARGES_V74_UX.md
+│       ├── maquette-v74-10.html
+│       ├── agenda_vue_journalière.jpg
+│       ├── précisionDétails.jpg
+│       ├── référence visuelle.jpg
+│       ├── vue_PIA.jpg
+│       ├── vue_historique.jpg
+│       └── vue_mensuelle.jpg
 ├── src/
 │   ├── msal-bridge.js
-│   └── msal-redirect.js
+│   ├── msal-redirect.js
+│   └── v73/
+│       ├── v73-migration.js
+│       └── v73-runtime.js
 ├── ARCHITECTURE.md
+├── AUDIT_V74_PHASE0.md
 ├── CHANGELOG.md
 ├── README.md
 ├── SECURITY.md
@@ -317,7 +341,7 @@ La première analyse CodeQL réalisée après son activation n'a signalé aucune
 └── vite.config.js
 ```
 
-Le code applicatif principal se trouve actuellement principalement dans `index.html`.
+Le cœur historique et les écrans principaux se trouvent dans `index.html`. Le runtime PIA et la migration legacy sont séparés dans `src/v73/`.
 
 Cette organisation reflète l'état actuel du dépôt ; elle ne constitue pas nécessairement l'organisation cible d'une future refactorisation.
 
@@ -359,6 +383,10 @@ Document consacré aux principes et contrôles de sécurité du dépôt et de l'
 ### `CHANGELOG.md`
 
 Historique lisible des évolutions importantes du projet.
+
+### Design V74
+
+Le cahier d’intégration actif est [CAHIER_DES_CHARGES_V74_UX.md](docs/v74-design/CAHIER_DES_CHARGES_V74_UX.md). La [maquette interactive](docs/v74-design/maquette-v74-10.html) utilise uniquement des données de démonstration. Les captures de référence conservées sont [la vue générale](docs/v74-design/r%C3%A9f%C3%A9rence%20visuelle.jpg), [l’historique](docs/v74-design/vue_historique.jpg), [le PIA](docs/v74-design/vue_PIA.jpg), [l’agenda mensuel](docs/v74-design/vue_mensuelle.jpg), [l’agenda journalier](docs/v74-design/agenda_vue_journali%C3%A8re.jpg) et [les détails de précision](docs/v74-design/pr%C3%A9cisionD%C3%A9tails.jpg). Les prompts de travail antérieurs et la proposition remplacée ont été retirés pour éviter plusieurs sources de vérité.
 
 ---
 

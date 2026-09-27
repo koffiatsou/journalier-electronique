@@ -1,6 +1,6 @@
-# Architecture du Journalier électronique
+# Architecture du Journalier électronique — V74
 
-> Document de référence technique — V72
+> Document de référence technique — état du dépôt au 27 septembre 2026
 >
 > Ce document décrit l'architecture actuellement présente dans le dépôt.
 > Les évolutions envisagées sont explicitement séparées de l'architecture actuelle.
@@ -79,7 +79,7 @@ L'application est actuellement :
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                 Journalier — SPA / V72                      │
+│          Journalier — socle V72, extensions V73/V74          │
 │                                                             │
 │  Interface                                                  │
 │     │                                                       │
@@ -126,25 +126,42 @@ journalier-electronique/
 ├── package.json
 ├── package-lock.json
 ├── README.md
+├── ARCHITECTURE.md
+├── SECURITY.md
+├── CHANGELOG.md
+├── AUDIT_V74_PHASE0.md
+├── docs/
+│   └── v74-design/
+│       ├── CAHIER_DES_CHARGES_V74_UX.md
+│       ├── maquette-v74-10.html
+│       ├── agenda_vue_journalière.jpg
+│       ├── précisionDétails.jpg
+│       ├── référence visuelle.jpg
+│       ├── vue_PIA.jpg
+│       ├── vue_historique.jpg
+│       └── vue_mensuelle.jpg
 │
 ├── src/
 │   ├── msal-bridge.js
-│   └── msal-redirect.js
+│   ├── msal-redirect.js
+│   └── v73/
+│       ├── v73-migration.js
+│       └── v73-runtime.js
 │
 ├── public/
-│   └── bibliotheque_indicateurs_v0_5_1.json
+│   ├── bibliotheque_indicateurs_v0_5_1.json
+│   └── referentiel_pia_v73_0_3.json
 │
 └── .github/
-    └── workflows/
-        ├── ci.yml
-        └── main.yml
+     ├── dependabot.yml
+     └── workflows/
+          ├── ci.yml
+          └── main.yml
 ```
 
 ### Particularité importante
 
-L'essentiel de la logique applicative actuelle est encore regroupé dans `index.html`.
-
-Les fichiers `src/` contiennent principalement les éléments liés à l'intégration MSAL/redirection.
+L'essentiel du cœur historique et de l'interface reste dans `index.html`. `src/v73/v73-runtime.js` porte le runtime PIA et `src/v73/v73-migration.js` la migration legacy; les autres modules `src/` prennent en charge l'intégration MSAL/redirection.
 
 Cette organisation doit être prise en compte lors des audits futurs : il ne faut pas supposer que la logique métier est déjà répartie dans une architecture modulaire classique.
 
@@ -506,6 +523,9 @@ Journalier/
 │
 ├── agenda/
 │   └── agenda.json
+│
+├── pia/
+│   └── <studentId>/pia.json
 │
 └── system/
     └── sync.json
@@ -1106,3 +1126,11 @@ La zone `Accès rapide`, redondante avec la navigation principale, est remplacé
 - mémos personnels.
 
 Les tendances sont des fréquences de séances documentées, pas des scores de difficulté.
+
+## 30. V74 — Rapports et cycle PIA
+
+L'espace Rapports organise quatre usages : l'historique des séances, la synthèse sur une période libre, la préparation de réunion et les exports. L'historique conserve le résumé Q2–Q6 et les actions existantes de modification et de suppression; les synthèses et préparations de réunion réutilisent les séances enregistrées et le moteur de synthèse.
+
+Le runtime PIA présente les cinq domaines, les propositions et leurs décisions, ainsi que les réunions structurées et le suivi annuel. Le cycle géré par le runtime est `EN_CONSTRUCTION` → `EN_VIGUEUR` → `EN_REEVALUATION` → `EN_VIGUEUR` → `FINALISE`; l'ancien état `ACTIF` reste reconnu pour compatibilité.
+
+Les exports de séance, de synthèse, de réunion et de PIA utilisent les formats de restitution prévus par l'application. La dé-identification est appliquée aux exports de modèle; elle ne transforme pas les données nominatives du PIA professionnel. Le build Vite valide la compilation, mais ne remplace pas les essais authentifiés Entra/Graph ni les tests avec des données de migration.

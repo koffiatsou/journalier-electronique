@@ -1,6 +1,8 @@
 # Security
 
-> Référence de sécurité du Journalier électronique — état au 24 septembre 2026.
+> Référence de sécurité du Journalier électronique — état documentaire au 27 septembre 2026.
+
+Les contrôles décrits ici portent sur le code et la configuration versionnés. Les paramètres du tenant Entra, les règles actives du dépôt GitHub et les résultats courants des alertes GitHub ne sont pas vérifiables à partir du seul dépôt; toute mention de ces paramètres externes doit être lue avec la date de leur dernier contrôle effectif.
 
 ## V73.1.3 — contrôle de la migration legacy
 
@@ -24,6 +26,12 @@ La migration des anciennes données est conçue comme une opération **non destr
 Le pont comprend notamment les fonctions Graph, les validateurs/normaliseurs, le DataStore et les fonctions de synchronisation V72 nécessaires à l'import.
 
 Cette limitation réduit la surface exposée au module et évite de contourner la séparation de portée JavaScript.
+
+## V74 — rapports, PIA et exports
+
+Les évolutions V74 réutilisent le DataStore et les mécanismes de synchronisation existants; elles n'ajoutent ni backend ni permission Graph. Les propositions PIA restent à valider par le professionnel. Les exports dé-identifiés sont une sortie distincte des exports professionnels nominatifs et doivent être ré-audités si le schéma PIA ou les données exportées évoluent.
+
+Toute modification de `index.html` doit déclencher le recalcul des hashes SHA-256 des scripts inline et la vérification de la CSP. Un build réussi ne vérifie pas à lui seul le comportement de la CSP dans un navigateur.
 
 ### CSP
 
@@ -118,6 +126,7 @@ AppFolder
     ├── profil/
     ├── eleves/
     ├── agenda/
+    ├── pia/{studentId}/pia.json
     └── system/
 ```
 
@@ -204,16 +213,14 @@ Aucun domaine personnalisé n'est actuellement utilisé.
 
 ### Protection de `main`
 
-La branche `main` est protégée par un Ruleset actif.
-
-Les règles actuellement configurées comprennent notamment :
+Les règles de protection et Rulesets sont des paramètres externes à Git et ne sont pas vérifiables dans ce dépôt. Lors du dernier contrôle externe consigné, elles imposaient notamment :
 
 - Pull Request obligatoire avant fusion ;
 - vérification du statut CI ;
 - restriction des suppressions ;
 - blocage des force pushes.
 
-Le contrôle CI `build` est requis avant la fusion.
+Revalider ces paramètres dans GitHub avant de les considérer comme actifs.
 
 ---
 
