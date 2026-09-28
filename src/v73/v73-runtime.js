@@ -1095,11 +1095,18 @@ function render(pia){
 async function savePia(pia,cloud=true,notify=true){
   const ds=window.JournalierDataStore; const st=ds.getState(); st.meta??={}; st.meta.piaRecords??={}; st.meta.piaImports??={}; st.meta.piaRecords[pia.studentId]=pia;
   if(pia.sourceContinuity?.present) st.meta.piaImports[pia.studentId]=pia.sourceContinuity;
+  window.JournalierMigrationBridge?.v72MarkPiaPending?.(st,pia.studentId);
   await ds.persistState(st);
   if(cloud && window.JournalierCloud?.savePia) {
-    try{await window.JournalierCloud.savePia(pia); if(notify)window.showAppToast?.("✓ PIA enregistré localement et dans OneDrive.","success",4000);}
-    catch(e){if(notify)window.showAppToast?.("✓ PIA enregistré localement. OneDrive sera réessayé depuis la synchronisation.","info",4500);}
+    try{
+      await window.JournalierCloud.savePia(pia);
+      window.JournalierMigrationBridge?.v72MarkPiaSynced?.(st,pia.studentId,pia);
+      await ds.persistState(st);
+      if(notify)window.showAppToast?.("✓ PIA enregistré localement et dans OneDrive.","success",4000);
+    }
+    catch(e){if(notify)window.showAppToast?.("✓ PIA enregistré localement. Renvoi automatique vers OneDrive dès que possible.","info",4500);}
   }
+  window.journalierScheduleAutoSync?.();
 }
 async function loadRef(){
   try{V73.referential=await fetch("./referentiel_pia_v73_0_3.json",{cache:"no-store"}).then(r=>r.ok?r.json():null);}catch(_){V73.referential=null;}
