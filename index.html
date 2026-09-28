@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-dmDANSkUCN1vTR2driHkhXds/cGAOXJItIeKSP5Yf/4=' 'sha256-wZ7kd4qD2IsxA+XKvfGGE8SG7CAohlTw5A0TEqR3qz4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net https://*.files.1drv.com https://*.sharepoint.com; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-r71q19ylX2SSs9dktu0dGYcJSzEwLh9Cq16Mm94MHL0=' 'sha256-V7IwbYVwQ7MfofutoHZQDCW98CFH7hhe54emdOQQO54=' 'sha256-mex3uLCwGA7IHJXjmRyqNjcJP8UR7PZiP4oSK/EoZG8='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net https://*.files.1drv.com https://*.sharepoint.com; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3137,7 +3137,6 @@ loadIndicatorLibrary();
         if(document.hidden)return;
         if(JournalierSecurity.ready&&Date.now()-journalierLastActivity>=JOURNALIER_AUTOLOCK_MS)journalierAutoLockNow();
         else if(JournalierSecurity.ready)journalierScheduleAutoLock();
-        if(JournalierSecurity.ready)journalierScheduleAutoSync?.(800);
     });
 
     function securePersistState(){
@@ -7236,26 +7235,25 @@ const MS_CONFIG={clientId:"65c3db78-9bad-4a08-8eac-404b83e368cb",tenantId:"96c46
 const GRAPH_SCOPES=["Files.ReadWrite.AppFolder"], GRAPH_BASE="https://graph.microsoft.com/v1.0", GRAPH_ROOT_FOLDER="Journalier", GRAPH_APP_ROOT_PATH="/me/drive/special/approot";
 let msalInstance=null, msAccount=null, msalReadyPromise=null;
 
-// Synchronisation automatique bidirectionnelle : déclenchée à chaque sauvegarde locale,
-// au retour en ligne/en premier plan, et périodiquement, en réutilisant syncPendingLocalChangesV72.
-let journalierAutoSyncTimer=null, journalierAutoSyncRunning=false, journalierPeriodicSyncTimer=null;
-function journalierScheduleAutoSync(delay=2500){
+// La synchronisation automatique attend 30 s et reste suspendue dans la fenêtre Microsoft.
+let journalierAutoSyncTimer=null, journalierAutoSyncRunning=false;
+function journalierMicrosoftModalOpen(){
+    const modal=document.getElementById('ms-connection-modal');
+    return Boolean(modal&&modal.style.display!=='none');
+}
+function journalierScheduleAutoSync(delay=30000){
   if(!msAccount||!JournalierSecurity.ready||!navigator.onLine)return;
   if(journalierAutoSyncTimer)clearTimeout(journalierAutoSyncTimer);
   journalierAutoSyncTimer=setTimeout(()=>{journalierAutoSyncTimer=null;journalierRunAutoSync();},delay);
 }
 async function journalierRunAutoSync(){
-  if(journalierAutoSyncRunning||!msAccount||!JournalierSecurity.ready||!navigator.onLine)return;
+    if(journalierAutoSyncRunning||!msAccount||!JournalierSecurity.ready||!navigator.onLine||journalierMicrosoftModalOpen())return;
   journalierAutoSyncRunning=true;
   try{await syncPendingLocalChangesV72({silent:true});}
   catch(e){console.warn('Journalier — synchronisation automatique impossible.',e);}
   finally{journalierAutoSyncRunning=false;}
 }
-function journalierStartPeriodicSync(){
-  if(journalierPeriodicSyncTimer)return;
-  journalierPeriodicSyncTimer=setInterval(()=>journalierScheduleAutoSync(0),180000);
-}
-window.addEventListener('online',()=>journalierScheduleAutoSync(500));
+window.addEventListener('online',()=>journalierScheduleAutoSync(30000));
 window.journalierScheduleAutoSync=journalierScheduleAutoSync;
 function msConfigReady(){return Boolean(MS_CONFIG.clientId&&MS_CONFIG.tenantId&&MS_CONFIG.redirectUri);}
 function setCloudStatus(message,type='info'){const el=document.getElementById('ms-cloud-status');if(el){el.className='ms-status-box '+type;el.textContent=message;}}
@@ -7291,7 +7289,7 @@ async function initMicrosoftAuth(){
       const authority='https://login.microsoftonline.com/'+MS_CONFIG.tenantId;
       msalInstance=await mod.createStandardPublicClientApplication({auth:{clientId:MS_CONFIG.clientId,authority,redirectUri:MS_CONFIG.redirectUri,postLogoutRedirectUri:MS_CONFIG.postLogoutRedirectUri},cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:false}});
       const accounts=msalInstance.getAllAccounts();msAccount=accounts.length?accounts[0]:null;
-      if(msAccount&&!journalierLockedByTimeout){try{await activateJournalierAccount(msAccount);journalierStartPeriodicSync();journalierScheduleAutoSync(1200);}catch(err){JournalierSecurity.lock();msAccount=null;setCloudStatus('⚠️ Espace local sécurisé indisponible : '+(err?.message||String(err)),'error');}}
+    if(msAccount&&!journalierLockedByTimeout){try{await activateJournalierAccount(msAccount);}catch(err){JournalierSecurity.lock();msAccount=null;setCloudStatus('⚠️ Espace local sécurisé indisponible : '+(err?.message||String(err)),'error');}}
       updateMicrosoftUI();return true;
     }catch(err){console.error('Initialisation Microsoft impossible.');setCloudStatus('Impossible d’initialiser Microsoft.','error');return false;}
   })();return msalReadyPromise;
@@ -7302,7 +7300,7 @@ async function startMicrosoftLogin(){
     if(status){status.className='ms-status-box';status.textContent='Préparation de la connexion Microsoft…';}
     if(!await initMicrosoftAuth())throw new Error('MSAL n’est pas initialisé.');
     const response=await msalInstance.loginPopup({scopes:MS_CONFIG.scopes,redirectUri:MS_CONFIG.redirectUri,prompt:'select_account'});
-    JournalierSecurity.lock();msAccount=response.account;await activateJournalierAccount(msAccount);journalierResetAutoLockAfterUnlock?.();updateMicrosoftUI();journalierStartPeriodicSync();
+    JournalierSecurity.lock();msAccount=response.account;await activateJournalierAccount(msAccount);journalierResetAutoLockAfterUnlock?.();updateMicrosoftUI();
     try{const imported=await hydrateMicrosoftDataIfLocalEmpty();window.JournalierV73?.refreshStudents?.();window.JournalierV73?.renderDashboard?.();if(imported?.imported)showAppToast(`Connexion réussie : ${imported.students||0} élève(s), ${imported.sessions||0} séance(s) et l’agenda ont été récupérés.`,'success');else showAppToast('Connexion Microsoft réussie.','success');}
     catch(_){setCloudStatus('✓ Compte Microsoft connecté.\n⚠️ Les données OneDrive n’ont pas pu être récupérées automatiquement.','error');showAppToast('Connexion réussie, mais récupération des données OneDrive impossible.','error',5000);}
     }catch(err){journalierClearAutoLockTimers?.();JournalierSecurity.lock();msAccount=null;window.JournalierV73?.renderDashboard?.();const msg=err?.errorMessage||err?.message||'Erreur Microsoft inconnue';const code=err?.errorCode||err?.code||'';const detail=code?`[${code}] ${msg}`:msg;if(status){status.className='ms-status-box error';status.textContent='Connexion non effectuée : '+detail;}setCloudStatus('Détail Microsoft : '+detail,'error');showAppToast('La connexion Microsoft n’a pas abouti.','error',6500);}
@@ -7310,7 +7308,7 @@ async function startMicrosoftLogin(){
 }
 async function disconnectMicrosoft(){
   const btn=document.getElementById('ms-logout-action');if(btn)btn.disabled=true;
-    try{if(!msalInstance)await initMicrosoftAuth();const account=msAccount||msalInstance?.getAllAccounts?.()[0]||null;if(msalInstance&&account)await msalInstance.logoutPopup({account,postLogoutRedirectUri:MS_CONFIG.postLogoutRedirectUri});journalierClearAutoLockTimers?.();JournalierSecurity.lock();msAccount=null;journalierLockedByTimeout=false;if(journalierPeriodicSyncTimer){clearInterval(journalierPeriodicSyncTimer);journalierPeriodicSyncTimer=null;}if(journalierAutoSyncTimer){clearTimeout(journalierAutoSyncTimer);journalierAutoSyncTimer=null;}updateStudentDropdowns?.();renderStudentsView?.();renderAgenda?.();updateStats?.();window.JournalierV73?.renderDashboard?.();updateMicrosoftUI();setCloudStatus('Microsoft déconnecté. Les données locales restent chiffrées et sont inaccessibles sans réauthentification.','success');showAppToast('Déconnexion Microsoft effectuée.','success');}
+    try{if(!msalInstance)await initMicrosoftAuth();const account=msAccount||msalInstance?.getAllAccounts?.()[0]||null;if(msalInstance&&account)await msalInstance.logoutPopup({account,postLogoutRedirectUri:MS_CONFIG.postLogoutRedirectUri});journalierClearAutoLockTimers?.();JournalierSecurity.lock();msAccount=null;journalierLockedByTimeout=false;if(journalierAutoSyncTimer){clearTimeout(journalierAutoSyncTimer);journalierAutoSyncTimer=null;}updateStudentDropdowns?.();renderStudentsView?.();renderAgenda?.();updateStats?.();window.JournalierV73?.renderDashboard?.();updateMicrosoftUI();setCloudStatus('Microsoft déconnecté. Les données locales restent chiffrées et sont inaccessibles sans réauthentification.','success');showAppToast('Déconnexion Microsoft effectuée.','success');}
   catch(err){const msg=err?.errorMessage||err?.message||'Erreur lors de la déconnexion Microsoft.';if(btn)btn.disabled=false;setCloudStatus('Déconnexion Microsoft non confirmée : '+msg,'error');showAppToast('La déconnexion Microsoft n’a pas abouti.','error',4500);}
   finally{updateMicrosoftUI();}
 }
@@ -7732,11 +7730,61 @@ function v72Classify(previous,localFp,remoteFp,remoteMissing=false){
   if(rc)return'remote-changed';
   return'synced';
 }
-async function diagnoseSyncManagerV72(opts={}){if(!msAccount)throw new Error('Connectez d’abord votre compte Microsoft.');const b=document.getElementById('ms-sync-diagnose-action');if(b)b.disabled=true;if(!opts.silent)setCloudStatus('Analyse de la synchronisation en cours…','');try{const state=DataStore.state,students=DataStore.getStudents(),sessions=DataStore.getSessions(),agenda=DataStore.getAgenda(),r=v72EnsureSyncRegistry(state),details=[];let missing=0;
+async function v72DiscoverRemoteEntities(){
+  // Un appareil ayant déjà des données locales ne relance jamais l'hydratation complète :
+  // sans ce balayage des dossiers distants, les élèves/séances ajoutés ailleurs restent invisibles ici.
+  const state=DataStore.state,r=v72EnsureSyncRegistry(state);
+  let discoveredStudents=0,discoveredSessions=0;
+  const structure=await graphEnsureJournalierStructure();
+  const children=await graphListChildren(structure.eleves.id);
+  for(const folder of (children?.value||[])){
+    if(!folder?.folder)continue;
+    const folderName=folder.name;
+    const localStudentIds=new Set(DataStore.getStudents().map(s=>String(s.studentId)));
+    if(!localStudentIds.has(folderName)){
+      try{
+        const profile=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/eleves/${encodeURIComponent(folderName)}/profil.json`);
+        validateRemoteStudent(profile.json);
+        const student=secureNormalizeStudent(profile.json);
+        student.ownerId=state.ownerId;
+        if(!student.studentId)student.studentId=folderName;
+        state.students.push(student);
+        const fp=syncFingerprint(syncWithoutVolatileMeta(student));
+        r.students[student.studentId]={remoteId:profile.item.id,eTag:profile.item.eTag||null,fingerprint:fp,remoteFingerprint:fp,lastCheckedAt:new Date().toISOString(),status:'synced'};
+        discoveredStudents++;
+      }catch(e){if(!String(e.message||e).includes('Graph 404'))throw e; continue;}
+    }
+    try{
+      const sessionsFolder=await graphGetByPath(`${GRAPH_ROOT_FOLDER}/eleves/${encodeURIComponent(folderName)}/seances`);
+      const sessionItems=await graphListChildren(sessionsFolder.id);
+      const localSessionIds=new Set(DataStore.getSessions().map(s=>String(s.id)));
+      for(const item of (sessionItems?.value||[])){
+        if(!item?.file||!String(item.name||'').toLowerCase().endsWith('.json'))continue;
+        const sessionId=item.name.replace(/\.json$/i,'');
+        if(localSessionIds.has(sessionId))continue;
+        try{
+          const raw=await graphReadItemByIdWithJson(item.id);
+          validateRemoteSession(raw.json);
+          const session=secureNormalizeSession(raw.json,DataStore.getStudents());
+          session.ownerId=state.ownerId;
+          state.sessions.push(session);
+          const fp=syncFingerprint(syncWithoutVolatileMeta(session));
+          r.sessions[session.id]={remoteId:item.id,eTag:item.eTag||null,fingerprint:fp,remoteFingerprint:fp,studentId:session.identification?.eleveId||folderName,lastCheckedAt:new Date().toISOString(),status:'synced'};
+          discoveredSessions++;
+        }catch(e){console.warn('Journalier — séance distante ignorée (découverte)',item.name,e);}
+      }
+    }catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;}
+  }
+  if(discoveredStudents||discoveredSessions){state.syncRegistry=r;v72RecountPending(state);securePersistState();}
+  return {discoveredStudents,discoveredSessions};
+}
+async function diagnoseSyncManagerV72(opts={}){if(!msAccount)throw new Error('Connectez d’abord votre compte Microsoft.');const b=document.getElementById('ms-sync-diagnose-action');if(b)b.disabled=true;if(!opts.silent)setCloudStatus('Analyse de la synchronisation en cours…','');try{
+  const discovery=await v72DiscoverRemoteEntities();
+  const state=DataStore.state,students=DataStore.getStudents(),sessions=DataStore.getSessions(),agenda=DataStore.getAgenda(),r=v72EnsureSyncRegistry(state),details=[];let missing=0;
   for(const student of students){const path=v72PathForStudent(student),lf=syncFingerprint(syncWithoutVolatileMeta(student));try{const {item,json}=await graphReadItemWithJson(path),rf=syncFingerprint(syncWithoutVolatileMeta(json)),status=v72Classify(r.students[student.studentId],lf,rf,false);r.students[student.studentId]={...r.students[student.studentId],remoteId:item.id,eTag:item.eTag||null,fingerprint:lf,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status};if(status!=='synced')details.push(`• élève ${student.nom||student.studentId} : ${status}`);}catch(e){if(String(e.message||e).includes('Graph 404')){missing++;r.students[student.studentId]={...r.students[student.studentId],remoteId:null,eTag:null,fingerprint:lf,remoteFingerprint:null,lastCheckedAt:new Date().toISOString(),status:'local-changed'};details.push(`• élève ${student.nom||student.studentId} : local-changed (distant absent)`);}else throw e;}}
   for(const session of sessions){const path=v72PathForSession(session,students);if(!path)continue;const lf=syncFingerprint(syncWithoutVolatileMeta(session));try{const {item,json}=await graphReadItemWithJson(path),rf=syncFingerprint(syncWithoutVolatileMeta(json)),status=v72Classify(r.sessions[session.id],lf,rf,false),studentId=session.identification?.eleveId||syncFindStudentByName(students,session.identification?.eleve)?.studentId;r.sessions[session.id]={...r.sessions[session.id],remoteId:item.id,eTag:item.eTag||null,fingerprint:lf,remoteFingerprint:rf,studentId,lastCheckedAt:new Date().toISOString(),status};if(status!=='synced')details.push(`• séance ${session.id} / ${session.identification?.eleve||studentId} : ${status}`);}catch(e){if(String(e.message||e).includes('Graph 404')){missing++;const studentId=session.identification?.eleveId||syncFindStudentByName(students,session.identification?.eleve)?.studentId;r.sessions[session.id]={...r.sessions[session.id],remoteId:null,eTag:null,fingerprint:lf,remoteFingerprint:null,studentId,lastCheckedAt:new Date().toISOString(),status:'local-changed'};details.push(`• séance ${session.id} / ${session.identification?.eleve||studentId} : local-changed (distant absent)`);}else throw e;}}
   try{const {item,json}=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/agenda/agenda.json`),lf=syncFingerprint(syncWithoutVolatileMeta(agenda)),rf=syncFingerprint(syncWithoutVolatileMeta(json)),status=v72Classify(r.agenda,lf,rf,false);r.agenda={...r.agenda,remoteId:item.id,eTag:item.eTag||null,fingerprint:lf,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status};if(status!=='synced')details.push(`• agenda : ${status}`);}catch(e){if(String(e.message||e).includes('Graph 404')){missing++;const lf=syncFingerprint(syncWithoutVolatileMeta(agenda));r.agenda={...r.agenda,remoteId:null,eTag:null,fingerprint:lf,remoteFingerprint:null,lastCheckedAt:new Date().toISOString(),status:'local-changed'};details.push('• agenda : local-changed (distant absent)');}else throw e;}
-  state.syncRegistry=r;const counts=v72StatusCount(r);state.sync.status=counts.conflict?'conflict':(counts.local?'pending':'synced');v72RecountPending(state);securePersistState();const lines=['✓ Analyse terminée.',`• Éléments synchronisés : ${counts.synced}`,`• Modifications locales : ${counts.local}`,`• Modifications distantes : ${counts.remote}`,`• Conflits : ${counts.conflict}`,`• Distants absents : ${missing}`,'','Aucune écriture distante effectuée.'];if(details.length)lines.push('','Détails :',...details.slice(0,15));if(!opts.silent)setCloudStatus(lines.join('\n'),counts.conflict?'error':'success');updateMicrosoftUI();}catch(e){if(!opts.silent)setCloudStatus('⚠️ '+(e.message||e),'error');else throw e;}finally{if(b)b.disabled=!msAccount;}}
+  state.syncRegistry=r;const counts=v72StatusCount(r);state.sync.status=counts.conflict?'conflict':(counts.local?'pending':'synced');v72RecountPending(state);securePersistState();const lines=['✓ Analyse terminée.',`• Élève(s) découvert(s) sur OneDrive : ${discovery.discoveredStudents}`,`• Séance(s) découverte(s) sur OneDrive : ${discovery.discoveredSessions}`,`• Éléments synchronisés : ${counts.synced}`,`• Modifications locales : ${counts.local}`,`• Modifications distantes : ${counts.remote}`,`• Conflits : ${counts.conflict}`,`• Distants absents : ${missing}`,'','Aucune écriture distante effectuée.'];if(details.length)lines.push('','Détails :',...details.slice(0,15));if(!opts.silent)setCloudStatus(lines.join('\n'),counts.conflict?'error':'success');if(discovery.discoveredStudents||discovery.discoveredSessions){renderStudentsView?.();renderAgenda?.();updateStats?.();updateStudentDropdowns?.();window.JournalierV73?.refreshStudents?.();window.JournalierV73?.renderDashboard?.();}updateMicrosoftUI();}catch(e){if(!opts.silent)setCloudStatus('⚠️ '+(e.message||e),'error');else throw e;}finally{if(b)b.disabled=!msAccount;}}
 async function v72SyncStudent(student,reg){const structure=await graphEnsureJournalierStructure();let folder;const path=`${GRAPH_ROOT_FOLDER}/eleves/${student.studentId}`;try{folder=await graphGetByPath(path);}catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;folder=await graphCreateChildFolder(structure.eleves.id,String(student.studentId));}const item=await graphGetByPath(`${path}/profil.json`).catch(()=>null);const written=await graphWriteJsonWithETag(folder.id,'profil.json',student,item?.eTag||reg?.eTag||null);return await graphReadItemWithJson(`${path}/profil.json`);}
 async function v72SyncSession(session,reg,students){const studentId=reg?.studentId||session.identification?.eleveId||syncFindStudentByName(students,session.identification?.eleve)?.studentId;if(!studentId)throw new Error(`Élève introuvable pour la séance ${session.id}.`);const structure=await graphEnsureJournalierStructure();const studentPath=`${GRAPH_ROOT_FOLDER}/eleves/${studentId}`;let studentFolder;try{studentFolder=await graphGetByPath(studentPath);}catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;studentFolder=await graphCreateChildFolder(structure.eleves.id,String(studentId));}let sessionsFolder;try{sessionsFolder=await graphGetByPath(`${studentPath}/seances`);}catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;sessionsFolder=await graphCreateChildFolder(studentFolder.id,'seances');}const path=`${studentPath}/seances/${session.id}.json`;const existing=await graphGetByPath(path).catch(()=>null);const written=await graphWriteJsonWithETag(sessionsFolder.id,`${session.id}.json`,session,existing?.eTag||reg?.eTag||null);return await graphReadItemWithJson(path);}
 async function v72SyncAgenda(agenda,reg){const structure=await graphEnsureJournalierStructure();const existing=await graphGetByPath(`${GRAPH_ROOT_FOLDER}/agenda/agenda.json`).catch(()=>null);await graphWriteJsonWithETag(structure.agenda.id,'agenda.json',agenda,existing?.eTag||reg?.eTag||null);return await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/agenda/agenda.json`);}
