@@ -1,6 +1,6 @@
 # Architecture du Journalier électronique — V74
 
-> Document de référence technique — état du dépôt au 27 septembre 2026
+> Document de référence technique — état du dépôt au 28 septembre 2026
 >
 > Ce document décrit l'architecture actuellement présente dans le dépôt.
 > Les évolutions envisagées sont explicitement séparées de l'architecture actuelle.
@@ -583,6 +583,7 @@ avec des entrées pour :
 students
 sessions
 agenda
+pia
 ```
 
 Chaque entrée peut conserver notamment :
@@ -593,6 +594,10 @@ Chaque entrée peut conserver notamment :
 - fingerprint distant ;
 - date du dernier contrôle ;
 - état de synchronisation.
+
+Le déclenchement de la synchronisation n'est plus strictement manuel. Une synchronisation est planifiée automatiquement (avec un court délai) après chaque sauvegarde locale, au retour de l'application au premier plan, à la reconnexion réseau, à la connexion Microsoft et selon un cycle périodique en arrière-plan tant qu'un compte est connecté. Ce déclenchement automatique réutilise le même parcours que la synchronisation manuelle et reste soumis aux mêmes règles de conflit : aucune écriture distante n'est effectuée si un conflit est détecté.
+
+La synchronisation n'est plus unidirectionnelle. Les entrées distantes modifiées depuis le dernier contrôle (`remote-changed`) sont téléchargées et fusionnées dans l'état local lorsqu'aucun conflit n'est détecté, avant l'envoi des modifications locales en attente. La réimportation complète reste disponible mais n'est plus l'unique moyen de récupérer des données créées sur un autre appareil.
 
 ---
 

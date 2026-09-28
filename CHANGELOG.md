@@ -21,6 +21,8 @@ Historique synthétique des évolutions importantes. Les détails d'architecture
 - Panneau Export affiché au-dessus des vues voisines; cartes Proposition harmonisées sur une surface neutre avec accent/badge d’état.
 - Pastille du niveau Q2 séparée du texte de l’observation dans la liste afin d’améliorer le balayage visuel.
 - Ajustements de l'agenda et du serveur local Codespaces.
+- Synchronisation OneDrive automatique et bidirectionnelle : déclenchement après chaque sauvegarde locale, au retour au premier plan, à la reconnexion réseau, à la connexion Microsoft et par cycle périodique; les modifications distantes non conflictuelles sont désormais rapatriées automatiquement en plus de l'envoi des modifications locales.
+- Suivi des PIA intégré au registre de synchronisation (`syncRegistry.pia`) : un envoi échoué vers OneDrive est désormais réessayé automatiquement au lieu de rester bloqué en local.
 
 ### Documentation
 - Références UX regroupées dans `docs/v74-design/` avec un cahier d’intégration actif, une maquette interactive et six captures de référence.
@@ -30,6 +32,7 @@ Historique synthétique des évolutions importantes. Les détails d'architecture
 - Réutilisation du DataStore, de Graph/OneDrive et des permissions existantes; aucun backend ajouté.
 - Compatibilité conservée avec l'ancien état PIA `ACTIF`.
 - Hashes CSP recalculés après modification des scripts inline.
+- Hashes CSP recalculés une seconde fois après l'ajout de la synchronisation automatique (scripts inline #2 et #3 modifiés).
 
 ### Validation et limites
 - `npm run build` passe.

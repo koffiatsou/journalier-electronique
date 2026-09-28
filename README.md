@@ -4,7 +4,7 @@
 
 Le Journalier électronique permet d'organiser les observations, séances, élèves et agendas, d'exploiter une bibliothèque d'indicateurs et de repères, et de produire des éléments utiles au suivi pédagogique.
 
-L'application est conçue selon une approche **local-first** : les données de travail sont d'abord gérées localement dans le navigateur, puis synchronisées explicitement vers l'espace OneDrive de l'utilisateur via Microsoft Graph.
+L'application est conçue selon une approche **local-first** : les données de travail sont d'abord gérées localement dans le navigateur, puis synchronisées automatiquement vers l'espace OneDrive de l'utilisateur via Microsoft Graph (envoi et rapatriement bidirectionnel, avec repli manuel possible).
 
 ## État actuel — V74
 
@@ -159,10 +159,13 @@ Les données métier ne sont pas écrites arbitrairement à la racine du OneDriv
 
 La synchronisation est gérée séparément du modèle pédagogique par le `SyncManager`.
 
+Elle est déclenchée automatiquement après chaque sauvegarde locale, au retour au premier plan, à la reconnexion réseau, à la connexion Microsoft et par cycle périodique en arrière-plan; les actions manuelles (« Analyser », « Synchroniser ») restent disponibles et suivent le même parcours.
+
 Elle comprend notamment :
 
 - la comparaison entre données locales et distantes ;
-- le suivi des modifications ;
+- le suivi des modifications, y compris pour les PIA ;
+- le rapatriement automatique des modifications distantes non conflictuelles avant l'envoi des modifications locales ;
 - l'utilisation des ETags ;
 - la détection des conflits HTTP 412 ;
 - la validation des données JSON ;
