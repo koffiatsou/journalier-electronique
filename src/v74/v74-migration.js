@@ -1,4 +1,4 @@
-/* Journalier V73 — migration legacy vers AppFolder
+/* Journalier V74 — migration legacy vers AppFolder
  *
  * La permission Files.ReadWrite.AppFolder ne permet volontairement pas à
  * Journalier de lire Mes fichiers/Journalier. L'ancien dossier doit donc
@@ -38,7 +38,7 @@
   const state = { analyzed:null, running:false };
 
   function msg(text,type='info'){
-    const el=document.getElementById('v73-migration-status');
+    const el=document.getElementById('v74-migration-status');
     if(el){el.className='ms-status-box '+type;el.textContent=text;}
   }
   function escText(v){return String(v??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
@@ -208,7 +208,7 @@
       if(r.agenda&&!nonEmptyAgenda(existingAgenda))await v72SyncAgenda(r.agenda,null);
 
       await diagnoseSyncManagerV72();
-      window.JournalierV73?.refreshStudents?.();
+      window.JournalierV74?.refreshStudents?.();
       window.renderStudentsView?.(); window.renderAgenda?.(); window.updateStats?.(); window.updateStudentDropdowns?.();
       msg(`✓ Migration terminée.\n✓ ${addedStudents} nouvel(s) élève(s)\n✓ ${addedSessions} nouvelle(s) séance(s)\n${r.agenda&&!nonEmptyAgenda(existingAgenda)?'✓ agenda importé':'✓ agenda existant conservé'}\n\nLa copie legacy et l’ancien dossier original n’ont pas été supprimés.`,'success');
       state.analyzed=null;
@@ -218,9 +218,9 @@
   }
 
   function updateButtons(){
-    const a=document.getElementById('v73-migration-analyze');
-    const i=document.getElementById('v73-migration-import');
-    const o=document.getElementById('v73-migration-open');
+    const a=document.getElementById('v74-migration-analyze');
+    const i=document.getElementById('v74-migration-import');
+    const o=document.getElementById('v74-migration-open');
     if(a)a.disabled=!getMsAccount()||state.running;
     if(i)i.disabled=!getMsAccount()||state.running||!state.analyzed||Boolean(state.analyzed.errors.length);
     if(o)o.disabled=!getMsAccount()||state.running;
@@ -228,25 +228,25 @@
 
   function mount(){
     const host=document.querySelector('#ms-cloud-status');
-    if(!host||document.getElementById('v73-migration-box'))return;
+    if(!host||document.getElementById('v74-migration-box'))return;
     const box=document.createElement('div');
-    box.id='v73-migration-box';
+    box.id='v74-migration-box';
     box.style.cssText='margin-top:12px;padding:12px;border:1px solid #dbe3ef;border-radius:10px;background:#f8fafc';
     box.innerHTML=`<div style="font-weight:700;margin-bottom:5px">Migration des anciennes données</div>
       <div style="font-size:.76rem;color:#475569;line-height:1.45">Votre ancien dossier <b>Mes fichiers/Journalier</b> ne peut pas être lu directement avec l’autorisation AppFolder. Copiez-le d’abord dans l’espace sécurisé sous le nom <b>${LEGACY_NAME}</b>. La migration analysera ensuite les profils, séances et agenda sans supprimer la source.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">
-        <button id="v73-migration-open" class="btn-secondary" type="button">Ouvrir l’espace sécurisé</button>
-        <button id="v73-migration-analyze" class="btn-secondary" type="button">Analyser la migration</button>
-        <button id="v73-migration-import" class="btn-primary" type="button" disabled>Importer dans Journalier</button>
+        <button id="v74-migration-open" class="btn-secondary" type="button">Ouvrir l’espace sécurisé</button>
+        <button id="v74-migration-analyze" class="btn-secondary" type="button">Analyser la migration</button>
+        <button id="v74-migration-import" class="btn-primary" type="button" disabled>Importer dans Journalier</button>
       </div>
-      <div id="v73-migration-status" class="ms-status-box" style="margin-top:9px">Aucune migration lancée.</div>`;
+      <div id="v74-migration-status" class="ms-status-box" style="margin-top:9px">Aucune migration lancée.</div>`;
     host.insertAdjacentElement('afterend',box);
-    document.getElementById('v73-migration-open').onclick=async()=>{
+    document.getElementById('v74-migration-open').onclick=async()=>{
       try{const root=await graphGetAppRoot(true);if(!root?.webUrl)throw new Error('URL de l’espace sécurisé indisponible.');window.open(root.webUrl,'_blank','noopener');}
       catch(e){msg('⚠️ '+(e?.message||String(e)),'error');}
     };
-    document.getElementById('v73-migration-analyze').onclick=()=>analyzeLegacy();
-    document.getElementById('v73-migration-import').onclick=async()=>{try{await importLegacy();}catch(_){} };
+    document.getElementById('v74-migration-analyze').onclick=()=>analyzeLegacy();
+    document.getElementById('v74-migration-import').onclick=async()=>{try{await importLegacy();}catch(_){} };
     updateButtons();
   }
 

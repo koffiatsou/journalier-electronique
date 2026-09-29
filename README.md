@@ -33,9 +33,9 @@ L'application doit rester un **outil d'appui au professionnel**. Les suggestions
 
 ---
 
-## V73.1.3 — migration sécurisée des anciennes données
+## V74 — migration sécurisée des anciennes données
 
-La V73.1.3 corrige l'intégration du module de migration legacy avec le code Graph/DataStore existant.
+La V74 corrige l'intégration du module de migration legacy avec le code Graph/DataStore existant.
 
 ### Migration des données historiques
 
@@ -52,26 +52,26 @@ La migration est volontairement **contrôlée et non destructive** :
 
 La migration ne demande **aucune permission Graph supplémentaire**. Elle reste limitée à `Files.ReadWrite.AppFolder`.
 
-Le module de migration utilise un pont explicite (`JournalierMigrationBridge`) pour accéder uniquement aux fonctions V72 nécessaires. Ce pont évite de dépendre directement du scope privé du script principal.
+Le module de migration utilise un pont explicite (`JournalierMigrationBridge`) pour accéder uniquement aux fonctions de compatibilité historique nécessaires. Ce pont évite de dépendre directement du scope privé du script principal.
 
-## V73 — PIA annuel et synthèse des séances
+## V74 — PIA annuel et synthèse des séances
 
-La V73 ajoute une couche de synthèse PIA directement dans l’application sans modifier l’architecture de stockage et de synchronisation existante.
+La V74 ajoute une couche de synthèse PIA directement dans l’application sans modifier l’architecture de stockage et de synchronisation existante.
 
 ### Cycle PIA
 
 - **Réunion 1 — décembre** : réévaluation du PIA précédent lorsqu’il existe, ou construction d’un premier projet lorsqu’il n’existe pas.
-- Les objectifs déjà présents peuvent être maintenus, reformulés, ajustés, remplacés ou complétés ; V73 ne choisit pas à la place du professionnel.
+- Les objectifs déjà présents peuvent être maintenus, reformulés, ajustés, remplacés ou complétés ; V74 ne choisit pas à la place du professionnel.
 - **Pendant l’année** : les séances alimentent les éléments de preuve et les évolutions observées.
 - **Réunion 2 — fin d’année** : réévaluation des objectifs à partir des nouvelles séances et définition des suites.
 
 ### Sources exploitées
 
-Les observations de classe proviennent des **séances**. V73 exploite les données structurées Q2→Q6 ainsi que les champs `precision` et les autres textes renseignés. Les objectifs de leçon restent du contexte de séance et ne deviennent pas automatiquement des objectifs PIA.
+Les observations de classe proviennent des **séances**. V74 exploite les données structurées Q2→Q6 ainsi que les champs `precision` et les autres textes renseignés. Les objectifs de leçon restent du contexte de séance et ne deviennent pas automatiquement des objectifs PIA.
 
 ### États de synthèse
 
-V73 utilise des états explicables : `OBSERVATION`, `SIGNAL`, `TENDANCE`, `TENDANCE_QUALIFIEE` et `PROPOSITION`. Une `PROPOSITION` doit être validée par le professionnel pour devenir un élément du PIA annuel.
+V74 utilise des états explicables : `OBSERVATION`, `SIGNAL`, `TENDANCE`, `TENDANCE_QUALIFIEE` et `PROPOSITION`. Une `PROPOSITION` doit être validée par le professionnel pour devenir un élément du PIA annuel.
 
 Les rapprochements entre Q2, Q3, Q4, Q5 et Q6 sont documentaires et ne permettent pas au moteur d’affirmer une causalité.
 
@@ -198,10 +198,10 @@ Le dépôt contient deux référentiels JSON utilisés par l'application :
 ```text
 public/
 ├── bibliotheque_indicateurs_v0_5_1.json
-└── referentiel_pia_v73_0_3.json
+└── referentiel_pia_v74_0_3.json
 ```
 
-La bibliothèque d'indicateurs participe au rapprochement entre observations, objectifs, matières et indicateurs. Le référentiel PIA fournit les règles et seuils utilisés par le runtime V73.
+La bibliothèque d'indicateurs participe au rapprochement entre observations, objectifs, matières et indicateurs. Le référentiel PIA fournit les règles et seuils utilisés par le runtime V74.
 
 Le fonctionnement pédagogique détaillé est décrit dans `ARCHITECTURE.md`.
 
@@ -315,7 +315,7 @@ La première analyse CodeQL réalisée après son activation n'a signalé aucune
 │       └── main.yml
 ├── public/
 │   ├── bibliotheque_indicateurs_v0_5_1.json
-│   └── referentiel_pia_v73_0_3.json
+│   └── referentiel_pia_v74_0_3.json
 ├── docs/
 │   └── v74-design/
 │       ├── CAHIER_DES_CHARGES_V74_UX.md
@@ -329,9 +329,9 @@ La première analyse CodeQL réalisée après son activation n'a signalé aucune
 ├── src/
 │   ├── msal-bridge.js
 │   ├── msal-redirect.js
-│   └── v73/
-│       ├── v73-migration.js
-│       └── v73-runtime.js
+│   └── v74/
+│       ├── v74-migration.js
+│       └── v74-runtime.js
 ├── ARCHITECTURE.md
 ├── AUDIT_V74_PHASE0.md
 ├── CHANGELOG.md
@@ -344,7 +344,7 @@ La première analyse CodeQL réalisée après son activation n'a signalé aucune
 └── vite.config.js
 ```
 
-Le cœur historique et les écrans principaux se trouvent dans `index.html`. Le runtime PIA et la migration legacy sont séparés dans `src/v73/`.
+Le cœur historique et les écrans principaux se trouvent dans `index.html`. Le runtime PIA et la migration legacy sont séparés dans `src/v74/`.
 
 Cette organisation reflète l'état actuel du dépôt ; elle ne constitue pas nécessairement l'organisation cible d'une future refactorisation.
 
@@ -461,3 +461,7 @@ Pour les règles et contrôles de sécurité :
 Pour l'historique des évolutions :
 
 **[`CHANGELOG.md`](CHANGELOG.md)**
+
+
+## Refactoring V74
+Structure du frontend nettoyée sans changement fonctionnel volontaire : CSS et JavaScript extraits de `index.html`, runtime/migration sous `src/v74/` et historique archivé.

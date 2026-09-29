@@ -1,11 +1,11 @@
 {
   "meta": {
-    "id": "referentiel_pia_v73",
-    "nom": "Référentiel PIA Journalier V73",
+    "id": "referentiel_pia_v74",
+    "nom": "Référentiel PIA Journalier V74",
     "version": "0.3.0",
     "statut": "DRAFT_REVISE_APRES_RETEST_V0_4",
     "langue": "fr-BE",
-    "description": "Référentiel de structuration, convergence et proposition PIA pour Journalier V73. Le référentiel conserve le modèle PIA existant et encadre les propositions du moteur sans automatiser la validation professionnelle.",
+    "description": "Référentiel de structuration, convergence et proposition PIA pour Journalier V74. Le référentiel conserve le modèle PIA existant et encadre les propositions du moteur sans automatiser la validation professionnelle.",
     "changelog": [
       "AUD-01: ajout du SIGNAL local explicite à fréquence documentée",
       "AUD-02: ajout de la voie PROPOSITION multi-source intra-séance, sans validation automatique",
@@ -863,7 +863,7 @@
       "validation_humaine_requise": true
     }
   },
-  "audit_v73": {
+  "audit_v74": {
     "points_a_verifier_avant_integration": [
       "Compatibilité avec le JSON réel des séances V72/V72.2",
       "Compatibilité avec bibliotheque_indicateurs_v0_5_1.json",
