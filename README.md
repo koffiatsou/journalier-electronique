@@ -10,6 +10,8 @@ L'application est conçue selon une approche **local-first** : les données de t
 
 L'espace Rapports réunit l'historique des séances, les synthèses sur une période choisie, la préparation de réunion et les exports. Le PIA annuel dispose d'un cycle de suivi explicite, de réunions structurées et d'exports professionnels ou dé-identifiés. Les propositions restent soumises à la validation du professionnel.
 
+Une passe UX/UI responsive a été ajoutée le 29 septembre 2026 pour adapter la même application aux PC, tablettes et téléphones, sans modifier le contenu métier ni l'architecture de stockage/synchronisation. Voir [`docs/UX_V74_RESPONSIVE.md`](docs/UX_V74_RESPONSIVE.md).
+
 V74 conserve les mécanismes existants de stockage, d'authentification et de synchronisation. L'architecture technique et les limites connues sont détaillées dans [`ARCHITECTURE.md`](ARCHITECTURE.md) et [`SECURITY.md`](SECURITY.md).
 
 ---

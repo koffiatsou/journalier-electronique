@@ -69,6 +69,23 @@ L'application est actuellement :
 - utilisant IndexedDB pour le stockage local ;
 - organisée autour d'un DataStore local et d'un SyncManager séparé du modèle pédagogique.
 
+### Couche UX/UI responsive — 29 septembre 2026
+
+La couche `src/styles/journalier-ux-responsive.css` est une couche de présentation chargée après `src/styles/journalier.css`. Elle ne contient aucune logique de persistance, de synchronisation, d'identité ou de modèle métier.
+
+Elle traite :
+
+- `100dvh`, zones sûres et défilement principal ;
+- navigation PC/tablette/téléphone ;
+- cibles tactiles et focus ;
+- agenda, formulaire de séance, dossiers élèves et rapports ;
+- historique maître-détail ;
+- rendu responsive des vues PIA générées par `src/v74/v74-runtime.js` ;
+- modales et panneau d'export sur téléphone ;
+- réduction des mouvements.
+
+Aucun identifiant `v72*`, schéma JSON, DataStore, IndexedDB, Graph, OneDrive, MSAL ou SyncManager n'est modifié par cette couche. Les contrôles et simulations sont documentés dans [`docs/UX_V74_RESPONSIVE.md`](docs/UX_V74_RESPONSIVE.md).
+
 ### Principe général
 
 ```text

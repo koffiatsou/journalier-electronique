@@ -1,0 +1,1023 @@
+/*
+ * Journalier électronique — UX/UI responsive layer
+ * Scope: presentation, readability, touch interaction and responsive layout only.
+ * This file deliberately sits after journalier.css so the historical visual layers
+ * remain intact while responsive behavior is governed from one place.
+ */
+
+:root {
+  --ux-space-1: 4px;
+  --ux-space-2: 8px;
+  --ux-space-3: 12px;
+  --ux-space-4: 16px;
+  --ux-space-5: 20px;
+  --ux-space-6: 24px;
+  --ux-touch: 44px;
+  --ux-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --ux-safe-top: env(safe-area-inset-top, 0px);
+  --ux-nav-height: 68px;
+  --ux-content-max: 1540px;
+}
+
+html {
+  min-height: 100%;
+  scroll-behavior: smooth;
+  background: var(--bg-app, #f5f7fa);
+}
+
+body {
+  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+}
+
+body > header {
+  flex: 0 0 auto;
+}
+
+.main-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  width: 100%;
+  max-width: var(--ux-content-max);
+  margin-inline: auto;
+  padding: clamp(12px, 1.8vw, 24px);
+  overflow-x: clip;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-block: 16px 96px;
+}
+
+.main-container > [id^="view-"] {
+  min-width: 0;
+  width: 100%;
+}
+
+/* Keep the top of the agenda controls reachable when the main pane is scrolled. */
+.agenda-controls-bar {
+  top: 0;
+}
+
+/* A predictable, touch-friendly baseline for controls. */
+button,
+[role="button"],
+input,
+select,
+textarea,
+summary {
+  touch-action: manipulation;
+}
+
+button,
+[role="button"] {
+  min-height: var(--ux-touch);
+}
+
+input,
+select,
+textarea {
+  min-height: var(--ux-touch);
+}
+
+button:disabled,
+select:disabled,
+input:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+}
+
+:where(button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid rgba(10, 132, 255, .28);
+  outline-offset: 3px;
+}
+
+/* Do not let long labels create accidental horizontal overflow. */
+.page-title,
+.page-subtitle,
+.card-title,
+.slot-title,
+.slot-meta,
+.reports-workspace-title,
+.reports-workspace-subtitle,
+.reports-section-title,
+.reports-section-description,
+.student-name,
+.student-meta,
+.student-pia,
+.home-event-title,
+.home-event-meta {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Reports is a semantic header inside the application, not the global app header. */
+.reports-workspace-header {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  box-sizing: border-box;
+  overflow: visible;
+  padding-inline: 0;
+}
+
+.reports-header-actions,
+.reports-context,
+.reports-date-controls,
+.reports-anchor-control,
+.reports-export-menu {
+  min-width: 0;
+}
+
+.reports-export-menu {
+  max-width: 100%;
+}
+
+.reports-export-menu > summary {
+  min-height: var(--ux-touch);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.reports-export-panel {
+  box-sizing: border-box;
+  max-width: calc(100vw - 24px);
+}
+
+/* Agenda: preserve the five-day desktop model while making cells scroll-safe. */
+.agenda-grid-week {
+  max-width: 100%;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.agenda-grid-week .week-event-overlay > .week-event,
+.day-event-card {
+  overflow-wrap: anywhere;
+}
+
+/* History: do not allow the sticky detail panel to become taller than the viewport. */
+.history-detail-panel {
+  min-width: 0;
+}
+
+/* Students: actions stay usable without forcing the identity column to shrink to zero. */
+.student-item,
+.student-record,
+.student-record-head,
+.student-record-body {
+  min-width: 0;
+}
+
+/* Modals: desktop = centered dialog; mobile = reachable bottom sheet. */
+.modal-overlay {
+  padding: max(12px, var(--ux-safe-top)) 12px max(12px, var(--ux-safe-bottom));
+  overscroll-behavior: contain;
+}
+
+.modal-card {
+  width: min(100%, 680px);
+  max-width: 680px;
+  max-height: calc(100dvh - max(24px, var(--ux-safe-top)) - max(24px, var(--ux-safe-bottom)));
+  margin: 0;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Toasts must remain inside the safe area and must not be wider than the viewport. */
+#app-toast {
+  right: max(16px, var(--ux-safe-bottom));
+  bottom: max(16px, var(--ux-safe-bottom));
+  width: min(420px, calc(100vw - 32px));
+  min-width: 0;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+}
+
+/* Form rhythm: preserve the existing fields and content, but prevent narrow-grid collapse. */
+#view-form .grid-2,
+#view-form .grid-3,
+#view-form .v11-grid,
+#view-form .v11-result-box,
+#view-form .report-filters {
+  min-width: 0;
+}
+
+#view-form .v11-field,
+#view-form .v11-field > *,
+#view-form .search-select {
+  min-width: 0;
+}
+
+#view-form input[type="text"],
+#view-form input[type="search"],
+#view-form input[type="date"],
+#view-form select,
+#view-form textarea {
+  max-width: 100%;
+}
+
+/* The period range keeps its two controls together on narrow screens. */
+#view-form .v15-period-range {
+  min-width: 0;
+}
+
+/* Tablet: keep desktop information density, but make columns breathe. */
+@media (min-width: 760px) and (max-width: 1099px) {
+  .main-container {
+    padding: 16px;
+  }
+
+  .page-head {
+    gap: 14px;
+  }
+
+  .page-title {
+    font-size: clamp(1.35rem, 2.5vw, 1.65rem);
+  }
+
+  .home-today {
+    grid-template-columns: minmax(0, 1fr) minmax(250px, .55fr);
+  }
+
+  .agenda-controls-bar {
+    align-items: stretch;
+  }
+
+  .date-nav {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .current-date-display {
+    min-width: 160px;
+  }
+
+  .reports-workspace-header {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-header-actions {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .reports-header-actions > .reports-export-menu {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .reports-header-actions > .reports-export-menu > summary {
+    width: 100%;
+  }
+
+  .reports-synthesis-tool {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .reports-synthesis-actions {
+    justify-content: flex-start;
+  }
+
+  .history-workspace {
+    grid-template-columns: minmax(280px, 38%) minmax(0, 1fr);
+  }
+}
+
+/* Phone: transform navigation and dense desktop patterns into touch-first layouts. */
+@media (max-width: 759px) {
+  body {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
+  body > header {
+    position: relative;
+    z-index: 150;
+    padding: 10px 12px calc(10px + var(--ux-safe-top));
+    gap: 8px;
+  }
+
+  .header-brand {
+    width: 100%;
+    min-width: 0 !important;
+    align-items: center;
+  }
+
+  .header-brand::before {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    border-radius: 11px;
+  }
+
+  .brand-title {
+    font-size: .98rem;
+    line-height: 1.15;
+  }
+
+  .brand-sub {
+    font-size: .68rem;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* The auth controls remain visible, but become a compact second row. */
+  body > header > div[style*="margin-left:auto"] {
+    width: 100%;
+    margin-left: 0 !important;
+    justify-content: flex-start !important;
+    gap: 6px !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  body > header > div[style*="margin-left:auto"]::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ms-connect-btn,
+  .ms-account-pill {
+    min-height: 40px;
+    flex: 0 0 auto;
+  }
+
+  body > header {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  /* Bottom navigation: all five destinations stay identifiable and reachable. */
+  body > header > .nav-tabs {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: max(8px, var(--ux-safe-bottom));
+    z-index: 500;
+    width: auto;
+    height: var(--ux-nav-height);
+    padding: 5px;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 2px;
+    overflow: visible;
+    border: 1px solid rgba(60, 60, 67, .10);
+    border-radius: 18px;
+    background: rgba(248, 248, 250, .90);
+    box-shadow: 0 8px 30px rgba(15, 23, 42, .15), inset 0 1px rgba(255,255,255,.72);
+    backdrop-filter: blur(20px) saturate(1.15);
+    -webkit-backdrop-filter: blur(20px) saturate(1.15);
+  }
+
+  .nav-btn {
+    min-width: 0;
+    min-height: 56px;
+    height: 56px;
+    padding: 5px 3px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border-radius: 12px;
+    font-size: .64rem;
+    line-height: 1.05;
+    font-weight: 700;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .nav-btn .nav-icon {
+    width: 20px;
+    height: 20px;
+    display: inline-grid;
+  }
+
+  .nav-btn .nav-icon svg {
+    width: 19px;
+    height: 19px;
+    stroke-width: 2;
+  }
+
+  .nav-btn.active {
+    background: rgba(255,255,255,.98);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, .10);
+  }
+
+  .main-container {
+    padding: 14px 12px calc(var(--ux-nav-height) + 30px + var(--ux-safe-bottom));
+    scroll-padding-block: 14px calc(var(--ux-nav-height) + 40px + var(--ux-safe-bottom));
+  }
+
+  .page-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .page-title {
+    font-size: 1.38rem;
+    line-height: 1.15;
+  }
+
+  .page-subtitle {
+    font-size: .86rem;
+    line-height: 1.5;
+  }
+
+  .primary-action,
+  .page-head .primary-action {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .card,
+  .today-card,
+  .home-task {
+    border-radius: 18px;
+    padding: 16px;
+  }
+
+  /* Home: preserve the information hierarchy but remove desktop-only density. */
+  .home-today {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .home-row {
+    grid-template-columns: 54px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .home-row .status-badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .grid-3,
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  /* Agenda controls become a clear three-step hierarchy. */
+  .agenda-controls-bar {
+    position: static;
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .view-switcher {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .view-btn {
+    min-width: 0;
+    min-height: 42px;
+    padding: 7px 6px;
+  }
+
+  .date-nav {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 44px auto minmax(0, 1fr) 44px;
+    gap: 7px;
+    align-items: center;
+  }
+
+  .date-nav .nav-arrow {
+    width: 44px;
+    height: 44px;
+  }
+
+  .date-nav .btn-secondary {
+    min-height: 44px;
+    padding-inline: 8px !important;
+    font-size: .76rem !important;
+  }
+
+  .current-date-display {
+    min-width: 0;
+    font-size: .82rem;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  #agenda-picker-input {
+    width: 100% !important;
+    min-height: 44px;
+    margin-top: 1px !important;
+  }
+
+  .agenda-legend {
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .legend-item {
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 8px;
+    font-size: .68rem;
+  }
+
+  .day-timeline.day-timeline-grid {
+    grid-template-columns: 46px minmax(0, 1fr);
+    grid-template-rows: repeat(8, minmax(88px, auto));
+    gap: 6px;
+  }
+
+  .day-event-card {
+    padding: 9px 10px;
+  }
+
+  .slot-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .agenda-grid-week {
+    grid-template-columns: 56px repeat(5, minmax(130px, 1fr));
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px;
+  }
+
+  .month-calendar-grid {
+    overflow-x: auto;
+  }
+
+  /* Session form: one readable column, with the period pair kept compact. */
+  #view-form .v11-grid,
+  #view-form .v11-result-box,
+  #view-form .report-filters,
+  #view-form .v11-status-row {
+    grid-template-columns: 1fr;
+  }
+
+  #view-form .v11-field.full {
+    grid-column: auto;
+  }
+
+  #view-form .card-title {
+    font-size: .94rem;
+  }
+
+  #view-form .form-section-intro {
+    font-size: .8rem;
+  }
+
+  #view-form .v15-period-range {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr);
+    gap: 6px;
+    align-items: center;
+  }
+
+  #view-form .v15-period-range select {
+    min-width: 0;
+    margin-bottom: 0;
+  }
+
+  #view-form .v15-period-range > *:nth-child(2) {
+    text-align: center;
+    color: var(--text-sub);
+  }
+
+  #view-form .ux-bubble-grid,
+  #view-form .ux-select-bubbles {
+    grid-template-columns: 1fr;
+  }
+
+  #view-form .q4-effect-sliders,
+  #view-form .q2-observation-list,
+  #view-form .compact-choice-grid,
+  #view-form .q3-library-grid,
+  #view-form .q3-custom-list,
+  #view-form .q3-assessment-list,
+  #view-form .q4-choice-groups,
+  #view-form .q6-choice-groups {
+    grid-template-columns: 1fr;
+  }
+
+  #view-form .q2-observation-item,
+  #view-form .ux-bubble,
+  #view-form .ux-select-bubble {
+    min-height: 46px;
+  }
+
+  #view-form .session-footer {
+    padding-bottom: 8px;
+  }
+
+  #save-session-btn {
+    min-height: 52px !important;
+    margin-bottom: 4px;
+  }
+
+  /* Modals become bottom sheets on touch phones, with the full content still scrollable. */
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-card {
+    width: 100%;
+    max-width: none;
+    max-height: calc(100dvh - var(--ux-safe-top));
+    border-radius: 24px 24px 0 0;
+    padding: 20px 16px calc(20px + var(--ux-safe-bottom));
+  }
+
+  /* Reports: no more clipped export action or squeezed header. */
+  .reports-workspace-header {
+    display: block;
+    padding: 0 0 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .reports-workspace-copy {
+    margin-bottom: 14px;
+  }
+
+  .reports-workspace-title {
+    font-size: 1.42rem;
+  }
+
+  .reports-workspace-subtitle {
+    font-size: .84rem;
+  }
+
+  .reports-header-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .reports-header-actions > .reports-context,
+  .reports-header-actions > .reports-date-controls,
+  .reports-header-actions > .reports-anchor-control,
+  .reports-header-actions > .reports-export-menu {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+    width: 100%;
+  }
+
+  .reports-export-menu > summary {
+    width: 100%;
+  }
+
+  .reports-export-panel {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: calc(var(--ux-nav-height) + 16px + var(--ux-safe-bottom));
+    width: auto;
+    max-width: none;
+    max-height: min(72dvh, 560px);
+    margin: 0;
+    overflow: auto;
+    border-radius: 18px;
+    padding: 16px;
+  }
+
+  .reports-export-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-subnav {
+    margin-bottom: 16px;
+    gap: 2px;
+    padding-inline: 0;
+    overscroll-behavior-x: contain;
+  }
+
+  .reports-subnav button {
+    min-height: 44px;
+    padding: 10px 13px;
+  }
+
+  .reports-synthesis-tool {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 15px;
+  }
+
+  .reports-synthesis-actions {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .reports-synthesis-actions > .btn-primary,
+  .reports-view-actions,
+  .reports-view-actions button {
+    width: 100%;
+  }
+
+  .reports-view-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .history-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .history-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .history-detail-panel {
+    position: static;
+    min-height: 0;
+  }
+
+  .history-detail-section {
+    grid-template-columns: 1fr;
+  }
+
+  .history-data-preview > div,
+  .history-data-summary > div {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .reports-meeting-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .reports-meeting-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .reports-meeting-actions button {
+    width: 100%;
+  }
+
+  /* Student dossier actions become a clear vertical action group. */
+  .student-toolbar {
+    align-items: stretch;
+  }
+
+  .student-toolbar input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .student-record .student-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .student-record .student-actions button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .profile-summary,
+  .report-evidence-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* PIA generated by V74 runtime: preserve content, adapt only its presentation. */
+  #view-reports .v74-dashboard-grid,
+  #view-reports .v74-domain-overview-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  #view-reports .v74-domain-overview {
+    min-height: 0;
+    padding: 14px;
+  }
+
+  #view-reports .v74-domain-detail-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .v74-domain-menu,
+  .v74-pia-nav {
+    display: flex;
+    overflow-x: auto;
+    max-width: 100%;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+
+  .v74-domain-menu button,
+  .v74-pia-nav [role="tab"] {
+    flex: 0 0 auto;
+    min-height: 44px;
+  }
+
+  .v74-domain-record-head {
+    display: grid;
+  }
+
+  .v74-domain-record-head > span {
+    white-space: normal;
+    max-width: 100%;
+  }
+
+  .v74-domain-fields,
+  .v74-meeting-fields,
+  .v74-feedback-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .v74-prop {
+    grid-template-columns: 36px minmax(0, 1fr);
+    padding: 13px;
+  }
+
+  .v74-actions,
+  .v74-export-row {
+    width: 100%;
+  }
+
+  .v74-actions .v74-btn,
+  .v74-export-row > * {
+    width: 100%;
+  }
+
+  .v74-dashboard-grid > section {
+    padding: 14px;
+  }
+
+  /* Avoid accidental zoom on iOS while retaining comfortable reading size. */
+  input,
+  select,
+  textarea,
+  button {
+    font-size: max(16px, 1em);
+  }
+
+  .nav-btn,
+  .status-badge,
+  .legend-item,
+  .page-kicker,
+  .task-label,
+  .student-meta,
+  .home-event-meta {
+    font-size: max(.68rem, 11px);
+  }
+}
+
+/* Very small phones: prioritize readability over showing two columns. */
+@media (max-width: 420px) {
+  .main-container {
+    padding-inline: 10px;
+  }
+
+  .profile-summary,
+  .report-evidence-grid,
+  .reports-view-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .date-nav {
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+  }
+
+  .date-nav .btn-secondary {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .current-date-display {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .date-nav .nav-arrow:last-of-type {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  #agenda-picker-input {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  .home-row {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .nav-btn {
+    font-size: .61rem;
+  }
+
+  .nav-btn .nav-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .nav-btn .nav-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .nav-btn.active,
+  .view-btn.active,
+  .status-badge,
+  .legend-item {
+    forced-color-adjust: auto;
+  }
+}
+
+
+/* ============================================================
+   Q5 — Situation de transfert
+   UX : cohérence avec les panneaux Q4 / Q6
+   Contenu métier inchangé.
+   ============================================================ */
+
+.q5-choice-panel {
+    position: relative;
+    padding: 1rem 1rem 0.9rem;
+    border: 1px solid var(--ux-border, #dfe4ec);
+    border-left: 3px solid #2187a3;
+    border-radius: 14px;
+    background: var(--ux-surface, #ffffff);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.q5-choice-panel > label {
+    display: block;
+    margin: 0 0 0.75rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.q5-choice-panel .ux-select-bubbles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem;
+}
+
+.q5-choice-panel .ux-select-bubble {
+    min-height: 44px;
+}
+
+.q5-choice-panel .form-field-help,
+.q5-choice-panel small,
+.q5-choice-panel .field-help {
+    margin-top: 0.65rem;
+}
+
+/* Tablette */
+@media (max-width: 1099px) {
+    .q5-choice-panel .ux-select-bubbles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* Téléphone */
+@media (max-width: 767px) {
+    .q5-choice-panel {
+        padding: 0.9rem;
+        border-radius: 12px;
+    }
+
+    .q5-choice-panel .ux-select-bubbles {
+        grid-template-columns: 1fr;
+        gap: 0.55rem;
+    }
+
+    .q5-choice-panel .ux-select-bubble {
+        width: 100%;
+        min-height: 44px;
+    }
+}

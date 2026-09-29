@@ -1,7 +1,7 @@
 # Cahier des charges UX/UI — Rapports & PIA V74
 
 **Version:** 1.0 · **Date:** 27 septembre 2026\
-**Statut:** référence d’intégration active. La première passe visuelle est intégrée; la validation finale desktop/mobile et les parcours authentifiés restent à effectuer.
+**Statut:** référence d’intégration active. La passe visuelle V74 et la couche UX responsive du 29 septembre 2026 sont intégrées. Les simulations desktop/mobile hors authentification sont réalisées; les parcours authentifiés et les essais sur appareils physiques restent à effectuer.
 
 La maquette interactive [maquette-v74-10.html](maquette-v74-10.html) illustre cette direction. Elle utilise des données de démonstration non persistées; elle ne représente pas le contenu d’un dossier réel.
 

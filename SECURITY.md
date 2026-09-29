@@ -31,11 +31,15 @@ Cette limitation réduit la surface exposée au module et évite de contourner l
 
 Les évolutions V74 réutilisent le DataStore et les mécanismes de synchronisation existants; elles n'ajoutent ni backend ni permission Graph. Les propositions PIA restent à valider par le professionnel. Les exports dé-identifiés sont une sortie distincte des exports professionnels nominatifs et doivent être ré-audités si le schéma PIA ou les données exportées évoluent.
 
-Toute modification de `index.html` doit déclencher le recalcul des hashes SHA-256 des scripts inline et la vérification de la CSP. Un build réussi ne vérifie pas à lui seul le comportement de la CSP dans un navigateur.
+Toute modification de `index.html` doit déclencher une vérification de la CSP. Lorsque le contenu d'un script inline est modifié ou qu'un nouveau script inline est introduit, les mécanismes CSP correspondants doivent être recalculés. Un build réussi ne vérifie pas à lui seul le comportement de la CSP dans un navigateur.
 
 ### CSP
 
-La modification du script inline de `index.html` nécessite un nouveau hash CSP. La V74 utilise trois hashes SHA-256 correspondant aux trois scripts inline réellement présents et ne réintroduit pas `unsafe-inline` dans `script-src`.
+L'état actuel de `index.html` ne contient pas de script inline : les scripts applicatifs sont chargés depuis des fichiers locaux (`self`). `script-src` n'autorise donc pas `unsafe-inline`. La couche UX responsive ajoute uniquement une feuille CSS locale et ne demande aucune nouvelle origine CSP.
+
+`style-src 'unsafe-inline'` reste présent car le dépôt utilise encore des attributs `style` et des styles dynamiquement injectés par le runtime. Cette permission n'est pas introduite par la passe UX responsive.
+
+La directive `frame-ancestors` est conservée dans la CSP déclarée par méta pour documentation de l'intention, mais les navigateurs indiquent qu'elle n'est pas appliquée depuis une balise `<meta>`. Une protection effective contre l'encadrement doit être délivrée par un en-tête HTTP lorsque l'hébergement le permet.
 
 ## 1. Objet
 
@@ -195,11 +199,17 @@ L'application utilise une Content Security Policy.
 
 La CSP limite notamment les origines autorisées pour les connexions nécessaires au fonctionnement de l'application.
 
-Les scripts inline protégés par la CSP utilisent des hashes SHA-256 correspondant aux scripts autorisés.
+Les scripts applicatifs actuels sont externes et limités à l'origine `self` par `script-src`.
 
 Le code comporte également des mécanismes de protection contre certaines injections HTML/XSS.
 
 ---
+
+## 10 bis. Couche UX responsive
+
+`src/styles/journalier-ux-responsive.css` est une feuille locale. Elle n'introduit ni chargement de ressource tierce, ni JavaScript, ni nouvelle permission Graph. La passe responsive n'élargit donc pas la surface réseau de la CSP.
+
+Les simulations responsive ont également contrôlé les débordements horizontaux et la taille des contrôles tactiles ; ces contrôles sont des validations d'interface et ne constituent pas un audit de sécurité complet.
 
 ## 11. Sécurité GitHub
 

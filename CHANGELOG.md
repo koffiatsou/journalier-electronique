@@ -2,6 +2,25 @@
 
 Historique synthétique des évolutions importantes. Les détails d'architecture et les contrôles de sécurité sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md) et [SECURITY.md](SECURITY.md). L'historique complet est disponible dans Git.
 
+## V74 — passe UX/UI responsive — 29 septembre 2026
+
+### UX/UI
+- Ajout d'une couche responsive dédiée `src/styles/journalier-ux-responsive.css` sans modification du contenu métier.
+- Passage du socle de hauteur à `100dvh`, amélioration du scroll principal et prise en compte des zones sûres mobiles.
+- Navigation téléphone transformée en barre basse tactile avec les cinq destinations et icônes existantes.
+- Adaptation distincte PC/tablette/téléphone de l'Accueil, de l'Agenda, de la Séance, des dossiers Élèves et de Rapports & PIA.
+- Correction du formulaire de séance sur petit écran, notamment du couple de périodes début → fin.
+- Correction de l'en-tête Rapports & PIA et de l'action Exporter pour éviter les coupures sur téléphone/tablette.
+- Modales adaptées au tactile avec comportement de feuille sur petit écran.
+- Cibles tactiles, focus visible, réduction des mouvements et taille de saisie mobile harmonisés.
+- Adaptation responsive des vues PIA générées dynamiquement, sans modification du modèle PIA.
+
+### Documentation et validation
+- Ajout de `docs/UX_V74_RESPONSIVE.md` avec audit, règles responsive, invariants métier et résultats des simulations.
+- Simulation automatique à 390×844, 375×667, 768×1024, 1024×768 et 1440×900 sur les cinq vues principales.
+- Vérification de l'absence de débordement horizontal de page et de l'atteignabilité de la fin du formulaire de séance.
+- La CSP reste fonctionnellement inchangée : aucune nouvelle origine, aucun script inline et aucun hash de script n'a été ajouté ; seul le chargement d'une feuille CSS locale et le viewport mobile ont été modifiés.
+
 ## V74 — en cours, non publiée — 27 septembre 2026
 
 ### Fonctionnel
