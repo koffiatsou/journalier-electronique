@@ -1,9 +1,20 @@
 const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
-    const periods = ["1e H", "2e H", "3e H", "4e H", "5e H", "6e H", "7e H", "8e H"];
+    const DEFAULT_AGENDA_PERIODS = [
+        {id:'p1',label:'1e H',start:'08:00',end:'08:50'},
+        {id:'p2',label:'2e H',start:'08:50',end:'09:40'},
+        {id:'p3',label:'3e H',start:'09:40',end:'10:30'},
+        {id:'p4',label:'4e H',start:'10:45',end:'11:35'},
+        {id:'p5',label:'5e H',start:'11:35',end:'12:25'},
+        {id:'p6',label:'6e H',start:'13:15',end:'14:05'},
+        {id:'p7',label:'7e H',start:'14:05',end:'14:55'},
+        {id:'p8',label:'8e H',start:'14:55',end:'15:45'}
+    ];
+    let agendaPeriodConfig = DEFAULT_AGENDA_PERIODS.map(p=>({...p}));
+    let periods = agendaPeriodConfig.map(p=>p.label);
 
     let agendaMode = 'day';
     let agendaModalState = { mode:'create', eventId:null, recurrence:null, occurrenceDate:null };
-    let agendaDeleteState = { eventId:null, occurrenceDate:null, recurrence:null };
+    let agendaDeleteState = { eventId:null, seriesId:null, occurrenceDate:null, recurrence:null };
     function getInitialDateISO() {
         const now = new Date();
         if (isNaN(now.getTime())) return '2026-08-24';
@@ -276,16 +287,7 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
 
     function secureNormalizeAgenda(prev) {
         const ownerId=JournalierSecurity.accountKey;
-        const out={__uniqueEvents:[],__exceptions:{}};
-        Object.entries(prev||{}).forEach(([key,value])=>{
-            if(key==='__uniqueEvents'){out[key]=Array.isArray(value)?value.map(item=>({...item,ownerId, dataVersion:JOURNALIER_ARCHITECTURE_VERSION})):[];return;}
-            if(key==='__exceptions'){out[key]=value&&typeof value==='object'?JSON.parse(JSON.stringify(value)):{};return;}
-            if(!value||typeof value!=='object'||Array.isArray(value))return;
-            const v={...value,ownerId,dataVersion:JOURNALIER_ARCHITECTURE_VERSION};
-            if(!v.eventId)v.eventId=`event_${key.replace(/[^a-zA-Z0-9_-]/g,'_')}`;
-            v.recurrence=v.recurrence||'weekly'; v.seriesId=v.seriesId||v.eventId; out[key]=v;
-        });
-        return out;
+        return normalizeAgendaData(prev, ownerId);
     }
 
     function v72EnsureSyncRegistry(state){
@@ -382,7 +384,7 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
             if(!JournalierSecurity.ready)throw new Error('Connectez-vous avec votre compte Microsoft avant de modifier les données.');
             const previous=secureNormalizeAgenda(this.state.agenda||{});this.state.agenda=secureNormalizeAgenda(agenda);v72MarkAgendaPending(this.state,previous,this.getAgenda());v72RecountPending(this.state);securePersistState();
         },
-        diagnostics(){const s=this.state;return{architectureVersion:s.version,accountScoped:true,encryptedLocalStore:true,students:this.getStudents().length,sessions:this.getSessions().length,agendaEntries:Object.keys(this.getAgenda()).length,sync:s.sync,syncRegistry:s.syncRegistry};}
+        diagnostics(){const s=this.state,agenda=this.getAgenda();return{architectureVersion:s.version,accountScoped:true,encryptedLocalStore:true,students:this.getStudents().length,sessions:this.getSessions().length,agendaEntries:Array.isArray(agenda?.__events)?agenda.__events.length:0,sync:s.sync,syncRegistry:s.syncRegistry};}
     };
 
     // Interface publique V74 vers le DataStore de Journalier.
@@ -418,1141 +420,431 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
         updateStats();
     }
 
-    function normalizePrevisionnel(prev) {
-        const out = {};
-        out.__uniqueEvents = Array.isArray(prev?.__uniqueEvents) ? prev.__uniqueEvents.map(x => ({...x, recurrence:'unique'})) : [];
-        out.__exceptions = prev?.__exceptions && typeof prev.__exceptions === 'object' ? JSON.parse(JSON.stringify(prev.__exceptions)) : {};
-        Object.entries(prev || {}).forEach(([key, value]) => {
-            if (key === '__uniqueEvents' || key === '__exceptions') return;
-            if (!value || typeof value !== 'object') return;
-            out[key] = { ...value, recurrence:value.recurrence || 'weekly', seriesId:value.seriesId || value.eventId };
-        });
-        const groups = {};
-        Object.entries(out).forEach(([key, value]) => {
-            // Les espaces techniques ne sont pas des créneaux legacy :
-            // ne jamais les faire passer dans le regroupement des événements.
-            if (key === '__uniqueEvents' || key === '__exceptions') return;
-            if (!value || typeof value !== 'object' || Array.isArray(value)) return;
-            if (value.eventId) return;
-            const base = `${value.type || ''}|${value.eleve || ''}|${value.matiere || ''}|${value.title || ''}|${value.detail || ''}|${value.local || ''}`;
-            groups[base] ||= [];
-            groups[base].push(key);
-        });
-        Object.values(groups).forEach(keys => {
-            keys.sort((a,b) => {
-                const [da,...ra] = a.split('_'); const [db,...rb] = b.split('_');
-                return Number(da)-Number(db) || periodIndex(ra.join('_'))-periodIndex(rb.join('_'));
-            });
-            let runStartKey = null, prevDay = null, prevIdx = -2;
-            keys.forEach(key => {
-                const [day,...rest] = key.split('_');
-                const period = rest.join('_');
-                const idx = periodIndex(period);
-                if (prevDay !== day || idx !== prevIdx + 1) runStartKey = key;
-                const stableId = `legacy_${runStartKey.replace(/[^a-zA-Z0-9_-]/g,'_')}`;
-                out[key] = { ...out[key], eventId: stableId, startPeriod: out[key].startPeriod || period, endPeriod: out[key].endPeriod || period };
-                prevDay = day; prevIdx = idx;
-            });
-        });
+    function normalizeAgendaConfig(config){
+        const source=Array.isArray(config?.periods)?config.periods:DEFAULT_AGENDA_PERIODS;
+        const out=[];
+        for(let i=0;i<8;i++){
+            const fallback=DEFAULT_AGENDA_PERIODS[i];
+            const raw=source[i]||{};
+            const start=/^\d{2}:\d{2}$/.test(String(raw.start||''))?String(raw.start):fallback.start;
+            const end=/^\d{2}:\d{2}$/.test(String(raw.end||''))?String(raw.end):fallback.end;
+            const valid=start<end && (i===0 || start>=out[i-1].end);
+            out.push({id:`p${i+1}`,label:fallback.label,start:valid?start:fallback.start,end:valid?end:fallback.end});
+        }
         return out;
     }
 
-    function getPrevisionnel() {
-        return normalizePrevisionnel(DataStore.getAgenda());
+    function applyAgendaPeriodConfig(config){
+        agendaPeriodConfig=normalizeAgendaConfig(config);
+        periods=agendaPeriodConfig.map(p=>p.label);
+        return agendaPeriodConfig;
     }
 
-    // PRIVACY: aucun agenda réel ou jeu de démonstration n'est stocké dans le code publié.
-    // Cette fonction reste volontairement vide pour préserver la compatibilité d'appel éventuelle.
-    function getLegacyDefaultPrevisionnel() {
-        return {};
+    function agendaPeriodByLabel(label){
+        return agendaPeriodConfig.find(p=>p.label===label)||null;
     }
 
-    function savePrevisionnel(prev) {
-        const candidate = normalizePrevisionnel(prev || {});
+    function agendaTimeToMinutes(value){
+        const m=/^(\d{2}):(\d{2})$/.exec(String(value||''));
+        return m?Number(m[1])*60+Number(m[2]):-1;
+    }
+
+    function agendaEventIndexes(event){
+        const start=periodIndex(event?.startPeriod), end=periodIndex(event?.endPeriod||event?.startPeriod);
+        return {start,end};
+    }
+
+    function normalizeAgendaEvent(item,ownerId,defaults={}){
+        const ev={...(item||{})};
+        ev.eventId=String(ev.eventId||journalierUuid('evt'));
+        ev.ownerId=ownerId||ev.ownerId||null;
+        ev.dataVersion=JOURNALIER_ARCHITECTURE_VERSION;
+        ev.recurrence=ev.recurrence==='unique'?'unique':'weekly';
+        ev.seriesId=ev.recurrence==='weekly'?(String(ev.seriesId||ev.eventId)):null;
+        ev.type=['ELEVE','COLLAB','FORMATION','ADMIN','LIBRE'].includes(ev.type)?ev.type:'ADMIN';
+        ev.eleve=ev.eleve!=null?String(ev.eleve):'';
+        ev.eleveId=ev.eleveId!=null?String(ev.eleveId):'';
+        ev.matiere=ev.matiere!=null?String(ev.matiere):'';
+        ev.title=ev.title!=null?String(ev.title):'';
+        ev.detail=ev.detail!=null?String(ev.detail):'';
+        ev.local=ev.local!=null?String(ev.local):'';
+        ev.dayIndex=Number.isInteger(Number(ev.dayIndex))?Number(ev.dayIndex):Number(defaults.dayIndex??0);
+        if(ev.dayIndex<0||ev.dayIndex>4)ev.dayIndex=0;
+        ev.date=ev.date?String(ev.date):(defaults.date||'');
+        ev.startPeriod=periods.includes(ev.startPeriod)?ev.startPeriod:(defaults.startPeriod||periods[0]);
+        ev.endPeriod=periods.includes(ev.endPeriod)?ev.endPeriod:ev.startPeriod;
+        if(periodIndex(ev.endPeriod)<periodIndex(ev.startPeriod))ev.endPeriod=ev.startPeriod;
+        const defaultStatus=defaults.status||'confirmed';
+        ev.eventStatus=['proposed','confirmed','realized','cancelled'].includes(ev.eventStatus)?ev.eventStatus:defaultStatus;
+        ev.realized=Boolean(ev.realized||ev.eventStatus==='realized');
+        ev.realizedAt=ev.realizedAt?String(ev.realizedAt):null;
+        if(ev.realized&&!ev.realizedAt)ev.realizedAt=new Date().toISOString();
+        ev.createdAt=ev.createdAt?String(ev.createdAt):new Date().toISOString();
+        ev.updatedAt=new Date().toISOString();
+        ev.timezone=ev.timezone?String(ev.timezone):'Europe/Brussels';
+        const o=ev.outlook&&typeof ev.outlook==='object'&&!Array.isArray(ev.outlook)?ev.outlook:{};
+        ev.outlook={calendarId:o.calendarId?String(o.calendarId):null,eventId:o.eventId?String(o.eventId):null,iCalUId:o.iCalUId?String(o.iCalUId):null,changeKey:o.changeKey?String(o.changeKey):null,webLink:o.webLink?String(o.webLink):null};
+        if(ev.recurrence==='weekly')ev.date='';
+        else ev.seriesId=null;
+        return ev;
+    }
+
+    function legacyAgendaEvents(source,ownerId){
+        const events=[];
+        const slots=[];
+        Object.entries(source||{}).forEach(([key,value])=>{
+            if(key==='__uniqueEvents'||key==='__exceptions'||key==='__config'||key==='__events')return;
+            if(!/^\d+_.+$/.test(key)||!value||typeof value!=='object'||Array.isArray(value))return;
+            const [dayRaw,...rest]=key.split('_');
+            const dayIndex=Number(dayRaw),period=rest.join('_');
+            if(dayIndex<0||dayIndex>4||!periods.includes(period))return;
+            slots.push({key,dayIndex,period,value});
+        });
+        const grouped=new Map();
+        for(const slot of slots){
+            const explicitId=slot.value.eventId?String(slot.value.eventId):'';
+            const contentKey=JSON.stringify([
+                slot.value.type||'',slot.value.eleveId||'',slot.value.eleve||'',slot.value.matiere||'',
+                slot.value.title||'',slot.value.detail||'',slot.value.local||''
+            ]);
+            const key=`${slot.dayIndex}|${explicitId?`id:${explicitId}`:`content:${contentKey}`}`;
+            if(!grouped.has(key))grouped.set(key,[]);
+            grouped.get(key).push(slot);
+        }
+        for(const group of grouped.values()){
+            group.sort((a,b)=>periodIndex(a.period)-periodIndex(b.period));
+            let run=[];let previous=-2;
+            const flush=()=>{
+                if(!run.length)return;
+                const first=run[0],last=run[run.length-1];
+                const base={...first.value,eventId:first.value.eventId||`legacy_${first.dayIndex}_${first.period}_${journalierUuid('x')}`,dayIndex:first.dayIndex,startPeriod:first.period,endPeriod:last.period,recurrence:'weekly',seriesId:first.value.seriesId||first.value.eventId||null};
+                events.push(normalizeAgendaEvent(base,ownerId,{dayIndex:first.dayIndex,startPeriod:first.period,status:'confirmed'}));
+                run=[];
+            };
+            for(const slot of group){
+                const idx=periodIndex(slot.period);
+                if(idx!==previous+1)flush();
+                run.push(slot);previous=idx;
+            }
+            flush();
+        }
+        return events;
+    }
+
+    function normalizeAgendaData(prev,ownerId=JournalierSecurity.accountKey){
+        const source=prev&&typeof prev==='object'?prev:{};
+        const config=normalizeAgendaConfig(source.__config);
+        applyAgendaPeriodConfig(config);
+        const out={__events:[],__exceptions:{},__config:{version:2,periods:config.map(p=>({...p}))}};
+        if(source.__exceptions&&typeof source.__exceptions==='object'&&!Array.isArray(source.__exceptions))out.__exceptions=JSON.parse(JSON.stringify(source.__exceptions));
+        const seen=new Set();
+        const push=(item,defaults)=>{
+            const ev=normalizeAgendaEvent(item,ownerId,defaults);
+            if(!seen.has(ev.eventId)){seen.add(ev.eventId);out.__events.push(ev);}
+        };
+        if(Array.isArray(source.__events))source.__events.forEach(ev=>push(ev,{status:'confirmed'}));
+        if(Array.isArray(source.__uniqueEvents))source.__uniqueEvents.forEach(ev=>push({...ev,recurrence:'unique',date:ev.date||ev.occurrenceDate},{status:'confirmed'}));
+        legacyAgendaEvents(source,ownerId).forEach(ev=>push(ev,{status:'confirmed'}));
+        out.__events.sort((a,b)=>String(a.date||a.dayIndex).localeCompare(String(b.date||b.dayIndex))||periodIndex(a.startPeriod)-periodIndex(b.startPeriod)||a.eventId.localeCompare(b.eventId));
+        return out;
+    }
+
+    function normalizePrevisionnel(prev){
+        return normalizeAgendaData(prev,JournalierSecurity.accountKey);
+    }
+
+    function getPrevisionnel(){return normalizePrevisionnel(DataStore.getAgenda());}
+
+    function savePrevisionnel(prev){
+        const candidate=normalizePrevisionnel(prev||{});
         DataStore.saveAgenda(candidate);
-        const persisted = normalizePrevisionnel(DataStore.getAgenda());
+        const persisted=normalizePrevisionnel(DataStore.getAgenda());
         renderAgenda();
         return persisted;
     }
 
-    function updateStudentDropdowns() {
-        const students = getStudents();
-        const selectors = ['f-eleve', 'r-eleve', 'modal-slot-eleve'];
-        selectors.forEach(id => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            const currentVal = el.value;
-            el.replaceChildren();
-            const placeholder=document.createElement('option');
-            placeholder.value='';
-            placeholder.textContent='-- Choisir un élève --';
-            el.appendChild(placeholder);
-            students.forEach(s=>{
-                const option=document.createElement('option');
-                option.value=String(s.nom??'');
-                option.textContent=`${s.nom??''} (${s.classe??''}${s.ecole ? ' - ' + s.ecole : ''})`;
-                el.appendChild(option);
-            });
-            if (currentVal) el.value = currentVal;
+    function updateStudentDropdowns(){
+        const students=getStudents();
+        ['f-eleve','r-eleve','modal-slot-eleve'].forEach(id=>{
+            const el=document.getElementById(id);if(!el)return;
+            const current=el.value;el.replaceChildren();
+            const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='-- Choisir un élève --';el.appendChild(placeholder);
+            students.forEach(s=>{const o=document.createElement('option');o.value=String(s.nom??'');o.textContent=`${s.nom??''} (${s.classe??''}${s.ecole?' - '+s.ecole:''})`;el.appendChild(o);});
+            if(current)el.value=current;
         });
     }
 
-    function getTodayInApp() {
-        const now = new Date();
-        let iso = formatISO(now);
-        if (iso < '2026-08-24' || iso > '2027-07-02') iso = selectedDateISO;
-        return iso;
+    function getTodayInApp(){
+        const now=new Date();let iso=formatISO(now);if(iso<'2026-08-24'||iso>'2027-07-02')iso=selectedDateISO;return iso;
     }
 
-    function getWeeklyEventForDatePeriod(iso, period, prev=getPrevisionnel()) {
-        const dayIdx = getDayIndexFromISO(iso);
-        if (dayIdx < 0 || dayIdx > 4) return null;
-        const event = getEventForCell(dayIdx, period, prev);
-        if (!event) return null;
-        const seriesId = event.seriesId || event.eventId;
-        const exceptions = prev.__exceptions?.[seriesId] || [];
-        if (exceptions.includes(iso)) return null;
-        return { ...event, recurrence:'weekly', seriesId, occurrenceDate:iso };
+    function eventOccursOnDate(event,iso,prev=null){
+        if(!event)return false;
+        if(event.recurrence==='unique')return event.date===iso;
+        if(getDayIndexFromISO(iso)!==Number(event.dayIndex))return false;
+        const seriesKey=String(event.seriesId||event.eventId||'');
+        const excluded=prev?.__exceptions?.[seriesKey];
+        return !(Array.isArray(excluded)&&excluded.includes(iso));
     }
 
-    function getUniqueEventsForDate(iso, prev=getPrevisionnel()) {
-        return (Array.isArray(prev.__uniqueEvents) ? prev.__uniqueEvents : [])
-            .filter(ev => ev && ev.date === iso)
-            .map(ev => ({ ...ev, recurrence:'unique', occurrenceDate:iso, startIndex:periodIndex(ev.startPeriod), endIndex:periodIndex(ev.endPeriod) }));
+    function getEventsForDate(iso,prev=getPrevisionnel()){
+        return (prev.__events||[]).filter(ev=>eventOccursOnDate(ev,iso,prev)).map(ev=>({...ev,occurrenceDate:iso,...agendaEventIndexes(ev)}));
     }
 
-    // Retourne tous les événements visibles sur une cellule. Par défaut, l'unique
-    // remplace l'affichage du récurrent. Si l'unique porte displayMode:'both',
-    // les deux sont rendus ensemble. Une occurrence récurrente supprimée par
-    // exception reste naturellement absente.
-    function getEventsForDatePeriod(iso, period, prev=getPrevisionnel()) {
-        const pIdx = periodIndex(period);
-        const weekly = getWeeklyEventForDatePeriod(iso, period, prev);
-        const uniques = getUniqueEventsForDate(iso, prev)
-            .filter(ev => pIdx >= ev.startIndex && pIdx <= ev.endIndex);
-        if (uniques.length) {
-            const withBoth = uniques.filter(ev => ev.displayMode === 'both');
-            const visible = withBoth.length ? withBoth : [uniques[0]];
-            return weekly && withBoth.length ? [weekly, ...visible] : visible;
-        }
-        return weekly ? [weekly] : [];
+    function getEventsForDatePeriod(iso,period,prev=getPrevisionnel()){
+        const pIdx=periodIndex(period);
+        return getEventsForDate(iso,prev).filter(ev=>pIdx>=ev.startIndex&&pIdx<=ev.endIndex);
     }
 
-    function getEventForDatePeriod(iso, period, prev=getPrevisionnel()) {
-        return getEventsForDatePeriod(iso, period, prev)[0] || null;
+    function findAgendaEventForOccurrence(iso,eventId,prev=getPrevisionnel()){
+        return getEventsForDate(iso,prev).find(ev=>String(ev.eventId)===String(eventId))||null;
     }
 
-    function findWeeklyOverlap(iso, startIdx, endIdx, prev, excludeSeriesId=null) {
-        const dayIdx = getDayIndexFromISO(iso);
-        if (dayIdx < 0 || dayIdx > 4) return null;
-        for (let i=startIdx; i<=endIdx; i++) {
-            const ev = getWeeklyEventForDatePeriod(iso, periods[i], prev);
-            if (ev && ev.seriesId !== excludeSeriesId) return ev;
-        }
-        return null;
+    function getEventForDatePeriod(iso,period,prev=getPrevisionnel()){
+        return getEventsForDatePeriod(iso,period,prev)[0]||null;
     }
 
-    function findUniqueOverlaps(iso, startIdx, endIdx, prev, excludeEventId=null) {
-        return getUniqueEventsForDate(iso, prev).filter(ev => {
-            if (excludeEventId && ev.eventId === excludeEventId) return false;
-            return !(ev.endIndex < startIdx || ev.startIndex > endIdx);
-        });
+    function getEventLabel(event){
+        if(!event)return 'Activité';
+        if(event.type==='ELEVE')return event.eleve||'Accompagnement élève';
+        if(event.type==='FORMATION')return event.title||'Formation';
+        if(event.type==='COLLAB')return event.title||'Collaboration';
+        if(event.type==='ADMIN')return event.title||'Tâche administrative';
+        return event.title||'Créneau libre';
     }
 
-    let agendaConflictState = null;
-
-    function closeAgendaConflictModal() {
-        document.getElementById('agendaConflictModal')?.classList.add('hidden');
-        agendaConflictState = null;
+    function getEventMeta(event){
+        if(!event)return '';
+        if(event.type==='ELEVE')return [event.matiere,event.local].filter(Boolean).join(' · ');
+        return event.detail||'';
     }
 
-    function openAgendaConflictModal(state) {
-        agendaConflictState = state;
-        const summary = document.getElementById('agenda-conflict-summary');
-        const replace = document.getElementById('agenda-conflict-replace');
-        if (!summary || !replace) return;
-        const existing = state.existing;
-        const existingLabel = getEventLabel(existing);
-        const newLabel = getEventLabel(state.draft);
-        summary.innerHTML = `<strong>${escapeHtml(newLabel)}</strong> entre en conflit avec <strong>${escapeHtml(existingLabel)}</strong> le ${escapeHtml(state.dateIso)} (${escapeHtml(state.draft.startPeriod)}${state.draft.endPeriod!==state.draft.startPeriod?' → '+escapeHtml(state.draft.endPeriod):''}).<br><br>Tu peux remplacer l'événement existant ou conserver les deux. Aucun événement n'est supprimé avant ton choix.`;
-        replace.textContent = `Remplacer « ${existingLabel} »`;
-        document.getElementById('agendaConflictModal').classList.remove('hidden');
+    function getEventState(event,dayIdx,iso,db){
+        if(event?.eventStatus==='cancelled')return {key:'cancelled',label:'Annulé'};
+        const encoded=event?.type==='ELEVE'?getEncodedForEvent(dayIdx,iso,event,db):null;
+        if(encoded)return {key:'realized',label:'Séance enregistrée',encoded};
+        if(event?.realized||event?.eventStatus==='realized')return {key:'realized',label:'Réalisé'};
+        if(event?.eventStatus==='confirmed')return {key:'confirmed',label:'Confirmé'};
+        return {key:'proposed',label:'Proposition'};
     }
 
-    document.getElementById('agenda-conflict-replace')?.addEventListener('click', () => {
-        const state = agendaConflictState;
-        if (!state) return;
-        closeAgendaConflictModal();
-        persistAgendaDraft(state, 'replace');
-    });
-    document.getElementById('agenda-conflict-both')?.addEventListener('click', () => {
-        const state = agendaConflictState;
-        if (!state) return;
-        closeAgendaConflictModal();
-        persistAgendaDraft(state, 'both');
-    });
-    document.getElementById('agenda-conflict-cancel')?.addEventListener('click', closeAgendaConflictModal);
-
-    function renderHome() {
-        const iso = getTodayInApp();
-        const dt = parseISODate(iso);
-        const label = dt.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-        const dateEl = document.getElementById('home-today-date');
-        if (dateEl) dateEl.textContent = label.charAt(0).toUpperCase()+label.slice(1);
-        const list = document.getElementById('home-today-list');
-        const pending = [];
-        const db = getDB(), prev = getPrevisionnel();
-        const dayIdx = getDayIndexFromISO(iso);
-        if (dayIdx < 0 || dayIdx > 4) {
-            list.innerHTML = '<div class="home-empty">Aucune journée scolaire dans la période actuelle.</div>';
-        } else {
-            let html=''; const seen=new Set();
-            periods.forEach(p=>{
-                const ev=getEventForDatePeriod(iso,p,prev);
-                if(ev && seen.has(ev.eventId)) return;
-                if(ev) seen.add(ev.eventId);
-                const enc=ev && getEncodedForEvent(dayIdx,iso,ev,db);
-                if(ev){
-                    if(ev.type==='ELEVE' && !enc) pending.push(ev);
-                    const status=enc?'Séance enregistrée':'Planifié';
-                    html+=`<div class="home-row js-home-event" data-iso="${escapeHtml(iso)}" data-start-period="${escapeHtml(ev.startPeriod)}" data-day-index="${dayIdx}" data-event-id="${escapeHtml(ev.eventId)}"><div class="home-period">${escapeHtml(ev.startPeriod)}${ev.startPeriod!==ev.endPeriod?' → '+escapeHtml(ev.endPeriod):''}</div><div><div class="home-event-title">${escapeHtml(getEventLabel(ev))}</div><div class="home-event-meta">${escapeHtml(getEventMeta(ev)||'Mission Pôle Territorial')}</div></div><span class="status-badge ${enc?'badge-encoded':'badge-prev'}">${status}</span></div>`;
-                }
-            });
-            list.innerHTML=html || '<div class="home-empty">Aucun créneau planifié aujourd’hui.</div>';
-        }
-        const countEl=document.getElementById('home-pending-count'); if(countEl) countEl.textContent=pending.length;
-        const task=document.getElementById('home-task-list');
-        if(task) task.innerHTML=pending.slice(0,5).map(ev=>`<li><strong>${escapeHtml(ev.eleve)}</strong> · ${escapeHtml(ev.startPeriod)}${ev.startPeriod!==ev.endPeriod?' → '+escapeHtml(ev.endPeriod):''} · ${escapeHtml(ev.matiere||'')}</li>`).join('') || '<li>Rien à traiter pour le moment.</li>';
-    }
-
-    // V37 : les vues inactives sont placées hors du conteneur de contenu.
-    // Une seule vue existe physiquement dans .main-container à la fois.
-    // Ainsi, aucun élément de la Séance (dont le bouton d'enregistrement)
-    // ne peut apparaître sur Élèves ou Rapports & PIA.
-    let pageStage = null;
-    let pageViewPool = null;
-    const pageViewCache = {};
-
-    function initializePageStage() {
-        const main = document.querySelector('.main-container');
-        if (!main || pageStage) return;
-
-        pageStage = document.createElement('div');
-        pageStage.id = 'page-stage';
-        main.appendChild(pageStage);
-
-        // Le pool est hors de .main-container : les vues inactives ne participent
-        // ni à la mise en page, ni au défilement, ni à l'affichage de la page active.
-        pageViewPool = document.createElement('div');
-        pageViewPool.id = 'page-view-pool';
-        pageViewPool.setAttribute('aria-hidden', 'true');
-        pageViewPool.style.display = 'none';
-        document.body.appendChild(pageViewPool);
-
-        ['accueil','agenda','form','eleves','reports'].forEach(name => {
-            const el = document.getElementById('view-' + name);
-            if (el) {
-                pageViewCache[name] = el;
-                pageViewPool.appendChild(el);
-            }
-        });
-
-        showTab('accueil');
-    }
-
-    function showTab(tabName) {
-        if (!pageStage) initializePageStage();
-        if (!pageStage || !pageViewPool) return;
-
-        const target = pageViewCache[tabName];
-        if (!target) return;
-
-        // L'ancienne vue quitte réellement la zone de contenu.
-        while (pageStage.firstChild) pageViewPool.appendChild(pageStage.firstChild);
-        target.classList.remove('hidden');
-        target.style.display = '';
-        target.removeAttribute('aria-hidden');
-        pageStage.appendChild(target);
-
-        document.querySelectorAll('.nav-tabs .nav-btn').forEach(btn => btn.classList.remove('active'));
-        const button = document.getElementById('tab-btn-' + tabName);
-        if (button) button.classList.add('active');
-
-        const main = document.querySelector('.main-container');
-        if (main) main.scrollTop = 0;
-
-        if (typeof closeAllChoiceMenus === 'function') closeAllChoiceMenus();
-        if (typeof closeEventActionModal === 'function') closeEventActionModal();
-
-        if (tabName === 'agenda') renderAgenda();
-        if (tabName === 'eleves') renderStudentsView();
-        if (tabName === 'reports') {
-            updateStudentDropdowns();
-            const reportStudent=document.getElementById('r-eleve');
-            if(reportStudent && !reportStudent.value){
-                const last=getDB().find(item=>item.type==='SEANCE');
-                if(last) reportStudent.value=last.identification?.eleve || '';
-            }
-            reportStudent?.dispatchEvent(new CustomEvent('journalier:student-context-change',{bubbles:true}));
-            loadStudentHistory();
-        }
-        if (tabName === 'form') {
-            updateStudentDropdowns();
-            const d = document.getElementById('f-date');
-            if (d && !d.value) d.value = selectedDateISO;
-            if (typeof refreshSessionSubjectsForStudent === 'function') refreshSessionSubjectsForStudent();
-            if (typeof renderSessionMainSubjectBubbles === 'function') renderSessionMainSubjectBubbles();
-            if (typeof updateObservationSuggestions === 'function') updateObservationSuggestions();
-        }
-        if (tabName === 'accueil') renderHome();
-    }
-
-    function updatePIAPrompt() {
-        const studentName = document.getElementById('f-eleve').value;
-        const students = getStudents();
-        const student = students.find(s => s.nom === studentName);
-        const box = document.getElementById('pia-widget-box');
-        const text = document.getElementById('pia-widget-text');
-
-        if (student && student.pia) {
-            text.innerText = student.pia;
-            box.classList.remove('hidden');
-        } else {
-            box.classList.add('hidden');
-        }
-    }
-
-    function switchAgendaView(mode) {
-        agendaMode = mode;
-        document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('vbtn-' + mode).classList.add('active');
-        renderAgenda();
-    }
-
-    function todayAgenda() {
-        selectedDateISO = getInitialDateISO();
-        // L'agenda scolaire reste cadré sur la période de l'application.
-        renderAgenda();
-    }
-
-    function navigateAgenda(delta) {
-        const dt = parseISODate(selectedDateISO);
-        if (agendaMode === 'day') {
-            dt.setDate(dt.getDate() + delta);
-        } else if (agendaMode === 'week') {
-            dt.setDate(dt.getDate() + (delta * 7));
-        } else if (agendaMode === 'month') {
-            dt.setMonth(dt.getMonth() + delta);
-        }
-        selectedDateISO = formatISO(dt);
-        renderAgenda();
-    }
-
-    function pickerDateChanged(val) {
-        if (!val) return;
-        selectedDateISO = val;
-        renderAgenda();
-    }
-
-    function renderAgenda() {
-        const picker = document.getElementById('agenda-picker-input');
-        picker.value = selectedDateISO;
-        const reportDate = document.getElementById('r-date-anchor');
-        if (reportDate) reportDate.value = selectedDateISO;
-
-        const dayView = document.getElementById('agenda-view-day');
-        const weekView = document.getElementById('agenda-view-week');
-        const monthView = document.getElementById('agenda-view-month');
-
-        dayView.classList.add('hidden');
-        weekView.classList.add('hidden');
-        monthView.classList.add('hidden');
-
-        if (agendaMode === 'day') {
-            dayView.classList.remove('hidden');
-            renderDayView();
-        } else if (agendaMode === 'week') {
-            weekView.classList.remove('hidden');
-            renderWeekView();
-        } else if (agendaMode === 'month') {
-            monthView.classList.remove('hidden');
-            renderMonthView();
-        }
-    }
-
-    function renderDayView() {
-        const dt = parseISODate(selectedDateISO);
-        const label = dt.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-        document.getElementById('agenda-date-label').innerText = label.charAt(0).toUpperCase() + label.slice(1);
-        const dayView = document.getElementById('agenda-view-day');
-        const db = getDB(), prev = getPrevisionnel();
-        const dayIdx = getDayIndexFromISO(selectedDateISO);
-        const weekend = dayIdx > 4;
-        let html=weekend?`<div class="day-weekend-note" style="grid-column:1/-1;padding:4px 0 8px;color:#64748b;font-size:.78rem;">Week-end : seuls les événements uniques sont affichés.</div>`:'';
-        const eventsById=new Map();
-        periods.forEach(period=>getEventsForDatePeriod(selectedDateISO,period,prev).forEach(event=>{
-            const startIndex=Number.isInteger(event.startIndex)?event.startIndex:periodIndex(event.startPeriod);
-            const endIndex=Number.isInteger(event.endIndex)?event.endIndex:periodIndex(event.endPeriod||event.startPeriod);
-            if(startIndex<0||endIndex<startIndex||startIndex>=periods.length)return;
-            const eventId=String(event.eventId||`day_${startIndex}_${endIndex}`);
-            if(!eventsById.has(eventId))eventsById.set(eventId,{...event,eventId,startIndex,endIndex:Math.min(endIndex,periods.length-1)});
-        }));
-        const events=[...eventsById.values()].sort((a,b)=>a.startIndex-b.startIndex||a.endIndex-b.endIndex||a.eventId.localeCompare(b.eventId));
-        const laneEnds=[],occupiedPeriods=new Set();
-        events.forEach(event=>{
-            let lane=laneEnds.findIndex(endIndex=>endIndex<event.startIndex);
-            if(lane<0)lane=laneEnds.length;
-            laneEnds[lane]=event.endIndex;
-            event.lane=lane;
-            for(let index=event.startIndex;index<=event.endIndex;index++)occupiedPeriods.add(index);
-        });
-        const laneCount=Math.max(1,laneEnds.length);
-        periods.forEach((period,index)=>{
-            html+=`<div class="day-period-label" style="grid-column:1;grid-row:${index+1};">${escapeHtml(period)}</div>`;
-            if(!occupiedPeriods.has(index))html+=`<div class="day-free-slot" style="grid-column:2;grid-row:${index+1};"><span>Créneau libre · aucune activité planifiée</span><button class="btn-secondary focus-ring js-open-slot" data-iso="${escapeHtml(selectedDateISO)}" data-period="${escapeHtml(period)}" data-day-index="${dayIdx}" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;">Programmer</button></div>`;
-        });
-        events.forEach(event=>{
-            const encoded=getEncodedForEvent(dayIdx,selectedDateISO,event,db);
-            const status=encoded?'Séance enregistrée':'Planifié';
-            const badge=encoded?'badge-encoded':'badge-prev';
-            const span=event.endIndex-event.startIndex+1;
-            const range=event.startPeriod===event.endPeriod?event.startPeriod:`${event.startPeriod} → ${event.endPeriod}`;
-            const typeClass=getEventClass(event,encoded);
-            const meta=getEventMeta(event)||'Mission Pôle Territorial';
-            html+=`<div class="day-event-layer" style="grid-column:2;grid-row:${event.startIndex+1} / span ${span};--event-lane-left:${event.lane*100/laneCount}%;--event-lane-width:${100/laneCount}%;">
-                <button type="button" class="day-event-card ${typeClass} js-day-event" data-iso="${escapeHtml(selectedDateISO)}" data-start-period="${escapeHtml(event.startPeriod)}" data-day-index="${dayIdx}" data-event-id="${escapeHtml(event.eventId)}" aria-label="${escapeHtml(`${getEventLabel(event)} · ${range} · ${status}`)}">
-                    <span class="status-badge ${badge}">${status}</span>
-                    <span class="slot-info-main"><span class="slot-title">${escapeHtml(getEventLabel(event))}</span><span class="slot-meta">${escapeHtml(meta)}${event.recurrence==='unique'?' · Événement unique':' · Récurrent'}</span></span>
-                    <span class="week-event-range">${escapeHtml(range)}</span>
-                </button>
-                ${event.type==='ELEVE'&&!encoded?`<button type="button" class="day-event-encode btn-primary focus-ring js-quick-form" data-iso="${escapeHtml(selectedDateISO)}" data-start-period="${escapeHtml(event.startPeriod)}" data-eleve="${escapeHtml(event.eleve)}" data-matiere="${escapeHtml(event.matiere||'')}" style="padding:6px 9px;font-size:.7rem;border-radius:7px;cursor:pointer;">Encoder</button>`:''}
-            </div>`;
-        });
-        dayView.innerHTML=html;
-        dayView.classList.add('day-timeline-grid');
-    }
-
-    function periodIndex(period) {
-        return periods.indexOf(period);
-    }
-
-    function syncSessionPeriodRange(){
-        const start=document.getElementById('f-periode-start');
-        const end=document.getElementById('f-periode-end');
-        if(!start||!end)return;
-        const startIndex=periodIndex(start.value),endIndex=periodIndex(end.value);
-        if(startIndex<0)return;
-        if(endIndex<startIndex)end.value=start.value;
-        [...end.options].forEach((option,index)=>{option.disabled=index<startIndex;});
-    }
-
-    function getSlotKey(dayIdx, period) {
-        return `${dayIdx}_${period}`;
-    }
-
-    function getDayIndexFromISO(iso) {
-        const d = parseISODate(iso);
-        const dow = d.getDay();
-        return dow === 0 ? 6 : dow - 1;
-    }
-
-    function getEventAt(dayIdx, period, prev) {
-        const direct = prev[getSlotKey(dayIdx, period)];
-        if (!direct) return null;
-
-        // V9: les événements multi-périodes portent un eventId.
-        if (direct.eventId) {
-            const entries = Object.entries(prev)
-                .filter(([key, value]) => value && value.eventId === direct.eventId)
-                .map(([key, value]) => ({ key, value }));
-            const indexes = entries
-                .map(x => {
-                    const parts = x.key.split('_');
-                    return periodIndex(parts[1]);
-                })
-                .filter(i => i >= 0);
-            if (indexes.length) {
-                return {
-                    ...direct,
-                    eventId: direct.eventId,
-                    startIndex: Math.min(...indexes),
-                    endIndex: Math.max(...indexes),
-                    recurrence:'weekly',
-                    seriesId:direct.seriesId || direct.eventId
-                };
-            }
-        }
-
-        return {
-            ...direct,
-            eventId: direct.eventId || `legacy_${dayIdx}_${period}`,
-            startIndex: periodIndex(period),
-            endIndex: periodIndex(period),
-            recurrence:'weekly',
-            seriesId:direct.eventId || `legacy_${dayIdx}_${period}`
-        };
-    }
-
-    function getEventSlots(dayIdx, eventId, prev) {
-        return Object.entries(prev)
-            .filter(([key, value]) => {
-                if (!value || value.eventId !== eventId) return false;
-                return key.startsWith(`${dayIdx}_`);
-            })
-            .map(([key]) => key.split('_')[1])
-            .sort((a, b) => periodIndex(a) - periodIndex(b));
-    }
-
-    function getEventForCell(dayIdx, period, prev) {
-        const slot = prev[getSlotKey(dayIdx, period)];
-        if (!slot) return null;
-
-        if (slot.eventId) {
-            const slots = getEventSlots(dayIdx, slot.eventId, prev);
-            if (slots.length) {
-                return {
-                    ...slot,
-                    eventId: slot.eventId,
-                    startPeriod: slots[0],
-                    endPeriod: slots[slots.length - 1],
-                    startIndex: periodIndex(slots[0]),
-                    endIndex: periodIndex(slots[slots.length - 1])
-                };
-            }
-        }
-
-        return {
-            ...slot,
-            eventId: `legacy_${dayIdx}_${period}`,
-            startPeriod: period,
-            endPeriod: period,
-            startIndex: periodIndex(period),
-            endIndex: periodIndex(period)
-        };
-    }
-
-    function getEventLabel(slot) {
-        if (!slot) return 'Activité';
-        if (slot.type === 'ELEVE') return slot.eleve || 'Accompagnement élève';
-        if (slot.type === 'FORMATION') return slot.title || 'Formation';
-        if (slot.type === 'COLLAB') return slot.title || 'Collaboration';
-        if (slot.type === 'ADMIN') return slot.title || 'Tâche administrative';
-        return 'Créneau libre';
-    }
-
-    function getEventMeta(slot) {
-        if (!slot) return '';
-        if (slot.type === 'ELEVE') {
-            return `${slot.matiere || ''}${slot.local ? ' · ' + slot.local : ''}`;
-        }
-        return slot.detail || '';
-    }
-
-    function getEventClass(slot, encoded) {
-        if (encoded) return 'event-encoded';
-        if (!slot) return '';
-        if (slot.type === 'FORMATION') return 'event-formation';
-        if (slot.type === 'COLLAB') return 'event-collab';
-        if (slot.type === 'ADMIN') return 'event-admin';
+    function getEventClass(event,state){
+        if(state?.key==='realized')return 'event-encoded';
+        if(state?.key==='cancelled')return 'event-cancelled';
+        if(event?.type==='FORMATION')return 'event-formation';
+        if(event?.type==='COLLAB')return 'event-collab';
+        if(event?.type==='ADMIN')return 'event-admin';
         return 'event-eleve';
     }
 
-    function getEncodedForEvent(dayIdx, isoDate, event, db) {
-    if (!event) return null;
+    function getEncodedForEvent(dayIdx,isoDate,event,db){
+        if(!event||event.type!=='ELEVE')return null;
+        const {start,end}=agendaEventIndexes(event);
+        return (db||[]).find(item=>{
+            const sp=sessionParts(item);
+            if(sp.date!==isoDate)return false;
+            if(event.eleveId&&item.identification?.eleveId&&String(event.eleveId)!==String(item.identification.eleveId))return false;
+            if(sp.eleve!==event.eleve)return false;
+            if(event.matiere&&sp.matiere&&sp.matiere!==event.matiere)return false;
+            const itemStart=periodIndex(sp.start),itemEnd=periodIndex(sp.end||sp.start);
+            if(itemStart<0||itemEnd<0)return false;
+            return itemStart<=end&&itemEnd>=start;
+        })||null;
+    }
 
-    const start = event.startIndex ?? 0;
-    const end = event.endIndex ?? start;
-
-    return db.find(item => {
-        const sp = sessionParts(item);
-
-        if (sp.date !== isoDate || sp.eleve !== event.eleve) return false;
-
-        const itemStart = periodIndex(sp.start);
-        const itemEnd = periodIndex(sp.end || sp.start);
-
-        if (itemStart < 0 || itemEnd < 0) return false;
-
-        return itemStart <= end && itemEnd >= start;
-    }) || null;
-}
-
-    function renderWeekView() {
-        const monday = getMonday(parseISODate(selectedDateISO));
-        const weekDates = [];
-        for (let i = 0; i < 5; i++) weekDates.push(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i));
-        const startStr = weekDates[0].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-        const endStr = weekDates[4].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-        document.getElementById('agenda-date-label').innerText = `Semaine du ${startStr} au ${endStr}`;
-        const weekView = document.getElementById('agenda-view-week');
-        const db = getDB(), prev = getPrevisionnel();
-        let html = '<div class="agenda-header-week">Période</div>';
-        weekDates.forEach((d, idx) => {
-            const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-            const iso = formatISO(d);
-            const isSelected = iso === selectedDateISO;
-            html += `<div class="agenda-header-week ${isSelected ? 'today-column' : ''} js-week-day" style="grid-column:${idx + 2};grid-row:1;" data-iso="${escapeHtml(iso)}">${days[idx]}<br><span style="font-weight:600;font-size:0.78rem;color:var(--primary);">${dateStr}</span></div>`;
-        });
-        periods.forEach((p, periodIdx) => {
-            html += `<div class="period-col-week ${periodIdx === 0 ? 'week-current-period' : ''}" style="grid-column:1;grid-row:${periodIdx + 2};"><strong>${p}</strong></div>`;
-        });
-        weekDates.forEach((d, dayIdx) => {
-            const isoDate = formatISO(d);
-            const eventsById=new Map();
-            periods.forEach(period=>getEventsForDatePeriod(isoDate,period,prev).forEach(event=>{
-                const eventId=String(event.eventId||'');
-                const startIndex=Number.isInteger(event.startIndex)?event.startIndex:periodIndex(event.startPeriod);
-                const endIndex=Number.isInteger(event.endIndex)?event.endIndex:periodIndex(event.endPeriod||event.startPeriod);
-                if(!eventId||startIndex<0||endIndex<startIndex||startIndex>=periods.length)return;
-                eventsById.set(eventId,{...event,eventId,startIndex,endIndex:Math.min(endIndex,periods.length-1)});
-            }));
-            const events=[...eventsById.values()].sort((a,b)=>a.startIndex-b.startIndex||a.endIndex-b.endIndex||a.eventId.localeCompare(b.eventId));
-            const laneEnds=[],occupiedPeriods=new Set();
-            events.forEach(event=>{
-                let lane=laneEnds.findIndex(endIndex=>endIndex<event.startIndex);
-                if(lane<0)lane=laneEnds.length;
-                laneEnds[lane]=event.endIndex;
-                event.lane=lane;
-                for(let periodIdx=event.startIndex;periodIdx<=event.endIndex;periodIdx++)occupiedPeriods.add(periodIdx);
+    function renderHome(){
+        const iso=getTodayInApp(),dt=parseISODate(iso),label=dt.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+        const dateEl=document.getElementById('home-today-date');if(dateEl)dateEl.textContent=label.charAt(0).toUpperCase()+label.slice(1);
+        const list=document.getElementById('home-today-list');if(!list)return;
+        const db=getDB(),events=getEventsForDate(iso),pending=[];
+        if(getDayIndexFromISO(iso)>4){list.innerHTML='<div class="home-empty">Aucune journée scolaire dans la période actuelle.</div>';}
+        else{
+            const seen=new Set();let html='';
+            events.sort((a,b)=>a.startIndex-b.startIndex||a.endIndex-b.endIndex).forEach(ev=>{
+                if(seen.has(ev.eventId))return;seen.add(ev.eventId);
+                const state=getEventState(ev,getDayIndexFromISO(iso),iso,db);
+                if(ev.type==='ELEVE'&&state.key!=='realized')pending.push(ev);
+                const range=ev.startPeriod===ev.endPeriod?ev.startPeriod:`${ev.startPeriod} → ${ev.endPeriod}`;
+                html+=`<div class="home-row js-home-event" data-iso="${escapeHtml(iso)}" data-start-period="${escapeHtml(ev.startPeriod)}" data-day-index="${getDayIndexFromISO(iso)}" data-event-id="${escapeHtml(ev.eventId)}"><div class="home-period">${escapeHtml(range)}</div><div><div class="home-event-title">${escapeHtml(getEventLabel(ev))}</div><div class="home-event-meta">${escapeHtml(getEventMeta(ev)||'Mission Pôle Territorial')}</div></div><span class="status-badge agenda-status-${state.key}">${escapeHtml(state.label)}</span></div>`;
             });
-            events.forEach(event=>{
-                event.lanes=1;
-                for(let periodIdx=event.startIndex;periodIdx<=event.endIndex;periodIdx++){
-                    const concurrent=events.filter(other=>other.startIndex<=periodIdx&&other.endIndex>=periodIdx).length;
-                    event.lanes=Math.max(event.lanes,concurrent);
-                }
-            });
-            events.forEach(event=>{
-                const span=event.endIndex-event.startIndex+1;
-                const encoded=getEncodedForEvent(dayIdx,isoDate,event,db);
-                const cls=getEventClass(event,encoded);
-                const title=getEventLabel(event),meta=getEventMeta(event);
-                html+=`<div class="slot-cell-week week-event-cell week-event-overlay" style="grid-column:${dayIdx+2};grid-row:${event.startIndex+2} / span ${span};--event-lane-left:${event.lane*100/event.lanes}%;--event-lane-width:${100/event.lanes}%;"><div class="week-event ${cls} js-week-event" data-iso="${escapeHtml(isoDate)}" data-start-period="${escapeHtml(event.startPeriod)}" data-day-index="${dayIdx}" data-event-id="${escapeHtml(event.eventId)}"><div class="week-event-title">${encoded?'✓ ':''}${escapeHtml(title)}</div>${meta?`<div class="week-event-meta">${escapeHtml(meta)}</div>`:''}<div class="week-event-range">${escapeHtml(event.startPeriod)}${event.endPeriod!==event.startPeriod?' → '+escapeHtml(event.endPeriod):''} · ${event.recurrence==='unique'?'Unique':'Récurrent'}</div></div></div>`;
-            });
-            periods.forEach((period,periodIdx)=>{
-                if(occupiedPeriods.has(periodIdx))return;
-                html+=`<div class="slot-cell-week week-event-cell js-week-slot" style="grid-column:${dayIdx+2};grid-row:${periodIdx+2};" data-iso="${escapeHtml(isoDate)}" data-period="${escapeHtml(period)}" data-day-index="${dayIdx}"><div class="week-slot-free">+ Ajouter</div></div>`;
-            });
+            list.innerHTML=html||'<div class="home-empty">Aucun événement planifié aujourd’hui.</div>';
+        }
+        const countEl=document.getElementById('home-pending-count');if(countEl)countEl.textContent=pending.length;
+        const task=document.getElementById('home-task-list');if(task)task.innerHTML=pending.slice(0,5).map(ev=>`<li><strong>${escapeHtml(ev.eleve)}</strong> · ${escapeHtml(ev.startPeriod)}${ev.endPeriod!==ev.startPeriod?' → '+escapeHtml(ev.endPeriod):''} · ${escapeHtml(ev.matiere||'')}</li>`).join('')||'<li>Rien à traiter pour le moment.</li>';
+    }
+
+    function switchAgendaView(mode){agendaMode=['day','week','month'].includes(mode)?mode:'day';['day','week','month'].forEach(m=>document.getElementById(`vbtn-${m}`)?.classList.toggle('active',m===agendaMode));renderAgenda();}
+    function todayAgenda(){selectedDateISO=getTodayInApp();renderAgenda();}
+    function navigateAgenda(delta){const d=parseISODate(selectedDateISO);if(agendaMode==='day')d.setDate(d.getDate()+delta);else if(agendaMode==='week')d.setDate(d.getDate()+delta*7);else d.setMonth(d.getMonth()+delta);selectedDateISO=formatISO(d);renderAgenda();}
+    function pickerDateChanged(val){if(!val)return;selectedDateISO=val;renderAgenda();}
+
+    function renderAgenda(){
+        const picker=document.getElementById('agenda-picker-input');if(picker)picker.value=selectedDateISO;
+        const reportDate=document.getElementById('r-date-anchor');if(reportDate)reportDate.value=selectedDateISO;
+        ['day','week','month'].forEach(m=>document.getElementById(`agenda-view-${m}`)?.classList.toggle('hidden',m!==agendaMode));
+        if(agendaMode==='day')renderDayView();else if(agendaMode==='week')renderWeekView();else renderMonthView();
+    }
+
+    function renderDayView(){
+        const dt=parseISODate(selectedDateISO),label=dt.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+        document.getElementById('agenda-date-label').innerText=label.charAt(0).toUpperCase()+label.slice(1);
+        const dayView=document.getElementById('agenda-view-day'),db=getDB(),prev=getPrevisionnel(),dayIdx=getDayIndexFromISO(selectedDateISO);
+        const events=getEventsForDate(selectedDateISO,prev).sort((a,b)=>a.startIndex-b.startIndex||a.endIndex-b.endIndex||a.eventId.localeCompare(b.eventId));
+        const laneEnds=[];events.forEach(ev=>{let lane=laneEnds.findIndex(end=>end<ev.startIndex);if(lane<0)lane=laneEnds.length;ev.lane=lane;laneEnds[lane]=ev.endIndex;});
+        const laneCount=Math.max(1,laneEnds.length);let html=dayIdx>4?'<div class="day-weekend-note" style="grid-column:1/-1;padding:4px 0 8px;color:#64748b;font-size:.78rem;">Week-end : seuls les événements uniques sont affichés.</div>':'';
+        periods.forEach((period,index)=>{
+            const time=agendaPeriodByLabel(period);const eventsHere=events.filter(ev=>ev.startIndex<=index&&ev.endIndex>=index);
+            html+=`<div class="day-period-label" style="grid-column:1;grid-row:${index+1};"><strong>${escapeHtml(period)}</strong><small>${escapeHtml(`${time.start}–${time.end}`)}</small></div>`;
+            if(!eventsHere.length)html+=`<div class="day-free-slot" style="grid-column:2;grid-row:${index+1};"><span>Créneau libre</span><button class="btn-secondary focus-ring js-open-slot" data-force-create="true" data-iso="${escapeHtml(selectedDateISO)}" data-period="${escapeHtml(period)}" data-day-index="${dayIdx}" style="padding:7px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;">Programmer</button></div>`;
+            else html+=`<div class="day-overlap-add" style="grid-column:2;grid-row:${index+1};"><button type="button" class="btn-secondary focus-ring js-open-slot" data-force-create="true" data-iso="${escapeHtml(selectedDateISO)}" data-period="${escapeHtml(period)}" data-day-index="${dayIdx}">＋ Ajouter sur ce créneau</button></div>`;
         });
-        weekView.innerHTML = html;
-    }
-
-    function openEventActionModal(isoDate, period, dayIdx, eventId) {
-        closeAllChoiceMenus();
-        const prev = getPrevisionnel();
-        const event = getEventForDatePeriod(isoDate, period, prev);
-        if (!event) {
-            openSlotModal(isoDate, period, dayIdx);
-            return;
-        }
-
-        const modal = document.getElementById('eventActionModal');
-        document.getElementById('event-action-title').innerText = getEventLabel(event);
-
-        const span = Math.max(1, event.endIndex - event.startIndex + 1);
-        const eventSummary=document.getElementById('event-action-summary');
-        if(eventSummary){
-            eventSummary.replaceChildren();
-            const titleNode=document.createElement('strong');
-            titleNode.textContent=getEventLabel(event);
-            eventSummary.appendChild(titleNode);
-            eventSummary.appendChild(document.createElement('br'));
-            const meta=getEventMeta(event);
-            if(meta){
-                eventSummary.appendChild(document.createTextNode(meta));
-                eventSummary.appendChild(document.createElement('br'));
-            }
-            const detailNode=document.createElement('span');
-            detailNode.style.color='var(--text-sub)';
-            detailNode.textContent=`${event.startPeriod}${span > 1 ? ' → ' + event.endPeriod : ''} · ${event.recurrence==='unique'?'Événement unique':'Récurrent hebdomadaire'}`;
-            eventSummary.appendChild(detailNode);
-        }
-
-        const encodedSession = event.type === 'ELEVE'
-            ? getEncodedForEvent(dayIdx, isoDate, event, getDB())
-            : null;
-        const observeButton=document.getElementById('event-action-observe');
-        observeButton.textContent=encodedSession ? '✏️ Modifier la séance' : '📝 Encoder la séance';
-        observeButton.onclick = () => {
-            closeEventActionModal();
-            if (event.type === 'ELEVE') {
-                if(encodedSession){
-                    editHistorySession(encodedSession.id);
-                }else{
-                    quickFormForSlot(isoDate, event.startPeriod, event.eleve, event.matiere);
-                }
-            } else {
-                alert("L'encodage détaillé d'une observation concerne les accompagnements d'élèves.");
-            }
-        };
-
-        document.getElementById('event-action-edit').onclick = () => {
-            closeEventActionModal();
-            openSlotModal(isoDate, event.startPeriod, dayIdx);
-        };
-
-        document.getElementById('event-action-extend').onclick = () => {
-            closeEventActionModal();
-            openSlotModal(isoDate, event.startPeriod, dayIdx);
-        };
-
-        document.getElementById('event-action-duplicate').onclick = () => {
-            closeEventActionModal();
-            openDuplicateEventModal(isoDate, event.startPeriod, dayIdx, event.eventId);
-        };
-        document.getElementById('event-action-delete').onclick = () => {
-            openEventDeleteModal(event);
-        };
-
-        modal.classList.remove('hidden');
-    }
-
-    function closeEventActionModal() {
-        closeAllChoiceMenus();
-        document.getElementById('eventActionModal').classList.add('hidden');
-    }
-
-    function renderMonthView() {
-        const dt = parseISODate(selectedDateISO);
-        const year = dt.getFullYear();
-        const month = dt.getMonth();
-
-        const monthName = dt.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-        document.getElementById('agenda-date-label').innerText = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-
-        const monthView = document.getElementById('agenda-view-month');
-        const db = getDB();
-        const prev = getPrevisionnel();
-
-        const firstDayOfMonth = new Date(year, month, 1);
-        const lastDayOfMonth = new Date(year, month + 1, 0);
-
-        let startingDayOfWeek = firstDayOfMonth.getDay();
-        startingDayOfWeek = startingDayOfWeek === 0 ? 6 : startingDayOfWeek - 1;
-
-        let html = '';
-        const weekDaysFr = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-        weekDaysFr.forEach(w => {
-            html += `<div class="month-day-header">${w}</div>`;
+        events.forEach(ev=>{
+            const state=getEventState(ev,dayIdx,selectedDateISO,db),span=ev.endIndex-ev.startIndex+1,range=ev.startPeriod===ev.endPeriod?ev.startPeriod:`${ev.startPeriod} → ${ev.endPeriod}`,cls=getEventClass(ev,state),meta=getEventMeta(ev)||'Mission Pôle Territorial';
+            html+=`<div class="day-event-layer" style="grid-column:2;grid-row:${ev.startIndex+1} / span ${span};--event-lane-left:${ev.lane*100/laneCount}%;--event-lane-width:${100/laneCount}%;"><button type="button" class="day-event-card ${cls} js-day-event" data-iso="${escapeHtml(selectedDateISO)}" data-start-period="${escapeHtml(ev.startPeriod)}" data-day-index="${dayIdx}" data-event-id="${escapeHtml(ev.eventId)}" aria-label="${escapeHtml(`${getEventLabel(ev)} · ${range} · ${state.label}`)}"><span class="status-badge agenda-status-${state.key}">${escapeHtml(state.label)}</span><span class="slot-info-main"><span class="slot-title">${escapeHtml(getEventLabel(ev))}</span><span class="slot-meta">${escapeHtml(meta)}${ev.recurrence==='unique'?' · Unique':' · Hebdomadaire'}</span></span><span class="week-event-range">${escapeHtml(range)}</span></button>${ev.type==='ELEVE'&&state.key!=='realized'&&state.key!=='cancelled'?`<button type="button" class="day-event-encode btn-primary focus-ring js-quick-form" data-iso="${escapeHtml(selectedDateISO)}" data-start-period="${escapeHtml(ev.startPeriod)}" data-eleve="${escapeHtml(ev.eleve)}" data-matiere="${escapeHtml(ev.matiere||'')}" style="padding:6px 9px;font-size:.7rem;border-radius:7px;cursor:pointer;">Encoder</button>`:''}</div>`;
         });
-
-        const prevMonthLastDay = new Date(year, month, 0).getDate();
-        for (let i = startingDayOfWeek - 1; i >= 0; i--) {
-            const dayNum = prevMonthLastDay - i;
-            html += `<div class="month-date-cell other-month"><div class="month-day-number">${dayNum}</div></div>`;
-        }
-
-        for (let dayNum = 1; dayNum <= lastDayOfMonth.getDate(); dayNum++) {
-            const cellDate = new Date(year, month, dayNum);
-            const iso = formatISO(cellDate);
-            const isToday = iso === selectedDateISO;
-            const dayIdx = getDayIndexFromISO(iso);
-
-            // Les activités récurrentes sont projetées sur leur jour de semaine ; les événements uniques utilisent leur date exacte.
-            const plannedEvents = [];
-            const seenEvents = new Set();
-            periods.forEach(period => {
-                getEventsForDatePeriod(iso, period, prev).forEach(event => {
-                    if (!event || seenEvents.has(event.eventId)) return;
-                    seenEvents.add(event.eventId);
-                    plannedEvents.push(event);
-                });
-            });
-
-            const pills = [];
-            const maxVisible = 3;
-            plannedEvents.slice(0, maxVisible).forEach(event => {
-                const encoded = getEncodedForEvent(dayIdx, iso, event, db);
-                const typeClass = event.type === 'FORMATION' ? 'event-formation' : event.type === 'COLLAB' ? 'event-collab' : event.type === 'ADMIN' ? 'event-admin' : '';
-                const label = getEventLabel(event);
-                const meta = getEventMeta(event);
-                const shortLabel = event.type === 'ELEVE'
-                    ? `${label}${meta ? ' · ' + meta : ''}`
-                    : label;
-                const hasRange=event.startPeriod&&event.endPeriod&&event.startPeriod!==event.endPeriod;
-                const rangeLabel=hasRange?`${event.startPeriod}–${event.endPeriod}`:event.startPeriod||'';
-                pills.push(`<div class="month-indicator-pill month-planned-pill ${typeClass}" title="${escapeHtml(shortLabel)} — ${escapeHtml(hasRange?`${event.startPeriod} → ${event.endPeriod}`:event.startPeriod||'')}"><span class="month-planned-dot"></span><span class="month-planned-label">${encoded ? '✓ ' : ''}${escapeHtml(shortLabel)}</span>${hasRange?`<span class="month-period-range">${escapeHtml(rangeLabel)}</span>`:''}</div>`);
-            });
-
-            const hiddenCount = Math.max(0, plannedEvents.length - maxVisible);
-            if (hiddenCount > 0) {
-                pills.push(`<div class="month-more-pill">+ ${hiddenCount} autre${hiddenCount > 1 ? 's' : ''}</div>`);
-            }
-
-
-            html += `
-                <div class="month-date-cell ${isToday ? 'today' : ''} js-month-day" data-iso="${escapeHtml(iso)}">
-                    <div class="month-day-number">${dayNum}</div>
-                    <div class="month-indicators">${pills.join('')}</div>
-                </div>
-            `;
-        }
-
-        monthView.innerHTML = html;
+        dayView.innerHTML=html;dayView.classList.add('day-timeline-grid');
     }
 
-    function jumpToDayView(isoDate) {
-        selectedDateISO = isoDate;
-        switchAgendaView('day');
-    }
+    function periodIndex(period){return periods.indexOf(period);}
+    function syncSessionPeriodRange(){const start=document.getElementById('f-periode-start'),end=document.getElementById('f-periode-end');if(!start||!end)return;const si=periodIndex(start.value),ei=periodIndex(end.value);if(si<0)return;if(ei<si)end.value=start.value;[...end.options].forEach((o,i)=>o.disabled=i<si);}
+    function getSlotKey(dayIdx,period){return `${dayIdx}_${period}`;}
+    function getDayIndexFromISO(iso){const d=parseISODate(iso),dow=d.getDay();return dow===0?6:dow-1;}
 
-    function viewSlotDetails(id){const entry=getDB().find(e=>e.id==id);if(entry&&isJournalSession(entry)){const p=sessionParts(entry),q2=entry.q2||{},q4=entry.q4||{},q6=entry.q6||{};alert(`👤 ${p.eleve}
-📅 ${p.date} (${sessionPeriodLabel(entry)}) — ${p.matiere}
+    function getEncodedEventId(event,iso,db){return getEncodedForEvent(getDayIndexFromISO(iso),iso,event,db);}
 
-• Interventions : ${(entry.contexte?.typeIntervention||[]).join(', ')||'N/A'}
-• Fonctionnement : ${(q2.observations||[]).map(x=>x.observation).join(', ')||'Aucune'}
-• Adaptations : ${(q4.types||[]).join(', ')||'Aucune'}
-• Suites : ${(q6.actions||[]).join(', ')||'Aucune'}`);}}
-
-    function quickFormForSlot(dateIso, period, eleve, matiere) {
-        clearObservationForm();
-        document.getElementById('f-date').value = dateIso;
-        document.getElementById('f-periode-start').value = period;
-        document.getElementById('f-periode-end').value = period;
-        syncSessionPeriodRange();
-        if (eleve) document.getElementById('f-eleve').value = eleve;
-        if (matiere) {
-            const subjectInput=document.getElementById('f-matiere');
-            subjectInput.value=matiere;
-            subjectInput.dataset.selectedSubject=matiere;
-            const subjectNote=document.getElementById('session-subject-selected-note');
-            if(subjectNote) subjectNote.textContent=`Matière sélectionnée : ${matiere}`;
-        }
-        updatePIAPrompt();
-        showTab('form');
-    }
-
-    function populatePeriodSelectors(startValue, endValue) {
-        const start = document.getElementById('modal-slot-period-start');
-        const end = document.getElementById('modal-slot-period-end');
-        const options = periods.map(p => `<option value="${p}">${p}</option>`).join('');
-        start.innerHTML = options;
-        end.innerHTML = options;
-        start.value = startValue || periods[0];
-        end.value = endValue || startValue || periods[0];
-        syncAgendaEndPeriod();
-        start.onchange = syncAgendaStartPeriod;
-        end.onchange = syncAgendaEndPeriod;
-    }
-
-    function syncAgendaEndPeriod() {
-        const start = document.getElementById('modal-slot-period-start');
-        const end = document.getElementById('modal-slot-period-end');
-        if (!start || !end) return;
-        const startIdx = periodIndex(start.value);
-        const endIdx = periodIndex(end.value);
-        if (endIdx < startIdx) end.value = start.value;
-        [...end.options].forEach((opt, idx) => { opt.disabled = idx < startIdx; });
-    }
-
-    function syncAgendaStartPeriod() {
-        syncAgendaEndPeriod();
-    }
-
-    function toggleDuplicateFields() {
-        const enabled = document.getElementById('modal-duplicate-enabled').checked;
-        document.getElementById('modal-duplicate-fields').classList.toggle('hidden', !enabled);
-    }
-
-    function updateRecurrenceNote() {
-        const mode = document.getElementById('modal-slot-recurrence')?.value || 'weekly';
-        const note = document.getElementById('modal-slot-recurrence-note');
-        if (note) note.textContent = mode === 'unique'
-            ? 'Cette activité aura lieu uniquement à la date choisie.'
-            : 'Cette activité sera répétée chaque semaine le même jour.';
-    }
-
-    function removeRecurringSeries(prev, seriesId) {
-        Object.keys(prev).forEach(key => {
-            if (key === '__uniqueEvents' || key === '__exceptions') return;
-            const value = prev[key];
-            if (value && (value.eventId === seriesId || value.seriesId === seriesId)) delete prev[key];
+    function renderWeekView(){
+        const monday=getMonday(parseISODate(selectedDateISO)),weekDates=[];for(let i=0;i<5;i++)weekDates.push(new Date(monday.getFullYear(),monday.getMonth(),monday.getDate()+i));
+        const startStr=weekDates[0].toLocaleDateString('fr-FR',{day:'numeric',month:'short'}),endStr=weekDates[4].toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});
+        document.getElementById('agenda-date-label').innerText=`Semaine du ${startStr} au ${endStr}`;
+        const weekView=document.getElementById('agenda-view-week'),db=getDB(),prev=getPrevisionnel();let html='<div class="agenda-header-week">Période</div>';
+        weekDates.forEach((d,idx)=>{const iso=formatISO(d),dateStr=d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'});html+=`<div class="agenda-header-week ${iso===selectedDateISO?'today-column':''} js-week-day" style="grid-column:${idx+2};grid-row:1;" data-iso="${escapeHtml(iso)}">${days[idx]}<br><span style="font-weight:600;font-size:.78rem;color:var(--primary);">${dateStr}</span></div>`;});
+        periods.forEach((p,i)=>{const t=agendaPeriodByLabel(p);html+=`<div class="period-col-week" style="grid-column:1;grid-row:${i+2};"><strong>${escapeHtml(p)}</strong><small>${escapeHtml(`${t.start}–${t.end}`)}</small></div>`;});
+        weekDates.forEach((d,dayIdx)=>{
+            const iso=formatISO(d),events=getEventsForDate(iso,prev),laneEnds=[],occupied=new Set();
+            events.forEach(ev=>{let lane=laneEnds.findIndex(end=>end<ev.startIndex);if(lane<0)lane=laneEnds.length;ev.lane=lane;laneEnds[lane]=ev.endIndex;for(let i=ev.startIndex;i<=ev.endIndex;i++)occupied.add(i);});
+            const laneCount=Math.max(1,laneEnds.length);
+            events.forEach(ev=>{const state=getEventState(ev,dayIdx,iso,db),span=ev.endIndex-ev.startIndex+1,cls=getEventClass(ev,state),meta=getEventMeta(ev);html+=`<div class="slot-cell-week week-event-cell week-event-overlay" style="grid-column:${dayIdx+2};grid-row:${ev.startIndex+2} / span ${span};--event-lane-left:${ev.lane*100/laneCount}%;--event-lane-width:${100/laneCount}%;"><div class="week-event ${cls} js-week-event" data-iso="${escapeHtml(iso)}" data-start-period="${escapeHtml(ev.startPeriod)}" data-day-index="${dayIdx}" data-event-id="${escapeHtml(ev.eventId)}"><div class="week-event-title">${escapeHtml(state.key==='realized'?'✓ ':'')}${escapeHtml(getEventLabel(ev))}</div>${meta?`<div class="week-event-meta">${escapeHtml(meta)}</div>`:''}<div class="week-event-range">${escapeHtml(ev.startPeriod)}${ev.endPeriod!==ev.startPeriod?' → '+escapeHtml(ev.endPeriod):''} · ${escapeHtml(state.label)}</div></div></div>`;});
+            periods.forEach((p,i)=>{html+=`<div class="slot-cell-week week-event-cell js-week-slot ${occupied.has(i)?'week-slot-occupied':''}" data-force-create="true" style="grid-column:${dayIdx+2};grid-row:${i+2};" data-iso="${escapeHtml(iso)}" data-period="${escapeHtml(p)}" data-day-index="${dayIdx}"><div class="week-slot-free">＋ ${occupied.has(i)?'Ajouter':'Programmer'}</div></div>`;});
         });
-        if (prev.__exceptions) delete prev.__exceptions[seriesId];
+        weekView.innerHTML=html;
     }
 
-    function removeUniqueEvent(prev, eventId) {
-        prev.__uniqueEvents = (prev.__uniqueEvents || []).filter(ev => ev?.eventId !== eventId);
-    }
-
-    function removeUniqueOverlaps(prev, dateIso, startIdx, endIdx, exceptEventId=null) {
-        prev.__uniqueEvents = (prev.__uniqueEvents || []).filter(ev => {
-            if (!ev || ev.date !== dateIso) return true;
-            if (exceptEventId && ev.eventId === exceptEventId) return true;
-            const a=periodIndex(ev.startPeriod), b=periodIndex(ev.endPeriod);
-            return b < startIdx || a > endIdx;
-        });
-    }
-
-    function buildAgendaActivityFromModal(type, startPeriod, endPeriod) {
-        if (type === 'ELEVE') {
-            return {
-                type:'ELEVE',
-                eleve:document.getElementById('modal-slot-eleve').value,
-                matiere:document.getElementById('modal-slot-matiere').value,
-                local:document.getElementById('modal-slot-local').value
-            };
+    function renderMonthView(){
+        const dt=parseISODate(selectedDateISO),year=dt.getFullYear(),month=dt.getMonth();
+        const monthName=dt.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});document.getElementById('agenda-date-label').innerText=monthName.charAt(0).toUpperCase()+monthName.slice(1);
+        const monthView=document.getElementById('agenda-view-month'),db=getDB(),prev=getPrevisionnel(),first=new Date(year,month,1),last=new Date(year,month+1,0);let start=first.getDay();start=start===0?6:start-1;let html='';['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].forEach(w=>html+=`<div class="month-day-header">${w}</div>`);
+        const prevLast=new Date(year,month,0).getDate();for(let i=start-1;i>=0;i--)html+=`<div class="month-date-cell other-month"><div class="month-day-number">${prevLast-i}</div></div>`;
+        for(let day=1;day<=last.getDate();day++){
+            const cell=new Date(year,month,day),iso=formatISO(cell),dayIdx=getDayIndexFromISO(iso),events=getEventsForDate(iso,prev),pills=[];const max=4;
+            events.slice(0,max).forEach(ev=>{const state=getEventState(ev,dayIdx,iso,db),cls=ev.type==='FORMATION'?'event-formation':ev.type==='COLLAB'?'event-collab':ev.type==='ADMIN'?'event-admin':'';const label=ev.type==='ELEVE'?[getEventLabel(ev),getEventMeta(ev)].filter(Boolean).join(' · '):getEventLabel(ev);const range=ev.startPeriod===ev.endPeriod?ev.startPeriod:`${ev.startPeriod}–${ev.endPeriod}`;pills.push(`<div class="month-indicator-pill month-planned-pill ${cls} agenda-status-${state.key}" title="${escapeHtml(label)} — ${escapeHtml(range)}"><span class="month-planned-dot"></span><span class="month-planned-label">${escapeHtml(state.key==='realized'?'✓ ':'')}${escapeHtml(label)}</span><span class="month-period-range">${escapeHtml(range)}</span></div>`);});
+            const more=Math.max(0,events.length-max);if(more)pills.push(`<div class="month-more-pill">+ ${more} autre${more>1?'s':''}</div>`);
+            html+=`<div class="month-date-cell ${iso===selectedDateISO?'today':''} js-month-day" data-iso="${escapeHtml(iso)}"><div class="month-day-number">${day}</div><div class="month-indicators">${pills.join('')}</div></div>`;
         }
-        if (type === 'LIBRE') {
-            return {
-                type:'LIBRE',
-                title:'Créneau libre',
-                detail:''
-            };
-        }
-        if (type === 'LIBRE') {
-            return { type:'LIBRE', title:'Créneau libre', detail:'' };
-        }
-        return {
-            type,
-            title:document.getElementById('modal-slot-admin-title').value || 'Activité Pôle',
-            detail:document.getElementById('modal-slot-admin-detail').value || ''
-        };
+        monthView.innerHTML=html;
     }
 
-    function openSlotModal(dateIso, period, dayIdx) {
-        const prev = getPrevisionnel();
-        const event = getEventForDatePeriod(dateIso, period, prev);
-        const edit = Boolean(event);
-        agendaModalState = {
-            mode:'edit',
-            eventId:event?.eventId || null,
-            recurrence:event?.recurrence || null,
-            occurrenceDate:dateIso
-        };
-        document.getElementById('modal-slot-date').value = dateIso;
-        document.getElementById('modal-slot-date-visible').value = dateIso;
-        document.getElementById('modal-slot-period').value = period;
-        document.getElementById('modal-slot-event-id').value = event?.eventId || '';
-        document.getElementById('modal-slot-edit-mode').value = edit ? 'edit' : 'create';
-        document.getElementById('modal-slot-title').innerText = edit ? 'Modifier l’activité' : `Programmer une activité${dayIdx >= 0 && dayIdx <= 4 ? ' · ' + days[dayIdx] : ''}`;
+    function jumpToDayView(isoDate){selectedDateISO=isoDate;switchAgendaView('day');}
+    function viewSlotDetails(id){const entry=getDB().find(e=>e.id==id);if(entry&&isJournalSession(entry)){const p=sessionParts(entry),q2=entry.q2||{},q4=entry.q4||{},q6=entry.q6||{};alert(`👤 ${p.eleve}\n📅 ${p.date} (${sessionPeriodLabel(entry)}) — ${p.matiere}\n\n• Interventions : ${(entry.contexte?.typeIntervention||[]).join(', ')||'N/A'}\n• Fonctionnement : ${(q2.observations||[]).map(x=>x.observation).join(', ')||'Aucune'}\n• Adaptations : ${(q4.types||[]).join(', ')||'Aucune'}\n• Suites : ${(q6.actions||[]).join(', ')||'Aucune'}`);}}
 
-        document.getElementById('modal-slot-admin-title').value = '';
-        document.getElementById('modal-slot-admin-detail').value = '';
-        document.getElementById('modal-slot-local').value = '';
-        document.getElementById('modal-duplicate-enabled').checked = false;
-        document.getElementById('modal-duplicate-date').value = '';
-        toggleDuplicateFields();
-        populatePeriodSelectors(event?.startPeriod || period, event?.endPeriod || period);
+    function quickFormForSlot(dateIso,period,eleve,matiere){clearObservationForm();document.getElementById('f-date').value=dateIso;document.getElementById('f-periode-start').value=period;document.getElementById('f-periode-end').value=period;syncSessionPeriodRange();if(eleve)document.getElementById('f-eleve').value=eleve;if(matiere){const input=document.getElementById('f-matiere');input.value=matiere;input.dataset.selectedSubject=matiere;const note=document.getElementById('session-subject-selected-note');if(note)note.textContent=`Matière sélectionnée : ${matiere}`;}updatePIAPrompt();showTab('form');}
 
-        const recurrence = event?.recurrence || 'weekly';
-        document.getElementById('modal-slot-recurrence').value = recurrence;
-        updateRecurrenceNote();
+    function populatePeriodSelectors(startValue,endValue){const start=document.getElementById('modal-slot-period-start'),end=document.getElementById('modal-slot-period-end');if(!start||!end)return;const options=periods.map(p=>`<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');start.innerHTML=options;end.innerHTML=options;start.value=startValue||periods[0];end.value=endValue||startValue||periods[0];syncAgendaEndPeriod();start.onchange=syncAgendaStartPeriod;end.onchange=syncAgendaEndPeriod;}
+    function syncAgendaEndPeriod(){const start=document.getElementById('modal-slot-period-start'),end=document.getElementById('modal-slot-period-end');if(!start||!end)return;const si=periodIndex(start.value),ei=periodIndex(end.value);if(ei<si)end.value=start.value;[...end.options].forEach((o,i)=>o.disabled=i<si);}
+    function syncAgendaStartPeriod(){syncAgendaEndPeriod();}
+    window.JournalierAgendaConfig={refreshSessionPeriodSelectors(){const start=document.getElementById('f-periode-start')?.value||periods[0];const end=document.getElementById('f-periode-end')?.value||start;populatePeriodSelectors(start,end);syncSessionPeriodRange();},getPeriods(){return agendaPeriodConfig.map(p=>({...p}));},getOccurrenceDateTime(event,iso){const start=agendaPeriodByLabel(event?.startPeriod),end=agendaPeriodByLabel(event?.endPeriod||event?.startPeriod);if(!start||!end||!/^\d{4}-\d{2}-\d{2}$/.test(String(iso||'')))return null;return {timezone:event?.timezone||'Europe/Brussels',start:`${iso}T${start.start}:00`,end:`${iso}T${end.end}:00`};}};
+    function toggleDuplicateFields(){const enabled=Boolean(document.getElementById('modal-duplicate-enabled')?.checked);document.getElementById('modal-duplicate-fields')?.classList.toggle('hidden',!enabled);}
+    function updateRecurrenceNote(){const mode=document.getElementById('modal-slot-recurrence')?.value||'weekly';const note=document.getElementById('modal-slot-recurrence-note');if(note)note.textContent=mode==='unique'?'Cette activité aura lieu uniquement à la date choisie.':'Cette activité sera répétée chaque semaine le même jour.';}
 
-        if (event) {
-            document.getElementById('modal-slot-type').value = event.type || 'ELEVE';
-            if (event.type === 'ELEVE') {
-                document.getElementById('modal-slot-eleve').value = event.eleve || '';
-                document.getElementById('modal-slot-matiere').value = event.matiere || 'Mathématiques';
-                document.getElementById('modal-slot-local').value = event.local || '';
-            } else {
-                document.getElementById('modal-slot-admin-title').value = event.title || '';
-                document.getElementById('modal-slot-admin-detail').value = event.detail || '';
-            }
-        } else {
-            document.getElementById('modal-slot-type').value = 'ELEVE';
-            document.getElementById('modal-slot-eleve').value = '';
-            document.getElementById('modal-slot-matiere').value = 'Mathématiques';
+    function buildAgendaActivityFromModal(type,startPeriod,endPeriod){
+        const base={type,startPeriod,endPeriod,eventStatus:'proposed',realized:false};
+        if(type==='ELEVE'){
+            const name=document.getElementById('modal-slot-eleve').value;const student=getStudents().find(s=>String(s.nom)===String(name));
+            return {...base,eleve:name,eleveId:student?.studentId||'',matiere:document.getElementById('modal-slot-matiere').value,local:document.getElementById('modal-slot-local').value};
         }
-
-        toggleModalSlotFields();
-        document.getElementById('slotModal').classList.remove('hidden');
+        if(type==='LIBRE')return {...base,title:'Créneau libre',detail:''};
+        return {...base,title:document.getElementById('modal-slot-admin-title').value||'Activité Pôle',detail:document.getElementById('modal-slot-admin-detail').value||''};
     }
 
-    function openDuplicateEventModal(isoDate, period, dayIdx, eventId) {
-        const prev=getPrevisionnel();
-        const event=getEventForDatePeriod(isoDate,period,prev);
-        if(!event) return;
-        openSlotModal(isoDate,period,dayIdx);
-        agendaModalState={mode:'duplicate',eventId:event.eventId,recurrence:event.recurrence,occurrenceDate:isoDate,sourceEvent:event};
-        document.getElementById('modal-slot-edit-mode').value='duplicate';
-        document.getElementById('modal-slot-title').innerText='Dupliquer l’activité';
-        document.getElementById('modal-slot-recurrence').value='unique';
-        updateRecurrenceNote();
-        document.getElementById('modal-duplicate-enabled').checked=true;
-        document.getElementById('modal-duplicate-date').value='';
-        toggleDuplicateFields();
+    function removeRecurringSeries(prev,seriesId){prev.__events=(prev.__events||[]).filter(ev=>ev.seriesId!==seriesId&&ev.eventId!==seriesId);if(prev.__exceptions)delete prev.__exceptions[seriesId];}
+    function removeUniqueEvent(prev,eventId){prev.__events=(prev.__events||[]).filter(ev=>!(ev.eventId===eventId&&ev.recurrence==='unique'));}
+
+    function openSlotModal(dateIso,period,dayIdx,eventId=null,forceCreate=false){
+        const prev=getPrevisionnel(),event=!forceCreate&&(eventId?findAgendaEventForOccurrence(dateIso,eventId,prev):getEventForDatePeriod(dateIso,period,prev)),edit=Boolean(event);
+        agendaModalState={mode:edit?'edit':'create',eventId:event?.eventId||null,recurrence:event?.recurrence||null,occurrenceDate:dateIso,sourceEvent:event||null};
+        document.getElementById('modal-slot-date').value=dateIso;document.getElementById('modal-slot-date-visible').value=dateIso;document.getElementById('modal-slot-period').value=period;document.getElementById('modal-slot-event-id').value=event?.eventId||'';document.getElementById('modal-slot-edit-mode').value=edit?'edit':'create';document.getElementById('modal-slot-title').innerText=edit?'Modifier l’activité':`Programmer une activité${dayIdx>=0&&dayIdx<=4?' · '+days[dayIdx]:''}`;
+        document.getElementById('modal-slot-admin-title').value='';document.getElementById('modal-slot-admin-detail').value='';document.getElementById('modal-slot-local').value='';document.getElementById('modal-duplicate-enabled').checked=false;document.getElementById('modal-duplicate-date').value='';toggleDuplicateFields();populatePeriodSelectors(event?.startPeriod||period,event?.endPeriod||period);
+        document.getElementById('modal-slot-recurrence').value=event?.recurrence||'weekly';updateRecurrenceNote();
+        document.getElementById('modal-slot-type').value=event?.type||'ELEVE';
+        if(event?.type==='ELEVE'){document.getElementById('modal-slot-eleve').value=event.eleve||'';document.getElementById('modal-slot-matiere').value=event.matiere||'Mathématiques';document.getElementById('modal-slot-local').value=event.local||'';}
+        else{document.getElementById('modal-slot-eleve').value='';document.getElementById('modal-slot-matiere').value='Mathématiques';document.getElementById('modal-slot-admin-title').value=event?.title||'';document.getElementById('modal-slot-admin-detail').value=event?.detail||'';}
+        toggleModalSlotFields();document.getElementById('slotModal').classList.remove('hidden');
     }
 
-    function toggleModalSlotFields() {
-        const type = document.getElementById('modal-slot-type').value;
-        document.getElementById('modal-fields-eleve').classList.toggle('hidden', type !== 'ELEVE');
-        document.getElementById('modal-fields-autre').classList.toggle('hidden', type === 'ELEVE' || type === 'LIBRE');
+    function openDuplicateEventModal(isoDate,period,dayIdx,eventId){const event=findAgendaEventForOccurrence(isoDate,eventId,getPrevisionnel());if(!event)return;openSlotModal(isoDate,period,dayIdx,eventId);agendaModalState={mode:'duplicate',eventId:event.eventId,recurrence:event.recurrence,occurrenceDate:isoDate,sourceEvent:event};document.getElementById('modal-slot-edit-mode').value='duplicate';document.getElementById('modal-slot-title').innerText='Dupliquer l’activité';document.getElementById('modal-slot-recurrence').value='unique';updateRecurrenceNote();document.getElementById('modal-duplicate-enabled').checked=true;toggleDuplicateFields();}
+    function toggleModalSlotFields(){const type=document.getElementById('modal-slot-type').value;document.getElementById('modal-fields-eleve').classList.toggle('hidden',type!=='ELEVE');document.getElementById('modal-fields-autre').classList.toggle('hidden',type==='ELEVE'||type==='LIBRE');}
+    function closeSlotModal(){closeAllChoiceMenus();document.getElementById('slotModal').classList.add('hidden');}
+
+    function rangesOverlap(a,b){return a.startIndex<=b.endIndex&&b.startIndex<=a.endIndex;}
+    function getOverlappingEvents(iso,dateStart,dateEnd,prev,excludeId=null){return getEventsForDate(iso,prev).filter(ev=>ev.eventId!==excludeId&&rangesOverlap({startIndex:dateStart,endIndex:dateEnd},ev));}
+
+    function saveSlotModification(){
+        const sourceDateIso=document.getElementById('modal-slot-date-visible').value||document.getElementById('modal-slot-date').value,type=document.getElementById('modal-slot-type').value,recurrence=document.getElementById('modal-slot-recurrence').value||'weekly',startPeriod=document.getElementById('modal-slot-period-start').value,endPeriod=document.getElementById('modal-slot-period-end').value,mode=agendaModalState.mode||document.getElementById('modal-slot-edit-mode').value||'create',duplicateTargetDate=document.getElementById('modal-duplicate-date').value,dateIso=mode==='duplicate'?duplicateTargetDate:sourceDateIso,dayIdx=getDayIndexFromISO(dateIso),startIdx=periodIndex(startPeriod),endIdx=periodIndex(endPeriod);
+        if(!dateIso){alert('Choisissez une date.');return;}if(recurrence==='weekly'&&(dayIdx<0||dayIdx>4)){alert('Une planification récurrente hebdomadaire doit être placée du lundi au vendredi.');return;}if(startIdx<0||endIdx<startIdx){alert('La période de fin doit être identique ou postérieure à la période de début.');return;}if(type==='ELEVE'&&!document.getElementById('modal-slot-eleve').value){alert('Sélectionnez un élève.');return;}
+        const prev=getPrevisionnel(),working=JSON.parse(JSON.stringify(prev)),editingEventId=mode==='edit'?agendaModalState.eventId:null,editingRecurrence=mode==='edit'?agendaModalState.recurrence:null;
+        if(editingEventId){if(editingRecurrence==='unique')removeUniqueEvent(working,editingEventId);else removeRecurringSeries(working,editingEventId);}
+        const draft=buildAgendaActivityFromModal(type,startPeriod,endPeriod);draft.eventId=editingEventId||journalierUuid('evt');draft.ownerId=JournalierSecurity.accountKey;draft.dataVersion=JOURNALIER_ARCHITECTURE_VERSION;draft.recurrence=recurrence;draft.dayIndex=dayIdx;draft.date=recurrence==='unique'?dateIso:'';draft.seriesId=recurrence==='weekly'?draft.eventId:null;
+        if(mode==='edit'&&agendaModalState.sourceEvent){draft.eventStatus=agendaModalState.sourceEvent.eventStatus;draft.realized=agendaModalState.sourceEvent.realized;draft.realizedAt=agendaModalState.sourceEvent.realizedAt;draft.outlook=agendaModalState.sourceEvent.outlook;draft.createdAt=agendaModalState.sourceEvent.createdAt;}
+        working.__events=Array.isArray(working.__events)?working.__events:[];working.__events.push(normalizeAgendaEvent(draft,JournalierSecurity.accountKey));
+        if(mode!=='duplicate'&&document.getElementById('modal-duplicate-enabled').checked&&duplicateTargetDate){const duplicate={...draft,eventId:journalierUuid('evt'),recurrence:'unique',seriesId:null,date:duplicateTargetDate,eventStatus:'proposed',realized:false,realizedAt:null,outlook:{calendarId:null,eventId:null,iCalUId:null,changeKey:null,webLink:null}};working.__events.push(normalizeAgendaEvent(duplicate,JournalierSecurity.accountKey));}
+        try{savePrevisionnel(working);closeSlotModal();renderAgenda();renderHome();showAppToast(mode==='duplicate'?'Activité dupliquée.':'Activité enregistrée.','success');}catch(error){console.error('Agenda — erreur lors de l’enregistrement',error);showAppToast(`Échec de l’enregistrement : ${error?.message||error}`,'error',5000);}
     }
 
-    function closeSlotModal() { closeAllChoiceMenus(); document.getElementById('slotModal').classList.add('hidden'); }
-
-    function persistAgendaDraft(state, conflictMode=null) {
-        const prev = state.prev;
-        const { dateIso, startIdx, endIdx, recurrence, mode, editingEventId, editingRecurrence, draft } = state;
-
-        // L'édition retire d'abord l'ancien objet, jamais le nouvel objet en cours.
-        if (mode === 'edit' && editingEventId) {
-            if (editingRecurrence === 'unique') removeUniqueEvent(prev, editingEventId);
-            else removeRecurringSeries(prev, editingEventId);
-        }
-
-        const weeklyConflict = recurrence === 'unique'
-            ? findWeeklyOverlap(dateIso, startIdx, endIdx, prev, null)
-            : null;
-        const uniqueConflicts = recurrence === 'weekly'
-            ? findUniqueOverlaps(dateIso, startIdx, endIdx, prev, null)
-            : [];
-
-        if (conflictMode === 'replace') {
-            if (recurrence === 'unique' && weeklyConflict) {
-                const id = weeklyConflict.seriesId || weeklyConflict.eventId;
-                prev.__exceptions = prev.__exceptions || {};
-                const dates = new Set(prev.__exceptions[id] || []);
-                dates.add(dateIso);
-                prev.__exceptions[id] = [...dates];
-            }
-            if (recurrence === 'weekly' && uniqueConflicts.length) {
-                const ids = new Set(uniqueConflicts.map(ev=>ev.eventId));
-                prev.__uniqueEvents = (prev.__uniqueEvents || []).filter(ev=>!ids.has(ev?.eventId));
-            }
-        }
-
-        if (recurrence === 'unique' || mode === 'duplicate') {
-            draft.recurrence = 'unique';
-            draft.date = dateIso;
-            draft.seriesId = null;
-            draft.displayMode = conflictMode === 'both' ? 'both' : 'unique';
-            prev.__uniqueEvents = Array.isArray(prev.__uniqueEvents) ? prev.__uniqueEvents : [];
-            prev.__uniqueEvents.push(draft);
-        } else {
-            draft.recurrence = 'weekly';
-            draft.seriesId = draft.eventId;
-            for (let i=startIdx;i<=endIdx;i++) {
-                prev[getSlotKey(getDayIndexFromISO(dateIso),periods[i])] = {...draft};
-            }
-            if (conflictMode === 'both' && uniqueConflicts.length) {
-                const conflictIds = new Set(uniqueConflicts.map(ev => ev.eventId));
-                (prev.__uniqueEvents || []).forEach(ev => {
-                    if (conflictIds.has(ev?.eventId)) ev.displayMode = 'both';
-                });
-            }
-        }
-
-        const duplicateEnabled = document.getElementById('modal-duplicate-enabled').checked;
-        const duplicateDate = document.getElementById('modal-duplicate-date').value;
-        if (mode !== 'duplicate' && duplicateEnabled && duplicateDate) {
-            const duplicate = {...draft, eventId:`evt_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, recurrence:'unique', seriesId:null, date:duplicateDate, displayMode:'unique'};
-            const dupStart=periodIndex(draft.startPeriod), dupEnd=periodIndex(draft.endPeriod);
-            removeUniqueOverlaps(prev,duplicateDate,dupStart,dupEnd,null);
-            prev.__uniqueEvents.push(duplicate);
-        }
-
-        try {
-            const persisted=savePrevisionnel(prev);
-            const after=persisted||getPrevisionnel();
-            const isUnique=recurrence==='unique'||mode==='duplicate';
-            const verified=isUnique
-                ? (Array.isArray(after?.__uniqueEvents)?after.__uniqueEvents:[]).find(ev=>ev?.eventId===draft.eventId&&ev?.date===dateIso)
-                : Object.values(after).find(ev=>ev?.eventId===draft.eventId&&ev?.recurrence==='weekly');
-            if(!verified) throw new Error(isUnique ? `L’événement unique n’a pas été retrouvé après sauvegarde (${dateIso}, ${draft.startPeriod} → ${draft.endPeriod}).` : 'L’activité récurrente n’a pas été retrouvée après sauvegarde.');
-            closeSlotModal();
-            renderAgenda();
-            renderHome();
-            showAppToast(mode==='duplicate'?'Activité dupliquée.':'Activité enregistrée.','success');
-        } catch(error) {
-            console.error('Agenda — erreur lors de l’enregistrement',error);
-            closeSlotModal(); renderAgenda(); renderHome();
-            showAppToast(`Échec de l’enregistrement : ${error?.message||error}`,'error',5000);
-        }
+    function openEventActionModal(isoDate,period,dayIdx,eventId){
+        closeAllChoiceMenus();const prev=getPrevisionnel(),event=findAgendaEventForOccurrence(isoDate,eventId,prev)||getEventForDatePeriod(isoDate,period,prev);if(!event){openSlotModal(isoDate,period,dayIdx);return;}
+        agendaModalState={...agendaModalState,eventId:event.eventId,recurrence:event.recurrence,occurrenceDate:isoDate,sourceEvent:event};
+        document.getElementById('event-action-title').innerText=getEventLabel(event);
+        const state=getEventState(event,dayIdx,isoDate,getDB()),summary=document.getElementById('event-action-summary');
+        if(summary){summary.innerHTML=`<strong>${escapeHtml(getEventLabel(event))}</strong><br>${escapeHtml(getEventMeta(event)||'Mission Pôle Territorial')}<br><span style="color:var(--text-sub);">${escapeHtml(event.occurrenceDate||isoDate)} · ${escapeHtml(event.startPeriod)}${event.endPeriod!==event.startPeriod?' → '+escapeHtml(event.endPeriod):''} · ${escapeHtml(state.label)}</span>`;}
+        const observe=document.getElementById('event-action-observe');observe.textContent=event.type==='ELEVE'?(state.key==='realized'?'✏️ Modifier la séance':'📝 Encoder la séance'):'🗒️ Détail de la mission';observe.style.display='';observe.onclick=()=>{closeEventActionModal();if(event.type==='ELEVE'){const encoded=getEncodedForEvent(dayIdx,isoDate,event,getDB());if(encoded)editHistorySession(encoded.id);else quickFormForSlot(isoDate,event.startPeriod,event.eleve,event.matiere);}else openSlotModal(isoDate,event.startPeriod,dayIdx,event.eventId);};
+        const confirm=document.getElementById('event-action-confirm');if(confirm){confirm.style.display=state.key==='realized'?'none':'';confirm.textContent=state.key==='confirmed'?'↩️ Remettre en proposition':(state.key==='cancelled'?'↩️ Réactiver':'✓ Confirmer l’événement');confirm.onclick=()=>toggleAgendaEventConfirmation(isoDate,event.eventId);}
+        const realize=document.getElementById('event-action-realize');if(realize){realize.style.display=event.type==='ELEVE'||state.key==='cancelled'?'none':'';realize.textContent=state.key==='realized'?'↩️ Marquer non réalisé':'✓ Marquer comme réalisé';realize.onclick=()=>toggleAgendaEventRealized(isoDate,event.eventId);}
+        const cancel=document.getElementById('event-action-cancel');if(cancel){cancel.style.display=state.key==='cancelled'?'none':'';cancel.onclick=()=>cancelAgendaEvent(event.eventId);}
+        document.getElementById('event-action-edit').onclick=()=>{closeEventActionModal();openSlotModal(isoDate,event.startPeriod,dayIdx,event.eventId);};
+        document.getElementById('event-action-extend').onclick=()=>{closeEventActionModal();openSlotModal(isoDate,event.startPeriod,dayIdx,event.eventId);};
+        document.getElementById('event-action-duplicate').onclick=()=>{closeEventActionModal();openDuplicateEventModal(isoDate,event.startPeriod,dayIdx,event.eventId);};
+        document.getElementById('event-action-delete').onclick=()=>openEventDeleteModal(event);
+        document.getElementById('eventActionModal').classList.remove('hidden');
     }
 
-    function saveSlotModification() {
-        const sourceDateIso=document.getElementById('modal-slot-date-visible').value||document.getElementById('modal-slot-date').value;
-        const type=document.getElementById('modal-slot-type').value;
-        const recurrence=document.getElementById('modal-slot-recurrence').value||'weekly';
-        const startPeriod=document.getElementById('modal-slot-period-start').value;
-        const endPeriod=document.getElementById('modal-slot-period-end').value;
-        const mode=agendaModalState.mode||document.getElementById('modal-slot-edit-mode').value||'create';
-        const duplicateTargetDate=document.getElementById('modal-duplicate-date').value;
-        const dateIso=mode==='duplicate'?duplicateTargetDate:sourceDateIso;
-        const dayIdx=getDayIndexFromISO(dateIso);
-        const startIdx=periodIndex(startPeriod), endIdx=periodIndex(endPeriod);
-        if(!dateIso){alert('Choisissez une date.');return;}
-        if(recurrence==='weekly'&&(dayIdx<0||dayIdx>4)){alert('Une planification récurrente hebdomadaire doit être placée du lundi au vendredi. Pour le week-end, choisissez « Événement unique ».');return;}
-        if(startIdx<0||endIdx<0||endIdx<startIdx){alert('La période de fin doit être identique ou postérieure à la période de début.');return;}
-        if(type==='ELEVE'&&!document.getElementById('modal-slot-eleve').value){alert('Sélectionnez un élève pour une activité de type Accompagnement Élève.');return;}
+    function closeEventActionModal(){closeAllChoiceMenus();document.getElementById('eventActionModal').classList.add('hidden');}
 
-        const prev=getPrevisionnel();
-        prev.__uniqueEvents=Array.isArray(prev.__uniqueEvents)?prev.__uniqueEvents:[];
-        prev.__exceptions=prev.__exceptions||{};
-        const editingEventId=mode==='edit'?agendaModalState.eventId:null;
-        const editingRecurrence=mode==='edit'?agendaModalState.recurrence:null;
-        const working=JSON.parse(JSON.stringify(prev));
-        if(mode==='edit'&&editingEventId){
-            if(editingRecurrence==='unique') removeUniqueEvent(working,editingEventId);
-            else removeRecurringSeries(working,editingEventId);
-        }
-        const draft=buildAgendaActivityFromModal(type,startPeriod,endPeriod);
-        draft.eventId=editingEventId||`evt_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
-        draft.startPeriod=startPeriod; draft.endPeriod=endPeriod;
+    function toggleAgendaEventConfirmation(iso,eventId){const prev=getPrevisionnel(),events=getEventsForDate(iso,prev),event=events.find(e=>e.eventId===eventId);if(!event)return;const targetStatus=event.eventStatus==='confirmed'?'proposed':'confirmed';if(targetStatus==='confirmed'){events.filter(e=>e.eventId!==eventId&&e.eventStatus==='confirmed'&&rangesOverlap(e,event)).forEach(other=>{const stored=prev.__events.find(e=>e.eventId===other.eventId);if(stored)stored.eventStatus='proposed';});}const stored=prev.__events.find(e=>e.eventId===eventId);if(stored){stored.eventStatus=targetStatus;stored.updatedAt=new Date().toISOString();}savePrevisionnel(prev);closeEventActionModal();showAppToast(targetStatus==='confirmed'?'Événement confirmé.':'Événement remis en proposition.','success');}
+    function toggleAgendaEventRealized(iso,eventId){const prev=getPrevisionnel(),stored=prev.__events.find(e=>e.eventId===eventId);if(!stored)return;stored.realized=!stored.realized;stored.eventStatus=stored.realized?'realized':'confirmed';stored.realizedAt=stored.realized?new Date().toISOString():null;stored.updatedAt=new Date().toISOString();savePrevisionnel(prev);closeEventActionModal();showAppToast(stored.realized?'Événement marqué comme réalisé.':'Événement remis en état non réalisé.','success');}
+    function cancelAgendaEvent(eventId){const prev=getPrevisionnel(),stored=prev.__events.find(e=>e.eventId===eventId);if(!stored)return;stored.eventStatus='cancelled';stored.realized=false;stored.realizedAt=null;stored.updatedAt=new Date().toISOString();savePrevisionnel(prev);closeEventActionModal();showAppToast('Événement annulé.','success');}
 
-        const weeklyConflict=recurrence==='unique'?findWeeklyOverlap(dateIso,startIdx,endIdx,working,null):null;
-        const uniqueConflicts=recurrence==='weekly'?findUniqueOverlaps(dateIso,startIdx,endIdx,working,null):[];
-        const conflicts=weeklyConflict||uniqueConflicts.length;
-        const conflictExisting=weeklyConflict||uniqueConflicts[0]||null;
-        if(conflicts && mode!=='duplicate'){
-            openAgendaConflictModal({prev:working,dateIso,startIdx,endIdx,recurrence,mode,editingEventId,editingRecurrence,draft,existing:conflictExisting,uniqueConflicts});
-            return;
-        }
-        persistAgendaDraft({prev:working,dateIso,startIdx,endIdx,recurrence,mode,editingEventId,editingRecurrence,draft,uniqueConflicts},null);
+    function openEventDeleteModal(event){agendaDeleteState={eventId:event.eventId,seriesId:event.seriesId||event.eventId,occurrenceDate:event.occurrenceDate,recurrence:event.recurrence};const summary=document.getElementById('event-delete-summary');if(summary)summary.innerHTML=`<strong>${escapeHtml(getEventLabel(event))}</strong><br>${escapeHtml(getEventMeta(event)||'Mission Pôle Territorial')}<br><span style="color:var(--text-sub);">${escapeHtml(event.occurrenceDate||selectedDateISO)} · ${escapeHtml(event.startPeriod)}${event.endPeriod!==event.startPeriod?' → '+escapeHtml(event.endPeriod):''}</span>`;const seriesActions=document.getElementById('event-delete-series-actions');if(seriesActions)seriesActions.style.display=event.recurrence==='weekly'?'flex':'none';const occurrence=document.getElementById('event-delete-occurrence');const series=document.getElementById('event-delete-series');if(occurrence)occurrence.textContent=event.recurrence==='weekly'?'🗑️ Supprimer cette occurrence uniquement':'🗑️ Supprimer l’événement';if(series)series.textContent='🗑️ Supprimer la série';closeEventActionModal();document.getElementById('eventDeleteModal').classList.remove('hidden');}
+    function closeEventDeleteModal(){document.getElementById('eventDeleteModal').classList.add('hidden');agendaDeleteState={eventId:null,seriesId:null,occurrenceDate:null,recurrence:null};}
+    document.getElementById('event-delete-occurrence')?.addEventListener('click',deleteAgendaOccurrence);
+    document.getElementById('event-delete-series')?.addEventListener('click',deleteAgendaSeries);
+    function deleteAgendaOccurrence(){const prev=getPrevisionnel();if(!agendaDeleteState.eventId)return;if(agendaDeleteState.recurrence==='weekly'){prev.__exceptions=prev.__exceptions||{};const dates=new Set(prev.__exceptions[agendaDeleteState.seriesId||agendaDeleteState.eventId]||[]);dates.add(agendaDeleteState.occurrenceDate);prev.__exceptions[agendaDeleteState.seriesId||agendaDeleteState.eventId]=[...dates];}else removeUniqueEvent(prev,agendaDeleteState.eventId);savePrevisionnel(prev);closeEventDeleteModal();showAppToast('Événement supprimé.','success');}
+    function deleteAgendaSeries(){const prev=getPrevisionnel();if(!agendaDeleteState.eventId)return;removeRecurringSeries(prev,agendaDeleteState.seriesId||agendaDeleteState.eventId);if(agendaDeleteState.recurrence==='unique')removeUniqueEvent(prev,agendaDeleteState.eventId);savePrevisionnel(prev);closeEventDeleteModal();showAppToast('Événement supprimé.','success');}
+
+    function openAgendaPeriodConfigModal(){
+        const body=document.getElementById('agenda-period-config-body');if(!body)return;
+        body.innerHTML=agendaPeriodConfig.map((p,i)=>`<div class="agenda-period-config-row"><div><strong>${escapeHtml(p.label)}</strong><span class="agenda-period-config-help">Période ${i+1} · les pauses sont les espaces entre deux périodes.</span></div><label>Début<input type="time" data-period-config-start="${i}" value="${escapeHtml(p.start)}"></label><label>Fin<input type="time" data-period-config-end="${i}" value="${escapeHtml(p.end)}"></label></div>`).join('');
+        document.getElementById('agendaPeriodConfigModal').classList.remove('hidden');
+    }
+    function closeAgendaPeriodConfigModal(){document.getElementById('agendaPeriodConfigModal')?.classList.add('hidden');}
+    function saveAgendaPeriodConfig(){
+        const next=agendaPeriodConfig.map((p,i)=>({...p,start:document.querySelector(`[data-period-config-start="${i}"]`)?.value||p.start,end:document.querySelector(`[data-period-config-end="${i}"]`)?.value||p.end}));
+        for(let i=0;i<next.length;i++){if(agendaTimeToMinutes(next[i].start)<0||agendaTimeToMinutes(next[i].end)<0||agendaTimeToMinutes(next[i].start)>=agendaTimeToMinutes(next[i].end)){alert(`Horaires invalides pour ${next[i].label}.`);return;}if(i>0&&agendaTimeToMinutes(next[i].start)<agendaTimeToMinutes(next[i-1].end)){alert(`La ${next[i].label} commence avant la fin de la période précédente. Une pause peut exister, mais les périodes ne peuvent pas se chevaucher.`);return;}}
+        const prev=getPrevisionnel();prev.__config={version:2,periods:next};applyAgendaPeriodConfig(next);savePrevisionnel(prev);populatePeriodSelectors(document.getElementById('modal-slot-period-start')?.value,document.getElementById('modal-slot-period-end')?.value);syncSessionPeriodRange();closeAgendaPeriodConfigModal();renderAgenda();showAppToast('Horaires des 8 périodes enregistrés.','success');
     }
 
-    function openEventDeleteModal(event) {
-        agendaDeleteState={eventId:event.eventId,occurrenceDate:event.occurrenceDate,recurrence:event.recurrence};
-        const summary=document.getElementById('event-delete-summary');
-        if(summary) summary.innerHTML=`<strong>${escapeHtml(getEventLabel(event))}</strong><br>${escapeHtml(getEventMeta(event)||'Mission Pôle Territorial')}<br><span style="color:var(--text-sub);">${escapeHtml(event.occurrenceDate||selectedDateISO)} · ${escapeHtml(event.startPeriod)}${event.endPeriod!==event.startPeriod?' → '+escapeHtml(event.endPeriod):''}</span>`;
-        const seriesActions=document.getElementById('event-delete-series-actions');
-        if(seriesActions) seriesActions.style.display=event.recurrence==='weekly'?'flex':'none';
-        const occurrence=document.getElementById('event-delete-occurrence');
-        const series=document.getElementById('event-delete-series');
-        if(occurrence) occurrence.textContent=event.recurrence==='weekly'?'🗑️ Supprimer cette occurrence uniquement':'🗑️ Supprimer l’événement';
-        if(series) series.textContent='🗑️ Supprimer la série';
-        closeEventActionModal();
-        document.getElementById('eventDeleteModal').classList.remove('hidden');
-    }
-
-    function closeEventDeleteModal(){
-        document.getElementById('eventDeleteModal').classList.add('hidden');
-        agendaDeleteState={eventId:null,occurrenceDate:null,recurrence:null};
-    }
-
-    document.getElementById('event-delete-occurrence')?.addEventListener('click', deleteAgendaOccurrence);
-    document.getElementById('event-delete-series')?.addEventListener('click', deleteAgendaSeries);
-
-    function deleteAgendaOccurrence(){
-        const prev=getPrevisionnel();
-        if(!agendaDeleteState.eventId) return;
-        if(agendaDeleteState.recurrence==='weekly'){
-            const id=agendaDeleteState.eventId;
-            prev.__exceptions=prev.__exceptions||{};
-            const dates=new Set(prev.__exceptions[id]||[]);
-            dates.add(agendaDeleteState.occurrenceDate);
-            prev.__exceptions[id]=[...dates];
-        } else {
-            removeUniqueEvent(prev,agendaDeleteState.eventId);
-        }
-        savePrevisionnel(prev);
-        closeEventDeleteModal();
-        closeEventActionModal();
-        showAppToast('Événement supprimé.', 'success');
-    }
-
-    function deleteAgendaSeries(){
-        const prev=getPrevisionnel();
-        if(!agendaDeleteState.eventId) return;
-        if(agendaDeleteState.recurrence==='weekly') removeRecurringSeries(prev,agendaDeleteState.eventId);
-        else removeUniqueEvent(prev,agendaDeleteState.eventId);
-        savePrevisionnel(prev);
-        closeEventDeleteModal();
-        closeEventActionModal();
-        showAppToast('Série supprimée.', 'success');
-    }
+    document.getElementById('agenda-period-config-open')?.addEventListener('click',openAgendaPeriodConfigModal);
+    document.getElementById('agenda-period-config-save')?.addEventListener('click',saveAgendaPeriodConfig);
+    document.getElementById('agenda-period-config-cancel')?.addEventListener('click',closeAgendaPeriodConfigModal);
+    document.getElementById('agenda-period-config-reset')?.addEventListener('click',()=>{applyAgendaPeriodConfig(DEFAULT_AGENDA_PERIODS);openAgendaPeriodConfigModal();});
 
     function sessionParts(entry){const i=entry?.identification||{},p=i.periode||{},c=entry?.contexte||{};return {eleve:i.eleve||'',date:i.date||'',start:p.start||'',end:p.end||'',matiere:c.matiere||''};}
     function sessionPeriodLabel(entry){const p=sessionParts(entry);return p.start&&p.end&&p.start!==p.end?`${p.start} → ${p.end}`:(p.start||p.end||'');}
@@ -1600,11 +892,54 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
             const sameStudent=(item.identification?.eleveId&&item.identification.eleveId===student.studentId)||(x.eleve===p.eleve);
             return !(sameStudent&&x.date===p.date&&x.start===p.start&&x.end===p.end);
         });
+        const previousEntry=editingId?db.find(x=>String(x.id)===editingId):null;
         filtered.unshift(normalized);
         saveDB(filtered);
         const after=getDB();
         if(!after.find(x=>String(x.id)===String(normalized.id)))throw new Error('La séance n’a pas pu être vérifiée après enregistrement.');
+        syncAgendaAfterSessionSave(previousEntry,normalized);
         return after;
+    }
+
+
+    function syncAgendaAfterSessionSave(previousEntry,currentEntry){
+        try{
+            const current=sessionParts(currentEntry),previous=previousEntry?sessionParts(previousEntry):null;
+            const agenda=getPrevisionnel();
+            agenda.__events=Array.isArray(agenda.__events)?agenda.__events:[];
+            const studentId=String(currentEntry.identification?.eleveId||'');
+            const currentStart=periodIndex(current.start),currentEnd=periodIndex(current.end||current.start);
+            const matches=(parts,entry)=>agenda.__events.filter(ev=>{
+                if(ev.type!=='ELEVE'||ev.eventStatus==='cancelled'||ev.eleve!==parts.eleve)return false;
+                if(entry?.identification?.eleveId&&ev.eleveId&&String(entry.identification.eleveId)!==String(ev.eleveId))return false;
+                if(ev.matiere&&parts.matiere&&ev.matiere!==parts.matiere)return false;
+                if(!eventOccursOnDate(ev,parts.date))return false;
+                const r=agendaEventIndexes(ev),start=periodIndex(parts.start),end=periodIndex(parts.end||parts.start);
+                return start>=0&&end>=0&&r.start<=end&&r.end>=start;
+            });
+            const changedLocation=Boolean(previous&&(
+                previous.date!==current.date||previous.eleve!==current.eleve||previous.matiere!==current.matiere||previous.start!==current.start||previous.end!==current.end
+            ));
+            let changed=false;
+            if(changedLocation){
+                const oldMatches=matches(previous,previousEntry);
+                if(oldMatches.length===1){
+                    const ev=oldMatches[0];
+                    if(ev.recurrence==='unique'){
+                        ev.date=current.date;ev.dayIndex=getDayIndexFromISO(current.date);ev.startPeriod=current.start;ev.endPeriod=current.end;ev.eleve=current.eleve;ev.eleveId=studentId;ev.matiere=current.matiere;ev.eventStatus='realized';ev.realized=true;ev.realizedAt=ev.realizedAt||new Date().toISOString();ev.updatedAt=new Date().toISOString();changed=true;
+                    }else{
+                        const realized={...ev,eventId:journalierUuid('evt'),seriesId:null,recurrence:'unique',date:current.date,dayIndex:getDayIndexFromISO(current.date),startPeriod:current.start,endPeriod:current.end,eleve:current.eleve,eleveId:studentId,matiere:current.matiere,eventStatus:'realized',realized:true,realizedAt:new Date().toISOString(),outlook:{calendarId:null,eventId:null,iCalUId:null,changeKey:null,webLink:null},createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};agenda.__events.push(normalizeAgendaEvent(realized,JournalierSecurity.accountKey));changed=true;
+                    }
+                }
+            }
+            if(!changed){
+                const currentMatches=matches(current,currentEntry);
+                if(currentMatches.length===1){
+                    const ev=currentMatches[0];ev.eventStatus='realized';ev.realized=true;ev.realizedAt=ev.realizedAt||new Date().toISOString();ev.updatedAt=new Date().toISOString();changed=true;
+                }
+            }
+            if(changed)savePrevisionnel(agenda);
+        }catch(error){console.warn('Agenda — rapprochement après enregistrement de séance impossible.',error);}
     }
 
     function clearObservationForm() {
@@ -3006,6 +2341,21 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
         showAppToast('✏️ Séance chargée pour modification.','success',3000);
     }
 
+    function syncAgendaAfterSessionDelete(entry){
+        try{
+            const p=sessionParts(entry),agenda=getPrevisionnel();
+            const start=periodIndex(p.start),end=periodIndex(p.end||p.start);
+            const matches=(agenda.__events||[]).filter(ev=>{
+                if(ev.type!=='ELEVE'||ev.eventStatus==='cancelled'||!eventOccursOnDate(ev,p.date)||ev.eleve!==p.eleve)return false;
+                if(entry.identification?.eleveId&&ev.eleveId&&String(entry.identification.eleveId)!==String(ev.eleveId))return false;
+                if(ev.matiere&&p.matiere&&ev.matiere!==p.matiere)return false;
+                const r=agendaEventIndexes(ev);return r.start<=end&&r.end>=start;
+            });
+            const realized=matches.filter(ev=>ev.eventStatus==='realized'||ev.realized);
+            if(realized.length===1){const ev=realized[0];ev.realized=false;ev.realizedAt=null;ev.eventStatus='confirmed';ev.updatedAt=new Date().toISOString();savePrevisionnel(agenda);}
+        }catch(error){console.warn('Agenda — rapprochement après suppression de séance impossible.',error);}
+    }
+
     function deleteHistorySession(sessionId){
         const id=String(sessionId||'');
         const entry=getDB().find(x=>String(x.id)===id);
@@ -3015,6 +2365,7 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
         if(!confirm(`Supprimer définitivement cet encodage de l’historique ?\n\n${label}`))return;
         try{
             saveDB(getDB().filter(x=>String(x.id)!==id));
+            syncAgendaAfterSessionDelete(entry);
             updateStudentDropdowns();
             loadStudentHistory();
             updateStats();
@@ -4038,14 +3389,6 @@ function renderSessionMainSubjectBubbles(){
     const current=(document.getElementById('f-matiere')?.value||'').trim().toLowerCase();
     box.querySelectorAll('.ux-main-subject').forEach(b=>b.classList.toggle('is-active',b.textContent.trim().toLowerCase()===current));
 }
-function chooseSessionSubject(subject){
-    const input=document.getElementById('f-matiere'); if(!input) return;
-    input.value=subject; input.dataset.selectedSubject=subject;
-    const note=document.getElementById('session-subject-selected-note'); if(note) note.textContent=`Matière sélectionnée : ${subject}`;
-    const menu=document.getElementById('session-subject-menu'); if(menu) menu.classList.add('hidden');
-    renderSessionMainSubjectBubbles();
-    input.dispatchEvent(new Event('input',{bubbles:true}));
-}
 
 
 
@@ -4087,7 +3430,7 @@ JR_HANDLERS["h10"] = {attr:"onclick", fn:function(event){
 showTab('reports')
 }};
 JR_HANDLERS["h11"] = {attr:"onclick", fn:function(event){
-openSlotModal(selectedDateISO, periods[0], getDayIndexFromISO(selectedDateISO))
+openSlotModal(selectedDateISO, periods[0], getDayIndexFromISO(selectedDateISO), null, true)
 }};
 JR_HANDLERS["h12"] = {attr:"onclick", fn:function(event){
 switchAgendaView('day')

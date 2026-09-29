@@ -124,12 +124,14 @@
                 <button class="nav-arrow focus-ring" aria-label="Période suivante" data-jr-handlers="h17">›</button>
             </div>
             <input type="date" id="agenda-picker-input" min="2026-08-24" max="2027-07-02" value="" data-jr-handlers="h18" style="width:auto;margin:0;padding:7px 10px;">
+            <button type="button" class="btn-secondary focus-ring agenda-period-config-button" id="agenda-period-config-open">⚙️ Horaires des périodes</button>
         </div>
         <div class="agenda-legend">
-            <span class="legend-item legend-planned"><span class="legend-dot"></span>Planifié</span>
-            <span class="legend-item legend-done"><span class="legend-dot"></span>Séance enregistrée</span>
-            <span class="legend-item legend-neutral"><span class="legend-dot"></span>Mission / formation</span>
-            <span style="font-size:.7rem;color:#64748b;">Cliquez sur un créneau pour agir.</span>
+            <span class="legend-item legend-planned"><span class="legend-dot"></span>Proposition</span>
+            <span class="legend-item legend-confirmed"><span class="legend-dot"></span>Confirmé</span>
+            <span class="legend-item legend-done"><span class="legend-dot"></span>Réalisé</span>
+            <span class="legend-item legend-neutral"><span class="legend-dot"></span>Annulé</span>
+            <span style="font-size:.7rem;color:#64748b;">Plusieurs événements peuvent occuper le même créneau.</span>
         </div>
 
         <div id="agenda-view-day" class="day-timeline"></div>
@@ -622,19 +624,6 @@
 
 </div>
 
-<!-- MODAL CONFLIT AGENDA -->
-<div id="agendaConflictModal" class="modal-overlay hidden">
-  <div class="modal-card" style="max-width:560px;">
-    <h3 style="margin-top:0;">Conflit de planification</h3>
-    <div id="agenda-conflict-summary" style="font-size:.84rem;line-height:1.55;color:var(--text-sub);margin-bottom:16px;"></div>
-    <div style="display:grid;gap:9px;">
-      <button id="agenda-conflict-replace" class="btn-primary" type="button"></button>
-      <button id="agenda-conflict-both" class="btn-secondary" type="button">Conserver les 2 événements</button>
-      <button id="agenda-conflict-cancel" class="btn-secondary" type="button">Annuler</button>
-    </div>
-  </div>
-</div>
-
 <!-- MODAL CRENEAU -->
 <div id="slotModal" class="modal-overlay hidden">
     <div class="modal-card">
@@ -730,12 +719,34 @@
         <div id="event-action-summary" class="event-summary-box"></div>
         <div class="event-action-list">
             <button class="event-action-btn" id="event-action-observe">📝 Encoder la séance</button>
+            <button class="event-action-btn" id="event-action-confirm">✓ Confirmer l’événement</button>
+            <button class="event-action-btn" id="event-action-realize">✓ Marquer comme réalisé</button>
+            <button class="event-action-btn" id="event-action-cancel">⏸️ Annuler l’événement</button>
             <button class="event-action-btn" id="event-action-edit">✏️ Modifier la planification</button>
             <button class="event-action-btn" id="event-action-extend">↔️ Étendre / réduire la durée</button>
             <button class="event-action-btn" id="event-action-duplicate">🔁 Dupliquer à une autre date</button>
             <button class="event-action-btn danger" id="event-action-delete">🗑️ Supprimer</button>
         </div>
         <button class="btn-primary" style="background:#64748b; width:100%; margin-top:12px;" data-jr-handlers="h61">Fermer</button>
+    </div>
+</div>
+
+<!-- MODAL CONFIGURATION DES 8 PÉRIODES -->
+<div id="agendaPeriodConfigModal" class="modal-overlay hidden">
+    <div class="modal-card agenda-period-config-modal-card">
+        <div class="agenda-period-config-head">
+            <div>
+                <div class="page-kicker">Organisation du temps</div>
+                <h3 style="margin:0 0 4px;">Horaires des 8 périodes</h3>
+                <p class="agenda-period-config-intro">Les libellés 1e H à 8e H restent fixes. Configurez les heures propres à votre établissement. Les pauses sont les espaces entre deux périodes.</p>
+            </div>
+            <button type="button" class="btn-secondary focus-ring" id="agenda-period-config-cancel">Fermer</button>
+        </div>
+        <div id="agenda-period-config-body" class="agenda-period-config-body"></div>
+        <div class="agenda-period-config-footer">
+            <button type="button" class="btn-secondary focus-ring" id="agenda-period-config-reset">↺ Revenir aux horaires par défaut</button>
+            <button type="button" class="btn-primary focus-ring" id="agenda-period-config-save">Enregistrer les horaires</button>
+        </div>
     </div>
 </div>
 

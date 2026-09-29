@@ -12,6 +12,8 @@ L'espace Rapports réunit l'historique des séances, les synthèses sur une pér
 
 Une passe UX/UI responsive a été ajoutée le 29 septembre 2026 pour adapter la même application aux PC, tablettes et téléphones, sans modifier le contenu métier ni l'architecture de stockage/synchronisation. Voir [`docs/UX_V74_RESPONSIVE.md`](docs/UX_V74_RESPONSIVE.md).
 
+L'Agenda V74 prend en charge plusieurs événements concurrents, les états proposition/confirmation/réalisation/annulation, la réalisation indépendante des missions non pédagogiques et la configuration des horaires des huit périodes. Voir [`docs/AGENDA_V74.md`](docs/AGENDA_V74.md).
+
 V74 conserve les mécanismes existants de stockage, d'authentification et de synchronisation. L'architecture technique et les limites connues sont détaillées dans [`ARCHITECTURE.md`](ARCHITECTURE.md) et [`SECURITY.md`](SECURITY.md).
 
 ---

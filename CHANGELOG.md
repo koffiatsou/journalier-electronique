@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-29 — Agenda V74
+
+- Modèle canonique `agenda.__events` pour permettre plusieurs événements qui se chevauchent.
+- États Proposition / Confirmé / Réalisé / Annulé.
+- Réalisation indépendante des réunions, GT, formations et missions non liées à une séance.
+- Configuration des horaires des 8 périodes, avec pauses entre périodes.
+- Rapprochement Agenda ↔ Historique renforcé lors des corrections de séance.
+- Préparation des métadonnées nécessaires à une future synchronisation Outlook via Microsoft Graph.
+- Validateur OneDrive/Graph et migration V74 adaptés au nouveau modèle.
+
 Historique synthétique des évolutions importantes. Les détails d'architecture et les contrôles de sécurité sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md) et [SECURITY.md](SECURITY.md). L'historique complet est disponible dans Git.
 
 ## V74 — passe UX/UI responsive — 29 septembre 2026

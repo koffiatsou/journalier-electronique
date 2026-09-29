@@ -378,16 +378,19 @@ L'agenda possède son propre état et son propre registre de synchronisation.
 Il prend notamment en charge :
 
 - les vues jour/semaine/mois ;
-- les périodes ;
-- les événements ;
+- huit périodes configurables, sans transformer les pauses en périodes ;
+- plusieurs événements concurrents sur un même créneau ;
+- les propositions, confirmations, réalisations et annulations ;
 - les événements récurrents ;
 - les duplications ;
-- les conflits d'agenda.
-
+- la réalisation indépendante des réunions, GT, formations et autres missions ;
 - le rapprochement entre les événements prévisionnels et les séances réellement encodées ;
-- la reconnaissance automatique d'un événement prévisionnel comme enregistré lorsqu'une séance correspondante existe pour le même élève, la même date et des périodes qui se recouvrent.
+- la correction d'un événement élève lorsqu'une séance est déplacée ;
+- les métadonnées réservées à la future synchronisation Outlook.
 
-La fonction `getEncodedForEvent()` utilise volontairement le chevauchement de périodes comme critère de rapprochement. Un chevauchement n'est donc pas considéré comme une anomalie : une activité peut couvrir plusieurs périodes consécutives.
+Le stockage canonique utilise `agenda.__events`, `agenda.__exceptions` et `agenda.__config`. `secureNormalizeAgenda()` assure la compatibilité avec les anciennes structures `__uniqueEvents` et `jour_période` utilisées par les versions précédentes.
+
+La fonction `getEncodedForEvent()` utilise volontairement le chevauchement de périodes comme critère de rapprochement. Un chevauchement n'est donc pas considéré comme une anomalie : plusieurs propositions peuvent occuper le même créneau et une activité peut couvrir plusieurs périodes consécutives.
 
 
 ---

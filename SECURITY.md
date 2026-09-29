@@ -545,3 +545,7 @@ Toute nouvelle fonction V74/V74 doit vérifier au minimum :
 - Le PIA précédent n’est jamais promu automatiquement au rang de vérité ; il est conservé comme source de continuité.
 - Les exports dé-identifiés retirent les identifiants élève connus par le moteur.
 - Les relations entre questions de séance restent documentaires et non causales.
+
+## V74 — Agenda et CSP
+
+La refonte Agenda n'ajoute aucune origine réseau ni script inline. Les nouvelles actions utilisent les mécanismes existants de délégation d'événements et les contrôleurs locaux. La CSP de `index.html` conserve `script-src 'self'` et les mêmes domaines Microsoft Graph/Entra. Les métadonnées Outlook sont stockées comme données métier locales et ne déclenchent aucune synchronisation Outlook dans cette version.

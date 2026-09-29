@@ -385,18 +385,48 @@ function validateStrictSession(session,label='Séance'){
 function validateStrictAgenda(agenda,label='Agenda'){
   validateStrictJsonPayload(agenda,label);
   if(!agenda||typeof agenda!=='object'||Array.isArray(agenda))throw new Error(`${label} invalide.`);
-  for(const [key,value] of Object.entries(agenda)){
-    if(key==='__uniqueEvents'){
-      if(!Array.isArray(value)||value.length>JOURNALIER_JSON_LIMITS.maxArray)throw new Error(`${label}.__uniqueEvents invalide.`);
-      continue;
+  const agendaUnknown=Object.keys(agenda).filter(k=>!new Set(['__events','__exceptions','__config','__uniqueEvents']).has(k)&&!/^\d+_.+$/.test(k));
+  if(agendaUnknown.length)throw new Error(`${label} contient des propriétés inattendues : ${agendaUnknown.slice(0,8).join(', ')}${agendaUnknown.length>8?'…':''}.`);
+  if(agenda.__config!=null){
+    if(typeof agenda.__config!=='object'||Array.isArray(agenda.__config))throw new Error(`${label}.__config invalide.`);
+    assertAllowedKeys(agenda.__config,new Set(['version','periods']),`${label}.__config`);
+    if(agenda.__config.version!=null&&!Number.isFinite(Number(agenda.__config.version)))throw new Error(`${label}.__config.version invalide.`);
+    if(agenda.__config.periods!=null){
+      if(!Array.isArray(agenda.__config.periods)||agenda.__config.periods.length!==8)throw new Error(`${label}.__config.periods doit contenir exactement 8 périodes.`);
+      let previousEnd=-1;
+      agenda.__config.periods.forEach((p,i)=>{
+        if(!p||typeof p!=='object'||Array.isArray(p))throw new Error(`${label}.__config.periods[${i}] invalide.`);
+        assertAllowedKeys(p,new Set(['id','label','start','end']),`${label}.__config.periods[${i}]`);
+        if(typeof p.id!=='string'||typeof p.label!=='string'||!/^\d{2}:\d{2}$/.test(String(p.start||''))||!/^\d{2}:\d{2}$/.test(String(p.end||'')))throw new Error(`${label}.__config.periods[${i}] invalide.`);
+        const start=Number(String(p.start).slice(0,2))*60+Number(String(p.start).slice(3));
+        const end=Number(String(p.end).slice(0,2))*60+Number(String(p.end).slice(3));
+        if(start>=end||start<previousEnd)throw new Error(`${label}.__config.periods[${i}] : horaires incohérents ou chevauchants.`);
+        previousEnd=end;
+      });
     }
-    if(key==='__exceptions'){
-      if(!value||typeof value!=='object'||Array.isArray(value))throw new Error(`${label}.__exceptions invalide.`);
-      continue;
-    }
-    if(!value||typeof value!=='object'||Array.isArray(value))throw new Error(`${label}.${key} invalide.`);
-    assertAllowedKeys(value,new Set(['eventId','seriesId','recurrence','type','eleve','matiere','title','detail','local','startIndex','endIndex','startPeriod','endPeriod','occurrenceDate','ownerId','dataVersion']),`${label}.${key}`);
   }
+  if(agenda.__exceptions!=null&&(!agenda.__exceptions||typeof agenda.__exceptions!=='object'||Array.isArray(agenda.__exceptions)))throw new Error(`${label}.__exceptions invalide.`);
+  if(agenda.__events!=null){
+    if(!Array.isArray(agenda.__events)||agenda.__events.length>JOURNALIER_JSON_LIMITS.maxArray)throw new Error(`${label}.__events invalide.`);
+    agenda.__events.forEach((ev,i)=>{
+      if(!ev||typeof ev!=='object'||Array.isArray(ev))throw new Error(`${label}.__events[${i}] invalide.`);
+      assertAllowedKeys(ev,new Set(['eventId','seriesId','recurrence','type','eleve','eleveId','matiere','title','detail','local','dayIndex','date','startPeriod','endPeriod','eventStatus','realized','realizedAt','ownerId','dataVersion','createdAt','updatedAt','timezone','outlook']),`${label}.__events[${i}]`);
+      if(typeof ev.eventId!=='string'||!ev.eventId||ev.eventId.length>160)throw new Error(`${label}.__events[${i}].eventId invalide.`);
+      if(ev.seriesId!=null&&typeof ev.seriesId!=='string')throw new Error(`${label}.__events[${i}].seriesId invalide.`);
+      if(!['weekly','unique'].includes(ev.recurrence))throw new Error(`${label}.__events[${i}].recurrence invalide.`);
+      if(!['ELEVE','COLLAB','FORMATION','ADMIN','LIBRE'].includes(ev.type))throw new Error(`${label}.__events[${i}].type invalide.`);
+      if(!['proposed','confirmed','realized','cancelled'].includes(ev.eventStatus))throw new Error(`${label}.__events[${i}].eventStatus invalide.`);
+      if(typeof ev.realized!=='boolean')throw new Error(`${label}.__events[${i}].realized invalide.`);
+      if(ev.dayIndex!=null&&(!Number.isInteger(Number(ev.dayIndex))||Number(ev.dayIndex)<0||Number(ev.dayIndex)>4))throw new Error(`${label}.__events[${i}].dayIndex invalide.`);
+      for(const k of ['eleve','eleveId','matiere','title','detail','local','date','startPeriod','endPeriod','ownerId','dataVersion','createdAt','updatedAt','timezone'])if(ev[k]!=null&&typeof ev[k]!=='string')throw new Error(`${label}.__events[${i}].${k} invalide.`);
+      if(ev.outlook!=null){
+        if(typeof ev.outlook!=='object'||Array.isArray(ev.outlook))throw new Error(`${label}.__events[${i}].outlook invalide.`);
+        assertAllowedKeys(ev.outlook,new Set(['calendarId','eventId','iCalUId','changeKey','webLink']),`${label}.__events[${i}].outlook`);
+        for(const k of ['calendarId','eventId','iCalUId','changeKey','webLink'])if(ev.outlook[k]!=null&&typeof ev.outlook[k]!=='string')throw new Error(`${label}.__events[${i}].outlook.${k} invalide.`);
+      }
+    });
+  }
+  if(agenda.__uniqueEvents!=null&&!Array.isArray(agenda.__uniqueEvents))throw new Error(`${label}.__uniqueEvents invalide.`);
   return true;
 }
 function validateStrictSyncRecord(record,label='Synchronisation'){
@@ -448,7 +478,7 @@ async function hydrateMicrosoftDataIfLocalEmpty(){
   const localStudents=DataStore.getStudents();
   const localSessions=DataStore.getSessions();
   const localAgenda=DataStore.getAgenda();
-  const agendaHasData=Object.keys(localAgenda||{}).some(k=>k!=='__uniqueEvents'&&k!=='__exceptions') || (Array.isArray(localAgenda?.__uniqueEvents)&&localAgenda.__uniqueEvents.length>0) || Object.keys(localAgenda?.__exceptions||{}).length>0;
+  const agendaHasData=(Array.isArray(localAgenda?.__events)&&localAgenda.__events.length>0) || (Array.isArray(localAgenda?.__uniqueEvents)&&localAgenda.__uniqueEvents.length>0) || Object.keys(localAgenda?.__exceptions||{}).length>0;
   if(localStudents.length||localSessions.length||agendaHasData) return {imported:false,reason:'local-data-present'};
 
   const structure=await graphEnsureJournalierStructure();
@@ -509,7 +539,7 @@ async function hydrateMicrosoftDataIfLocalEmpty(){
 
   state.students=importedStudents;
   state.sessions=importedSessions;
-  state.agenda=importedAgenda;
+  state.agenda=importedAgenda;window.JournalierAgendaConfig?.refreshSessionPeriodSelectors?.();
   state.syncRegistry=registry;
   state.sync={status:'synced',lastSyncAt:new Date().toISOString(),pendingChanges:0};
   state.meta={...(state.meta||{}),cloudHydratedAt:new Date().toISOString(),cloudHydratedAccount:msAccount?.username||null};
@@ -517,7 +547,7 @@ async function hydrateMicrosoftDataIfLocalEmpty(){
   renderStudentsView();
   renderAgenda();
   updateMicrosoftUI();
-  return {imported:true,students:importedStudents.length,sessions:importedSessions.length,agenda:Boolean(Object.keys(importedAgenda).length)};
+  return {imported:true,students:importedStudents.length,sessions:importedSessions.length,agenda:Boolean(Array.isArray(importedAgenda?.__events)&&importedAgenda.__events.length)};
 }
 async function verifyMicrosoft365Space(){const b=document.getElementById('ms-verify-cloud-action');if(b)b.disabled=true;try{const root=await graphGetByPath(GRAPH_ROOT_FOLDER),children=await graphListChildren(root.id),names=new Set((children.value||[]).map(x=>x.name)),expected=['profil','eleves','agenda','system'],missing=expected.filter(x=>!names.has(x));if(missing.length)throw new Error('Structure incomplète : '+missing.join(', '));const sync=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/system/sync.json`).catch(()=>null);setCloudStatus('✓ Structure OneDrive vérifiée.\n✓ Journalier/\n✓ profil/\n✓ eleves/\n✓ agenda/\n✓ system/'+(sync?`\n✓ sync.json : ${sync.json.status||'—'}`:''),'success');}catch(e){setCloudStatus('⚠️ '+(e.message||e),'error');}finally{if(b)b.disabled=!msAccount;}}
 function syncStableValue(value){if(Array.isArray(value))return value.map(syncStableValue);if(value&&typeof value==='object')return Object.keys(value).sort().reduce((o,k)=>(o[k]=syncStableValue(value[k]),o),{});return value;}
@@ -633,7 +663,7 @@ async function v72PullRemoteChanges(){
   if(r.agenda?.status==='remote-changed'){
     try{
       const {item,json}=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/agenda/agenda.json`);
-      validateRemoteAgenda(json||{});state.agenda=secureNormalizeAgenda(json||{});
+      validateRemoteAgenda(json||{});state.agenda=secureNormalizeAgenda(json||{});window.JournalierAgendaConfig?.refreshSessionPeriodSelectors?.();
       const fp=syncFingerprint(syncWithoutVolatileMeta(state.agenda));
       r.agenda={...r.agenda,remoteId:item.id,eTag:item.eTag||null,fingerprint:fp,remoteFingerprint:fp,lastCheckedAt:new Date().toISOString(),status:'synced'};pulled++;
     }catch(e){console.warn('Journalier — pull agenda impossible',e);}
@@ -715,7 +745,7 @@ async function syncPendingLocalChangesV72(opts={}){if(!msAccount)throw new Error
       details.push(`• PIA ${studentId} : ${r.pia[studentId].status}`);
     }catch(e){details.push(`• PIA ${studentId} : échec (${e?.message||e})`);}
   }
-  state.syncRegistry=r;v72RecountPending(state);state.sync.lastSyncAt=new Date().toISOString();state.sync.status=state.sync.pendingChanges?'pending':'synced';securePersistState();const syncRecord={schemaVersion:'JOURNALIER-SYNC-1',architectureVersion:JOURNALIER_ARCHITECTURE_VERSION,ownerId:state.ownerId,status:state.sync.status,students:students.length,sessions:sessions.length,agendaEntries:Object.keys(agenda).length,syncedAt:state.sync.lastSyncAt};const structure=await graphEnsureJournalierStructure();await graphWriteJson(structure.system.id,'sync.json',syncRecord);const summary=`✓ Synchronisation terminée.\n• Éléments envoyés : ${sent}\n• Éléments récupérés : ${pulled}\n• Éléments en attente : ${state.sync.pendingChanges}\n• Conflits : 0`+(details.length?`\n\n${details.join('\n')}`:'');if(!opts.silent)setCloudStatus(summary,'success');else if(sent>0||pulled>0)showAppToast?.(`↕ Synchronisation automatique : ${sent} envoyé(s), ${pulled} récupéré(s).`,'success',3000);updateMicrosoftUI();}catch(e){if(!opts.silent)setCloudStatus('⚠️ '+(e.message||e),'error');else console.warn('Journalier — synchronisation automatique en erreur.',e);}finally{if(b)b.disabled=!msAccount;}}
+  state.syncRegistry=r;v72RecountPending(state);state.sync.lastSyncAt=new Date().toISOString();state.sync.status=state.sync.pendingChanges?'pending':'synced';securePersistState();const syncRecord={schemaVersion:'JOURNALIER-SYNC-1',architectureVersion:JOURNALIER_ARCHITECTURE_VERSION,ownerId:state.ownerId,status:state.sync.status,students:students.length,sessions:sessions.length,agendaEntries:Array.isArray(agenda?.__events)?agenda.__events.length:Object.keys(agenda||{}).length,syncedAt:state.sync.lastSyncAt};const structure=await graphEnsureJournalierStructure();await graphWriteJson(structure.system.id,'sync.json',syncRecord);const summary=`✓ Synchronisation terminée.\n• Éléments envoyés : ${sent}\n• Éléments récupérés : ${pulled}\n• Éléments en attente : ${state.sync.pendingChanges}\n• Conflits : 0`+(details.length?`\n\n${details.join('\n')}`:'');if(!opts.silent)setCloudStatus(summary,'success');else if(sent>0||pulled>0)showAppToast?.(`↕ Synchronisation automatique : ${sent} envoyé(s), ${pulled} récupéré(s).`,'success',3000);updateMicrosoftUI();}catch(e){if(!opts.silent)setCloudStatus('⚠️ '+(e.message||e),'error');else console.warn('Journalier — synchronisation automatique en erreur.',e);}finally{if(b)b.disabled=!msAccount;}}
 function v72ConflictSession(){
   const entry=v72ConflictEntries().find(x=>x.type==='session');
   return entry?.local||null;
@@ -876,7 +906,7 @@ document.addEventListener('click',function(e){
   if(target.classList.contains('js-open-slot') || target.classList.contains('js-week-slot')){
     const dayIndex=Number(target.dataset.dayIndex);
     if(!Number.isInteger(dayIndex)) return;
-    openSlotModal(target.dataset.iso||'',target.dataset.period||'',dayIndex);
+    openSlotModal(target.dataset.iso||'',target.dataset.period||'',dayIndex,null,target.dataset.forceCreate==='true');
     return;
   }
 

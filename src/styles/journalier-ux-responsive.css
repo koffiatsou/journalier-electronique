@@ -1021,3 +1021,211 @@ textarea:disabled {
         min-height: 44px;
     }
 }
+
+/* ============================================================
+   AGENDA V74 — événements concurrents + réalisation + périodes
+   UX additive : aucun style métier existant n'est remplacé.
+   ============================================================ */
+.agenda-period-config-button {
+  white-space: nowrap;
+}
+
+.agenda-status-proposed,
+.status-badge.agenda-status-proposed {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.agenda-status-confirmed,
+.status-badge.agenda-status-confirmed {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.agenda-status-realized,
+.status-badge.agenda-status-realized {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.agenda-status-cancelled,
+.status-badge.agenda-status-cancelled {
+  background: #f8fafc;
+  color: #64748b;
+  border-color: #cbd5e1;
+  text-decoration: line-through;
+}
+
+.day-period-label {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+.day-period-label small,
+.period-col-week small {
+  display: block;
+  font-size: .62rem;
+  font-weight: 600;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.day-event-card.event-cancelled,
+.week-event.event-cancelled {
+  opacity: .68;
+  filter: grayscale(.25);
+}
+
+.day-event-card .status-badge,
+.week-event .status-badge {
+  flex: 0 0 auto;
+}
+
+.agenda-period-config-modal-card {
+  width: min(820px, calc(100vw - 32px));
+  max-width: 820px;
+}
+
+.agenda-period-config-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.agenda-period-config-intro {
+  margin: 0;
+  max-width: 620px;
+  color: #64748b;
+  font-size: .8rem;
+  line-height: 1.5;
+}
+
+.agenda-period-config-body {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.agenda-period-config-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px 140px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.agenda-period-config-row > div {
+  min-width: 0;
+}
+
+.agenda-period-config-row strong {
+  display: block;
+  font-size: .85rem;
+}
+
+.agenda-period-config-row label {
+  margin: 0;
+  font-size: .7rem;
+  color: #64748b;
+}
+
+.agenda-period-config-row input[type="time"] {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.agenda-period-config-help {
+  display: block;
+  margin-top: 2px;
+  color: #94a3b8;
+  font-size: .65rem;
+  line-height: 1.35;
+}
+
+.agenda-period-config-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 767px) {
+  .agenda-period-config-button {
+    width: 100%;
+  }
+
+  .agenda-period-config-head {
+    flex-direction: column;
+  }
+
+  .agenda-period-config-head > button {
+    width: 100%;
+  }
+
+  .agenda-period-config-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .agenda-period-config-row > div {
+    grid-column: 1 / -1;
+  }
+
+  .agenda-period-config-footer > button {
+    width: 100%;
+  }
+
+  .day-period-label small {
+    font-size: .58rem;
+  }
+}
+
+.day-overlap-add {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 0 8px 6px;
+  pointer-events: none;
+}
+
+.day-overlap-add .js-open-slot {
+  pointer-events: auto;
+  min-height: 34px;
+  padding: 5px 9px;
+  font-size: .68rem;
+  border-radius: 8px;
+  opacity: .82;
+}
+
+.week-slot-occupied {
+  background: rgba(248, 250, 252, .45);
+}
+
+.week-slot-occupied .week-slot-free {
+  opacity: .72;
+}
+
+@media (max-width: 767px) {
+  .day-overlap-add {
+    padding-right: 5px;
+    padding-bottom: 4px;
+  }
+
+  .day-overlap-add .js-open-slot {
+    font-size: .62rem;
+    min-height: 30px;
+    padding: 4px 7px;
+  }
+}
