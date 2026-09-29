@@ -1,8 +1,8 @@
-/* Journalier V73 — moteur PIA annuel opérationnel
+/* Journalier V74 — moteur PIA annuel opérationnel
  * Local-first : aucune donnée n'est envoyée par ce module.
  * Les propositions restent des propositions : la validation est une action du professionnel.
  */
-const V73 = {
+const V74 = {
   version: "73.1.0",
   referential: null,
   state: null,
@@ -38,13 +38,13 @@ const THEMES = [
 ];
 
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
-function uid(prefix="v73"){return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;}
+function uid(prefix="v74"){return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;}
 function norm(s){return String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();}
 function dateOnly(s){return String(s||"").slice(0,10);}
 function safeArray(x){return Array.isArray(x)?x:[];}
 function getData(){
   const ds=window.JournalierDataStore;
-  if(!ds?.isReady?.()) throw new Error("Connectez-vous à Microsoft avant d'utiliser le PIA V73.");
+  if(!ds?.isReady?.()) throw new Error("Connectez-vous à Microsoft avant d'utiliser le PIA V74.");
   return {students:ds.getStudents(), sessions:ds.getSessions(), state:ds.getState()};
 }
 function studentSessions(student, sessions, until){
@@ -100,7 +100,7 @@ function extractUnits(s){
   return units;
 }
 function getConvergenceConfig(){
-  const c=V73.referential?.convergence||{};
+  const c=V74.referential?.convergence||{};
   const thresholds=c.seuils||{};
   return {
     signalMinSessions:Number(thresholds.signal_min_sessions_distinctes)||2,
@@ -478,25 +478,25 @@ async function parsePIAFile(file){
   if(!parsed.extracted.objectives.length&&!parsed.extracted.sections.length&&!parsed.extracted.difficulties.length&&!parsed.extracted.adaptations.length)throw new Error("Le document a été lu, mais aucune structure PIA reconnaissable n'a été extraite. Le document original n'a pas été conservé.");
   return parsed;
 }
-function importedSummaryHtml(imported){const e=imported?.extracted||{};return `<div class="v73-import-summary"><b>✓ PIA analysé localement</b><span>${esc(imported?.format?.toUpperCase()||"DOCUMENT")}</span><span>${safeArray(e.objectives).length} objectif(s)</span><span>${safeArray(e.difficulties).length} difficulté(s)</span><span>${safeArray(e.adaptations).length} adaptation(s)</span></div>`;}
+function importedSummaryHtml(imported){const e=imported?.extracted||{};return `<div class="v74-import-summary"><b>✓ PIA analysé localement</b><span>${esc(imported?.format?.toUpperCase()||"DOCUMENT")}</span><span>${safeArray(e.objectives).length} objectif(s)</span><span>${safeArray(e.difficulties).length} difficulté(s)</span><span>${safeArray(e.adaptations).length} adaptation(s)</span></div>`;}
 function piaImportDossierHtml(studentId){
   const imported=getImportedPIA(studentId);
-  if(!imported?.extracted)return '<div class="v73-import-help">Aucun PIA importé pour ce dossier. Utilisez « Importer le PIA » dans la fiche de l’élève.</div>';
+  if(!imported?.extracted)return '<div class="v74-import-help">Aucun PIA importé pour ce dossier. Utilisez « Importer le PIA » dans la fiche de l’élève.</div>';
   const e=imported.extracted||{},sections=safeArray(e.sections).filter(s=>safeArray(s.objectifs).length||safeArray(s.moyens).length||safeArray(s.difficultes).length||safeArray(s.ressources).length);
   const globalAdaptations=safeArray(e.adaptations);
   const domainCards=sections.map((section,index)=>{
     const rows=[["difficultes","Besoins / difficultés"],["objectifs","Objectifs visés"]]
-      .map(([key,label])=>{const items=safeArray(section[key]);return `<div class="v73-domain-value-list-row"><span class="v73-domain-value-label">${label}</span>${items.length?`<div class="v73-domain-value-list">${items.map(item=>`<span class="v73-domain-value">${esc(item)}</span>`).join("")}</div>`:'<p class="v73-domain-empty">Non renseigné.</p>'}</div>`;}).join("");
-    return `<details class="v73-domain-record" id="v73-dossier-domain-${index}">
-      <summary class="v73-domain-record-head tone-${piaDomainTone(section.aspect)}"><div><div class="page-kicker">Domaine PIA — continuité</div><h3>${esc(section.aspect||"Domaine")}</h3></div><span>${safeArray(section.difficultes).length} besoin(s) · ${safeArray(section.objectifs).length} objectif(s)</span></summary>
-      <div class="v73-domain-fields">${rows}</div>
+      .map(([key,label])=>{const items=safeArray(section[key]);return `<div class="v74-domain-value-list-row"><span class="v74-domain-value-label">${label}</span>${items.length?`<div class="v74-domain-value-list">${items.map(item=>`<span class="v74-domain-value">${esc(item)}</span>`).join("")}</div>`:'<p class="v74-domain-empty">Non renseigné.</p>'}</div>`;}).join("");
+    return `<details class="v74-domain-record" id="v74-dossier-domain-${index}">
+      <summary class="v74-domain-record-head tone-${piaDomainTone(section.aspect)}"><div><div class="page-kicker">Domaine PIA — continuité</div><h3>${esc(section.aspect||"Domaine")}</h3></div><span>${safeArray(section.difficultes).length} besoin(s) · ${safeArray(section.objectifs).length} objectif(s)</span></summary>
+      <div class="v74-domain-fields">${rows}</div>
     </details>`;
   }).join("");
-  return `<details class="v73-pia-dossier">
-    <summary class="v73-import-summary"><b>PIA précédent — repère de continuité</b><span>${esc(imported.format?.toUpperCase()||"DOCUMENT")}</span><span>Importé le ${esc(new Date(imported.importedAt||Date.now()).toLocaleDateString("fr"))}</span></summary>
-    <p class="v73-import-help">Ces éléments proviennent du PIA importé. Ils servent de repère et d’aide-mémoire pour préparer les séances ; ils ne remplacent pas une réévaluation par le professionnel.</p>
-    ${domainCards||'<p class="v73-domain-empty">Aucun domaine structuré n’a été reconnu dans le document importé.</p>'}
-    ${globalAdaptations.length?`<div class="v73-domain-value-list-row"><span class="v73-domain-value-label">Adaptations validées</span><div class="v73-domain-value-list">${globalAdaptations.map(item=>`<span class="v73-domain-value">${esc(item)}</span>`).join("")}</div></div>`:""}
+  return `<details class="v74-pia-dossier">
+    <summary class="v74-import-summary"><b>PIA précédent — repère de continuité</b><span>${esc(imported.format?.toUpperCase()||"DOCUMENT")}</span><span>Importé le ${esc(new Date(imported.importedAt||Date.now()).toLocaleDateString("fr"))}</span></summary>
+    <p class="v74-import-help">Ces éléments proviennent du PIA importé. Ils servent de repère et d’aide-mémoire pour préparer les séances ; ils ne remplacent pas une réévaluation par le professionnel.</p>
+    ${domainCards||'<p class="v74-domain-empty">Aucun domaine structuré n’a été reconnu dans le document importé.</p>'}
+    ${globalAdaptations.length?`<div class="v74-domain-value-list-row"><span class="v74-domain-value-label">Adaptations validées</span><div class="v74-domain-value-list">${globalAdaptations.map(item=>`<span class="v74-domain-value">${esc(item)}</span>`).join("")}</div></div>`:""}
   </details>`;
 }
 function pdfWinAnsiBytes(text){const map={"€":0x80,"‚":0x82,"ƒ":0x83,"„":0x84,"…":0x85,"†":0x86,"‡":0x87,"ˆ":0x88,"‰":0x89,"Š":0x8A,"‹":0x8B,"Œ":0x8C,"Ž":0x8E,"‘":0x91,"’":0x92,"“":0x93,"”":0x94,"•":0x95,"–":0x96,"—":0x97,"˜":0x98,"™":0x99,"š":0x9A,"›":0x9B,"œ":0x9C,"ž":0x9E,"Ÿ":0x9F};const out=[];for(const ch of String(text||"")){const cp=ch.codePointAt(0);if(cp<128)out.push(cp);else if(map[ch]!=null)out.push(map[ch]);else if(cp<=255)out.push(cp);else out.push(63);}return out;}
@@ -513,12 +513,12 @@ function exportTextDocument(filename,content,format="docx"){
 function htmlPIA(pia){return `<pre style="white-space:pre-wrap;font:14px Arial,sans-serif;max-width:900px;margin:40px auto;line-height:1.55">${esc(piaTextSections(pia,false).join("\\n"))}</pre>`;}
 
 function clearPIAResult(){
-  const box=document.getElementById("v73-pia-result");
+  const box=document.getElementById("v74-pia-result");
   if(box) box.innerHTML="";
-  V73.ui.piaDisplayStudentId="";
-  V73.ui.piaDisplayMode="none";
-  V73.ui.piaDraftStudentId="";
-  V73.ui.piaDraftPersisted=false;
+  V74.ui.piaDisplayStudentId="";
+  V74.ui.piaDisplayMode="none";
+  V74.ui.piaDraftStudentId="";
+  V74.ui.piaDraftPersisted=false;
 }
 
 function closePIAProject(){
@@ -606,28 +606,28 @@ function piaDomainCard(pia,section,index){
   const objectives=piaDomainObjectives(pia,section);
   const field=([key,label])=>{
     const items=key==="objectifs"?objectives:safeArray(section[key]);
-    const content=items.length?`<div class="v73-domain-value-list">${items.map(item=>`<span class="v73-domain-value">${esc(item)}</span>`).join("")}</div>`:'<p class="v73-domain-empty">Aucun élément renseigné.</p>';
-    return `<details class="v73-domain-fieldset is-${key}"><summary>${label}<span>${items.length||""}</span></summary><div class="v73-domain-field-content">${content}<label class="v73-domain-field"><span>Modifier cette rubrique</span><textarea rows="2" data-v73-domain-index="${index}" data-v73-domain-field="${key}" aria-label="${label} — ${esc(section.aspect)}" placeholder="À compléter">${esc(items.join("\n"))}</textarea></label></div></details>`;
+    const content=items.length?`<div class="v74-domain-value-list">${items.map(item=>`<span class="v74-domain-value">${esc(item)}</span>`).join("")}</div>`:'<p class="v74-domain-empty">Aucun élément renseigné.</p>';
+    return `<details class="v74-domain-fieldset is-${key}"><summary>${label}<span>${items.length||""}</span></summary><div class="v74-domain-field-content">${content}<label class="v74-domain-field"><span>Modifier cette rubrique</span><textarea rows="2" data-v74-domain-index="${index}" data-v74-domain-field="${key}" aria-label="${label} — ${esc(section.aspect)}" placeholder="À compléter">${esc(items.join("\n"))}</textarea></label></div></details>`;
   };
-  return `<div class="v73-domain-record" id="v73-domain-${index}">
-    <header class="v73-domain-record-head tone-${piaDomainTone(section.aspect)}"><div><div class="page-kicker">Domaine PIA</div><h3>${esc(section.aspect||"Domaine")}</h3></div><span>${safeArray(section.difficultes).length} besoin(s) · ${objectives.length} objectif(s) · ${safeArray(section.moyens).length} moyen(s)</span></header>
-    <div class="v73-domain-fields">${PIA_DOMAIN_FIELDS.map(field).join("")}</div>
+  return `<div class="v74-domain-record" id="v74-domain-${index}">
+    <header class="v74-domain-record-head tone-${piaDomainTone(section.aspect)}"><div><div class="page-kicker">Domaine PIA</div><h3>${esc(section.aspect||"Domaine")}</h3></div><span>${safeArray(section.difficultes).length} besoin(s) · ${objectives.length} objectif(s) · ${safeArray(section.moyens).length} moyen(s)</span></header>
+    <div class="v74-domain-fields">${PIA_DOMAIN_FIELDS.map(field).join("")}</div>
   </div>`;
 }
 function piaMeetingEditor(pia,key,title,type){
   const meeting=pia[key]||{},participants=meeting.participants||{},feedback=meeting.feedback||{};
   const schoolYearBounds=piaSchoolYearBounds(Number(String(pia.schoolYear||"").slice(0,4)));
   const input=(field,label,value,kind="textarea")=>kind==="input"
-    ? `<label class="v73-meeting-field"><span>${label}</span><input data-v73-meeting="${key}" data-v73-meeting-field="${field}" value="${esc(value||"")}" maxlength="4000"></label>`
-    : `<label class="v73-meeting-field"><span>${label}</span><textarea rows="2" data-v73-meeting="${key}" data-v73-meeting-field="${field}" maxlength="8000">${esc(value||"")}</textarea></label>`;
-  return `<details class="v73-meeting">
-    <summary><span>${title}</span><span class="v73-meeting-status">${esc(meeting.status||"À préparer")}</span></summary>
-    <div class="v73-meeting-fields">
-      <label class="v73-meeting-field"><span>Type</span><select data-v73-meeting="${key}" data-v73-meeting-field="type"><option value="${type}" selected>${title}</option></select></label>
-      <label class="v73-meeting-field"><span>Date</span><input type="date" min="${schoolYearBounds.start}" max="${schoolYearBounds.end}" data-v73-meeting="${key}" data-v73-meeting-field="date" value="${esc(meeting.date||"")}"></label>
+    ? `<label class="v74-meeting-field"><span>${label}</span><input data-v74-meeting="${key}" data-v74-meeting-field="${field}" value="${esc(value||"")}" maxlength="4000"></label>`
+    : `<label class="v74-meeting-field"><span>${label}</span><textarea rows="2" data-v74-meeting="${key}" data-v74-meeting-field="${field}" maxlength="8000">${esc(value||"")}</textarea></label>`;
+  return `<details class="v74-meeting">
+    <summary><span>${title}</span><span class="v74-meeting-status">${esc(meeting.status||"À préparer")}</span></summary>
+    <div class="v74-meeting-fields">
+      <label class="v74-meeting-field"><span>Type</span><select data-v74-meeting="${key}" data-v74-meeting-field="type"><option value="${type}" selected>${title}</option></select></label>
+      <label class="v74-meeting-field"><span>Date</span><input type="date" min="${schoolYearBounds.start}" max="${schoolYearBounds.end}" data-v74-meeting="${key}" data-v74-meeting-field="date" value="${esc(meeting.date||"")}"></label>
       ${input("context","Contexte",meeting.context)}
-      <fieldset class="v73-participants"><legend>Participants</legend>${PIA_MEETING_ACTORS.map(actor=>`<label><input type="checkbox" data-v73-meeting="${key}" data-v73-participant="${actor.id}" ${participants[actor.id]?"checked":""}><span>${actor.label}</span></label>`).join("")}</fieldset>
-      <div class="v73-feedback-grid"><div class="v73-meeting-subtitle">Retours des participants</div>${PIA_MEETING_ACTORS.map(actor=>input(`feedback.${actor.id}`,actor.label,feedback[actor.id])).join("")}</div>
+      <fieldset class="v74-participants"><legend>Participants</legend>${PIA_MEETING_ACTORS.map(actor=>`<label><input type="checkbox" data-v74-meeting="${key}" data-v74-participant="${actor.id}" ${participants[actor.id]?"checked":""}><span>${actor.label}</span></label>`).join("")}</fieldset>
+      <div class="v74-feedback-grid"><div class="v74-meeting-subtitle">Retours des participants</div>${PIA_MEETING_ACTORS.map(actor=>input(`feedback.${actor.id}`,actor.label,feedback[actor.id])).join("")}</div>
       ${input("decisions","Décisions",meeting.decisions)}
       ${input("objectivesModified","Objectifs modifiés",meeting.objectivesModified)}
       ${input("means","Moyens",meeting.means)}
@@ -640,18 +640,18 @@ function piaMeetingEditor(pia,key,title,type){
 function piaAnnualTracking(pia){
   const validated=safeArray(pia.meeting1?.objectivesValidated),evaluation=safeArray(pia.meeting2?.evaluation);
   const list=(items,empty)=>items.length?`<ul>${items.map(item=>`<li>${esc(typeof item==="string"?item:item.formulation||item.objectif||"")}</li>`).join("")}</ul>`:`<p>${empty}</p>`;
-  return `<section class="v73-annual-tracking"><h3>Suivi annuel</h3><p>${esc(piaStatusLabel(pia))} · ${Number(pia.sessionsAnalysed||0)} séance(s) analysée(s)</p><h4>Objectifs validés</h4>${list(validated,"Aucun objectif validé à ce stade.")}<h4>Éléments de réévaluation</h4>${list(evaluation,"La réévaluation de fin d’année n’a pas encore été préparée.")}</section>`;
+  return `<section class="v74-annual-tracking"><h3>Suivi annuel</h3><p>${esc(piaStatusLabel(pia))} · ${Number(pia.sessionsAnalysed||0)} séance(s) analysée(s)</p><h4>Objectifs validés</h4>${list(validated,"Aucun objectif validé à ce stade.")}<h4>Éléments de réévaluation</h4>${list(evaluation,"La réévaluation de fin d’année n’a pas encore été préparée.")}</section>`;
 }
 async function persistPIAEdit(pia,persistDraft=false){
-  if(pia.lifecycle==="EN_CONSTRUCTION"&&!persistDraft&&!V73.ui.piaDraftPersisted)return;
-  if(pia.lifecycle==="EN_CONSTRUCTION")V73.ui.piaDraftPersisted=true;
+  if(pia.lifecycle==="EN_CONSTRUCTION"&&!persistDraft&&!V74.ui.piaDraftPersisted)return;
+  if(pia.lifecycle==="EN_CONSTRUCTION")V74.ui.piaDraftPersisted=true;
   await savePia(pia,pia.lifecycle!=="EN_CONSTRUCTION",false);
 }
 function decidePIAProposal(pia,index,decision){
   const proposal=pia.propositions?.[index];if(!proposal||!['VALIDEE','REFUSEE'].includes(decision))return false;
   if(decision==="VALIDEE"){
     const inReview=pia.lifecycle==="EN_REEVALUATION";
-    const field=document.querySelector(`[data-v73-prop-formulation="${index}"]`),formulation=String(field?.value??proposal.formulation??"").trim();
+    const field=document.querySelector(`[data-v74-prop-formulation="${index}"]`),formulation=String(field?.value??proposal.formulation??"").trim();
     if(!formulation)return false;
     proposal.formulation=formulation;
     const objectives=safeArray(pia.meeting1.objectivesValidated);
@@ -670,36 +670,36 @@ function decidePIAProposal(pia,index,decision){
 }
 
 function setPIASection(box,name){
-  const tabs=[...box.querySelectorAll("[data-v73-pia-tab]")],panels=[...box.querySelectorAll("[data-v73-pia-panel]")];
-  const active=tabs.find(tab=>tab.dataset.v73PiaTab===name);if(!active)return;
+  const tabs=[...box.querySelectorAll("[data-v74-pia-tab]")],panels=[...box.querySelectorAll("[data-v74-pia-panel]")];
+  const active=tabs.find(tab=>tab.dataset.v74PiaTab===name);if(!active)return;
   tabs.forEach(tab=>{const selected=tab===active;tab.setAttribute("aria-selected",String(selected));tab.tabIndex=selected?0:-1;});
-  panels.forEach(panel=>{panel.hidden=panel.dataset.v73PiaPanel!==name;});
+  panels.forEach(panel=>{panel.hidden=panel.dataset.v74PiaPanel!==name;});
 }
 function bindPIASectionTabs(box){
-  const nav=box.querySelector(".v73-pia-nav");if(!nav)return;
-  nav.addEventListener("click",event=>{const tab=event.target.closest("[data-v73-pia-tab]");if(tab)setPIASection(box,tab.dataset.v73PiaTab);});
+  const nav=box.querySelector(".v74-pia-nav");if(!nav)return;
+  nav.addEventListener("click",event=>{const tab=event.target.closest("[data-v74-pia-tab]");if(tab)setPIASection(box,tab.dataset.v74PiaTab);});
   nav.addEventListener("keydown",event=>{
-    const tabs=[...nav.querySelectorAll("[data-v73-pia-tab]")],index=tabs.indexOf(document.activeElement);if(index<0)return;
+    const tabs=[...nav.querySelectorAll("[data-v74-pia-tab]")],index=tabs.indexOf(document.activeElement);if(index<0)return;
     let next=index;if(event.key==="ArrowRight")next=(index+1)%tabs.length;else if(event.key==="ArrowLeft")next=(index-1+tabs.length)%tabs.length;else if(event.key==="Home")next=0;else if(event.key==="End")next=tabs.length-1;else return;
-    event.preventDefault();tabs[next].focus();setPIASection(box,tabs[next].dataset.v73PiaTab);
+    event.preventDefault();tabs[next].focus();setPIASection(box,tabs[next].dataset.v74PiaTab);
   });
 }
 function requestPIASection(name){
   if(!["domains","proposals","meetings","tracking"].includes(name))return false;
-  V73.ui??={};V73.ui.pendingSection=name;
-  const box=document.getElementById("v73-pia-result");
-  if(box?.querySelector("[data-v73-pia-tab]")){
+  V74.ui??={};V74.ui.pendingSection=name;
+  const box=document.getElementById("v74-pia-result");
+  if(box?.querySelector("[data-v74-pia-tab]")){
     setPIASection(box,name);
-    V73.ui.pendingSection="";
+    V74.ui.pendingSection="";
     return true;
   }
   return false;
 }
 function render(pia){
-  const box=document.getElementById("v73-pia-result");
+  const box=document.getElementById("v74-pia-result");
   if(!box)return;
-  const activeSection=V73.ui?.pendingSection||box.querySelector('[data-v73-pia-tab][aria-selected="true"]')?.dataset.v73PiaTab||"domains";
-  if(V73.ui?.pendingSection)V73.ui.pendingSection="";
+  const activeSection=V74.ui?.pendingSection||box.querySelector('[data-v74-pia-tab][aria-selected="true"]')?.dataset.v74PiaTab||"domains";
+  if(V74.ui?.pendingSection)V74.ui.pendingSection="";
 
   const imported=pia.sourceContinuity?.present?importedSummaryHtml(pia.sourceContinuity):"";
   const limitedEvidence=Number(pia.sessionsAnalysed||0)<3;
@@ -707,7 +707,7 @@ function render(pia){
   const statusClass=["ACTIF","EN_VIGUEUR","FINALISE"].includes(pia.lifecycle)?"is-success":"is-warning";
 
   const evidenceNotice=limitedEvidence
-    ? `<div class="v73-notice v73-notice-warning">
+    ? `<div class="v74-notice v74-notice-warning">
          ⚠️ Éléments encore limités : le projet repose sur un nombre réduit de séances.
          Il doit être considéré comme un projet à examiner et non comme une évaluation annuelle complète.
        </div>`
@@ -715,26 +715,26 @@ function render(pia){
 
   const proposals=safeArray(pia.propositions);
   const domains=safeArray(pia.sections);
-  const storedDomainIndex=box.dataset.v73ActiveDomain;
+  const storedDomainIndex=box.dataset.v74ActiveDomain;
   const activeDomainIndex=storedDomainIndex!==undefined&&storedDomainIndex!==""?Number(storedDomainIndex):-1;
   const activeDomain=Number.isInteger(activeDomainIndex)?domains[activeDomainIndex]:null;
   const domainOverview=domains.map((section,index)=>{
     const objectives=piaDomainObjectives(pia,section);
     const needs=safeArray(section.difficultes).length,means=safeArray(section.moyens).length;
-    return `<button type="button" class="v73-domain-overview tone-${piaDomainTone(section.aspect)}" data-v73-domain-jump="${index}" aria-label="Afficher le domaine ${esc(section.aspect||"")} et son détail"><span class="v73-domain-icon">${piaDomainIcon(section.aspect,index)}</span><strong>${esc(section.aspect||"Domaine")}</strong><span class="v73-domain-metrics"><span><b>${needs}</b> besoins</span><span><b>${objectives.length}</b> objectifs</span><span><b>${means}</b> moyens</span></span><span class="v73-domain-action">Consulter le domaine <span aria-hidden="true">›</span></span></button>`;
+    return `<button type="button" class="v74-domain-overview tone-${piaDomainTone(section.aspect)}" data-v74-domain-jump="${index}" aria-label="Afficher le domaine ${esc(section.aspect||"")} et son détail"><span class="v74-domain-icon">${piaDomainIcon(section.aspect,index)}</span><strong>${esc(section.aspect||"Domaine")}</strong><span class="v74-domain-metrics"><span><b>${needs}</b> besoins</span><span><b>${objectives.length}</b> objectifs</span><span><b>${means}</b> moyens</span></span><span class="v74-domain-action">Consulter le domaine <span aria-hidden="true">›</span></span></button>`;
   }).join("");
-  const domainDetail=activeDomain?`<div class="v73-domain-detail-view" id="v73-domain-detail-view">
-    <button type="button" class="v73-domain-back" data-v73-domain-back>‹ Tous les domaines</button>
-    <div class="v73-domain-detail-layout">
-      <nav class="v73-domain-menu" aria-label="Choisir un domaine">${domains.map((section,index)=>`<button type="button" data-v73-domain-select="${index}" aria-current="${index===activeDomainIndex?"true":"false"}">${esc(section.aspect||"Domaine")}</button>`).join("")}</nav>
+  const domainDetail=activeDomain?`<div class="v74-domain-detail-view" id="v74-domain-detail-view">
+    <button type="button" class="v74-domain-back" data-v74-domain-back>‹ Tous les domaines</button>
+    <div class="v74-domain-detail-layout">
+      <nav class="v74-domain-menu" aria-label="Choisir un domaine">${domains.map((section,index)=>`<button type="button" data-v74-domain-select="${index}" aria-current="${index===activeDomainIndex?"true":"false"}">${esc(section.aspect||"Domaine")}</button>`).join("")}</nav>
       ${piaDomainCard(pia,activeDomain,activeDomainIndex)}
     </div>
   </div>`:"";
 
   box.innerHTML=`
-    <div class="v73-summary">
-      <div class="v73-summary-main">
-        <span class="v73-status-badge ${statusClass}">${esc(statusLabel)}</span>
+    <div class="v74-summary">
+      <div class="v74-summary-main">
+        <span class="v74-status-badge ${statusClass}">${esc(statusLabel)}</span>
       </div>
       <span>${Number(pia.sessionsAnalysed||0)} séance(s) analysée(s)</span>
       <span>${proposals.length} proposition(s)</span>
@@ -743,57 +743,57 @@ function render(pia){
     ${imported}
     ${evidenceNotice}
 
-    <div class="v73-notice">
+    <div class="v74-notice">
       Les objectifs existants sont conservés comme continuité.
       Les nouvelles formulations sont des <b>PROPOSITIONS</b> tant qu'elles ne sont pas validées.
     </div>
 
-    <nav class="v73-pia-nav" role="tablist" aria-label="Sections du PIA annuel" aria-orientation="horizontal">
-      <button type="button" role="tab" id="v73-tab-domains" aria-controls="v73-panel-domains" aria-selected="true" tabindex="0" data-v73-pia-tab="domains">Domaines</button>
-      <button type="button" role="tab" id="v73-tab-proposals" aria-controls="v73-panel-proposals" aria-selected="false" tabindex="-1" data-v73-pia-tab="proposals">Propositions <span>${proposals.length}</span></button>
-      <button type="button" role="tab" id="v73-tab-meetings" aria-controls="v73-panel-meetings" aria-selected="false" tabindex="-1" data-v73-pia-tab="meetings">Réunions</button>
-      <button type="button" role="tab" id="v73-tab-tracking" aria-controls="v73-panel-tracking" aria-selected="false" tabindex="-1" data-v73-pia-tab="tracking">Suivi annuel</button>
+    <nav class="v74-pia-nav" role="tablist" aria-label="Sections du PIA annuel" aria-orientation="horizontal">
+      <button type="button" role="tab" id="v74-tab-domains" aria-controls="v74-panel-domains" aria-selected="true" tabindex="0" data-v74-pia-tab="domains">Domaines</button>
+      <button type="button" role="tab" id="v74-tab-proposals" aria-controls="v74-panel-proposals" aria-selected="false" tabindex="-1" data-v74-pia-tab="proposals">Propositions <span>${proposals.length}</span></button>
+      <button type="button" role="tab" id="v74-tab-meetings" aria-controls="v74-panel-meetings" aria-selected="false" tabindex="-1" data-v74-pia-tab="meetings">Réunions</button>
+      <button type="button" role="tab" id="v74-tab-tracking" aria-controls="v74-panel-tracking" aria-selected="false" tabindex="-1" data-v74-pia-tab="tracking">Suivi annuel</button>
     </nav>
 
-    <section class="v73-pia-panel v73-domain-section" id="v73-panel-domains" role="tabpanel" aria-labelledby="v73-tab-domains" tabindex="0" data-v73-pia-panel="domains">
-      <div class="v73-domain-overview-view" ${activeDomain?"hidden":""}>
+    <section class="v74-pia-panel v74-domain-section" id="v74-panel-domains" role="tabpanel" aria-labelledby="v74-tab-domains" tabindex="0" data-v74-pia-panel="domains">
+      <div class="v74-domain-overview-view" ${activeDomain?"hidden":""}>
         <h3>Les cinq domaines</h3>
-        ${domains.length?`<div class="v73-domain-overview-grid">${domainOverview}</div>`:'<p class="v73-empty">Aucun domaine disponible pour ce PIA.</p>'}
+        ${domains.length?`<div class="v74-domain-overview-grid">${domainOverview}</div>`:'<p class="v74-empty">Aucun domaine disponible pour ce PIA.</p>'}
       </div>
       ${domainDetail}
     </section>
 
-    <section class="v73-pia-panel" id="v73-panel-proposals" role="tabpanel" aria-labelledby="v73-tab-proposals" tabindex="0" data-v73-pia-panel="proposals" hidden>
+    <section class="v74-pia-panel" id="v74-panel-proposals" role="tabpanel" aria-labelledby="v74-tab-proposals" tabindex="0" data-v74-pia-panel="proposals" hidden>
       ${
       proposals.length
-      ? `<div class="v73-proposals">
+      ? `<div class="v74-proposals">
           ${proposals.map((p,i)=>{
             const status=p.decisionStatus||"A_EXAMINER";
             const statusLabel={A_EXAMINER:"À examiner",VALIDEE:"Validée",REFUSEE:"Refusée"}[status]||"À examiner";
             const statusClass={A_EXAMINER:"is-pending",VALIDEE:"is-validated",REFUSEE:"is-refused"}[status]||"is-pending";
             const contributors=[...new Set(safeArray(p.evidence).map(item=>[item.date,item.matiere].filter(Boolean).join(" · ")))];
-            return `<article class="v73-prop ${statusClass}">
-              <label class="v73-prop-select" aria-label="Sélectionner la proposition ${i+1}">
-                <input type="checkbox" data-v73-prop="${i}" ${status!=="A_EXAMINER"?"disabled":""}>
-                <span class="v73-checkmark" aria-hidden="true"></span>
+            return `<article class="v74-prop ${statusClass}">
+              <label class="v74-prop-select" aria-label="Sélectionner la proposition ${i+1}">
+                <input type="checkbox" data-v74-prop="${i}" ${status!=="A_EXAMINER"?"disabled":""}>
+                <span class="v74-checkmark" aria-hidden="true"></span>
               </label>
-              <div class="v73-prop-body">
-                <span class="v73-prop-title">${esc(p.theme||"Proposition PIA")}</span>
-                <span class="v73-prop-meta"><span>${esc(p.aspect||"")}</span><span class="v73-prop-state ${statusClass}">${statusLabel}</span></span>
-                <label class="v73-prop-edit">Formulation<textarea rows="2" data-v73-prop-formulation="${i}" ${status!=="A_EXAMINER"?"readonly":""}>${esc(p.formulation||"")}</textarea></label>
-                <span class="v73-prop-meta">
+              <div class="v74-prop-body">
+                <span class="v74-prop-title">${esc(p.theme||"Proposition PIA")}</span>
+                <span class="v74-prop-meta"><span>${esc(p.aspect||"")}</span><span class="v74-prop-state ${statusClass}">${statusLabel}</span></span>
+                <label class="v74-prop-edit">Formulation<textarea rows="2" data-v74-prop-formulation="${i}" ${status!=="A_EXAMINER"?"readonly":""}>${esc(p.formulation||"")}</textarea></label>
+                <span class="v74-prop-meta">
                   <span>${Number(p.recurrence||0)} occurrence(s)</span>
                   <span>${Number(p.sessionCount||0)} séance(s) contributrice(s)</span>
-                  ${p.counterEvidence ? "<span class='v73-badge-warning'>Contre-évidence</span>" : ""}
+                  ${p.counterEvidence ? "<span class='v74-badge-warning'>Contre-évidence</span>" : ""}
                 </span>
-                <span class="v73-prop-meta"><span>Provenance : séances Q2–Q6 (${safeArray(p.provenance?.sourceKeys).join(", ")||"données documentées"})</span></span>
-                ${contributors.length?`<ul class="v73-prop-evidence">${contributors.map(item=>`<li>${esc(item)}</li>`).join("")}</ul>`:""}
-                ${status==="A_EXAMINER"?`<div class="v73-prop-actions"><button type="button" class="v73-btn v73-btn-neutral" data-v73-proposal-save="${i}">Enregistrer la formulation</button><button type="button" class="v73-btn v73-btn-success" data-v73-proposal-accept="${i}">Valider</button><button type="button" class="v73-btn v73-btn-danger" data-v73-proposal-reject="${i}">Refuser</button></div>`:""}
+                <span class="v74-prop-meta"><span>Provenance : séances Q2–Q6 (${safeArray(p.provenance?.sourceKeys).join(", ")||"données documentées"})</span></span>
+                ${contributors.length?`<ul class="v74-prop-evidence">${contributors.map(item=>`<li>${esc(item)}</li>`).join("")}</ul>`:""}
+                ${status==="A_EXAMINER"?`<div class="v74-prop-actions"><button type="button" class="v74-btn v74-btn-neutral" data-v74-proposal-save="${i}">Enregistrer la formulation</button><button type="button" class="v74-btn v74-btn-success" data-v74-proposal-accept="${i}">Valider</button><button type="button" class="v74-btn v74-btn-danger" data-v74-proposal-reject="${i}">Refuser</button></div>`:""}
               </div>
             </article>`;
           }).join("")}
         </div>`
-      : `<p class="v73-empty">
+      : `<p class="v74-empty">
            Aucune convergence suffisante pour formuler une proposition PIA.
            Les observations restent disponibles dans les séances.
          </p>`
@@ -801,9 +801,9 @@ function render(pia){
 
       ${
       !["ACTIF","EN_VIGUEUR","FINALISE"].includes(pia.lifecycle)
-      ? `<div class="v73-action-group v73-action-validation">
-           <div class="v73-action-title">Validation</div>
-           <button id="v73-validate" class="v73-btn v73-btn-success">
+      ? `<div class="v74-action-group v74-action-validation">
+           <div class="v74-action-title">Validation</div>
+           <button id="v74-validate" class="v74-btn v74-btn-success">
              ✓ Valider les propositions sélectionnées
            </button>
          </div>`
@@ -811,70 +811,70 @@ function render(pia){
       }
     </section>
 
-    <section class="v73-pia-panel v73-meetings-section" id="v73-panel-meetings" role="tabpanel" aria-labelledby="v73-tab-meetings" tabindex="0" data-v73-pia-panel="meetings" hidden>
+    <section class="v74-pia-panel v74-meetings-section" id="v74-panel-meetings" role="tabpanel" aria-labelledby="v74-tab-meetings" tabindex="0" data-v74-pia-panel="meetings" hidden>
       <h3>Réunion de décembre</h3>
       ${piaMeetingEditor(pia,"meeting1","Réunion de décembre","REUNION_1_DECEMBRE")}
       <h3>Réunion de fin d’année</h3>
       ${piaMeetingEditor(pia,"meeting2","Réunion de fin d’année","REUNION_2_FIN_ANNEE")}
-      ${pia.lifecycle==="EN_REEVALUATION"?`<div class="v73-actions"><button type="button" id="v73-review-confirm" class="v73-btn v73-btn-success">Confirmer la réévaluation et maintenir en vigueur</button></div>`:""}
-      ${pia.lifecycle==="EN_VIGUEUR"&&pia.meeting2?.status==="REEVALUATION_VALIDEE"?`<div class="v73-actions"><button type="button" id="v73-finalize" class="v73-btn v73-btn-primary">Finaliser l’année</button></div>`:""}
+      ${pia.lifecycle==="EN_REEVALUATION"?`<div class="v74-actions"><button type="button" id="v74-review-confirm" class="v74-btn v74-btn-success">Confirmer la réévaluation et maintenir en vigueur</button></div>`:""}
+      ${pia.lifecycle==="EN_VIGUEUR"&&pia.meeting2?.status==="REEVALUATION_VALIDEE"?`<div class="v74-actions"><button type="button" id="v74-finalize" class="v74-btn v74-btn-primary">Finaliser l’année</button></div>`:""}
     </section>
 
-    <section class="v73-pia-panel" id="v73-panel-tracking" role="tabpanel" aria-labelledby="v73-tab-tracking" tabindex="0" data-v73-pia-panel="tracking" hidden>
+    <section class="v74-pia-panel" id="v74-panel-tracking" role="tabpanel" aria-labelledby="v74-tab-tracking" tabindex="0" data-v74-pia-panel="tracking" hidden>
       ${piaAnnualTracking(pia)}
     </section>
 
-    <details class="v73-export-disclosure">
+    <details class="v74-export-disclosure">
       <summary>Exporter le PIA</summary>
-      <div class="v73-action-group v73-action-export">
-        <div class="v73-action-title">Formats d’export</div>
+      <div class="v74-action-group v74-action-export">
+        <div class="v74-action-title">Formats d’export</div>
 
-      <div class="v73-export-row">
+      <div class="v74-export-row">
         <label>
           Format d’export
-          <select id="v73-export-format">
+          <select id="v74-export-format">
             <option value="docx">Word (.docx)</option>
             <option value="pdf">PDF (.pdf)</option>
           </select>
         </label>
 
-        <button id="v73-export-prof" class="v73-btn v73-btn-primary">
+        <button id="v74-export-prof" class="v74-btn v74-btn-primary">
           Exporter le PIA professionnel
         </button>
 
-        <button id="v73-export-deid" class="v73-btn v73-btn-neutral">
+        <button id="v74-export-deid" class="v74-btn v74-btn-neutral">
           Exporter le modèle dé-identifié
         </button>
       </div>
 
-      <div class="v73-actions">
-        <button id="v73-json" class="v73-btn v73-btn-primary">
+      <div class="v74-actions">
+        <button id="v74-json" class="v74-btn v74-btn-primary">
           Export JSON professionnel
         </button>
 
-        <button id="v73-deid-json" class="v73-btn v73-btn-neutral">
+        <button id="v74-deid-json" class="v74-btn v74-btn-neutral">
           Export JSON dé-identifié
         </button>
       </div>
       </div>
     </details>
 
-    <details class="v73-export-disclosure v73-management-disclosure">
+    <details class="v74-export-disclosure v74-management-disclosure">
       <summary>Actions sur le projet</summary>
-      <div class="v73-action-group v73-action-management">
-        <div class="v73-action-title">Projet</div>
+      <div class="v74-action-group v74-action-management">
+        <div class="v74-action-title">Projet</div>
 
-      <div class="v73-actions">
-        <button id="v73-close" class="v73-btn v73-btn-neutral">
+      <div class="v74-actions">
+        <button id="v74-close" class="v74-btn v74-btn-neutral">
           Fermer
         </button>
 
         ${
           ["ACTIF","EN_VIGUEUR","FINALISE"].includes(pia.lifecycle)
-          ? `<button id="v73-delete" class="v73-btn v73-btn-danger">
+          ? `<button id="v74-delete" class="v74-btn v74-btn-danger">
                Supprimer le PIA annuel
              </button>`
-          : `<button id="v73-cancel" class="v73-btn v73-btn-neutral">
+          : `<button id="v74-cancel" class="v74-btn v74-btn-neutral">
                Annuler le projet
              </button>`
         }
@@ -886,51 +886,51 @@ function render(pia){
   bindPIASectionTabs(box);
   setPIASection(box,activeSection);
 
-  box.querySelectorAll("[data-v73-domain-index]").forEach(field=>field.addEventListener("change",async()=>{
-    const section=pia.sections[Number(field.dataset.v73DomainIndex)],key=field.dataset.v73DomainField;
+  box.querySelectorAll("[data-v74-domain-index]").forEach(field=>field.addEventListener("change",async()=>{
+    const section=pia.sections[Number(field.dataset.v74DomainIndex)],key=field.dataset.v74DomainField;
     if(!section||!PIA_DOMAIN_FIELDS.some(([fieldKey])=>fieldKey===key))return;
     section[key]=field.value.split(/\r?\n/).map(value=>value.trim()).filter(Boolean);
     try{await persistPIAEdit(pia);window.showAppToast?.("Modifications du domaine enregistrées.","success",2200);}catch(e){window.showAppToast?.("⚠️ Enregistrement impossible : "+(e?.message||e),"error",4500);}
   }));
-  box.querySelectorAll("[data-v73-meeting-field]").forEach(field=>field.addEventListener("change",async()=>{
-    const meeting=pia[field.dataset.v73Meeting],path=String(field.dataset.v73MeetingField||"").split("."),leaf=path.pop();
+  box.querySelectorAll("[data-v74-meeting-field]").forEach(field=>field.addEventListener("change",async()=>{
+    const meeting=pia[field.dataset.v74Meeting],path=String(field.dataset.v74MeetingField||"").split("."),leaf=path.pop();
     if(!meeting||!leaf)return;
     let target=meeting;path.forEach(key=>{target[key]??={};target=target[key];});target[leaf]=field.value;meeting.source="REUNION";meeting.updatedAt=new Date().toISOString();
     try{await persistPIAEdit(pia);window.showAppToast?.("Éléments de réunion enregistrés.","success",2200);}catch(e){window.showAppToast?.("⚠️ Enregistrement impossible : "+(e?.message||e),"error",4500);}
   }));
-  box.querySelectorAll("[data-v73-participant]").forEach(field=>field.addEventListener("change",async()=>{
-    const meeting=pia[field.dataset.v73Meeting];if(!meeting)return;
-    meeting.participants??={};meeting.participants[field.dataset.v73Participant]=field.checked;meeting.source="REUNION";meeting.updatedAt=new Date().toISOString();
+  box.querySelectorAll("[data-v74-participant]").forEach(field=>field.addEventListener("change",async()=>{
+    const meeting=pia[field.dataset.v74Meeting];if(!meeting)return;
+    meeting.participants??={};meeting.participants[field.dataset.v74Participant]=field.checked;meeting.source="REUNION";meeting.updatedAt=new Date().toISOString();
     try{await persistPIAEdit(pia);}catch(e){window.showAppToast?.("⚠️ Enregistrement impossible : "+(e?.message||e),"error",4500);}
   }));
   const showDomain=index=>{
     if(!Number.isInteger(index)||!domains[index])return;
-    box.dataset.v73ActiveDomain=String(index);
+    box.dataset.v74ActiveDomain=String(index);
     render(pia);
-    box.querySelector(`[data-v73-domain-select="${index}"]`)?.focus();
+    box.querySelector(`[data-v74-domain-select="${index}"]`)?.focus();
   };
-  box.querySelectorAll("[data-v73-domain-jump]").forEach(button=>button.addEventListener("click",()=>showDomain(Number(button.dataset.v73DomainJump))));
-  box.querySelectorAll("[data-v73-domain-select]").forEach(button=>button.addEventListener("click",()=>showDomain(Number(button.dataset.v73DomainSelect))));
-  box.querySelector("[data-v73-domain-back]")?.addEventListener("click",()=>{
-    box.dataset.v73ActiveDomain="";
+  box.querySelectorAll("[data-v74-domain-jump]").forEach(button=>button.addEventListener("click",()=>showDomain(Number(button.dataset.v74DomainJump))));
+  box.querySelectorAll("[data-v74-domain-select]").forEach(button=>button.addEventListener("click",()=>showDomain(Number(button.dataset.v74DomainSelect))));
+  box.querySelector("[data-v74-domain-back]")?.addEventListener("click",()=>{
+    box.dataset.v74ActiveDomain="";
     render(pia);
-    box.querySelector("[data-v73-domain-jump]")?.focus();
+    box.querySelector("[data-v74-domain-jump]")?.focus();
   });
-  box.querySelectorAll("[data-v73-proposal-save]").forEach(button=>button.addEventListener("click",async()=>{
-    const index=Number(button.dataset.v73ProposalSave),proposal=pia.propositions[index],field=box.querySelector(`[data-v73-prop-formulation="${index}"]`),formulation=String(field?.value||"").trim();
+  box.querySelectorAll("[data-v74-proposal-save]").forEach(button=>button.addEventListener("click",async()=>{
+    const index=Number(button.dataset.v74ProposalSave),proposal=pia.propositions[index],field=box.querySelector(`[data-v74-prop-formulation="${index}"]`),formulation=String(field?.value||"").trim();
     if(!proposal||!formulation){window.showAppToast?.("La formulation ne peut pas être vide.","info",3000);return;}
     proposal.formulation=formulation;
     try{await persistPIAEdit(pia,true);render(pia);window.showAppToast?.("Formulation enregistrée.","success",2500);}catch(e){window.showAppToast?.("⚠️ Enregistrement impossible : "+(e?.message||e),"error",4500);}
   }));
-  box.querySelectorAll("[data-v73-proposal-accept],[data-v73-proposal-reject]").forEach(button=>button.addEventListener("click",async()=>{
-    const accepting=button.hasAttribute("data-v73-proposal-accept"),index=Number(button.dataset.v73ProposalAccept??button.dataset.v73ProposalReject);
+  box.querySelectorAll("[data-v74-proposal-accept],[data-v74-proposal-reject]").forEach(button=>button.addEventListener("click",async()=>{
+    const accepting=button.hasAttribute("data-v74-proposal-accept"),index=Number(button.dataset.v74ProposalAccept??button.dataset.v74ProposalReject);
     if(!decidePIAProposal(pia,index,accepting?"VALIDEE":"REFUSEE")){window.showAppToast?.("Vérifiez la formulation de la proposition.","info",3000);return;}
-    try{await persistPIAEdit(pia,true);V73.ui.piaDraftPersisted=true;render(pia);}catch(e){window.showAppToast?.("⚠️ Enregistrement impossible : "+(e?.message||e),"error",4500);}
+    try{await persistPIAEdit(pia,true);V74.ui.piaDraftPersisted=true;render(pia);}catch(e){window.showAppToast?.("⚠️ Enregistrement impossible : "+(e?.message||e),"error",4500);}
   }));
-  box.querySelectorAll("[data-v73-domain-jump]").forEach(button=>button.setAttribute("aria-label",`Afficher ${domains[Number(button.dataset.v73DomainJump)]?.aspect||"le domaine"}`));
+  box.querySelectorAll("[data-v74-domain-jump]").forEach(button=>button.setAttribute("aria-label",`Afficher ${domains[Number(button.dataset.v74DomainJump)]?.aspect||"le domaine"}`));
 
-  box.querySelector("#v73-validate")?.addEventListener("click",async()=>{
-    const chosen=[...box.querySelectorAll("[data-v73-prop]:checked")].map(field=>Number(field.dataset.v73Prop));
+  box.querySelector("#v74-validate")?.addEventListener("click",async()=>{
+    const chosen=[...box.querySelectorAll("[data-v74-prop]:checked")].map(field=>Number(field.dataset.v74Prop));
 
     if(!chosen.length){
       window.showAppToast?.(
@@ -949,9 +949,9 @@ function render(pia){
 
     try{
       await savePia(pia,true);
-      V73.ui.piaDisplayMode="active";
-      V73.ui.piaDraftStudentId="";
-      V73.ui.piaDraftPersisted=true;
+      V74.ui.piaDisplayMode="active";
+      V74.ui.piaDraftStudentId="";
+      V74.ui.piaDraftPersisted=true;
       render(pia);
     }catch(e){
       window.showAppToast?.(
@@ -962,11 +962,11 @@ function render(pia){
     }
   });
 
-  box.querySelector("#v73-review-confirm")?.addEventListener("click",async()=>{
+  box.querySelector("#v74-review-confirm")?.addEventListener("click",async()=>{
     pia.lifecycle="EN_VIGUEUR";pia.meeting2.status="REEVALUATION_VALIDEE";pia.meeting2.validatedAt=new Date().toISOString();
     try{await savePia(pia,true);render(pia);}catch(e){window.showAppToast?.("⚠️ Enregistrement impossible : "+(e?.message||e),"error",4500);}
   });
-  box.querySelector("#v73-finalize")?.addEventListener("click",async()=>{
+  box.querySelector("#v74-finalize")?.addEventListener("click",async()=>{
     const ok=window.confirm("Finaliser ce PIA annuel ?\n\nLe dossier restera consultable et son export professionnel pourra être produit.");if(!ok)return;
     pia.lifecycle="FINALISE";pia.finalizedAt=new Date().toISOString();pia.meeting2.status="FINALISE";
     try{await savePia(pia,true);render(pia);}catch(e){window.showAppToast?.("⚠️ Finalisation impossible : "+(e?.message||e),"error",4500);}
@@ -974,11 +974,11 @@ function render(pia){
 
   const exportPia=async deid=>{
     try{
-      const fmt=box.querySelector("#v73-export-format")?.value||"docx";
+      const fmt=box.querySelector("#v74-export-format")?.value||"docx";
       const target=piaForExport(pia,deid);
       const base=deid
-        ?"PIA_modele_deidentifie_V73"
-        :"PIA_professionnel_V73";
+        ?"PIA_modele_deidentifie_V74"
+        :"PIA_professionnel_V74";
 
       if(fmt==="docx"){
         downloadBytes(
@@ -1010,30 +1010,30 @@ function render(pia){
     }
   };
 
-  box.querySelector("#v73-export-prof")?.addEventListener("click",()=>exportPia(false));
-  box.querySelector("#v73-export-deid")?.addEventListener("click",()=>exportPia(true));
+  box.querySelector("#v74-export-prof")?.addEventListener("click",()=>exportPia(false));
+  box.querySelector("#v74-export-deid")?.addEventListener("click",()=>exportPia(true));
 
-  box.querySelector("#v73-json")?.addEventListener("click",()=>{
+  box.querySelector("#v74-json")?.addEventListener("click",()=>{
     download(
-      "PIA_professionnel_V73.json",
+      "PIA_professionnel_V74.json",
       JSON.stringify(pia,null,2)
     );
     closePIAProject();
   });
 
-  box.querySelector("#v73-deid-json")?.addEventListener("click",()=>{
+  box.querySelector("#v74-deid-json")?.addEventListener("click",()=>{
     download(
-      "PIA_modele_deidentifie_V73.json",
+      "PIA_modele_deidentifie_V74.json",
       JSON.stringify(piaForExport(pia,true),null,2)
     );
     closePIAProject();
   });
 
-  box.querySelector("#v73-close")?.addEventListener("click",()=>{
+  box.querySelector("#v74-close")?.addEventListener("click",()=>{
     closePIAProject();
   });
 
-  box.querySelector("#v73-cancel")?.addEventListener("click",async()=>{
+  box.querySelector("#v74-cancel")?.addEventListener("click",async()=>{
     const ok=window.confirm(
       "Annuler ce projet de PIA ?\n\n"+
       "Le projet non validé sera abandonné.\n"+
@@ -1043,7 +1043,7 @@ function render(pia){
     if(!ok)return;
 
     try{
-      if(pia.lifecycle==="EN_CONSTRUCTION" && pia.studentId && V73.ui.piaDraftPersisted){
+      if(pia.lifecycle==="EN_CONSTRUCTION" && pia.studentId && V74.ui.piaDraftPersisted){
         await deletePIARecord(pia.studentId);
       }
 
@@ -1062,7 +1062,7 @@ function render(pia){
     }
   });
 
-  box.querySelector("#v73-delete")?.addEventListener("click",async()=>{
+  box.querySelector("#v74-delete")?.addEventListener("click",async()=>{
     const ok=window.confirm(
       "Supprimer le PIA annuel de cet élève ?\n\n"+
       "Le PIA enregistré sera supprimé de Journalier.\n"+
@@ -1109,7 +1109,7 @@ async function savePia(pia,cloud=true,notify=true){
   window.journalierScheduleAutoSync?.();
 }
 async function loadRef(){
-  try{V73.referential=await fetch("./referentiel_pia_v73_0_3.json",{cache:"no-store"}).then(r=>r.ok?r.json():null);}catch(_){V73.referential=null;}
+  try{V74.referential=await fetch("./referentiel_pia_v74_0_3.json",{cache:"no-store"}).then(r=>r.ok?r.json():null);}catch(_){V74.referential=null;}
 }
 
 function getImportedPIA(studentId){try{return getData().state.meta?.piaImports?.[studentId]||getData().state.meta?.piaRecords?.[studentId]?.sourceContinuity||null;}catch(_){return null;}}
@@ -1142,42 +1142,42 @@ function renderDashboard(){
   const ds=window.JournalierDataStore;
   if(!ds?.isReady?.()){
     const connected=document.getElementById("ms-dot")?.classList.contains("connected");
-    host.innerHTML=`<div class="v73-dashboard-state"><div class="page-kicker">Tableau de bord</div><div class="v73-empty">${connected?"Ouverture du coffre local sécurisé…":"Connectez-vous avec Microsoft pour afficher les tendances, le suivi PIA et vos mémos."}</div></div>`;
+    host.innerHTML=`<div class="v74-dashboard-state"><div class="page-kicker">Tableau de bord</div><div class="v74-empty">${connected?"Ouverture du coffre local sécurisé…":"Connectez-vous avec Microsoft pour afficher les tendances, le suivi PIA et vos mémos."}</div></div>`;
     return;
   }
   try{
     const trends=dashboardTrendData(),pia=dashboardPiaData(),memos=safeArray(getData().state.meta?.dashboardMemos);
-    host.innerHTML=`<div class="v73-dashboard-grid"><section><div class="page-kicker">Tendances observées · 30 derniers jours</div><h3 class="v73-dash-title">Ce qui ressort des séances</h3><p class="v73-dash-help">Synthèse descriptive des observations enregistrées. Elle ne constitue pas une évaluation ni un score de difficulté.</p>${trends.length?`<div class="v73-trends">${trends.map(t=>`<button class="v73-trend-row" data-v73-trend="${esc(t.theme)}"><span>${esc(t.theme)}</span><span class="v73-trend-bar"><i style="width:${Math.min(100,Math.max(12,t.count*18))}%"></i></span><strong>${t.count} séance${t.count>1?"s":""}</strong></button>`).join("")}</div>`:`<div class="v73-empty">Pas encore assez de séances pour dégager une tendance. Les synthèses apparaîtront au fur et à mesure des observations.</div>`}<button class="v73-link" data-v73-go-reports>Voir les rapports →</button></section>
-    <section><div class="page-kicker">Suivi PIA</div><h3 class="v73-dash-title">PIA annuel</h3><div class="v73-pia-stats"><div><strong>${pia.active}</strong><span>en vigueur</span></div><div><strong>${pia.toComplete}</strong><span>à compléter</span></div><div><strong>${pia.toReview}</strong><span>à réévaluer</span></div><div><strong>${pia.finalized}</strong><span>finalisé(s)</span></div></div><button class="v73-link" data-v73-go-reports>Ouvrir le suivi PIA →</button></section>
-    <section><div class="page-kicker">Mes mémos</div><h3 class="v73-dash-title">À ne pas oublier</h3><div class="v73-memo-list">${memos.length?memos.map((m,i)=>`<label class="v73-memo"><input type="checkbox" data-v73-memo-done="${i}" ${m.done?'checked':''}><span>${esc(m.text)}</span><button type="button" data-v73-memo-delete="${i}" aria-label="Supprimer le mémo">×</button></label>`).join(""):"<div class=\"v73-empty\">Aucun mémo personnel.</div>"}</div><div class="v73-memo-add"><input id="v73-memo-input" type="text" maxlength="180" placeholder="Ajouter un mémo…"><button class="btn-secondary" id="v73-memo-add">Ajouter</button></div></section></div>`;
-    host.querySelectorAll("[data-v73-go-reports]").forEach(b=>b.onclick=()=>document.getElementById("tab-btn-reports")?.click());
-    host.querySelectorAll("[data-v73-trend]").forEach(b=>b.onclick=()=>document.getElementById("tab-btn-reports")?.click());
-    host.querySelector("#v73-memo-add")?.addEventListener("click",()=>{const input=host.querySelector("#v73-memo-input"),text=String(input?.value||"").trim();if(!text)return;updateDashboardMemos(memos=>memos.push({id:uid("memo"),text,done:false,createdAt:new Date().toISOString()}));});
-    host.querySelectorAll("[data-v73-memo-done]").forEach(x=>x.addEventListener("change",()=>updateDashboardMemos(memos=>{const memo=memos[Number(x.dataset.v73MemoDone)];if(memo)memo.done=x.checked;})));
-    host.querySelectorAll("[data-v73-memo-delete]").forEach(x=>x.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();updateDashboardMemos(memos=>memos.splice(Number(x.dataset.v73MemoDelete),1));}));
-  }catch(_){host.innerHTML='<div class="v73-dashboard-state"><div class="page-kicker">Tableau de bord</div><div class="v73-empty">Le tableau de bord est momentanément indisponible.</div><button type="button" class="v73-link" data-v73-dashboard-retry>Réessayer</button></div>';host.querySelector('[data-v73-dashboard-retry]')?.addEventListener("click",renderDashboard);}
+    host.innerHTML=`<div class="v74-dashboard-grid"><section><div class="page-kicker">Tendances observées · 30 derniers jours</div><h3 class="v74-dash-title">Ce qui ressort des séances</h3><p class="v74-dash-help">Synthèse descriptive des observations enregistrées. Elle ne constitue pas une évaluation ni un score de difficulté.</p>${trends.length?`<div class="v74-trends">${trends.map(t=>`<button class="v74-trend-row" data-v74-trend="${esc(t.theme)}"><span>${esc(t.theme)}</span><span class="v74-trend-bar"><i style="width:${Math.min(100,Math.max(12,t.count*18))}%"></i></span><strong>${t.count} séance${t.count>1?"s":""}</strong></button>`).join("")}</div>`:`<div class="v74-empty">Pas encore assez de séances pour dégager une tendance. Les synthèses apparaîtront au fur et à mesure des observations.</div>`}<button class="v74-link" data-v74-go-reports>Voir les rapports →</button></section>
+    <section><div class="page-kicker">Suivi PIA</div><h3 class="v74-dash-title">PIA annuel</h3><div class="v74-pia-stats"><div><strong>${pia.active}</strong><span>en vigueur</span></div><div><strong>${pia.toComplete}</strong><span>à compléter</span></div><div><strong>${pia.toReview}</strong><span>à réévaluer</span></div><div><strong>${pia.finalized}</strong><span>finalisé(s)</span></div></div><button class="v74-link" data-v74-go-reports>Ouvrir le suivi PIA →</button></section>
+    <section><div class="page-kicker">Mes mémos</div><h3 class="v74-dash-title">À ne pas oublier</h3><div class="v74-memo-list">${memos.length?memos.map((m,i)=>`<label class="v74-memo"><input type="checkbox" data-v74-memo-done="${i}" ${m.done?'checked':''}><span>${esc(m.text)}</span><button type="button" data-v74-memo-delete="${i}" aria-label="Supprimer le mémo">×</button></label>`).join(""):"<div class=\"v74-empty\">Aucun mémo personnel.</div>"}</div><div class="v74-memo-add"><input id="v74-memo-input" type="text" maxlength="180" placeholder="Ajouter un mémo…"><button class="btn-secondary" id="v74-memo-add">Ajouter</button></div></section></div>`;
+    host.querySelectorAll("[data-v74-go-reports]").forEach(b=>b.onclick=()=>document.getElementById("tab-btn-reports")?.click());
+    host.querySelectorAll("[data-v74-trend]").forEach(b=>b.onclick=()=>document.getElementById("tab-btn-reports")?.click());
+    host.querySelector("#v74-memo-add")?.addEventListener("click",()=>{const input=host.querySelector("#v74-memo-input"),text=String(input?.value||"").trim();if(!text)return;updateDashboardMemos(memos=>memos.push({id:uid("memo"),text,done:false,createdAt:new Date().toISOString()}));});
+    host.querySelectorAll("[data-v74-memo-done]").forEach(x=>x.addEventListener("change",()=>updateDashboardMemos(memos=>{const memo=memos[Number(x.dataset.v74MemoDone)];if(memo)memo.done=x.checked;})));
+    host.querySelectorAll("[data-v74-memo-delete]").forEach(x=>x.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();updateDashboardMemos(memos=>memos.splice(Number(x.dataset.v74MemoDelete),1));}));
+  }catch(_){host.innerHTML='<div class="v74-dashboard-state"><div class="page-kicker">Tableau de bord</div><div class="v74-empty">Le tableau de bord est momentanément indisponible.</div><button type="button" class="v74-link" data-v74-dashboard-retry>Réessayer</button></div>';host.querySelector('[data-v74-dashboard-retry]')?.addEventListener("click",renderDashboard);}
 }
 function openPIAFilePicker(){document.getElementById("student-pia-file")?.click();}
 async function handlePIAFileForStudent(file,studentId){const parsed=await parsePIAFile(file);parsed.displayName=file.name;await persistImportedPIA(String(studentId),parsed);window.showAppToast?.("✓ PIA importé et structuré localement. Le document original n’est pas conservé par Journalier.","success",5000);return parsed;}
 async function handleStudentPIAFileChange(input){const file=input?.files?.[0];if(!file)return;const rawId=document.getElementById("student-modal-id")?.value;let studentId="";if(rawId){try{const student=getData().students.find(s=>String(s.id)===String(rawId));studentId=student?String(student.studentId||student.id):String(rawId);}catch(_){studentId=String(rawId);}}const status=document.getElementById("pia-local-security-status"),target=document.getElementById("student-pia-file-name");try{if(status)status.textContent="⏳ Analyse locale du PIA…";const parsed=studentId?await handlePIAFileForStudent(file,studentId):await parsePIAFile(file);window.__journalierPendingPIAImport=studentId?null:{parsed,studentId:""};if(target)target.textContent=`✓ ${file.name} · ${parsed.format.toUpperCase()} · ${parsed.extracted.objectives.length} objectif(s), ${parsed.extracted.difficulties.length} difficulté(s), ${parsed.extracted.adaptations.length} adaptation(s)`;if(status)status.textContent="✓ Analyse locale terminée — le document original n’est pas conservé.";}catch(e){if(status)status.textContent="⚠️ Import impossible";window.showAppToast?.("⚠️ "+(e?.message||e),"error",5500);}}
-function bindPIAImport(){const input=document.getElementById("student-pia-file");if(!input||input.dataset.v73Bound)return;input.dataset.v73Bound="1";input.accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document";input.addEventListener("change",()=>handleStudentPIAFileChange(input));}
-function attachPendingPIAImportWatcher(){const modal=document.getElementById("studentModal");if(!modal||modal.dataset.v73Watch)return;modal.dataset.v73Watch="1";const observer=new MutationObserver(async()=>{if(!modal.classList.contains("hidden")||!window.__journalierPendingPIAImport)return;const pending=window.__journalierPendingPIAImport,studentId=String(pending.studentId||"").trim();if(!studentId)return;try{const d=getData(),student=d.students.find(s=>String(s.studentId||s.id)===studentId);if(!student)return;await persistImportedPIA(studentId,pending.parsed);const ds=window.JournalierDataStore,st=ds.getState();const cleaned=st.students.map(s=>{const x={...s};delete x.piaFileName;return x;});ds.saveStudents(cleaned);await ds.persistState(st);window.__journalierPendingPIAImport=null;window.showAppToast?.("✓ PIA associé au dossier de l’élève. Le nom du fichier original n’est pas conservé.","success",4000);}catch(e){window.showAppToast?.("⚠️ Association du PIA impossible : "+(e?.message||e),"error",5000);}});observer.observe(modal,{attributes:true,attributeFilter:["class"]});}
+function bindPIAImport(){const input=document.getElementById("student-pia-file");if(!input||input.dataset.v74Bound)return;input.dataset.v74Bound="1";input.accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document";input.addEventListener("change",()=>handleStudentPIAFileChange(input));}
+function attachPendingPIAImportWatcher(){const modal=document.getElementById("studentModal");if(!modal||modal.dataset.v74Watch)return;modal.dataset.v74Watch="1";const observer=new MutationObserver(async()=>{if(!modal.classList.contains("hidden")||!window.__journalierPendingPIAImport)return;const pending=window.__journalierPendingPIAImport,studentId=String(pending.studentId||"").trim();if(!studentId)return;try{const d=getData(),student=d.students.find(s=>String(s.studentId||s.id)===studentId);if(!student)return;await persistImportedPIA(studentId,pending.parsed);const ds=window.JournalierDataStore,st=ds.getState();const cleaned=st.students.map(s=>{const x={...s};delete x.piaFileName;return x;});ds.saveStudents(cleaned);await ds.persistState(st);window.__journalierPendingPIAImport=null;window.showAppToast?.("✓ PIA associé au dossier de l’élève. Le nom du fichier original n’est pas conservé.","success",4000);}catch(e){window.showAppToast?.("⚠️ Association du PIA impossible : "+(e?.message||e),"error",5000);}});observer.observe(modal,{attributes:true,attributeFilter:["class"]});}
 async function scrubLegacyPIAFilenames(){try{const ds=window.JournalierDataStore;if(!ds?.isReady?.())return;const st=ds.getState();let changed=false;const students=st.students.map(s=>{if(!s?.piaFileName)return s;const x={...s};delete x.piaFileName;changed=true;return x;});if(changed){ds.saveStudents(students);await ds.persistState(st);}}catch(_){}}
-function bindHomeDashboard(){renderDashboard();const list=document.getElementById("home-today-list");if(list&&!list.__v73Obs){const obs=new MutationObserver(()=>renderDashboard());obs.observe(list,{childList:true});list.__v73Obs=obs;}document.getElementById("tab-btn-accueil")?.addEventListener("click",()=>setTimeout(renderDashboard,0));}
+function bindHomeDashboard(){renderDashboard();const list=document.getElementById("home-today-list");if(list&&!list.__v74Obs){const obs=new MutationObserver(()=>renderDashboard());obs.observe(list,{childList:true});list.__v74Obs=obs;}document.getElementById("tab-btn-accueil")?.addEventListener("click",()=>setTimeout(renderDashboard,0));}
 function addUI(){
   const host=document.getElementById("reports-pia-mount");
-  if(!host || document.getElementById("v73-pia-card"))return;
-  const card=document.createElement("div"); card.id="v73-pia-card"; card.className="card";
+  if(!host || document.getElementById("v74-pia-card"))return;
+  const card=document.createElement("div"); card.id="v74-pia-card"; card.className="card";
   card.innerHTML=`<div class="page-kicker">PIA ANNUEL</div><h2 class="page-title" style="font-size:1.15rem">Construire / réévaluer le PIA</h2>
   <div class="report-intro">Le PIA est annuel. Les séances alimentent les éléments de preuve. La réunion 1 (décembre) réévalue les objectifs existants ou permet de co-construire un premier PIA ; la réunion 2 évalue la trajectoire en fin d’année.</div>
-  <div class="grid-2"><div class="v73-pia-student-context"><span>PIA de l’élève sélectionné</span><strong id="v73-pia-selected-student">Choisissez un élève dans l’en-tête.</strong><select id="v73-pia-student" hidden aria-hidden="true" tabindex="-1"></select></div><div><label for="v73-pia-date">Date de référence</label><input id="v73-pia-date" type="date"></div></div>
-  <div id="v73-pia-continuity" class="v73-continuity"></div>
-  <div class="v73-actions"><button id="v73-build" class="btn-primary">Générer le projet de PIA</button><button id="v73-meeting2" class="btn-secondary">Préparer la réévaluation fin d’année</button></div>
-  <div id="v73-pia-result" class="v73-result"></div>`;
+  <div class="grid-2"><div class="v74-pia-student-context"><span>PIA de l’élève sélectionné</span><strong id="v74-pia-selected-student">Choisissez un élève dans l’en-tête.</strong><select id="v74-pia-student" hidden aria-hidden="true" tabindex="-1"></select></div><div><label for="v74-pia-date">Date de référence</label><input id="v74-pia-date" type="date"></div></div>
+  <div id="v74-pia-continuity" class="v74-continuity"></div>
+  <div class="v74-actions"><button id="v74-build" class="btn-primary">Générer le projet de PIA</button><button id="v74-meeting2" class="btn-secondary">Préparer la réévaluation fin d’année</button></div>
+  <div id="v74-pia-result" class="v74-result"></div>`;
   host.appendChild(card);
   refreshStudents();
-  document.getElementById("v73-build").onclick=()=>run(false); document.getElementById("v73-meeting2").onclick=()=>run(true);
-  document.getElementById("v73-pia-student").addEventListener("change",()=>{
+  document.getElementById("v74-build").onclick=()=>run(false); document.getElementById("v74-meeting2").onclick=()=>run(true);
+  document.getElementById("v74-pia-student").addEventListener("change",()=>{
     clearPIAResult();
     refreshPIAContinuity();
   });
@@ -1188,19 +1188,19 @@ function addUI(){
   refreshPIAContinuity(); bindPIAImport(); attachPendingPIAImportWatcher(); bindHomeDashboard();
 }
 function refreshPIAContinuity(){
-  const sid=document.getElementById("v73-pia-student")?.value,host=document.getElementById("v73-pia-continuity");
+  const sid=document.getElementById("v74-pia-student")?.value,host=document.getElementById("v74-pia-continuity");
   if(!host)return;
-  if(!sid){host.innerHTML='<div class="v73-import-help">Choisissez un élève pour afficher la continuité PIA disponible.</div>';return;}
+  if(!sid){host.innerHTML='<div class="v74-import-help">Choisissez un élève pour afficher la continuité PIA disponible.</div>';return;}
   const imported=getImportedPIA(sid);
   if(imported?.present||imported?.extracted){
     const e=imported.extracted||{};
-    host.innerHTML=`<div class="v73-import-summary"><b>✓ PIA précédent disponible</b><span>${esc(imported.format?.toUpperCase()||"DOCUMENT")}</span><span>${safeArray(e.objectives).length} objectif(s)</span><span>${safeArray(e.difficulties).length} difficulté(s)</span><span>${safeArray(e.adaptations).length} adaptation(s)</span></div>`;
+    host.innerHTML=`<div class="v74-import-summary"><b>✓ PIA précédent disponible</b><span>${esc(imported.format?.toUpperCase()||"DOCUMENT")}</span><span>${safeArray(e.objectives).length} objectif(s)</span><span>${safeArray(e.difficulties).length} difficulté(s)</span><span>${safeArray(e.adaptations).length} adaptation(s)</span></div>`;
   }else{
-    host.innerHTML='<div class="v73-import-help">PIA précédent : utilisez <b>Élèves → dossier de l’élève → Importer le PIA</b>. Le fichier Word/PDF est traité localement ; seul le contenu structuré validé est conservé.</div>';
+    host.innerHTML='<div class="v74-import-help">PIA précédent : utilisez <b>Élèves → dossier de l’élève → Importer le PIA</b>. Le fichier Word/PDF est traité localement ; seul le contenu structuré validé est conservé.</div>';
   }
 }
 function syncPIAStudentFromReports(){
-  const select=document.getElementById("v73-pia-student"),label=document.getElementById("v73-pia-selected-student");
+  const select=document.getElementById("v74-pia-student"),label=document.getElementById("v74-pia-selected-student");
   if(!select)return;
   const previous=select.value,name=document.getElementById("r-eleve")?.value||"";
   let data;try{data=getData()}catch(_){return;}
@@ -1210,15 +1210,15 @@ function syncPIAStudentFromReports(){
   if(previous!==select.value)select.dispatchEvent(new Event("change",{bubbles:true}));
 }
 function refreshStudents(){
-  const sel=document.getElementById("v73-pia-student"); if(!sel)return;
+  const sel=document.getElementById("v74-pia-student"); if(!sel)return;
   let d; try{d=getData()}catch(_){return;}
   const reportName=document.getElementById("r-eleve")?.value||"";
   const student=d.students.find(item=>String(item.nom||"")===String(reportName));
   sel.innerHTML=`<option value="">Sélectionnez un élève</option>${d.students.map(s=>`<option value="${esc(s.studentId)}">${esc(s.nom)}</option>`).join("")}`;
   sel.value=student?String(student.studentId):"";
-  const selectedLabel=document.getElementById("v73-pia-selected-student");
+  const selectedLabel=document.getElementById("v74-pia-selected-student");
   if(selectedLabel)selectedLabel.textContent=student?.nom||"Choisissez un élève dans l’en-tête.";
-  const date=document.getElementById("v73-pia-date"),bounds=currentPIASchoolYearBounds();
+  const date=document.getElementById("v74-pia-date"),bounds=currentPIASchoolYearBounds();
   if(date){date.min=bounds.start;date.max=bounds.end;if(!date.value){const now=new Date(),today=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;date.value=today>=bounds.start&&today<=bounds.end?today:bounds.start;}}
   refreshPIAContinuity();
 }
@@ -1227,11 +1227,11 @@ async function run(meeting2){
     const d=getData();
     refreshStudents();
 
-    const sid=document.getElementById("v73-pia-student")?.value;
+    const sid=document.getElementById("v74-pia-student")?.value;
     const student=d.students.find(s=>String(s.studentId)===String(sid));
     if(!student)throw new Error("Aucun élève sélectionné.");
 
-    const until=document.getElementById("v73-pia-date")?.value||new Date().toISOString().slice(0,10);
+    const until=document.getElementById("v74-pia-date")?.value||new Date().toISOString().slice(0,10);
     const schoolYear=piaSchoolYear(until);
     if(!schoolYear){const bounds=currentPIASchoolYearBounds();throw new Error(`Choisissez une date comprise entre le ${bounds.start} et le ${bounds.end}.`);}
     const stored=d.state.meta?.piaRecords?.[student.studentId]||null;
@@ -1271,11 +1271,11 @@ async function run(meeting2){
       pia.lifecycle="EN_CONSTRUCTION";
     }
 
-    V73.state=pia;
-    V73.ui.piaDisplayStudentId=String(student.studentId);
-    V73.ui.piaDisplayMode=meeting2?"review":"draft";
-    V73.ui.piaDraftStudentId=meeting2?"":String(student.studentId);
-    V73.ui.piaDraftPersisted=false;
+    V74.state=pia;
+    V74.ui.piaDisplayStudentId=String(student.studentId);
+    V74.ui.piaDisplayMode=meeting2?"review":"draft";
+    V74.ui.piaDraftStudentId=meeting2?"":String(student.studentId);
+    V74.ui.piaDraftPersisted=false;
 
     /*
      * Un projet simple n'est pas persisté avant validation.
@@ -1297,121 +1297,121 @@ async function run(meeting2){
   }
 }
 
-window.JournalierV73={...V73,buildPIA,run,refreshStudents,loadRef,parsePIAFile,extractPIAStructure,renderDashboard,piaSchoolYear,piaSchoolYearBounds,exportTextDocument,requestPIASection,getImportedPIA,piaImportDossierHtml};
+window.JournalierV74={...V74,buildPIA,run,refreshStudents,loadRef,parsePIAFile,extractPIAStructure,renderDashboard,piaSchoolYear,piaSchoolYearBounds,exportTextDocument,requestPIASection,getImportedPIA,piaImportDossierHtml};
 const style=document.createElement("style");style.textContent=`
-#v73-pia-card{margin-top:16px}.v73-summary{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;align-items:center}.v73-summary span:not(.v73-status-badge),.v73-summary b{padding:6px 9px;border-radius:8px;background:#f1f5f9}.v73-summary-main{display:flex;align-items:center;gap:8px}.v73-status-badge{display:inline-flex;align-items:center;padding:7px 10px;border-radius:999px;font-weight:750;font-size:.82rem}.v73-status-badge.is-success{background:#dcfce7;color:#166534}.v73-status-badge.is-warning{background:#fef3c7;color:#92400e}.v73-notice{padding:11px;border-left:4px solid #2563eb;background:#eff6ff;border-radius:8px;margin:10px 0;font-size:.82rem;line-height:1.45}.v73-notice-warning{border-left-color:#f59e0b;background:#fffbeb}.v73-proposals{display:grid;gap:12px;margin:14px 0}.v73-prop{display:grid;grid-template-columns:42px minmax(0,1fr);gap:14px;align-items:center;padding:16px;border:1px solid #dbe3ef;border-radius:14px;background:#fff;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease,background .15s ease}.v73-prop:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(15,23,42,.07);border-color:#bfdbfe}.v73-prop:has(input:checked){border-color:#60a5fa;background:#eff6ff;box-shadow:0 4px 14px rgba(37,99,235,.10)}.v73-prop-select{display:grid;place-items:center}.v73-prop-select input{position:absolute;opacity:0;pointer-events:none}.v73-checkmark{width:24px;height:24px;border:2px solid #cbd5e1;border-radius:7px;background:#fff;position:relative;transition:border-color .15s ease,background .15s ease}.v73-prop input:checked+.v73-checkmark{border-color:#2563eb;background:#2563eb}.v73-prop input:checked+.v73-checkmark::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-weight:800;font-size:15px}.v73-prop-body{min-width:0}.v73-prop-title{display:block;font-weight:750;color:#172033;margin-bottom:5px}.v73-prop-formulation{display:block;color:#334155;line-height:1.45}.v73-prop-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;color:#64748b;font-size:.75rem}.v73-prop-meta>span{padding:4px 7px;border-radius:999px;background:#f1f5f9}.v73-badge-warning{background:#fff7ed!important;color:#9a3412!important}.v73-action-group{margin-top:14px;padding:14px;border:1px solid #e2e8f0;border-radius:13px;background:#fff}.v73-action-title{margin-bottom:9px;font-size:.76rem;font-weight:750;color:#64748b;text-transform:uppercase;letter-spacing:.04em}.v73-btn{border:0;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:650;transition:filter .15s ease,transform .15s ease}.v73-btn:hover{filter:brightness(.97);transform:translateY(-1px)}.v73-btn:active{transform:translateY(0)}.v73-btn-primary{background:#0a84ff;color:#fff}.v73-btn-success{background:#16a34a;color:#fff}.v73-btn-warning{background:#f59e0b;color:#fff}.v73-btn-neutral{background:#eef2f7;color:#172033}.v73-btn-danger{background:#dc2626;color:#fff}.v73-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.v73-result{margin-top:14px}.v73-continuity{margin-top:12px}.v73-import-help{padding:11px 13px;border:1px dashed #cbd5e1;border-radius:10px;background:#f8fafc;color:#475569;font-size:.78rem}.v73-import-summary{display:flex;gap:7px;flex-wrap:wrap;padding:10px;border:1px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#166534;font-size:.76rem}.v73-import-summary span,.v73-import-summary b{padding:4px 7px;border-radius:7px;background:rgba(255,255,255,.72)}.v73-export-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:12px;padding:11px;border:1px solid #e2e8f0;border-radius:10px;background:#fafafa}.v73-export-row label{font-size:.75rem;color:#475569;display:grid;gap:5px}.v73-export-row select{padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}.v73-empty{padding:10px 0;color:#64748b;font-size:.76rem}.v73-dashboard-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(240px,.7fr) minmax(260px,.85fr);gap:14px}.v73-dashboard-grid>section{padding:16px;border:1px solid var(--border);border-radius:13px;background:#fff;min-width:0}.v73-dash-title{margin:0 0 5px;font-size:1rem}.v73-dash-help{margin:0 0 11px;color:#64748b;font-size:.72rem;line-height:1.45}.v73-trends{display:grid;gap:7px}.v73-trend-row{display:grid;grid-template-columns:minmax(130px,1fr) minmax(80px,1.2fr) auto;gap:8px;align-items:center;border:0;background:transparent;padding:5px 0;text-align:left;color:#172033;cursor:pointer}.v73-trend-bar{height:8px;border-radius:999px;background:#eef2f7;overflow:hidden}.v73-trend-bar i{display:block;height:100%;border-radius:999px;background:#0a84ff}.v73-trend-row strong{font-size:.68rem;color:#64748b;white-space:nowrap}.v73-link{margin-top:10px;border:0;background:transparent;color:#0a84ff;font-weight:700;cursor:pointer;padding:4px 0}.v73-pia-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}.v73-pia-stats div{padding:10px;border-radius:9px;background:#f8fafc;text-align:center}.v73-pia-stats strong{display:block;font-size:1.2rem}.v73-pia-stats span{font-size:.65rem;color:#64748b}.v73-memo-list{display:grid;gap:6px;max-height:150px;overflow:auto}.v73-memo{display:grid;grid-template-columns:auto 1fr auto;gap:7px;align-items:center;padding:7px 8px;background:#f8fafc;border-radius:8px;font-size:.76rem}.v73-memo input:checked+span{text-decoration:line-through;color:#94a3b8}.v73-memo button{border:0;background:transparent;color:#94a3b8;cursor:pointer;font-size:1rem}.v73-memo-add{display:flex;gap:6px;margin-top:8px}.v73-memo-add input{min-width:0;flex:1;margin:0;padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px}.v73-empty{padding:10px 0;color:#64748b;font-size:.76rem}@media(max-width:1100px){.v73-dashboard-grid{grid-template-columns:1fr 1fr}.v73-dashboard-grid>section:first-child{grid-column:1/-1}}@media(max-width:720px){.v73-dashboard-grid{grid-template-columns:1fr}.v73-dashboard-grid>section:first-child{grid-column:auto}.v73-trend-row{grid-template-columns:1fr auto}.v73-trend-bar{grid-column:1/-1}.v73-export-row{align-items:stretch}.v73-export-row>*{width:100%}}
+#v74-pia-card{margin-top:16px}.v74-summary{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;align-items:center}.v74-summary span:not(.v74-status-badge),.v74-summary b{padding:6px 9px;border-radius:8px;background:#f1f5f9}.v74-summary-main{display:flex;align-items:center;gap:8px}.v74-status-badge{display:inline-flex;align-items:center;padding:7px 10px;border-radius:999px;font-weight:750;font-size:.82rem}.v74-status-badge.is-success{background:#dcfce7;color:#166534}.v74-status-badge.is-warning{background:#fef3c7;color:#92400e}.v74-notice{padding:11px;border-left:4px solid #2563eb;background:#eff6ff;border-radius:8px;margin:10px 0;font-size:.82rem;line-height:1.45}.v74-notice-warning{border-left-color:#f59e0b;background:#fffbeb}.v74-proposals{display:grid;gap:12px;margin:14px 0}.v74-prop{display:grid;grid-template-columns:42px minmax(0,1fr);gap:14px;align-items:center;padding:16px;border:1px solid #dbe3ef;border-radius:14px;background:#fff;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease,background .15s ease}.v74-prop:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(15,23,42,.07);border-color:#bfdbfe}.v74-prop:has(input:checked){border-color:#60a5fa;background:#eff6ff;box-shadow:0 4px 14px rgba(37,99,235,.10)}.v74-prop-select{display:grid;place-items:center}.v74-prop-select input{position:absolute;opacity:0;pointer-events:none}.v74-checkmark{width:24px;height:24px;border:2px solid #cbd5e1;border-radius:7px;background:#fff;position:relative;transition:border-color .15s ease,background .15s ease}.v74-prop input:checked+.v74-checkmark{border-color:#2563eb;background:#2563eb}.v74-prop input:checked+.v74-checkmark::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-weight:800;font-size:15px}.v74-prop-body{min-width:0}.v74-prop-title{display:block;font-weight:750;color:#172033;margin-bottom:5px}.v74-prop-formulation{display:block;color:#334155;line-height:1.45}.v74-prop-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;color:#64748b;font-size:.75rem}.v74-prop-meta>span{padding:4px 7px;border-radius:999px;background:#f1f5f9}.v74-badge-warning{background:#fff7ed!important;color:#9a3412!important}.v74-action-group{margin-top:14px;padding:14px;border:1px solid #e2e8f0;border-radius:13px;background:#fff}.v74-action-title{margin-bottom:9px;font-size:.76rem;font-weight:750;color:#64748b;text-transform:uppercase;letter-spacing:.04em}.v74-btn{border:0;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:650;transition:filter .15s ease,transform .15s ease}.v74-btn:hover{filter:brightness(.97);transform:translateY(-1px)}.v74-btn:active{transform:translateY(0)}.v74-btn-primary{background:#0a84ff;color:#fff}.v74-btn-success{background:#16a34a;color:#fff}.v74-btn-warning{background:#f59e0b;color:#fff}.v74-btn-neutral{background:#eef2f7;color:#172033}.v74-btn-danger{background:#dc2626;color:#fff}.v74-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.v74-result{margin-top:14px}.v74-continuity{margin-top:12px}.v74-import-help{padding:11px 13px;border:1px dashed #cbd5e1;border-radius:10px;background:#f8fafc;color:#475569;font-size:.78rem}.v74-import-summary{display:flex;gap:7px;flex-wrap:wrap;padding:10px;border:1px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#166534;font-size:.76rem}.v74-import-summary span,.v74-import-summary b{padding:4px 7px;border-radius:7px;background:rgba(255,255,255,.72)}.v74-export-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:12px;padding:11px;border:1px solid #e2e8f0;border-radius:10px;background:#fafafa}.v74-export-row label{font-size:.75rem;color:#475569;display:grid;gap:5px}.v74-export-row select{padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}.v74-empty{padding:10px 0;color:#64748b;font-size:.76rem}.v74-dashboard-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(240px,.7fr) minmax(260px,.85fr);gap:14px}.v74-dashboard-grid>section{padding:16px;border:1px solid var(--border);border-radius:13px;background:#fff;min-width:0}.v74-dash-title{margin:0 0 5px;font-size:1rem}.v74-dash-help{margin:0 0 11px;color:#64748b;font-size:.72rem;line-height:1.45}.v74-trends{display:grid;gap:7px}.v74-trend-row{display:grid;grid-template-columns:minmax(130px,1fr) minmax(80px,1.2fr) auto;gap:8px;align-items:center;border:0;background:transparent;padding:5px 0;text-align:left;color:#172033;cursor:pointer}.v74-trend-bar{height:8px;border-radius:999px;background:#eef2f7;overflow:hidden}.v74-trend-bar i{display:block;height:100%;border-radius:999px;background:#0a84ff}.v74-trend-row strong{font-size:.68rem;color:#64748b;white-space:nowrap}.v74-link{margin-top:10px;border:0;background:transparent;color:#0a84ff;font-weight:700;cursor:pointer;padding:4px 0}.v74-pia-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}.v74-pia-stats div{padding:10px;border-radius:9px;background:#f8fafc;text-align:center}.v74-pia-stats strong{display:block;font-size:1.2rem}.v74-pia-stats span{font-size:.65rem;color:#64748b}.v74-memo-list{display:grid;gap:6px;max-height:150px;overflow:auto}.v74-memo{display:grid;grid-template-columns:auto 1fr auto;gap:7px;align-items:center;padding:7px 8px;background:#f8fafc;border-radius:8px;font-size:.76rem}.v74-memo input:checked+span{text-decoration:line-through;color:#94a3b8}.v74-memo button{border:0;background:transparent;color:#94a3b8;cursor:pointer;font-size:1rem}.v74-memo-add{display:flex;gap:6px;margin-top:8px}.v74-memo-add input{min-width:0;flex:1;margin:0;padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px}.v74-empty{padding:10px 0;color:#64748b;font-size:.76rem}@media(max-width:1100px){.v74-dashboard-grid{grid-template-columns:1fr 1fr}.v74-dashboard-grid>section:first-child{grid-column:1/-1}}@media(max-width:720px){.v74-dashboard-grid{grid-template-columns:1fr}.v74-dashboard-grid>section:first-child{grid-column:auto}.v74-trend-row{grid-template-columns:1fr auto}.v74-trend-bar{grid-column:1/-1}.v74-export-row{align-items:stretch}.v74-export-row>*{width:100%}}
 `;document.head.appendChild(style);
 const piaLayoutStyle=document.createElement("style");piaLayoutStyle.textContent=`
-.v73-domain-section,.v73-meetings-section{margin:20px 0}
-.v73-pia-nav{display:flex;gap:3px;overflow-x:auto;margin:15px 0 18px;border-bottom:1px solid #dbe3ef;scrollbar-width:thin}
-.v73-pia-nav [role="tab"]{position:relative;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;border:0;border-radius:6px 6px 0 0;background:transparent;padding:11px 13px;color:#64748b;font:inherit;font-size:.78rem;font-weight:650;white-space:nowrap;cursor:pointer}
-.v73-pia-nav [role="tab"]:hover,.v73-pia-nav [role="tab"]:focus-visible{color:#1d4ed8;background:#eff6ff;outline:none}
-.v73-pia-nav [role="tab"][aria-selected="true"]{color:#1d4ed8;background:#eff6ff}
-.v73-pia-nav [role="tab"][aria-selected="true"]::after{content:"";position:absolute;right:10px;bottom:-1px;left:10px;height:2px;border-radius:2px;background:#2563eb}
-.v73-pia-nav [role="tab"] span{font-size:.68rem;color:inherit;opacity:.76}
-.v73-pia-panel[hidden]{display:none!important}
-.v73-pia-panel{min-width:0;scroll-margin-top:16px}
-.v73-summary{padding:2px 0 12px;border-bottom:1px solid #e7eaf0}
-.v73-summary>span:not(.v73-status-badge){padding:0;border-radius:0;background:transparent;color:#64748b;font-size:.74rem}
-.v73-proposals{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));align-items:start}
-.v73-prop{border-radius:8px;box-shadow:0 2px 9px rgba(15,23,42,.045)}
-.v73-prop:hover{transform:none;box-shadow:0 4px 12px rgba(15,23,42,.07);border-color:#bfdbfe}
-.v73-prop.is-pending{border-left:3px solid #bd7d1a;background:#fff}
-.v73-prop.is-validated{border-left:3px solid #23865f;background:#fff}
-.v73-prop.is-refused{border-left:3px solid #b34b52;background:#fff}
-.v73-prop-state{display:inline-flex;align-items:center;width:max-content;padding:3px 7px;border-radius:999px;background:#f1f4f8;color:#5b687a;font-size:.66rem;font-weight:700}
-.v73-prop-state.is-pending{background:#fff0d9;color:#8d5a12}
-.v73-prop-state.is-validated{background:#e8f6ef;color:#176b4e}
-.v73-prop-state.is-refused{background:#fdebed;color:#9c3b43}
-.v73-export-disclosure{margin-top:14px;border-top:1px solid #dbe3ef}
-.v73-export-disclosure>summary{width:max-content;max-width:100%;padding:12px 2px;color:#2563eb;font-size:.78rem;font-weight:650;cursor:pointer}
-.v73-export-disclosure .v73-action-group{margin-top:0}
-.v73-management-disclosure{margin-top:8px}
-.v73-pia-student-context{display:grid;align-content:center;gap:5px;min-height:42px}
-.v73-pia-student-context span{font-size:.72rem;font-weight:700;color:#64748b}
-.v73-pia-student-context strong{font-size:.88rem;font-weight:650;color:#172033}
-.v73-pia-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
-.v73-domain-section h3,.v73-meetings-section h3{font-size:.95rem;margin:18px 0 9px;color:#26364a}
-.v73-domain-overview-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;align-items:stretch}
-.v73-domain-overview,.v73-domain-record-head{--domain-accent:#51657c;--domain-ink:#3f536b;--domain-wash:#f2f5f8}
-.v73-domain-overview.tone-cognitive,.v73-domain-record-head.tone-cognitive{--domain-accent:#6654a6;--domain-ink:#5c4d91;--domain-wash:#f3f0fb}
-.v73-domain-overview.tone-communication,.v73-domain-record-head.tone-communication{--domain-accent:#168b83;--domain-ink:#23685f;--domain-wash:#edf8f6}
-.v73-domain-overview.tone-affective,.v73-domain-record-head.tone-affective{--domain-accent:#b45a62;--domain-ink:#8c4d55;--domain-wash:#fff2f2}
-.v73-domain-overview.tone-autonomy,.v73-domain-record-head.tone-autonomy{--domain-accent:#bd7d1a;--domain-ink:#805c20;--domain-wash:#fff7e9}
-.v73-domain-overview.tone-physical,.v73-domain-record-head.tone-physical{--domain-accent:#3977ce;--domain-ink:#2d548e;--domain-wash:#eff5ff}
-.v73-domain-overview{display:grid;grid-template-rows:auto auto 1fr auto;align-content:start;gap:9px;min-width:0;min-height:232px;padding:16px;border:1px solid transparent;border-radius:12px;text-align:left;color:var(--domain-ink);background:var(--domain-wash);cursor:pointer;box-shadow:0 3px 12px rgba(25,39,62,.045);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
-.v73-domain-overview:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(25,39,62,.09)}
-.v73-domain-icon{display:grid;place-items:center;width:48px;height:48px;border:1px solid rgba(255,255,255,.85);border-radius:14px;background:rgba(255,255,255,.82);color:inherit;box-shadow:0 2px 7px rgba(25,39,62,.055)}
-.v73-domain-icon svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.v73-domain-overview:hover{border-color:var(--domain-accent);filter:brightness(.985)}
-.v73-domain-overview:focus-visible{outline:3px solid color-mix(in srgb,var(--domain-accent) 28%,transparent);outline-offset:2px}
-.v73-domain-overview strong{font-size:.88rem;line-height:1.3}
-.v73-domain-overview .v73-domain-metrics{display:flex;flex-wrap:wrap;align-content:start;gap:5px}
-.v73-domain-overview .v73-domain-metrics span{padding:4px 6px;border:1px solid rgba(68,91,125,.09);border-radius:5px;background:rgba(255,255,255,.72);color:#58677b;font-size:.64rem;line-height:1.25}
-.v73-domain-overview .v73-domain-metrics b{color:inherit;font-size:.71rem}
-.v73-domain-overview .v73-domain-action{display:flex;justify-content:space-between;align-items:center;align-self:end;margin-top:8px;padding-top:8px;border-top:1px solid rgba(68,91,125,.12);color:var(--domain-ink);font-size:.68rem;font-weight:700}
-.v73-domain-overview-view[hidden]{display:none!important}
-.v73-domain-detail-view{min-width:0}
-.v73-domain-back{margin:0 0 12px;padding:7px 0;border:0;background:transparent;color:#2563eb;font:inherit;font-size:.74rem;font-weight:650;cursor:pointer}
-.v73-domain-detail-layout{display:grid;grid-template-columns:minmax(180px,230px) minmax(0,1fr);gap:14px;align-items:start}
-.v73-domain-menu{display:grid;gap:3px;padding:7px;border-radius:8px;background:#f2f4f7}
-.v73-domain-menu button{width:100%;padding:9px 10px;border:0;border-radius:6px;background:transparent;color:#59677c;text-align:left;font:inherit;font-size:.74rem;line-height:1.35;cursor:pointer}
-.v73-domain-menu button:hover{background:#e9edf3}
-.v73-domain-menu button[aria-current="true"]{background:#fff;color:#1d4ed8;font-weight:700;box-shadow:0 1px 3px rgba(25,39,62,.06)}
-.v73-domain-record{min-width:0;padding:14px;border:1px solid #e7eaf0;border-radius:9px;background:#fff;box-shadow:0 3px 12px rgba(25,39,62,.035)}
-.v73-domain-record-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:10px;padding:12px 13px;border-left:3px solid var(--domain-accent);border-radius:7px;background:var(--domain-wash)}
-.v73-domain-record-head h3{margin:2px 0 0;font-size:1rem;color:var(--domain-ink)}
-.v73-domain-record-head>span{padding:4px 7px;border-radius:5px;background:#f1f4f8;color:#64748b;font-size:.67rem;white-space:nowrap}
-.v73-domain-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:8px}
-.v73-domain-fieldset{--field-accent:#3977ce;--field-wash:#f3f7fc;min-width:0;align-self:start;border:1px solid rgba(68,91,125,.11);border-left:3px solid var(--field-accent);border-radius:7px;background:var(--field-wash);overflow:hidden}
-.v73-domain-fieldset.is-ressources{--field-accent:#168b83;--field-wash:#eff8f6}
-.v73-domain-fieldset.is-difficultes{--field-accent:#bd7d1a;--field-wash:#fff8ed}
-.v73-domain-fieldset.is-objectifs{--field-accent:#3977ce;--field-wash:#eff5ff}
-.v73-domain-fieldset.is-criteres{--field-accent:#2187a3;--field-wash:#eff8fa}
-.v73-domain-fieldset.is-moyens{--field-accent:#745bc7;--field-wash:#f5f2fb}
-.v73-domain-fieldset.is-evolution{--field-accent:#23865f;--field-wash:#eff8f3}
-.v73-domain-fieldset>summary{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px 12px;color:#27364b;font-size:.76rem;font-weight:700;cursor:pointer;list-style:none}
-.v73-domain-fieldset[open]>summary{color:var(--field-accent)}
-.v73-domain-fieldset>summary::-webkit-details-marker{display:none}
-.v73-domain-fieldset>summary::after{content:"⌄";color:#7b8797;font-size:.85rem}
-.v73-domain-fieldset[open]>summary::after{content:"⌃"}
-.v73-domain-fieldset>summary span{margin-left:auto;color:#778398;font-size:.68rem;font-weight:500}
-.v73-domain-field-content{display:grid;gap:10px;padding:0 11px 12px}
-.v73-domain-value-list{display:flex;flex-wrap:wrap;gap:6px}
-.v73-domain-value{display:inline-flex;max-width:100%;padding:6px 9px;border:1px solid rgba(68,91,125,.10);border-left:2px solid var(--field-accent);border-radius:6px;background:rgba(255,255,255,.9);color:#39475c;font-size:.73rem;line-height:1.4;overflow-wrap:anywhere}
-.v73-domain-empty{margin:0 0 10px;color:#7b8797;font-size:.74rem}
-.v73-pia-dossier{display:grid;gap:10px;margin-top:10px}
-.v73-domain-value-list-row{--field-accent:#745bc7;display:grid;gap:6px;padding:8px 0}
-.v73-domain-value-list-row .v73-domain-value-label{font-size:.68rem;font-weight:750;text-transform:uppercase;color:#627087}
-.v73-pia-dossier>summary,.v73-domain-record>summary{list-style:none;cursor:pointer}
-.v73-pia-dossier>summary::-webkit-details-marker,.v73-domain-record>summary::-webkit-details-marker{display:none}
-.v73-pia-dossier>summary::after{content:"Déplier ⌄";margin-left:auto;color:#166534;font-size:.68rem;font-weight:700;white-space:nowrap}
-.v73-pia-dossier[open]>summary::after{content:"Replier ⌃"}
-details.v73-domain-record>.v73-domain-record-head::after{content:"⌄";margin-left:8px;color:#7b8797;font-size:.85rem;align-self:center}
-details.v73-domain-record[open]>.v73-domain-record-head::after{content:"⌃"}
-details.v73-domain-record{padding:0;overflow:hidden}
-details.v73-domain-record>.v73-domain-fields{padding:0 13px 13px}
-.v73-domain-field{display:grid;gap:5px;font-size:.69rem;font-weight:650;color:#66748a}
-.v73-domain,.v73-meeting{border-top:1px solid #dbe3ef}
-.v73-domain:last-child,.v73-meeting:last-child{border-bottom:1px solid #dbe3ef}
-.v73-domain>summary,.v73-meeting>summary{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 4px;cursor:pointer;font-weight:700;color:#172033}
-.v73-domain-fields,.v73-meeting-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:4px 0 14px}
-.v73-domain-field,.v73-meeting-field{display:grid;gap:5px;min-width:0;font-size:.76rem;font-weight:650;color:#334155}
-.v73-domain-field textarea,.v73-meeting-field textarea,.v73-meeting-field input,.v73-meeting-field select,.v73-prop-edit textarea{width:100%;min-width:0;border:1px solid #cbd5e1;border-radius:6px;padding:8px;font:inherit;font-weight:400;color:#172033;background:#fff;resize:vertical}
-.v73-participants{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;border:1px solid #dbe3ef;border-radius:6px;padding:10px}
-.v73-participants legend,.v73-meeting-subtitle{font-size:.78rem;font-weight:700;color:#334155}
-.v73-participants label{display:flex;gap:7px;align-items:center;font-size:.78rem}
-.v73-feedback-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.v73-meeting-subtitle{grid-column:1/-1}
-.v73-meeting-status{font-size:.72rem;font-weight:600;color:#64748b}
-.v73-annual-tracking{padding:12px 0;border-block:1px solid #dbe3ef}
-.v73-annual-tracking h3{margin-top:0}.v73-annual-tracking h4{font-size:.8rem;margin:12px 0 5px}.v73-annual-tracking p,.v73-annual-tracking li{font-size:.78rem;line-height:1.45;color:#475569}
-.v73-prop{align-items:start}.v73-prop-select{padding-top:4px}.v73-prop-edit{display:grid;gap:5px;margin:9px 0;font-size:.74rem;font-weight:650;color:#475569}
-.v73-prop-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.v73-prop-actions .v73-btn{font-size:.76rem;padding:8px 10px}
-.v73-prop-evidence{margin:7px 0;padding-left:18px;color:#64748b;font-size:.73rem;line-height:1.5}
-@media(max-width:1100px){.v73-domain-overview-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.v73-domain-detail-layout{grid-template-columns:minmax(155px,195px) minmax(0,1fr)}}
-@media(max-width:720px){.v73-domain-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.v73-domain-overview{min-height:218px;padding:13px}.v73-domain-detail-layout{grid-template-columns:1fr}.v73-domain-menu{display:flex;overflow-x:auto;scrollbar-width:thin}.v73-domain-menu button{width:auto;flex:0 0 auto;white-space:nowrap}.v73-domain-record{padding:13px}.v73-domain-record-head{display:grid}.v73-domain-fields,.v73-meeting-fields,.v73-feedback-grid{grid-template-columns:1fr}.v73-domain-count{max-width:46%;text-align:right}}
-@media(max-width:460px){.v73-domain-overview-grid{grid-template-columns:1fr}.v73-domain-overview{min-height:190px}}
+.v74-domain-section,.v74-meetings-section{margin:20px 0}
+.v74-pia-nav{display:flex;gap:3px;overflow-x:auto;margin:15px 0 18px;border-bottom:1px solid #dbe3ef;scrollbar-width:thin}
+.v74-pia-nav [role="tab"]{position:relative;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;border:0;border-radius:6px 6px 0 0;background:transparent;padding:11px 13px;color:#64748b;font:inherit;font-size:.78rem;font-weight:650;white-space:nowrap;cursor:pointer}
+.v74-pia-nav [role="tab"]:hover,.v74-pia-nav [role="tab"]:focus-visible{color:#1d4ed8;background:#eff6ff;outline:none}
+.v74-pia-nav [role="tab"][aria-selected="true"]{color:#1d4ed8;background:#eff6ff}
+.v74-pia-nav [role="tab"][aria-selected="true"]::after{content:"";position:absolute;right:10px;bottom:-1px;left:10px;height:2px;border-radius:2px;background:#2563eb}
+.v74-pia-nav [role="tab"] span{font-size:.68rem;color:inherit;opacity:.76}
+.v74-pia-panel[hidden]{display:none!important}
+.v74-pia-panel{min-width:0;scroll-margin-top:16px}
+.v74-summary{padding:2px 0 12px;border-bottom:1px solid #e7eaf0}
+.v74-summary>span:not(.v74-status-badge){padding:0;border-radius:0;background:transparent;color:#64748b;font-size:.74rem}
+.v74-proposals{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));align-items:start}
+.v74-prop{border-radius:8px;box-shadow:0 2px 9px rgba(15,23,42,.045)}
+.v74-prop:hover{transform:none;box-shadow:0 4px 12px rgba(15,23,42,.07);border-color:#bfdbfe}
+.v74-prop.is-pending{border-left:3px solid #bd7d1a;background:#fff}
+.v74-prop.is-validated{border-left:3px solid #23865f;background:#fff}
+.v74-prop.is-refused{border-left:3px solid #b34b52;background:#fff}
+.v74-prop-state{display:inline-flex;align-items:center;width:max-content;padding:3px 7px;border-radius:999px;background:#f1f4f8;color:#5b687a;font-size:.66rem;font-weight:700}
+.v74-prop-state.is-pending{background:#fff0d9;color:#8d5a12}
+.v74-prop-state.is-validated{background:#e8f6ef;color:#176b4e}
+.v74-prop-state.is-refused{background:#fdebed;color:#9c3b43}
+.v74-export-disclosure{margin-top:14px;border-top:1px solid #dbe3ef}
+.v74-export-disclosure>summary{width:max-content;max-width:100%;padding:12px 2px;color:#2563eb;font-size:.78rem;font-weight:650;cursor:pointer}
+.v74-export-disclosure .v74-action-group{margin-top:0}
+.v74-management-disclosure{margin-top:8px}
+.v74-pia-student-context{display:grid;align-content:center;gap:5px;min-height:42px}
+.v74-pia-student-context span{font-size:.72rem;font-weight:700;color:#64748b}
+.v74-pia-student-context strong{font-size:.88rem;font-weight:650;color:#172033}
+.v74-pia-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.v74-domain-section h3,.v74-meetings-section h3{font-size:.95rem;margin:18px 0 9px;color:#26364a}
+.v74-domain-overview-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;align-items:stretch}
+.v74-domain-overview,.v74-domain-record-head{--domain-accent:#51657c;--domain-ink:#3f536b;--domain-wash:#f2f5f8}
+.v74-domain-overview.tone-cognitive,.v74-domain-record-head.tone-cognitive{--domain-accent:#6654a6;--domain-ink:#5c4d91;--domain-wash:#f3f0fb}
+.v74-domain-overview.tone-communication,.v74-domain-record-head.tone-communication{--domain-accent:#168b83;--domain-ink:#23685f;--domain-wash:#edf8f6}
+.v74-domain-overview.tone-affective,.v74-domain-record-head.tone-affective{--domain-accent:#b45a62;--domain-ink:#8c4d55;--domain-wash:#fff2f2}
+.v74-domain-overview.tone-autonomy,.v74-domain-record-head.tone-autonomy{--domain-accent:#bd7d1a;--domain-ink:#805c20;--domain-wash:#fff7e9}
+.v74-domain-overview.tone-physical,.v74-domain-record-head.tone-physical{--domain-accent:#3977ce;--domain-ink:#2d548e;--domain-wash:#eff5ff}
+.v74-domain-overview{display:grid;grid-template-rows:auto auto 1fr auto;align-content:start;gap:9px;min-width:0;min-height:232px;padding:16px;border:1px solid transparent;border-radius:12px;text-align:left;color:var(--domain-ink);background:var(--domain-wash);cursor:pointer;box-shadow:0 3px 12px rgba(25,39,62,.045);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+.v74-domain-overview:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(25,39,62,.09)}
+.v74-domain-icon{display:grid;place-items:center;width:48px;height:48px;border:1px solid rgba(255,255,255,.85);border-radius:14px;background:rgba(255,255,255,.82);color:inherit;box-shadow:0 2px 7px rgba(25,39,62,.055)}
+.v74-domain-icon svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.v74-domain-overview:hover{border-color:var(--domain-accent);filter:brightness(.985)}
+.v74-domain-overview:focus-visible{outline:3px solid color-mix(in srgb,var(--domain-accent) 28%,transparent);outline-offset:2px}
+.v74-domain-overview strong{font-size:.88rem;line-height:1.3}
+.v74-domain-overview .v74-domain-metrics{display:flex;flex-wrap:wrap;align-content:start;gap:5px}
+.v74-domain-overview .v74-domain-metrics span{padding:4px 6px;border:1px solid rgba(68,91,125,.09);border-radius:5px;background:rgba(255,255,255,.72);color:#58677b;font-size:.64rem;line-height:1.25}
+.v74-domain-overview .v74-domain-metrics b{color:inherit;font-size:.71rem}
+.v74-domain-overview .v74-domain-action{display:flex;justify-content:space-between;align-items:center;align-self:end;margin-top:8px;padding-top:8px;border-top:1px solid rgba(68,91,125,.12);color:var(--domain-ink);font-size:.68rem;font-weight:700}
+.v74-domain-overview-view[hidden]{display:none!important}
+.v74-domain-detail-view{min-width:0}
+.v74-domain-back{margin:0 0 12px;padding:7px 0;border:0;background:transparent;color:#2563eb;font:inherit;font-size:.74rem;font-weight:650;cursor:pointer}
+.v74-domain-detail-layout{display:grid;grid-template-columns:minmax(180px,230px) minmax(0,1fr);gap:14px;align-items:start}
+.v74-domain-menu{display:grid;gap:3px;padding:7px;border-radius:8px;background:#f2f4f7}
+.v74-domain-menu button{width:100%;padding:9px 10px;border:0;border-radius:6px;background:transparent;color:#59677c;text-align:left;font:inherit;font-size:.74rem;line-height:1.35;cursor:pointer}
+.v74-domain-menu button:hover{background:#e9edf3}
+.v74-domain-menu button[aria-current="true"]{background:#fff;color:#1d4ed8;font-weight:700;box-shadow:0 1px 3px rgba(25,39,62,.06)}
+.v74-domain-record{min-width:0;padding:14px;border:1px solid #e7eaf0;border-radius:9px;background:#fff;box-shadow:0 3px 12px rgba(25,39,62,.035)}
+.v74-domain-record-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:10px;padding:12px 13px;border-left:3px solid var(--domain-accent);border-radius:7px;background:var(--domain-wash)}
+.v74-domain-record-head h3{margin:2px 0 0;font-size:1rem;color:var(--domain-ink)}
+.v74-domain-record-head>span{padding:4px 7px;border-radius:5px;background:#f1f4f8;color:#64748b;font-size:.67rem;white-space:nowrap}
+.v74-domain-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:8px}
+.v74-domain-fieldset{--field-accent:#3977ce;--field-wash:#f3f7fc;min-width:0;align-self:start;border:1px solid rgba(68,91,125,.11);border-left:3px solid var(--field-accent);border-radius:7px;background:var(--field-wash);overflow:hidden}
+.v74-domain-fieldset.is-ressources{--field-accent:#168b83;--field-wash:#eff8f6}
+.v74-domain-fieldset.is-difficultes{--field-accent:#bd7d1a;--field-wash:#fff8ed}
+.v74-domain-fieldset.is-objectifs{--field-accent:#3977ce;--field-wash:#eff5ff}
+.v74-domain-fieldset.is-criteres{--field-accent:#2187a3;--field-wash:#eff8fa}
+.v74-domain-fieldset.is-moyens{--field-accent:#745bc7;--field-wash:#f5f2fb}
+.v74-domain-fieldset.is-evolution{--field-accent:#23865f;--field-wash:#eff8f3}
+.v74-domain-fieldset>summary{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px 12px;color:#27364b;font-size:.76rem;font-weight:700;cursor:pointer;list-style:none}
+.v74-domain-fieldset[open]>summary{color:var(--field-accent)}
+.v74-domain-fieldset>summary::-webkit-details-marker{display:none}
+.v74-domain-fieldset>summary::after{content:"⌄";color:#7b8797;font-size:.85rem}
+.v74-domain-fieldset[open]>summary::after{content:"⌃"}
+.v74-domain-fieldset>summary span{margin-left:auto;color:#778398;font-size:.68rem;font-weight:500}
+.v74-domain-field-content{display:grid;gap:10px;padding:0 11px 12px}
+.v74-domain-value-list{display:flex;flex-wrap:wrap;gap:6px}
+.v74-domain-value{display:inline-flex;max-width:100%;padding:6px 9px;border:1px solid rgba(68,91,125,.10);border-left:2px solid var(--field-accent);border-radius:6px;background:rgba(255,255,255,.9);color:#39475c;font-size:.73rem;line-height:1.4;overflow-wrap:anywhere}
+.v74-domain-empty{margin:0 0 10px;color:#7b8797;font-size:.74rem}
+.v74-pia-dossier{display:grid;gap:10px;margin-top:10px}
+.v74-domain-value-list-row{--field-accent:#745bc7;display:grid;gap:6px;padding:8px 0}
+.v74-domain-value-list-row .v74-domain-value-label{font-size:.68rem;font-weight:750;text-transform:uppercase;color:#627087}
+.v74-pia-dossier>summary,.v74-domain-record>summary{list-style:none;cursor:pointer}
+.v74-pia-dossier>summary::-webkit-details-marker,.v74-domain-record>summary::-webkit-details-marker{display:none}
+.v74-pia-dossier>summary::after{content:"Déplier ⌄";margin-left:auto;color:#166534;font-size:.68rem;font-weight:700;white-space:nowrap}
+.v74-pia-dossier[open]>summary::after{content:"Replier ⌃"}
+details.v74-domain-record>.v74-domain-record-head::after{content:"⌄";margin-left:8px;color:#7b8797;font-size:.85rem;align-self:center}
+details.v74-domain-record[open]>.v74-domain-record-head::after{content:"⌃"}
+details.v74-domain-record{padding:0;overflow:hidden}
+details.v74-domain-record>.v74-domain-fields{padding:0 13px 13px}
+.v74-domain-field{display:grid;gap:5px;font-size:.69rem;font-weight:650;color:#66748a}
+.v74-domain,.v74-meeting{border-top:1px solid #dbe3ef}
+.v74-domain:last-child,.v74-meeting:last-child{border-bottom:1px solid #dbe3ef}
+.v74-domain>summary,.v74-meeting>summary{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 4px;cursor:pointer;font-weight:700;color:#172033}
+.v74-domain-fields,.v74-meeting-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:4px 0 14px}
+.v74-domain-field,.v74-meeting-field{display:grid;gap:5px;min-width:0;font-size:.76rem;font-weight:650;color:#334155}
+.v74-domain-field textarea,.v74-meeting-field textarea,.v74-meeting-field input,.v74-meeting-field select,.v74-prop-edit textarea{width:100%;min-width:0;border:1px solid #cbd5e1;border-radius:6px;padding:8px;font:inherit;font-weight:400;color:#172033;background:#fff;resize:vertical}
+.v74-participants{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;border:1px solid #dbe3ef;border-radius:6px;padding:10px}
+.v74-participants legend,.v74-meeting-subtitle{font-size:.78rem;font-weight:700;color:#334155}
+.v74-participants label{display:flex;gap:7px;align-items:center;font-size:.78rem}
+.v74-feedback-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.v74-meeting-subtitle{grid-column:1/-1}
+.v74-meeting-status{font-size:.72rem;font-weight:600;color:#64748b}
+.v74-annual-tracking{padding:12px 0;border-block:1px solid #dbe3ef}
+.v74-annual-tracking h3{margin-top:0}.v74-annual-tracking h4{font-size:.8rem;margin:12px 0 5px}.v74-annual-tracking p,.v74-annual-tracking li{font-size:.78rem;line-height:1.45;color:#475569}
+.v74-prop{align-items:start}.v74-prop-select{padding-top:4px}.v74-prop-edit{display:grid;gap:5px;margin:9px 0;font-size:.74rem;font-weight:650;color:#475569}
+.v74-prop-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.v74-prop-actions .v74-btn{font-size:.76rem;padding:8px 10px}
+.v74-prop-evidence{margin:7px 0;padding-left:18px;color:#64748b;font-size:.73rem;line-height:1.5}
+@media(max-width:1100px){.v74-domain-overview-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.v74-domain-detail-layout{grid-template-columns:minmax(155px,195px) minmax(0,1fr)}}
+@media(max-width:720px){.v74-domain-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.v74-domain-overview{min-height:218px;padding:13px}.v74-domain-detail-layout{grid-template-columns:1fr}.v74-domain-menu{display:flex;overflow-x:auto;scrollbar-width:thin}.v74-domain-menu button{width:auto;flex:0 0 auto;white-space:nowrap}.v74-domain-record{padding:13px}.v74-domain-record-head{display:grid}.v74-domain-fields,.v74-meeting-fields,.v74-feedback-grid{grid-template-columns:1fr}.v74-domain-count{max-width:46%;text-align:right}}
+@media(max-width:460px){.v74-domain-overview-grid{grid-template-columns:1fr}.v74-domain-overview{min-height:190px}}
 `;
 document.head.appendChild(piaLayoutStyle);
 (async()=>{await loadRef(); const boot=async()=>{applySchoolYearDateLimits();addUI();refreshStudents();bindPIAImport();attachPendingPIAImportWatcher();await scrubLegacyPIAFilenames();bindHomeDashboard()}; if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true}); else boot();})();

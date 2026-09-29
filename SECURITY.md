@@ -4,7 +4,7 @@
 
 Les contrôles décrits ici portent sur le code et la configuration versionnés. Les paramètres du tenant Entra, les règles actives du dépôt GitHub et les résultats courants des alertes GitHub ne sont pas vérifiables à partir du seul dépôt; toute mention de ces paramètres externes doit être lue avec la date de leur dernier contrôle effectif.
 
-## V73.1.3 — contrôle de la migration legacy
+## V74 — contrôle de la migration legacy
 
 La migration des anciennes données est conçue comme une opération **non destructive et à permission minimale**.
 
@@ -21,9 +21,9 @@ La migration des anciennes données est conçue comme une opération **non destr
 
 ### Isolation du module de migration
 
-`src/v73/v73-migration.js` est un module ES. Il n'accède pas directement aux variables privées du script principal. Un `window.JournalierMigrationBridge` explicite expose uniquement les fonctions nécessaires.
+`src/v74/v74-migration.js` est un module ES. Il n'accède pas directement aux variables privées du script principal. Un `window.JournalierMigrationBridge` explicite expose uniquement les fonctions nécessaires.
 
-Le pont comprend notamment les fonctions Graph, les validateurs/normaliseurs, le DataStore et les fonctions de synchronisation V72 nécessaires à l'import.
+Le pont comprend notamment les fonctions Graph, les validateurs/normaliseurs, le DataStore et les fonctions de synchronisation historiques nécessaires à l'import.
 
 Cette limitation réduit la surface exposée au module et évite de contourner la séparation de portée JavaScript.
 
@@ -35,7 +35,7 @@ Toute modification de `index.html` doit déclencher le recalcul des hashes SHA-2
 
 ### CSP
 
-La modification du script inline de `index.html` nécessite un nouveau hash CSP. La V73.1.3 utilise trois hashes SHA-256 correspondant aux trois scripts inline réellement présents et ne réintroduit pas `unsafe-inline` dans `script-src`.
+La modification du script inline de `index.html` nécessite un nouveau hash CSP. La V74 utilise trois hashes SHA-256 correspondant aux trois scripts inline réellement présents et ne réintroduit pas `unsafe-inline` dans `script-src`.
 
 ## 1. Objet
 
@@ -475,31 +475,31 @@ Le Journalier doit appliquer le principe suivant :
 La sécurité doit être considérée comme une propriété évolutive du projet et non comme un état définitif.
 
 
-# 22. Contrôles spécifiques V73
+# 22. Contrôles spécifiques V74
 
 ## 22.1 Périmètre
 
-V73 est une extension côté navigateur. Elle ne doit pas contourner l’authentification, le DataStore ou le SyncManager existants.
+V74 est une extension côté navigateur. Elle ne doit pas contourner l’authentification, le DataStore ou le SyncManager existants.
 
 ## 22.2 Données pédagogiques
 
-Les séances et PIA sont des données potentiellement sensibles. V73 doit conserver les mêmes protections que V72 : identité Entra, isolation par utilisateur, stockage local protégé et synchronisation vers l’AppFolder.
+Les séances et PIA sont des données potentiellement sensibles. V74 conserve les mêmes protections que la couche historique de données : identité Entra, isolation par utilisateur, stockage local protégé et synchronisation vers l’AppFolder.
 
 ## 22.3 Continuité et validation
 
-Le PIA précédent est utilisé comme source de continuité. Il n’est jamais considéré comme une vérité automatiquement validée. Les objectifs générés par V73 restent à l’état `PROPOSITION` jusqu’à une action du professionnel.
+Le PIA précédent est utilisé comme source de continuité. Il n’est jamais considéré comme une vérité automatiquement validée. Les objectifs générés par V74 restent à l’état `PROPOSITION` jusqu’à une action du professionnel.
 
 ## 22.4 Dé-identification
 
-L’export modèle dé-identifié retire les identifiants directs (`eleve`, `studentId`, `ecole`, `classe`) et neutralise la continuité nominative. V73.1 retire également les dates de preuve, identifiants de séances, métadonnées de génération et nom de fichier source. La dé-identification doit continuer à être auditée si le schéma PIA évolue.
+L’export modèle dé-identifié retire les identifiants directs (`eleve`, `studentId`, `ecole`, `classe`) et neutralise la continuité nominative. V74.1 retire également les dates de preuve, identifiants de séances, métadonnées de génération et nom de fichier source. La dé-identification doit continuer à être auditée si le schéma PIA évolue.
 
 ## 22.5 Import documentaire local
 
-Les PIA précédents sont acceptés en Word `.docx` ou PDF `.pdf`. Le document est traité localement et n’est pas transmis à Microsoft Graph pendant l’analyse. V73.1 ne conserve pas le fichier original ni son nom de fichier. Des limites de taille et de décompression sont appliquées pour réduire les risques de consommation excessive de mémoire. Un PDF scanné sans couche texte exploitable est refusé plutôt que soumis à une interprétation incertaine.
+Les PIA précédents sont acceptés en Word `.docx` ou PDF `.pdf`. Le document est traité localement et n’est pas transmis à Microsoft Graph pendant l’analyse. V74.1 ne conserve pas le fichier original ni son nom de fichier. Des limites de taille et de décompression sont appliquées pour réduire les risques de consommation excessive de mémoire. Un PDF scanné sans couche texte exploitable est refusé plutôt que soumis à une interprétation incertaine.
 
 ## 22.6 Causalité
 
-V73 ne doit pas transformer la co-présence d’une observation, d’une aide et d’un effet dans une séance en relation causale. Les relations sont documentaires et longitudinales.
+V74 ne doit pas transformer la co-présence d’une observation, d’une aide et d’un effet dans une séance en relation causale. Les relations sont documentaires et longitudinales.
 
 ## 22.7 Journalisation / traçabilité
 
@@ -507,7 +507,7 @@ Le PIA généré conserve les identifiants de séances et les états de converge
 
 ## 22.8 Règle pour les prochaines évolutions
 
-Toute nouvelle fonction V73/V74 doit vérifier au minimum :
+Toute nouvelle fonction V74/V74 doit vérifier au minimum :
 
 - authentification Entra ;
 - périmètre Graph/AppFolder ;
@@ -521,7 +521,7 @@ Toute nouvelle fonction V73/V74 doit vérifier au minimum :
 - cohérence avec le modèle PIA existant.
 
 
-### V73.1.0 — interface, import/export et sécurité documentaire
+### V74.1.0 — interface, import/export et sécurité documentaire
 - Les imports Word/PDF restent locaux et sont convertis en structure PIA.
 - Le document original et son nom de fichier ne sont pas conservés par Journalier.
 - Les exports Word/PDF sont produits localement à partir de la structure interne.
@@ -529,7 +529,7 @@ Toute nouvelle fonction V73/V74 doit vérifier au minimum :
 - Le tableau de bord d’accueil ne produit aucun score pédagogique : il affiche des fréquences descriptives.
 - Les mémos personnels utilisent le DataStore local chiffré.
 
-### V73.0.1 — continuité et validation
+### V74.0.1 — continuité et validation
 - Les données du PIA restent dans le même périmètre de stockage par compte/agent.
 - La validation des propositions est une action explicite du professionnel.
 - Le PIA précédent n’est jamais promu automatiquement au rang de vérité ; il est conservé comme source de continuité.

@@ -41,26 +41,26 @@ Historique synthétique des évolutions importantes. Les détails d'architecture
 - Les parcours Entra/Graph/OneDrive et la migration avec données réelles restent à tester dans un environnement authentifié.
 - Le rendu navigateur des derniers changements agenda n'est pas confirmé par l'audit V74.
 
-## V73.1.3 — migration legacy — 25 septembre 2026
+## V74 — migration legacy — 25 septembre 2026
 
-- Ajout du pont `JournalierMigrationBridge` entre `index.html` et `src/v73/v73-migration.js`.
+- Ajout du pont `JournalierMigrationBridge` entre `index.html` et `src/v74/v74-migration.js`.
 - Migration contrôlée vers l'AppFolder, avec validation, normalisation et détection bloquante des conflits.
 - Conservation de la source `Journalier-legacy`, du `studentId` historique et absence de nouvelle permission Graph.
 
-## V73.1.0 — stabilisation PIA — 25 septembre 2026
+## V74.1.0 — stabilisation PIA — 25 septembre 2026
 
 - Import local de PIA Word/PDF; le document original et son nom ne sont pas conservés.
 - Exports PIA professionnels et dé-identifiés en Word/PDF; retrait des identifiants, dates de preuve et identifiants de séance dans les modèles dé-identifiés.
 - Tableau de bord descriptif et mémos personnels stockés via le DataStore local chiffré.
 - Limites de taille et de décompression appliquées aux documents importés.
 
-## V73.0.1 — continuité et validation — 25 septembre 2026
+## V74.0.1 — continuité et validation — 25 septembre 2026
 
 - Utilisation du référentiel PIA JSON pour les seuils de convergence.
 - PIA précédent traité comme source de continuité, distincte des propositions.
 - Validation professionnelle requise; aucune causalité Q2–Q6 affirmée automatiquement.
 
-## V73 — cycle annuel PIA — septembre 2026
+## V74 — cycle annuel PIA — septembre 2026
 
 - Synthèse des séances et des données structurées Q2–Q6 pour soutenir le cycle annuel PIA.
 - Traçabilité des observations, propositions, preuves et contre-évidences.
@@ -77,4 +77,8 @@ Historique synthétique des évolutions importantes. Les détails d'architecture
 
 ## V72 et versions antérieures
 
-Évolutions progressives de l'agenda, des élèves, des séances, des indicateurs, des rapports, de l'authentification Microsoft et de la synchronisation. Les détails des versions antérieures à V73 restent dans l'historique Git.
+Évolutions progressives de l'agenda, des élèves, des séances, des indicateurs, des rapports, de l'authentification Microsoft et de la synchronisation. Les détails des versions antérieures à V74 restent dans l'historique Git.
+
+
+## Refactoring V74
+Structure du frontend nettoyée sans changement fonctionnel volontaire : CSS et JavaScript extraits de `index.html`, runtime/migration sous `src/v74/` et historique archivé.

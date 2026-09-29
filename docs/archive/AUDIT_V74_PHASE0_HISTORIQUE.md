@@ -15,9 +15,9 @@ Portée : audit initial mené avant l’implémentation V74. Aucun code applicat
 ## 2. Arborescence observée
 
 - Application : `index.html`, `msal-redirect.html`, `vite.config.js`, `package.json`, `package-lock.json`.
-- Modules actifs : `src/msal-bridge.js`, `src/msal-redirect.js`, `src/v73/v73-runtime.js`, `src/v73/v73-migration.js`.
-- Données : `public/bibliotheque_indicateurs_v0_5_1.json`, `public/referentiel_pia_v73_0_3.json`.
-- Documentation : README, architecture, sécurité, changelog, audits V73, `V73_README.md`, extraction UX et plan V74.
+- Modules actifs : `src/msal-bridge.js`, `src/msal-redirect.js`, `src/v74/v74-runtime.js`, `src/v74/v74-migration.js`.
+- Données : `public/bibliotheque_indicateurs_v0_5_1.json`, `public/referentiel_pia_v74_0_3.json`.
+- Documentation : README, architecture, sécurité, changelog, audits V74, `V74_README.md`, extraction UX et plan V74.
 - Automatisation : `.github/workflows/ci.yml`, `.github/workflows/main.yml`, `.github/dependabot.yml`.
 - `node_modules/` et `dist/` sont présents localement. Aucun fichier de test nommé selon les motifs test/spec et aucun dossier de tests ne sont présents.
 
@@ -29,8 +29,8 @@ Portée : audit initial mené avant l’implémentation V74. Aucun code applicat
 | `package.json` | `4fc6b701167e1c7927922e8a36673765b0d9d6bf462717b3ce1fed939f9103f1` |
 | `package-lock.json` | `6a4d0448a281b649eb5b99237da0e09c91084d7eea20012d4fe93292b622ddb5` |
 | `vite.config.js` | `5a7fce0abdf8161a055fea3a870fbfbc85a675e0966a71fcf7556bb71cd34842` |
-| `src/v73/v73-runtime.js` | `e828b79363876ee901c45dcc28bc7ddb7973f16c5371d3cead77d2cedcbb297f` |
-| `src/v73/v73-migration.js` | `328a2f7cda8bf8b8c53631e70482f95830a1b6f4727eaaa9b4d0a164b449c50d` |
+| `src/v74/v74-runtime.js` | `e828b79363876ee901c45dcc28bc7ddb7973f16c5371d3cead77d2cedcbb297f` |
+| `src/v74/v74-migration.js` | `328a2f7cda8bf8b8c53631e70482f95830a1b6f4727eaaa9b4d0a164b449c50d` |
 | `src/msal-bridge.js` | `9618b38734efe47e09ed6d450d90574fbdf3466862eb70463b59e4529ae62f79` |
 | `src/msal-redirect.js` | `dd55cd29b6a3e564bc83fd309b773a8cc8af78316776883cd37bb2c0e7d227e2` |
 | `msal-redirect.html` | `046010b628641a2a5b721d9044405b4ca70124adbb08e34ed767076912370113` |
@@ -39,7 +39,7 @@ Portée : audit initial mené avant l’implémentation V74. Aucun code applicat
 | `SECURITY.md` | `66e0e2ef72a41bd6ed000cf421bfad48cfa22be580fded372c0ec62f434b3acc` |
 | `CHANGELOG.md` | `11234757afcfcb73bf5ade6f4e49b8b06d8f9c529b4635b1c4688fde3a561c8f` |
 | `public/bibliotheque_indicateurs_v0_5_1.json` | `f3708fe89d999b7204fb599836fade716d3e4cab36eab986be38686c315b0d3a` |
-| `public/referentiel_pia_v73_0_3.json` | `53be1862eaefed683495f6260ee852a024f2a5de4ecff78ac5fb03ffe336d6f7` |
+| `public/referentiel_pia_v74_0_3.json` | `53be1862eaefed683495f6260ee852a024f2a5de4ecff78ac5fb03ffe336d6f7` |
 | `.github/workflows/ci.yml` | `78f955a0ea3f69cbe16ba63fc72166ecce68b84e0e5ba68264390ca13890d43e` |
 | `.github/workflows/main.yml` | `9e5223d9755639e54e80a9f17c8062de78cf4979bc1f175c69ff82308e3de7b9` |
 
@@ -70,18 +70,18 @@ Le flux cloud est MSAL → acquisition silencieuse/popup du token → `graphRequ
 
 ### Migration
 
-`src/v73/v73-migration.js` passe par `window.JournalierMigrationBridge` pour Graph, validateurs, normaliseurs, DataStore et fonctions de sync. La migration valide et normalise les données, bloque les conflits et ne supprime pas la copie legacy.
+`src/v74/v74-migration.js` passe par `window.JournalierMigrationBridge` pour Graph, validateurs, normaliseurs, DataStore et fonctions de sync. La migration valide et normalise les données, bloque les conflits et ne supprime pas la copie legacy.
 
 ### PIA
 
-`src/v73/v73-runtime.js` charge le référentiel, lit les séances via `window.JournalierDataStore`, calcule convergences/domaines/propositions, puis rend le projet. Les PIA locaux sont stockés dans `state.meta.piaRecords[studentId]`; la sauvegarde distante écrit `Journalier/pia/{studentId}/pia.json`.
+`src/v74/v74-runtime.js` charge le référentiel, lit les séances via `window.JournalierDataStore`, calcule convergences/domaines/propositions, puis rend le projet. Les PIA locaux sont stockés dans `state.meta.piaRecords[studentId]`; la sauvegarde distante écrit `Journalier/pia/{studentId}/pia.json`.
 
 Constats de cycle : `ACTIF` est affiché « PIA annuel validé »; la validation de décembre passe à `ACTIF`; la réévaluation passe à `EN_REEVALUATION`; aucun état de finalisation annuelle n’est implémenté. Les réunions sont aujourd’hui des objets partiels `meeting1`/`meeting2`, sans formulaire structuré participants/retours/décisions. Le PIA distant est sauvegardé mais n’est pas chargé par `hydrateMicrosoftDataIfLocalEmpty()`, qui hydrate profils, séances et agenda uniquement.
 
 ### JSON et référentiels
 
 - `bibliotheque_indicateurs_v0_5_1.json` est chargé par `index.html` pour les indicateurs Q3.
-- `referentiel_pia_v73_0_3.json` est chargé par `v73-runtime.js` pour les seuils et principes du moteur PIA.
+- `referentiel_pia_v74_0_3.json` est chargé par `v74-runtime.js` pour les seuils et principes du moteur PIA.
 - Aucun corpus de stress tests ou suite automatisée distincte n’a été trouvé. Le référentiel contient des mentions de tests conceptuels/corpus à calibrer, qui ne constituent pas une exécution de tests du moteur réel.
 
 ## 5. Sécurité, CI et documentation
@@ -91,7 +91,7 @@ Constats de cycle : `ACTIF` est affiché « PIA annuel validé »; la validation
 - Les lectures Graph emploient l’URL `@microsoft.graph.downloadUrl`, HTTPS et une liste de domaines permis; les JSON distants passent par des validateurs; la pagination contrôle `@odata.nextLink`.
 - CI et déploiement utilisent Node 22, `npm ci`, build Vite; les Actions sont référencées par SHA complet. Dependabot couvre npm et GitHub Actions. Aucun workflow CodeQL n’est présent; l’activation éventuelle dans les paramètres GitHub n’est pas vérifiable depuis les fichiers du dépôt.
 - `package.json` ne définit que `dev`, `build`, `preview`. Aucun script de tests n’est disponible.
-- Écart documentaire : le début de `ARCHITECTURE.md` présente une arborescence partielle V72 sans le référentiel PIA ni les deux modules V73; des sections ultérieures décrivent V73. Les documents d’audit disent que la CSP est valide après intégration, ce qui est vrai pour `HEAD`, mais plus pour l’état local courant.
+- Écart documentaire : le début de `ARCHITECTURE.md` présente une arborescence partielle V72 sans le référentiel PIA ni les deux modules V74; des sections ultérieures décrivent V74. Les documents d’audit disent que la CSP est valide après intégration, ce qui est vrai pour `HEAD`, mais plus pour l’état local courant.
 
 ## 6. Contrôles de référence
 
@@ -103,7 +103,7 @@ Constats de cycle : `ACTIF` est affiché « PIA annuel validé »; la validation
 
 ## 7. Risques et plan V74
 
-Fichiers à protéger : DataStore/IndexedDB, MSAL, Graph, SyncManager, migration, JSON et référentiels, moteur de convergence et moteur de synthèse. Fichiers de travail probablement nécessaires : `index.html` et `src/v73/v73-runtime.js`; la documentation sera mise à jour après le comportement final.
+Fichiers à protéger : DataStore/IndexedDB, MSAL, Graph, SyncManager, migration, JSON et référentiels, moteur de convergence et moteur de synthèse. Fichiers de travail probablement nécessaires : `index.html` et `src/v74/v74-runtime.js`; la documentation sera mise à jour après le comportement final.
 
 Risques prioritaires : CSP décalée par la modification locale; export PIA dé-identifié qui conserve les dates dans `traceability.states`; liaison agenda/date de rapport; compatibilité des enregistrements `ACTIF` existants lors du nouveau vocabulaire de cycle; PIA cloud non réhydraté; tests métier absents.
 
@@ -125,7 +125,7 @@ Plan technique autorisé :
 
 - `index.html` : navigation interne des quatre espaces Rapports, synthèse à période libre avec dates début/fin et modes aperçu/complet, préparation dérivée des mêmes preuves, export centralisé avec choix Word/PDF pour séances, synthèses et réunions, historique Data List avec résumés Q2–Q6 toujours visibles. Les actions Modifier/Supprimer restent les fonctions historiques.
 - `index.html` : événements hebdomadaires positionnés sur leur `grid-row` propre avec span inclusif; périodes occupées n’affichent plus `+ Ajouter`, et les chevauchements utilisent des voies de largeur locale.
-- `src/v73/v73-runtime.js` : montage PIA dans sa section dédiée; vue des cinq domaines et accordéons éditables (ressources, besoins, objectifs, critères, moyens, évolution); cartes de propositions avec provenance/contributeurs et décisions professionnelles; réunions structurées; suivi annuel; cycle `EN_CONSTRUCTION` → `EN_VIGUEUR` → `EN_REEVALUATION` → `EN_VIGUEUR` → `FINALISE`; continuité du PIA précédent lors du changement d’année; exports professionnels enrichis et dé-identification récursive renforcée.
+- `src/v74/v74-runtime.js` : montage PIA dans sa section dédiée; vue des cinq domaines et accordéons éditables (ressources, besoins, objectifs, critères, moyens, évolution); cartes de propositions avec provenance/contributeurs et décisions professionnelles; réunions structurées; suivi annuel; cycle `EN_CONSTRUCTION` → `EN_VIGUEUR` → `EN_REEVALUATION` → `EN_VIGUEUR` → `FINALISE`; continuité du PIA précédent lors du changement d’année; exports professionnels enrichis et dé-identification récursive renforcée.
 - `vite.config.js` : allowlist Vite limitée à `${CODESPACE_NAME}-8000.app.github.dev` dans Codespaces; aucun wildcard.
 - `index.html` contient toujours la modification locale SyncManager initiale dans `v72Classify()`; elle n’a pas été supprimée.
 - Fichier ajouté : `AUDIT_V74_PHASE0.md` (présent rapport). Aucun fichier supprimé pendant l’implémentation V74.
@@ -138,7 +138,7 @@ Règle implémentée : dernière semaine complète lundi–dimanche d’août; f
 ### Validations après modification
 
 - `npm run build` : PASS (170 modules).
-- `node --check src/v73/v73-runtime.js` : PASS.
+- `node --check src/v74/v74-runtime.js` : PASS.
 - Export Rapports séances/synthèse/réunion en DOCX et PDF : mêmes générateurs que l’export PIA; aucune sortie CSV/TXT dans le parcours.
 - Agenda multi-périodes : spans 3e→3e = 1, 3e→4e = 2, 3e→5e = 3, 6e→7e = 2; placement grid-row et suppression des créneaux libres couverts : PASS.
 - `git diff --check` : PASS.
@@ -146,7 +146,7 @@ Règle implémentée : dernière semaine complète lundi–dimanche d’août; f
 - Test ciblé des bornes/années scolaires : PASS, incluant les limites exactes et les dates hors cycle.
 - Test ciblé de dé-identification sur identité, établissement, classe, dates ISO/localisées, IDs séance et notes : PASS.
 - Requête locale avec le Host du Codespace : HTTP 200.
-- Diagnostics VS Code sur `index.html` et `src/v73/v73-runtime.js` : aucune erreur.
+- Diagnostics VS Code sur `index.html` et `src/v74/v74-runtime.js` : aucune erreur.
 - Test manuel de l’utilisateur : différents menus parcourus et signalés fonctionnels avant la dernière correction du span agenda. Le rendu agenda modifié n’a pas été vérifié visuellement dans le navigateur; seuls son build et le smoke test des spans sont validés.
 - Parcours navigateur authentifié Entra/Graph/OneDrive ignoré à la demande. La connexion via Codespaces nécessite l’URI de callback exacte dans l’enregistrement Entra comme SPA. Aucun test avec données d’élèves réelles; migration réelle non testée. Le dépôt ne contient pas de suite automatisée.
 
@@ -158,8 +158,8 @@ Règle implémentée : dernière semaine complète lundi–dimanche d’août; f
 | `package.json` | `4fc6b701167e1c7927922e8a36673765b0d9d6bf462717b3ce1fed939f9103f1` |
 | `package-lock.json` | `6a4d0448a281b649eb5b99237da0e09c91084d7eea20012d4fe93292b622ddb5` |
 | `vite.config.js` | `e1b0cea455829118b6403fcbe63a16a6ab5fe07a284888ca9fc22d2e13115f2d` |
-| `src/v73/v73-runtime.js` | `da4146353f7f16e22f5c75eb0e6156eec6f9b65141f0a7537e2f7f93478d7865` |
-| `src/v73/v73-migration.js` | `328a2f7cda8bf8b8c53631e70482f95830a1b6f4727eaaa9b4d0a164b449c50d` |
+| `src/v74/v74-runtime.js` | `da4146353f7f16e22f5c75eb0e6156eec6f9b65141f0a7537e2f7f93478d7865` |
+| `src/v74/v74-migration.js` | `328a2f7cda8bf8b8c53631e70482f95830a1b6f4727eaaa9b4d0a164b449c50d` |
 | `src/msal-bridge.js` | `9618b38734efe47e09ed6d450d90574fbdf3466862eb70463b59e4529ae62f79` |
 | `src/msal-redirect.js` | `dd55cd29b6a3e564bc83fd309b773a8cc8af78316776883cd37bb2c0e7d227e2` |
 | `msal-redirect.html` | `046010b628641a2a5b721d9044405b4ca70124adbb08e34ed767076912370113` |
@@ -168,7 +168,7 @@ Règle implémentée : dernière semaine complète lundi–dimanche d’août; f
 | `SECURITY.md` | `66e0e2ef72a41bd6ed000cf421bfad48cfa22be580fded372c0ec62f434b3acc` |
 | `CHANGELOG.md` | `11234757afcfcb73bf5ade6f4e49b8b06d8f9c529b4635b1c4688fde3a561c8f` |
 | `public/bibliotheque_indicateurs_v0_5_1.json` | `f3708fe89d999b7204fb599836fade716d3e4cab36eab986be38686c315b0d3a` |
-| `public/referentiel_pia_v73_0_3.json` | `53be1862eaefed683495f6260ee852a024f2a5de4ecff78ac5fb03ffe336d6f7` |
+| `public/referentiel_pia_v74_0_3.json` | `53be1862eaefed683495f6260ee852a024f2a5de4ecff78ac5fb03ffe336d6f7` |
 | `.github/workflows/ci.yml` | `78f955a0ea3f69cbe16ba63fc72166ecce68b84e0e5ba68264390ca13890d43e` |
 | `.github/workflows/main.yml` | `9e5223d9755639e54e80a9f17c8062de78cf4979bc1f175c69ff82308e3de7b9` |
 
@@ -177,7 +177,7 @@ Limite conservée de l’architecture existante : le PIA est sauvegardé sous `J
 ## 10. Audit documentaire et nettoyage
 
 - README, architecture, sécurité et changelog mis à jour pour décrire V74, l’arborescence active, les deux référentiels et les limites des validations.
-- Suppression de `V73_README.md`, des trois audits V73 redondants, du plan V74 achevé et de l’extraction UX devenue inutile.
+- Suppression de `V74_README.md`, des trois audits V74 redondants, du plan V74 achevé et de l’extraction UX devenue inutile.
 - `AUDIT_V74_PHASE0.md` conservé comme rapport technique détaillé.
 - Aucun module applicatif, référentiel JSON, workflow ou fichier avec modification locale préexistante n’a été supprimé ou modifié par ce nettoyage.
 - `npm run build` : PASS après les changements documentaires.
@@ -190,7 +190,7 @@ Limite conservée de l’architecture existante : le PIA est sauvegardé sous `J
 - `index.html` : période hebdomadaire, mensuelle, personnalisée et PV conservée; export brut des séances limité à la période choisie.
 - `index.html` : historique en Data List avec aperçu Q2–Q6 compact, détail repliable, recherche, filtre matière, chargement par lots de 15 et suppression dans le menu secondaire.
 - `index.html` : synthèse, historique et préparation de réunion isolés en vues exclusives; la préparation reste fondée sur la synthèse existante.
-- `index.html` et `src/v73/v73-runtime.js` : sélecteur PIA synchronisé au contexte élève partagé; quatre sous-vues PIA accessibles (domaines, propositions, réunions, suivi annuel), état de vue conservé après sauvegarde et exports PIA accessibles depuis le menu commun.
+- `index.html` et `src/v74/v74-runtime.js` : sélecteur PIA synchronisé au contexte élève partagé; quatre sous-vues PIA accessibles (domaines, propositions, réunions, suivi annuel), état de vue conservé après sauvegarde et exports PIA accessibles depuis le menu commun.
 - Aucun changement apporté au DataStore, au schéma des séances, à l’authentification, à Graph, à OneDrive ou aux permissions. Aucun fichier ajouté ou supprimé par cette phase; les changements locaux préexistants à `vite.config.js` ont été préservés.
 
 ### Hashes SHA-256
@@ -198,11 +198,11 @@ Limite conservée de l’architecture existante : le PIA est sauvegardé sous `J
 | Fichier | Avant | Après |
 |---|---|---|
 | `index.html` | `d665f2158ee4b4aca954d13ce517b2a0c3eb07a778d7cb67057c7e2af1fe39a4` | `7e5c2dd1ba9580a40a77b0363e6ec00512e75050e383b3648ad5e105c1f5d685` |
-| `src/v73/v73-runtime.js` | `da4146353f7f16e22f5c75eb0e6156eec6f9b65141f0a7537e2f7f93478d7865` | `a95fa099931e75ebf23b53d4116e49294d4fa9316fd58137b8725804a514a13d` |
+| `src/v74/v74-runtime.js` | `da4146353f7f16e22f5c75eb0e6156eec6f9b65141f0a7537e2f7f93478d7865` | `a95fa099931e75ebf23b53d4116e49294d4fa9316fd58137b8725804a514a13d` |
 
 ### Validation et limites
 - `npm run build` : PASS (170 modules).
-- `node --check src/v73/v73-runtime.js`, diagnostics VS Code et `git diff --check` : PASS.
+- `node --check src/v74/v74-runtime.js`, diagnostics VS Code et `git diff --check` : PASS.
 - Trois hashes CSP : correspondance exacte; aucune directive élargie.
 - Contrôle statique : quatre tabs, quatre panels, IDs statiques uniques.
 - Serveur Vite local : HTTP 200 sur `http://localhost:8000/journalier-electronique/`.
@@ -215,7 +215,7 @@ Limite conservée de l’architecture existante : le PIA est sauvegardé sous `J
 - `index.html` : panneau détail transformé en vue secondaire mobile avec retour à la liste; recherche, matière et chargement par lots restent actifs.
 - `index.html` : synthèse générée isolée de ses contrôles, vue d’ensemble mise en relief sans transformer toutes les sections en cartes.
 - `index.html` : préparation de réunion dotée d’une action de génération et d’un accès à la saisie réelle dans le même PIA annuel.
-- `src/v73/v73-runtime.js` : grille des domaines auto-adaptative; sélection d’un domaine ouvre un seul détail maître-détail avec accordéons éditables pour les rubriques déjà stockées. La sélection du domaine et de la sous-vue est conservée au rerendu.
+- `src/v74/v74-runtime.js` : grille des domaines auto-adaptative; sélection d’un domaine ouvre un seul détail maître-détail avec accordéons éditables pour les rubriques déjà stockées. La sélection du domaine et de la sous-vue est conservée au rerendu.
 - Le DataStore, le modèle de séance, les permissions et les mécanismes Graph/OneDrive n’ont pas été modifiés. Les modifications V74 locales préexistantes ont été conservées.
 
 ### Hashes SHA-256
@@ -223,10 +223,10 @@ Limite conservée de l’architecture existante : le PIA est sauvegardé sous `J
 | Fichier | Avant cette phase | Après cette phase |
 |---|---|---|
 | `index.html` | `7e5c2dd1ba9580a40a77b0363e6ec00512e75050e383b3648ad5e105c1f5d685` | `42712f9607c60346bbba91221359e4702f6fe961797010481929a7d09f6c0e2f` |
-| `src/v73/v73-runtime.js` | `a95fa099931e75ebf23b53d4116e49294d4fa9316fd58137b8725804a514a13d` | `1a720f17fc783ae58e742a73c60c526edf54149d39d27e8ace41460e8b62dfab` |
+| `src/v74/v74-runtime.js` | `a95fa099931e75ebf23b53d4116e49294d4fa9316fd58137b8725804a514a13d` | `1a720f17fc783ae58e742a73c60c526edf54149d39d27e8ace41460e8b62dfab` |
 
 ### Validations et limites
-- `npm run build` : PASS; `node --check src/v73/v73-runtime.js` : PASS; diagnostics VS Code : aucune erreur; `git diff --check` : PASS.
+- `npm run build` : PASS; `node --check src/v74/v74-runtime.js` : PASS; diagnostics VS Code : aucune erreur; `git diff --check` : PASS.
 - Les trois hashes CSP correspondent exactement aux scripts inline; aucune directive élargie.
 - Serveur Vite : HTTP 200 sur `http://localhost:8000/journalier-electronique/`.
 - Le Codespace ne dispose pas de Chromium/Playwright : le rendu réel desktop/mobile et les parcours authentifiés restent à vérifier dans le navigateur.
@@ -235,7 +235,7 @@ Limite conservée de l’architecture existante : le PIA est sauvegardé sous `J
 
 ### Modifications
 - `index.html` : panneaux internes légers et accents colorés distincts pour les familles de synthèse et de préparation de réunion.
-- `src/v73/v73-runtime.js` : fonds différenciés par domaine PIA et badges/fonds sémantiques pour les propositions à examiner, validées et refusées.
+- `src/v74/v74-runtime.js` : fonds différenciés par domaine PIA et badges/fonds sémantiques pour les propositions à examiner, validées et refusées.
 - `index.html` : niveau Q2 explicité pour chaque observation dans le détail historique et associé directement aux signaux de la liste.
 - `index.html` : effets Q4 traduits en « Aucun effet », « Effet partiel » ou « Effet positif » dans le détail et l’export des séances.
 - Aucune donnée ou règle d’analyse n’a été modifiée; le rendu utilise les valeurs déjà enregistrées.
@@ -245,10 +245,10 @@ Limite conservée de l’architecture existante : le PIA est sauvegardé sous `J
 | Fichier | Avant cette phase | Après cette phase |
 |---|---|---|
 | `index.html` | `42712f9607c60346bbba91221359e4702f6fe961797010481929a7d09f6c0e2f` | `f8deeadb28c062177eb280b1a64507d437efe6aff3c753da43e81f6ca692fe0f` |
-| `src/v73/v73-runtime.js` | `1a720f17fc783ae58e742a73c60c526edf54149d39d27e8ace41460e8b62dfab` | `f0b6e47eb8bc6b479aee4a058535d1e3fb3f3f1daa46e0580f8807e4920e3bf9` |
+| `src/v74/v74-runtime.js` | `1a720f17fc783ae58e742a73c60c526edf54149d39d27e8ace41460e8b62dfab` | `f0b6e47eb8bc6b479aee4a058535d1e3fb3f3f1daa46e0580f8807e4920e3bf9` |
 
 ### Validation et limites
-- `npm run build`, `node --check src/v73/v73-runtime.js`, diagnostics VS Code et `git diff --check` : PASS.
+- `npm run build`, `node --check src/v74/v74-runtime.js`, diagnostics VS Code et `git diff --check` : PASS.
 - Trois hashes CSP : correspondance exacte, sans changement de directive.
 - Serveur local : HTTP 200.
 - Les captures desktop/mobile et parcours authentifiés restent à valider visuellement dans le navigateur.
@@ -258,7 +258,7 @@ Limite conservée de l’architecture existante : le PIA est sauvegardé sous `J
 ### Modifications
 - `index.html` : signaux de liste différenciant visuellement leur type (Observation, Adaptation, Transfert); détail organisé en conteneurs colorés par famille.
 - `index.html` : chaque observation Q2 du détail et de la liste porte son niveau réellement encodé. Les effets Q4 utilisent « Aucun effet », « Effet partiel » et « Effet positif » dans le détail et l’export.
-- `src/v73/v73-runtime.js` : cartes des domaines agrandies, grille passant de cinq à trois, deux puis une colonne selon la largeur, symbole SVG thématique pour chaque domaine.
+- `src/v74/v74-runtime.js` : cartes des domaines agrandies, grille passant de cinq à trois, deux puis une colonne selon la largeur, symbole SVG thématique pour chaque domaine.
 - Les valeurs affichées proviennent des données et états existants; aucun stockage ni moteur de décision n’est modifié.
 
 ### Hashes SHA-256
@@ -266,7 +266,7 @@ Limite conservée de l’architecture existante : le PIA est sauvegardé sous `J
 | Fichier | Après cette phase |
 |---|---|
 | `index.html` | `06c4cc47135eba86cc5ae43b3224b052a5e10c7ccd887d53ca2d2cc5bd31543b` |
-| `src/v73/v73-runtime.js` | `bdbfe99adc84c9dad25824a054470fd744b92e09a748f81c0046d0e5a4770e6b` |
+| `src/v74/v74-runtime.js` | `bdbfe99adc84c9dad25824a054470fd744b92e09a748f81c0046d0e5a4770e6b` |
 
 ### Validation et limites
 - `npm run build` : PASS; diagnostics VS Code : aucune erreur; `git diff --check` : PASS.
@@ -278,7 +278,7 @@ Limite conservée de l’architecture existante : le PIA est sauvegardé sous `J
 ### Modifications
 - `index.html` : quand Exporter est ouvert, l’en-tête crée un contexte d’empilement prioritaire; le panneau a une hauteur maximale et reste défilable. Le menu se ferme au clic extérieur ou avec Échap.
 - `index.html` : niveau Q2 de chaque signal affiché dans une pastille distincte; l’étiquette et le texte sont mieux différenciés.
-- `src/v73/v73-runtime.js` : les cartes Proposition conservent leur taille et leur état, mais utilisent une surface neutre, un liseré coloré et un badge, au lieu d’un grand fond coloré.
+- `src/v74/v74-runtime.js` : les cartes Proposition conservent leur taille et leur état, mais utilisent une surface neutre, un liseré coloré et un badge, au lieu d’un grand fond coloré.
 - Aucun changement de données ou de logique de décision.
 
 ### Hashes SHA-256
@@ -286,9 +286,9 @@ Limite conservée de l’architecture existante : le PIA est sauvegardé sous `J
 | Fichier | Avant cette phase | Après cette phase |
 |---|---|---|
 | `index.html` | `06c4cc47135eba86cc5ae43b3224b052a5e10c7ccd887d53ca2d2cc5bd31543b` | `eee71297e1d0111d9d1633f0fffdb31f0522f410d02bcc1a7c2b3dcd8580d261` |
-| `src/v73/v73-runtime.js` | `bdbfe99adc84c9dad25824a054470fd744b92e09a748f81c0046d0e5a4770e6b` | `f776fb113dc7858c0c60c4cba26316205572c9259c6d60d2c39d73be893c54f1` |
+| `src/v74/v74-runtime.js` | `bdbfe99adc84c9dad25824a054470fd744b92e09a748f81c0046d0e5a4770e6b` | `f776fb113dc7858c0c60c4cba26316205572c9259c6d60d2c39d73be893c54f1` |
 
 ### Validations et limites
-- `npm run build`, diagnostics VS Code, `node --check src/v73/v73-runtime.js` et `git diff --check` : PASS.
+- `npm run build`, diagnostics VS Code, `node --check src/v74/v74-runtime.js` et `git diff --check` : PASS.
 - Hashes CSP des trois scripts inline : correspondance exacte.
 - Aperçu Vite : HTTP 200. La capture navigateur automatisée n’est pas disponible dans cet environnement.
