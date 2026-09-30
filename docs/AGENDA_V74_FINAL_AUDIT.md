@@ -1,13 +1,13 @@
 # Audit final — Agenda V74
 
-Date : 29 septembre 2026
+Date : 30 septembre 2026
 
 ## Périmètre contrôlé
 
 - modèle Agenda canonique `__events` / `__exceptions` / `__config` ;
 - compatibilité avec les anciens créneaux et `__uniqueEvents` ;
 - événements concurrents et calcul des voies d'affichage ;
-- proposition / confirmation / réalisation / annulation ;
+- Planifié / Réalisé / Annulé ;
 - réalisation indépendante des événements non liés à une séance ;
 - rapprochement Agenda ↔ Historique lors de création, correction et suppression d'une séance ;
 - huit périodes configurables et validation des pauses ;

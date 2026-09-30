@@ -451,7 +451,7 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
 
     function agendaEventIndexes(event){
         const start=periodIndex(event?.startPeriod), end=periodIndex(event?.endPeriod||event?.startPeriod);
-        return {start,end};
+        return {startIndex:start,endIndex:end};
     }
 
     function normalizeAgendaEvent(item,ownerId,defaults={}){
@@ -474,8 +474,9 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
         ev.startPeriod=periods.includes(ev.startPeriod)?ev.startPeriod:(defaults.startPeriod||periods[0]);
         ev.endPeriod=periods.includes(ev.endPeriod)?ev.endPeriod:ev.startPeriod;
         if(periodIndex(ev.endPeriod)<periodIndex(ev.startPeriod))ev.endPeriod=ev.startPeriod;
-        const defaultStatus=defaults.status||'confirmed';
-        ev.eventStatus=['proposed','confirmed','realized','cancelled'].includes(ev.eventStatus)?ev.eventStatus:defaultStatus;
+        const defaultStatus=defaults.status||'proposed';
+        const rawStatus=ev.eventStatus==='confirmed'?'proposed':ev.eventStatus;
+        ev.eventStatus=['proposed','realized','cancelled'].includes(rawStatus)?rawStatus:defaultStatus;
         ev.realized=Boolean(ev.realized||ev.eventStatus==='realized');
         ev.realizedAt=ev.realizedAt?String(ev.realizedAt):null;
         if(ev.realized&&!ev.realizedAt)ev.realizedAt=new Date().toISOString();
@@ -518,7 +519,7 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
                 if(!run.length)return;
                 const first=run[0],last=run[run.length-1];
                 const base={...first.value,eventId:first.value.eventId||`legacy_${first.dayIndex}_${first.period}_${journalierUuid('x')}`,dayIndex:first.dayIndex,startPeriod:first.period,endPeriod:last.period,recurrence:'weekly',seriesId:first.value.seriesId||first.value.eventId||null};
-                events.push(normalizeAgendaEvent(base,ownerId,{dayIndex:first.dayIndex,startPeriod:first.period,status:'confirmed'}));
+                events.push(normalizeAgendaEvent(base,ownerId,{dayIndex:first.dayIndex,startPeriod:first.period,status:'proposed'}));
                 run=[];
             };
             for(const slot of group){
@@ -542,9 +543,9 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
             const ev=normalizeAgendaEvent(item,ownerId,defaults);
             if(!seen.has(ev.eventId)){seen.add(ev.eventId);out.__events.push(ev);}
         };
-        if(Array.isArray(source.__events))source.__events.forEach(ev=>push(ev,{status:'confirmed'}));
-        if(Array.isArray(source.__uniqueEvents))source.__uniqueEvents.forEach(ev=>push({...ev,recurrence:'unique',date:ev.date||ev.occurrenceDate},{status:'confirmed'}));
-        legacyAgendaEvents(source,ownerId).forEach(ev=>push(ev,{status:'confirmed'}));
+        if(Array.isArray(source.__events))source.__events.forEach(ev=>push(ev,{status:'proposed'}));
+        if(Array.isArray(source.__uniqueEvents))source.__uniqueEvents.forEach(ev=>push({...ev,recurrence:'unique',date:ev.date||ev.occurrenceDate},{status:'proposed'}));
+        legacyAgendaEvents(source,ownerId).forEach(ev=>push(ev,{status:'proposed'}));
         out.__events.sort((a,b)=>String(a.date||a.dayIndex).localeCompare(String(b.date||b.dayIndex))||periodIndex(a.startPeriod)-periodIndex(b.startPeriod)||a.eventId.localeCompare(b.eventId));
         return out;
     }
@@ -588,7 +589,87 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
     }
 
     function getEventsForDate(iso,prev=getPrevisionnel()){
-        return (prev.__events||[]).filter(ev=>eventOccursOnDate(ev,iso,prev)).map(ev=>({...ev,occurrenceDate:iso,...agendaEventIndexes(ev)}));
+        const db=getDB();
+        const base=(prev.__events||[])
+            .filter(ev=>eventOccursOnDate(ev,iso,prev))
+            .map(ev=>({...ev,occurrenceDate:iso,...agendaEventIndexes(ev)}));
+
+        // L'Historique est la preuve de réalisation d'une séance.
+        // On projette donc chaque séance enregistrée dans l'Agenda :
+        // - si un événement planifié correspond exactement au créneau, celui-ci
+        //   devient Réalisé dans la vue ;
+        // - sinon, une occurrence réalisée est ajoutée uniquement à l'affichage.
+        const history=db.filter(item=>{
+            if(!isJournalSession(item))return false;
+            return sessionParts(item).date===iso;
+        });
+
+        history.forEach(item=>{
+            const sp=sessionParts(item);
+            const start=periodIndex(sp.start),end=periodIndex(sp.end||sp.start);
+            if(start<0||end<0)return;
+
+            const candidates=base.filter(ev=>{
+                if(ev.type!=='ELEVE'||ev.eventStatus==='cancelled')return false;
+                if(ev.eleve!==sp.eleve)return false;
+                if(ev.eleveId&&item.identification?.eleveId&&String(ev.eleveId)!==String(item.identification.eleveId))return false;
+                if(ev.matiere&&sp.matiere&&ev.matiere!==sp.matiere)return false;
+                return ev.startIndex===start&&ev.endIndex===end;
+            });
+
+            // Une seule proposition est transformée visuellement en Réalisé.
+            // L'identifiant déterministe évite qu'une séance marque plusieurs
+            // propositions chevauchantes comme réalisées.
+            // Une seule proposition correspondante peut être projetée comme réalisée.
+            // En présence de plusieurs propositions concurrentes, on ne choisit jamais
+            // arbitrairement laquelle a été exécutée : l'Historique reste la preuve
+            // de réalisation et une occurrence dédiée est créée pour l'affichage.
+            const target=candidates.length===1?candidates[0]:null;
+            if(target){
+                target.eventStatus='realized';
+                target.realized=true;
+                target.realizedAt=target.realizedAt||item.metadata?.updatedAt||item.metadata?.createdAt||null;
+                target.historySessionId=String(item.id);
+                return;
+            }
+
+            // Aucun événement planifié correspondant, ou plusieurs propositions
+            // concurrentes : la séance reste visible comme occurrence réalisée
+            // indépendante dans les vues jour/semaine/mois.
+            const virtualId=`history_${String(item.id)}`;
+            if(base.some(ev=>String(ev.eventId)===virtualId))return;
+            base.push({
+                eventId:virtualId,
+                ownerId:JournalierSecurity.accountKey,
+                dataVersion:JOURNALIER_ARCHITECTURE_VERSION,
+                recurrence:'unique',
+                seriesId:null,
+                type:'ELEVE',
+                eleve:sp.eleve,
+                eleveId:String(item.identification?.eleveId||''),
+                matiere:sp.matiere,
+                title:'',
+                detail:'',
+                local:'',
+                dayIndex:getDayIndexFromISO(iso),
+                date:iso,
+                startPeriod:sp.start,
+                endPeriod:sp.end||sp.start,
+                eventStatus:'realized',
+                realized:true,
+                realizedAt:item.metadata?.updatedAt||item.metadata?.createdAt||null,
+                createdAt:item.metadata?.createdAt||null,
+                updatedAt:item.metadata?.updatedAt||null,
+                timezone:'Europe/Brussels',
+                outlook:{calendarId:null,eventId:null,iCalUId:null,changeKey:null,webLink:null},
+                occurrenceDate:iso,
+                ...agendaEventIndexes({startPeriod:sp.start,endPeriod:sp.end||sp.start}),
+                historySessionId:String(item.id),
+                virtualHistoryEvent:true
+            });
+        });
+
+        return base;
     }
 
     function getEventsForDatePeriod(iso,period,prev=getPrevisionnel()){
@@ -621,11 +702,11 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
 
     function getEventState(event,dayIdx,iso,db){
         if(event?.eventStatus==='cancelled')return {key:'cancelled',label:'Annulé'};
-        const encoded=event?.type==='ELEVE'?getEncodedForEvent(dayIdx,iso,event,db):null;
-        if(encoded)return {key:'realized',label:'Séance enregistrée',encoded};
-        if(event?.realized||event?.eventStatus==='realized')return {key:'realized',label:'Réalisé'};
-        if(event?.eventStatus==='confirmed')return {key:'confirmed',label:'Confirmé'};
-        return {key:'proposed',label:'Proposition'};
+        if(event?.realized||event?.eventStatus==='realized'){
+            const encoded=event?.historySessionId?(db||[]).find(item=>String(item.id)===String(event.historySessionId))||null:null;
+            return {key:'realized',label:encoded?'Séance enregistrée':'Réalisé',encoded};
+        }
+        return {key:'proposed',label:'Planifié'};
     }
 
     function getEventClass(event,state){
@@ -639,8 +720,16 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
 
     function getEncodedForEvent(dayIdx,isoDate,event,db){
         if(!event||event.type!=='ELEVE')return null;
-        const {start,end}=agendaEventIndexes(event);
-        return (db||[]).find(item=>{
+
+        // Une projection issue de l'Historique possède un lien direct.
+        // Il est prioritaire sur toute recherche heuristique par élève/date/créneau.
+        if(event.historySessionId){
+            const linked=(db||[]).find(item=>String(item.id)===String(event.historySessionId));
+            if(linked)return linked;
+        }
+
+        const {startIndex,endIndex}=agendaEventIndexes(event);
+        const matches=(db||[]).filter(item=>{
             const sp=sessionParts(item);
             if(sp.date!==isoDate)return false;
             if(event.eleveId&&item.identification?.eleveId&&String(event.eleveId)!==String(item.identification.eleveId))return false;
@@ -648,8 +737,9 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
             if(event.matiere&&sp.matiere&&sp.matiere!==event.matiere)return false;
             const itemStart=periodIndex(sp.start),itemEnd=periodIndex(sp.end||sp.start);
             if(itemStart<0||itemEnd<0)return false;
-            return itemStart<=end&&itemEnd>=start;
-        })||null;
+            return itemStart<=endIndex&&itemEnd>=startIndex;
+        });
+        return matches.sort((a,b)=>sessionSortKey(b).localeCompare(sessionSortKey(a)))[0]||null;
     }
 
     function renderHome(){
@@ -806,7 +896,6 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
         const state=getEventState(event,dayIdx,isoDate,getDB()),summary=document.getElementById('event-action-summary');
         if(summary){summary.innerHTML=`<strong>${escapeHtml(getEventLabel(event))}</strong><br>${escapeHtml(getEventMeta(event)||'Mission Pôle Territorial')}<br><span style="color:var(--text-sub);">${escapeHtml(event.occurrenceDate||isoDate)} · ${escapeHtml(event.startPeriod)}${event.endPeriod!==event.startPeriod?' → '+escapeHtml(event.endPeriod):''} · ${escapeHtml(state.label)}</span>`;}
         const observe=document.getElementById('event-action-observe');observe.textContent=event.type==='ELEVE'?(state.key==='realized'?'✏️ Modifier la séance':'📝 Encoder la séance'):'🗒️ Détail de la mission';observe.style.display='';observe.onclick=()=>{closeEventActionModal();if(event.type==='ELEVE'){const encoded=getEncodedForEvent(dayIdx,isoDate,event,getDB());if(encoded)editHistorySession(encoded.id);else quickFormForSlot(isoDate,event.startPeriod,event.eleve,event.matiere);}else openSlotModal(isoDate,event.startPeriod,dayIdx,event.eventId);};
-        const confirm=document.getElementById('event-action-confirm');if(confirm){confirm.style.display=state.key==='realized'?'none':'';confirm.textContent=state.key==='confirmed'?'↩️ Remettre en proposition':(state.key==='cancelled'?'↩️ Réactiver':'✓ Confirmer l’événement');confirm.onclick=()=>toggleAgendaEventConfirmation(isoDate,event.eventId);}
         const realize=document.getElementById('event-action-realize');if(realize){realize.style.display=event.type==='ELEVE'||state.key==='cancelled'?'none':'';realize.textContent=state.key==='realized'?'↩️ Marquer non réalisé':'✓ Marquer comme réalisé';realize.onclick=()=>toggleAgendaEventRealized(isoDate,event.eventId);}
         const cancel=document.getElementById('event-action-cancel');if(cancel){cancel.style.display=state.key==='cancelled'?'none':'';cancel.onclick=()=>cancelAgendaEvent(event.eventId);}
         document.getElementById('event-action-edit').onclick=()=>{closeEventActionModal();openSlotModal(isoDate,event.startPeriod,dayIdx,event.eventId);};
@@ -818,8 +907,7 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
 
     function closeEventActionModal(){closeAllChoiceMenus();document.getElementById('eventActionModal').classList.add('hidden');}
 
-    function toggleAgendaEventConfirmation(iso,eventId){const prev=getPrevisionnel(),events=getEventsForDate(iso,prev),event=events.find(e=>e.eventId===eventId);if(!event)return;const targetStatus=event.eventStatus==='confirmed'?'proposed':'confirmed';if(targetStatus==='confirmed'){events.filter(e=>e.eventId!==eventId&&e.eventStatus==='confirmed'&&rangesOverlap(e,event)).forEach(other=>{const stored=prev.__events.find(e=>e.eventId===other.eventId);if(stored)stored.eventStatus='proposed';});}const stored=prev.__events.find(e=>e.eventId===eventId);if(stored){stored.eventStatus=targetStatus;stored.updatedAt=new Date().toISOString();}savePrevisionnel(prev);closeEventActionModal();showAppToast(targetStatus==='confirmed'?'Événement confirmé.':'Événement remis en proposition.','success');}
-    function toggleAgendaEventRealized(iso,eventId){const prev=getPrevisionnel(),stored=prev.__events.find(e=>e.eventId===eventId);if(!stored)return;stored.realized=!stored.realized;stored.eventStatus=stored.realized?'realized':'confirmed';stored.realizedAt=stored.realized?new Date().toISOString():null;stored.updatedAt=new Date().toISOString();savePrevisionnel(prev);closeEventActionModal();showAppToast(stored.realized?'Événement marqué comme réalisé.':'Événement remis en état non réalisé.','success');}
+    function toggleAgendaEventRealized(iso,eventId){const prev=getPrevisionnel(),stored=prev.__events.find(e=>e.eventId===eventId);if(!stored)return;if(stored.type==='ELEVE')return;stored.realized=!stored.realized;stored.eventStatus=stored.realized?'realized':'proposed';stored.realizedAt=stored.realized?new Date().toISOString():null;stored.updatedAt=new Date().toISOString();savePrevisionnel(prev);closeEventActionModal();showAppToast(stored.realized?'Événement marqué comme réalisé.':'Événement remis en état planifié.','success');}
     function cancelAgendaEvent(eventId){const prev=getPrevisionnel(),stored=prev.__events.find(e=>e.eventId===eventId);if(!stored)return;stored.eventStatus='cancelled';stored.realized=false;stored.realizedAt=null;stored.updatedAt=new Date().toISOString();savePrevisionnel(prev);closeEventActionModal();showAppToast('Événement annulé.','success');}
 
     function openEventDeleteModal(event){agendaDeleteState={eventId:event.eventId,seriesId:event.seriesId||event.eventId,occurrenceDate:event.occurrenceDate,recurrence:event.recurrence};const summary=document.getElementById('event-delete-summary');if(summary)summary.innerHTML=`<strong>${escapeHtml(getEventLabel(event))}</strong><br>${escapeHtml(getEventMeta(event)||'Mission Pôle Territorial')}<br><span style="color:var(--text-sub);">${escapeHtml(event.occurrenceDate||selectedDateISO)} · ${escapeHtml(event.startPeriod)}${event.endPeriod!==event.startPeriod?' → '+escapeHtml(event.endPeriod):''}</span>`;const seriesActions=document.getElementById('event-delete-series-actions');if(seriesActions)seriesActions.style.display=event.recurrence==='weekly'?'flex':'none';const occurrence=document.getElementById('event-delete-occurrence');const series=document.getElementById('event-delete-series');if(occurrence)occurrence.textContent=event.recurrence==='weekly'?'🗑️ Supprimer cette occurrence uniquement':'🗑️ Supprimer l’événement';if(series)series.textContent='🗑️ Supprimer la série';closeEventActionModal();document.getElementById('eventDeleteModal').classList.remove('hidden');}
@@ -903,43 +991,13 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
 
 
     function syncAgendaAfterSessionSave(previousEntry,currentEntry){
-        try{
-            const current=sessionParts(currentEntry),previous=previousEntry?sessionParts(previousEntry):null;
-            const agenda=getPrevisionnel();
-            agenda.__events=Array.isArray(agenda.__events)?agenda.__events:[];
-            const studentId=String(currentEntry.identification?.eleveId||'');
-            const currentStart=periodIndex(current.start),currentEnd=periodIndex(current.end||current.start);
-            const matches=(parts,entry)=>agenda.__events.filter(ev=>{
-                if(ev.type!=='ELEVE'||ev.eventStatus==='cancelled'||ev.eleve!==parts.eleve)return false;
-                if(entry?.identification?.eleveId&&ev.eleveId&&String(entry.identification.eleveId)!==String(ev.eleveId))return false;
-                if(ev.matiere&&parts.matiere&&ev.matiere!==parts.matiere)return false;
-                if(!eventOccursOnDate(ev,parts.date))return false;
-                const r=agendaEventIndexes(ev),start=periodIndex(parts.start),end=periodIndex(parts.end||parts.start);
-                return start>=0&&end>=0&&r.start<=end&&r.end>=start;
-            });
-            const changedLocation=Boolean(previous&&(
-                previous.date!==current.date||previous.eleve!==current.eleve||previous.matiere!==current.matiere||previous.start!==current.start||previous.end!==current.end
-            ));
-            let changed=false;
-            if(changedLocation){
-                const oldMatches=matches(previous,previousEntry);
-                if(oldMatches.length===1){
-                    const ev=oldMatches[0];
-                    if(ev.recurrence==='unique'){
-                        ev.date=current.date;ev.dayIndex=getDayIndexFromISO(current.date);ev.startPeriod=current.start;ev.endPeriod=current.end;ev.eleve=current.eleve;ev.eleveId=studentId;ev.matiere=current.matiere;ev.eventStatus='realized';ev.realized=true;ev.realizedAt=ev.realizedAt||new Date().toISOString();ev.updatedAt=new Date().toISOString();changed=true;
-                    }else{
-                        const realized={...ev,eventId:journalierUuid('evt'),seriesId:null,recurrence:'unique',date:current.date,dayIndex:getDayIndexFromISO(current.date),startPeriod:current.start,endPeriod:current.end,eleve:current.eleve,eleveId:studentId,matiere:current.matiere,eventStatus:'realized',realized:true,realizedAt:new Date().toISOString(),outlook:{calendarId:null,eventId:null,iCalUId:null,changeKey:null,webLink:null},createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};agenda.__events.push(normalizeAgendaEvent(realized,JournalierSecurity.accountKey));changed=true;
-                    }
-                }
-            }
-            if(!changed){
-                const currentMatches=matches(current,currentEntry);
-                if(currentMatches.length===1){
-                    const ev=currentMatches[0];ev.eventStatus='realized';ev.realized=true;ev.realizedAt=ev.realizedAt||new Date().toISOString();ev.updatedAt=new Date().toISOString();changed=true;
-                }
-            }
-            if(changed)savePrevisionnel(agenda);
-        }catch(error){console.warn('Agenda — rapprochement après enregistrement de séance impossible.',error);}
+        // L'Historique est la source de vérité pour la réalisation d'une séance.
+        // L'Agenda projette cette information à l'affichage via getEventsForDate().
+        // Ne pas modifier ici les propositions persistées : plusieurs propositions
+        // peuvent coexister et aucune ne doit être choisie arbitrairement.
+        const agenda=getPrevisionnel();
+        agenda.__events=Array.isArray(agenda.__events)?agenda.__events:[];
+        return;
     }
 
     function clearObservationForm() {
@@ -2139,6 +2197,17 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
                 ${sections.length?sections.map(([title,values,tone])=>`<section class="history-detail-section ${tone}"><h4>${escapeHtml(title)}</h4><div class="history-evidence-list">${values.map(value=>typeof value==='string'?`<span class="history-evidence-chip">${escapeHtml(value)}</span>`:`<span class="history-evidence-chip"><span>${escapeHtml(value.text)}</span>${value.level?`<span class="history-evidence-level ${value.levelClass||''}">${escapeHtml(value.level)}</span>`:''}</span>`).join('')}</div></section>`).join(''):'<p class="reports-section-description">Aucun élément Q2–Q6 n’a été renseigné pour cette séance.</p>'}
                 <p class="history-detail-note">Les éléments sont présentés tels qu’encodés dans la séance. Leur association ne constitue pas une conclusion causale.</p>
             </div>`;
+
+        // Les actions du détail sont rebinding après chaque rendu du panneau.
+        // Cela évite de dépendre d'un listener externe lorsque le HTML est remplacé.
+        host.querySelector('[data-action="history-edit"]')?.addEventListener('click',event=>{
+            event.stopPropagation();
+            editHistorySession(event.currentTarget?.dataset.sessionId||'');
+        });
+        host.querySelector('[data-action="history-delete"]')?.addEventListener('click',event=>{
+            event.stopPropagation();
+            deleteHistorySession(event.currentTarget?.dataset.sessionId||'');
+        });
     }
 
     function loadStudentHistory(){
@@ -2342,18 +2411,9 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
     }
 
     function syncAgendaAfterSessionDelete(entry){
-        try{
-            const p=sessionParts(entry),agenda=getPrevisionnel();
-            const start=periodIndex(p.start),end=periodIndex(p.end||p.start);
-            const matches=(agenda.__events||[]).filter(ev=>{
-                if(ev.type!=='ELEVE'||ev.eventStatus==='cancelled'||!eventOccursOnDate(ev,p.date)||ev.eleve!==p.eleve)return false;
-                if(entry.identification?.eleveId&&ev.eleveId&&String(entry.identification.eleveId)!==String(ev.eleveId))return false;
-                if(ev.matiere&&p.matiere&&ev.matiere!==p.matiere)return false;
-                const r=agendaEventIndexes(ev);return r.start<=end&&r.end>=start;
-            });
-            const realized=matches.filter(ev=>ev.eventStatus==='realized'||ev.realized);
-            if(realized.length===1){const ev=realized[0];ev.realized=false;ev.realizedAt=null;ev.eventStatus='confirmed';ev.updatedAt=new Date().toISOString();savePrevisionnel(agenda);}
-        }catch(error){console.warn('Agenda — rapprochement après suppression de séance impossible.',error);}
+        // Une séance supprimée de l'Historique ne doit plus être projetée comme
+        // Réalisée. Les événements planifiés persistants restent inchangés.
+        return;
     }
 
     function deleteHistorySession(sessionId){
@@ -2527,6 +2587,20 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
         document.getElementById('history-search')?.addEventListener('input',refreshHistoryFilters);
         document.getElementById('history-subject-filter')?.addEventListener('change',refreshHistoryFilters);
         historyContainer?.addEventListener('click',event=>{
+            const editButton=event.target.closest('[data-action="history-edit"]');
+            if(editButton){
+                event.stopPropagation();
+                const sessionId=editButton.dataset.sessionId||'';
+                if(sessionId)editHistorySession(sessionId);
+                return;
+            }
+            const deleteButton=event.target.closest('[data-action="history-delete"]');
+            if(deleteButton){
+                event.stopPropagation();
+                const sessionId=deleteButton.dataset.sessionId||'';
+                if(sessionId)deleteHistorySession(sessionId);
+                return;
+            }
             const row=event.target.closest('[data-history-select]');
             if(row){
                 historyContainer.dataset.selectedSession=row.dataset.historySelect||'';
@@ -2540,6 +2614,18 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
             }
         });
         document.getElementById('student-history-detail')?.addEventListener('click',event=>{
+            const editButton=event.target.closest('[data-action="history-edit"]');
+            if(editButton){
+                const sessionId=editButton.dataset.sessionId||'';
+                if(sessionId)editHistorySession(sessionId);
+                return;
+            }
+            const deleteButton=event.target.closest('[data-action="history-delete"]');
+            if(deleteButton){
+                const sessionId=deleteButton.dataset.sessionId||'';
+                if(sessionId)deleteHistorySession(sessionId);
+                return;
+            }
             if(!event.target.closest('[data-history-back]'))return;
             document.getElementById('history-workspace')?.classList.remove('is-detail-open');
             historyContainer?.querySelector('[data-history-select][aria-current="true"]')?.focus();
@@ -3322,6 +3408,89 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
         if (e.target.id === 'studentModal') closeStudentModal();
         if (e.target.id === 'studentProfileModal') closeStudentProfile();
     });
+
+    // V37 : les vues inactives sont placées hors du conteneur de contenu.
+    // Une seule vue existe physiquement dans .main-container à la fois.
+    // Ainsi, aucun élément de la Séance (dont le bouton d'enregistrement)
+    // ne peut apparaître sur Élèves ou Rapports & PIA.
+    let pageStage = null;
+    let pageViewPool = null;
+    const pageViewCache = {};
+
+    function initializePageStage() {
+        const main = document.querySelector('.main-container');
+        if (!main || pageStage) return;
+
+        pageStage = document.createElement('div');
+        pageStage.id = 'page-stage';
+        main.appendChild(pageStage);
+
+        // Le pool est hors de .main-container : les vues inactives ne participent
+        // ni à la mise en page, ni au défilement, ni à l'affichage de la page active.
+        pageViewPool = document.createElement('div');
+        pageViewPool.id = 'page-view-pool';
+        pageViewPool.setAttribute('aria-hidden', 'true');
+        pageViewPool.style.display = 'none';
+        document.body.appendChild(pageViewPool);
+
+        ['accueil','agenda','form','eleves','reports'].forEach(name => {
+            const el = document.getElementById('view-' + name);
+            if (el) {
+                pageViewCache[name] = el;
+                pageViewPool.appendChild(el);
+            }
+        });
+
+        showTab('accueil');
+    }
+
+    function showTab(tabName) {
+        if (!pageStage) initializePageStage();
+        if (!pageStage || !pageViewPool) return;
+
+        const target = pageViewCache[tabName];
+        if (!target) return;
+
+        // L'ancienne vue quitte réellement la zone de contenu.
+        while (pageStage.firstChild) pageViewPool.appendChild(pageStage.firstChild);
+        target.classList.remove('hidden');
+        target.style.display = '';
+        target.removeAttribute('aria-hidden');
+        pageStage.appendChild(target);
+
+        document.querySelectorAll('.nav-tabs .nav-btn').forEach(btn => btn.classList.remove('active'));
+        const button = document.getElementById('tab-btn-' + tabName);
+        if (button) button.classList.add('active');
+
+        const main = document.querySelector('.main-container');
+        if (main) main.scrollTop = 0;
+
+        if (typeof closeAllChoiceMenus === 'function') closeAllChoiceMenus();
+        if (typeof closeEventActionModal === 'function') closeEventActionModal();
+
+        if (tabName === 'agenda') renderAgenda();
+        if (tabName === 'eleves') renderStudentsView();
+        if (tabName === 'reports') {
+            updateStudentDropdowns();
+            const reportStudent=document.getElementById('r-eleve');
+            if(reportStudent && !reportStudent.value){
+                const last=getDB().find(item=>item.type==='SEANCE');
+                if(last) reportStudent.value=last.identification?.eleve || '';
+            }
+            reportStudent?.dispatchEvent(new CustomEvent('journalier:student-context-change',{bubbles:true}));
+            loadStudentHistory();
+        }
+        if (tabName === 'form') {
+            updateStudentDropdowns();
+            const d = document.getElementById('f-date');
+            if (d && !d.value) d.value = selectedDateISO;
+            if (typeof refreshSessionSubjectsForStudent === 'function') refreshSessionSubjectsForStudent();
+            if (typeof renderSessionMainSubjectBubbles === 'function') renderSessionMainSubjectBubbles();
+            if (typeof updateObservationSuggestions === 'function') updateObservationSuggestions();
+        }
+        if (tabName === 'accueil') renderHome();
+    }
+
 
     function runIntegrityChecks(){
         const required=['observationForm','f-eleve','f-date','f-periode-start','f-periode-end','f-matiere','f-niveau','f-forme','f-objLecon','f-objAgent','f-q2-txt','f-q3-txt','f-q4-txt','f-q5-txt','f-q6-txt','q4-status-value','q5-transfer-value','q6-modality-value','q6-objective-value','r-eleve','r-periode','r-date-anchor','report-text'];

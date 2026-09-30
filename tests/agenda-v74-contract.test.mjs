@@ -34,21 +34,24 @@ assert((core.match(/\{id:'p\d',label:'\de H',start:'/g) || []).length === 8, 'Le
 assert(core.includes('agendaPeriodConfig'), 'Configuration des périodes absente.');
 assert(core.includes('agenda.__events=Array.isArray(agenda.__events)?agenda.__events:[]'), 'Stockage canonique __events absent.');
 assert(core.includes("eventStatus:'proposed'"), 'Nouvel événement non initialisé en proposition.');
-for (const status of ['proposed','confirmed','realized','cancelled']) assert(core.includes(`'${status}'`), `Statut ${status} absent.`);
+for (const status of ['proposed','realized','cancelled']) assert(core.includes(`'${status}'`), `Statut ${status} absent.`);
 assert(core.includes('function findAgendaEventForOccurrence'), 'Sélection d’un événement chevauchant absente.');
 assert(core.includes("data-force-create=\"true\""), 'Ajout sur créneau occupé absent.');
 assert(core.includes('function toggleAgendaEventRealized'), 'Réalisation des événements non pédagogiques absente.');
-assert(core.includes('function toggleAgendaEventConfirmation'), 'Confirmation des événements absente.');
 assert(core.includes("const excluded=prev?.__exceptions?.[seriesKey]"), 'Les exceptions de suppression d’occurrence ne sont pas prises en compte.');
 assert(core.includes('content:${contentKey}'), 'Migration des anciens créneaux sans eventId ne regroupe plus les contenus contigus.');
 assert(core.includes('seriesId:event.seriesId||event.eventId'), 'Suppression d’occurrence non rattachée à la série de récurrence.');
 assert(core.includes('function syncAgendaAfterSessionSave'), 'Rapprochement Agenda après enregistrement de séance absent.');
 assert(core.includes('function syncAgendaAfterSessionDelete'), 'Rapprochement Agenda après suppression de séance absent.');
+assert(core.includes('[data-action="history-edit"]'), 'Action Modifier de l’Historique absente.');
+assert(!ms.includes('history-edit') && !ms.includes('history-delete'), 'Le module Microsoft ne doit pas gérer les actions de l’Historique.');
+assert(core.includes('history_'), 'Projection des séances historiques dans l’Agenda absente.');
+assert(core.includes('virtualHistoryEvent:true'), 'Occurrence historique virtuelle absente.');
+assert(core.includes('itemStart<=endIndex&&itemEnd>=startIndex'), 'Index Agenda/Historique non aligné.');
 assert(core.includes('function openAgendaPeriodConfigModal'), 'Configuration des périodes absente.');
 assert(core.includes("'Europe/Brussels'"), 'Fuseau Agenda Outlook absent.');
 assert(index.includes('agenda-period-config-open'), 'Bouton de configuration des périodes absent.');
 assert(index.includes('event-action-realize'), 'Action de réalisation absente.');
-assert(index.includes('event-action-confirm'), 'Action de confirmation absente.');
 assert(!core.includes('agendaConflictModal') && !index.includes('agendaConflictModal'), 'Ancien modal de conflit bloquant encore présent.');
 assert(!core.includes('function chooseSessionSubject(subject)'), 'Double déclaration historique de chooseSessionSubject encore présente.');
 
@@ -74,7 +77,12 @@ assert(duplicates.length === 0, `IDs HTML dupliqués : ${[...new Set(duplicates)
 
 assert(css.includes('.agenda-period-config-modal-card'), 'Styles de configuration des périodes absents.');
 assert(css.includes('.day-overlap-add'), 'Styles d’ajout sur créneau occupé absents.');
-assert(css.includes('.agenda-status-confirmed'), 'Styles des états Agenda absents.');
+assert(core.includes("ev.eventStatus==='confirmed'?'proposed'"), 'Compatibilité de lecture de l’ancien statut Confirmé absente.');
+assert(!core.includes("['proposed','confirmed','realized','cancelled']"), 'Ancien modèle Agenda à quatre états encore actif.');
+assert(!ms.includes("['proposed','confirmed','realized','cancelled']"), 'Validateur Graph encore aligné sur l’ancien modèle à quatre états.');
+assert(!index.includes('event-action-confirm'), 'Ancienne action de confirmation encore présente dans index.html.');
+assert(!css.includes('agenda-status-confirmed'), 'Ancien style Agenda Confirmé encore présent.');
+assert(!core.includes('toggleAgendaEventConfirmation'), 'Ancienne fonction de confirmation encore présente.');
 assert(architecture.includes('agenda.__events'), 'Architecture non documentée pour __events.');
 
 console.log('✓ Agenda V74 contract tests passed');

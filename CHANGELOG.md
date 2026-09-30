@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-30 — Nettoyage et cohérence du modèle Agenda V74
+
+- Modèle d’état unifié : Planifié / Réalisé / Annulé.
+- Suppression de la confirmation comme état actif de l’Agenda. Les anciennes valeurs `confirmed` sont converties en `proposed` à la lecture.
+- Une séance enregistrée dans l’Historique est projetée comme Réalisé dans les vues Agenda, y compris sans événement planifié correspondant.
+- Les actions Modifier/Supprimer de l’Historique restent gérées par le cœur métier, sans dépendance au module Microsoft.
+- Contrat de test, validateur Graph, styles et documentation alignés sur ce modèle.
+
 ## 2026-09-29 — Agenda V74
 
 - Modèle canonique `agenda.__events` pour permettre plusieurs événements qui se chevauchent.

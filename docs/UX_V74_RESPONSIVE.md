@@ -10,7 +10,7 @@ Cette passe améliore l'utilisation du Journalier sur **PC, tablette et téléph
 La direction visuelle recherchée est :
 
 - **Apple-friendly** : surfaces claires, profondeur légère, transitions courtes, navigation tactile et hiérarchie calme ;
-- **colorée mais sémantique** : bleu pour l'action/navigation, violet pour le PIA, vert pour le confirmé, ambre pour l'examen, rouge pour l'erreur/refus ;
+- **colorée mais sémantique** : bleu pour l'action/navigation, violet pour le PIA, vert pour le réalisé, ambre pour l'examen, rouge pour l'erreur/refus ;
 - **visuelle** : icônes SVG déjà présentes, emojis conservés lorsqu'ils servent de repère, badges et surfaces fonctionnelles ;
 - **ARU** : lisibilité, cibles tactiles, focus visible, contraste et réduction des mouvements ;
 - **contenu avant décoration** : la couche UX ne doit pas modifier ni interpréter les données.
@@ -130,7 +130,7 @@ La couche utilise les éléments déjà présents dans V74 :
 - profondeur légère ;
 - bleu d'action ;
 - violet PIA ;
-- vert confirmé ;
+- vert réalisé ;
 - ambre examen ;
 - icônes SVG de navigation ;
 - emojis déjà présents dans les actions et repères pédagogiques.

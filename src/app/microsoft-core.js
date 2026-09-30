@@ -415,7 +415,7 @@ function validateStrictAgenda(agenda,label='Agenda'){
       if(ev.seriesId!=null&&typeof ev.seriesId!=='string')throw new Error(`${label}.__events[${i}].seriesId invalide.`);
       if(!['weekly','unique'].includes(ev.recurrence))throw new Error(`${label}.__events[${i}].recurrence invalide.`);
       if(!['ELEVE','COLLAB','FORMATION','ADMIN','LIBRE'].includes(ev.type))throw new Error(`${label}.__events[${i}].type invalide.`);
-      if(!['proposed','confirmed','realized','cancelled'].includes(ev.eventStatus))throw new Error(`${label}.__events[${i}].eventStatus invalide.`);
+      if(!['proposed','realized','cancelled'].includes(ev.eventStatus))throw new Error(`${label}.__events[${i}].eventStatus invalide.`);
       if(typeof ev.realized!=='boolean')throw new Error(`${label}.__events[${i}].realized invalide.`);
       if(ev.dayIndex!=null&&(!Number.isInteger(Number(ev.dayIndex))||Number(ev.dayIndex)<0||Number(ev.dayIndex)>4))throw new Error(`${label}.__events[${i}].dayIndex invalide.`);
       for(const k of ['eleve','eleveId','matiere','title','detail','local','date','startPeriod','endPeriod','ownerId','dataVersion','createdAt','updatedAt','timezone'])if(ev[k]!=null&&typeof ev[k]!=='string')throw new Error(`${label}.__events[${i}].${k} invalide.`);
@@ -884,8 +884,7 @@ document.addEventListener('click',function(e){
     '.js-home-event,.js-day-event,.js-quick-form,.js-open-slot,'+
     '.js-week-day,.js-week-event,.js-week-slot,.js-month-day,'+
     '.js-student-subject,.js-session-subject,'+
-    '[data-action="student-profile"],[data-action="student-edit"],[data-action="student-delete"],' +
-    '[data-action="history-edit"],[data-action="history-delete"]'
+    '[data-action="student-profile"],[data-action="student-edit"],[data-action="student-delete"]'
   );
   if(!target) return;
 
@@ -931,9 +930,6 @@ document.addEventListener('click',function(e){
   if(action==='student-edit') return openEditStudentModal(id);
   if(action==='student-delete') return deleteStudent(id);
 
-  const sessionId=target.dataset.sessionId;
-  if(action==='history-edit') return editHistorySession(sessionId);
-  if(action==='history-delete') return deleteHistorySession(sessionId);
 });
 
 document.addEventListener('change',function(e){
@@ -964,7 +960,7 @@ async function v74SavePIACloud(pia){
 window.JournalierCloud={savePia:v74SavePIACloud};
 
 window.updateMicrosoftUI = updateMicrosoftUI;
-Object.assign(window,{openMicrosoftConnection,closeMicrosoftConnection,startMicrosoftLogin,disconnectMicrosoft,prepareMicrosoft365Space,verifyMicrosoft365Space,testMicrosoftAppFolder,diagnoseSyncManagerV72,syncPendingLocalChangesV72,openConflictResolutionV72,deleteHistorySession,showAppToast,syncFingerprint,syncWithoutVolatileMeta});
+Object.assign(window,{openMicrosoftConnection,closeMicrosoftConnection,startMicrosoftLogin,disconnectMicrosoft,prepareMicrosoft365Space,verifyMicrosoft365Space,testMicrosoftAppFolder,diagnoseSyncManagerV72,syncPendingLocalChangesV72,openConflictResolutionV72,showAppToast,syncFingerprint,syncWithoutVolatileMeta});
 window.JournalierMigrationBridge = Object.freeze({
   graphDownloadJsonByItemId,
   graphGetAppRoot,

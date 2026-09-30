@@ -1037,13 +1037,6 @@ textarea:disabled {
   border-color: #bfdbfe;
 }
 
-.agenda-status-confirmed,
-.status-badge.agenda-status-confirmed {
-  background: #ecfdf5;
-  color: #047857;
-  border-color: #a7f3d0;
-}
-
 .agenda-status-realized,
 .status-badge.agenda-status-realized {
   background: #f0fdf4;

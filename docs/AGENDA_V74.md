@@ -14,7 +14,7 @@ Le stockage canonique utilise `agenda.__events`. Un événement contient notamme
 - `dayIndex` / `date` ;
 - `startPeriod` / `endPeriod` ;
 - `type` : élève, collaboration, formation, administratif ou libre ;
-- `eventStatus` : `proposed`, `confirmed`, `realized`, `cancelled` ;
+- `eventStatus` : `proposed`, `realized`, `cancelled` ;
 - `realized` / `realizedAt` ;
 - `timezone` : fuseau de référence de l'événement (`Europe/Brussels` par défaut) ;
 - `outlook` : emplacements réservés pour la future liaison Microsoft Graph.
@@ -31,11 +31,15 @@ La suppression d'une séance retire également l'état réalisé d'un événemen
 
 Les événements non pédagogiques (`COLLAB`, `FORMATION`, `ADMIN`, `LIBRE`) possèdent leur propre état de réalisation et peuvent être marqués réalisés ou remis à l'état non réalisé depuis la fiche d'action.
 
-## Propositions et confirmation
+## États et chevauchements
 
-Une nouvelle activité est créée comme `proposed`. L'utilisateur peut la confirmer. Lorsqu'un événement est confirmé, les autres événements confirmés qui se recouvrent sur la même occurrence sont remis à `proposed`; ils restent conservés dans l'historique de planification.
+Une nouvelle activité est créée comme `proposed` (**Planifié**). Plusieurs propositions peuvent coexister sur un même créneau : elles sont affichées côte à côte et ne sont pas supprimées lorsqu'une autre activité est choisie.
 
-Une activité peut aussi être annulée sans être supprimée. La suppression reste une action distincte.
+Pour une séance `ELEVE`, le passage à **Réalisé** provient de l'encodage de la séance dans l'Historique. Une séance historique est projetée dans les vues Agenda, même lorsqu'aucun événement planifié correspondant n'existait.
+
+Les événements non pédagogiques (`COLLAB`, `FORMATION`, `ADMIN`, `LIBRE`) peuvent être marqués **Réalisé** directement depuis leur fiche d'action. Toute activité peut être **Annulée** sans être supprimée.
+
+Les anciennes données portant `eventStatus: "confirmed"` sont converties en `proposed` lors de la normalisation ; `confirmed` n'est plus un état actif du modèle V74.
 
 ## Périodes
 

@@ -380,7 +380,7 @@ Il prend notamment en charge :
 - les vues jour/semaine/mois ;
 - huit périodes configurables, sans transformer les pauses en périodes ;
 - plusieurs événements concurrents sur un même créneau ;
-- les propositions, confirmations, réalisations et annulations ;
+- les événements planifiés, réalisés et annulés ;
 - les événements récurrents ;
 - les duplications ;
 - la réalisation indépendante des réunions, GT, formations et autres missions ;
