@@ -1,6 +1,66 @@
 # Changelog
 
+## 2026-09-30 — Coffre local granulaire et récupération du stockage
+
+- Remplacement de la persistance monolithique `journalier-secure-v72/states` par le coffre granulaire `journalier-secure-v74`.
+- Séparation des élèves, séances, événements Agenda, PIA, registre de synchronisation, métadonnées et migration en enregistrements indépendants.
+- Conservation volontaire des identifiants techniques `v72` pour la compatibilité historique.
+- Chiffrement AES-GCM 256 bits par enregistrement avec IV unique et AAD liée au compte/type/identifiant.
+- Ajout d'une empreinte SHA-256 du ciphertext pour les diagnostics d'intégrité.
+- Transactions IndexedDB demandant `durability: 'strict'` lorsque disponible.
+- Migration V72 → coffre granulaire non destructive et idempotente ; aucune suppression automatique du coffre historique.
+- Détection explicite du cas `Failed to read large IndexedDB value` et préparation d'une récupération depuis OneDrive lorsque le coffre historique est illisible.
+- La récupération distante est persistée localement avant que l'interface ne considère l'opération terminée.
+- Documentation ajoutée dans `docs/STOCKAGE_LOCAL_V74.md`.
+- Ajout du contrat `tests/storage-v74-contract.test.mjs`.
+
+## 2026-09-30 — Modification des séances et réattribution d’élève
+
+- Le formulaire de modification d’une séance permet de réattribuer la séance à un autre élève existant.
+- Lorsqu’une séance référence un élève supprimé, l’ancien nom reste visible uniquement comme repère historique et l’interface demande explicitement de choisir un élève actuel avant l’enregistrement.
+- La sauvegarde conserve l’identifiant de la séance et réécrit le `studentId` selon l’élève actuellement sélectionné.
+- Lorsqu’un changement d’élève concerne une séance déjà synchronisée, le SyncManager prépare le déplacement du fichier JSON vers le dossier du nouvel élève et supprime l’ancienne copie après écriture validée.
+- Aucun nouveau backend, canal de stockage ou permission Microsoft Graph n’est ajouté.
+- Ajout d’un contrat de test dédié aux scénarios de modification et de réattribution.
+
+## 2026-09-30 — Nettoyage et cohérence du modèle Agenda V74
+
+- Modèle d’état unifié : Planifié / Réalisé / Annulé.
+- Suppression de la confirmation comme état actif de l’Agenda. Les anciennes valeurs `confirmed` sont converties en `proposed` à la lecture.
+- Une séance enregistrée dans l’Historique est projetée comme Réalisé dans les vues Agenda, y compris sans événement planifié correspondant.
+- Les actions Modifier/Supprimer de l’Historique restent gérées par le cœur métier, sans dépendance au module Microsoft.
+- Contrat de test, validateur Graph, styles et documentation alignés sur ce modèle.
+
+## 2026-09-29 — Agenda V74
+
+- Modèle canonique `agenda.__events` pour permettre plusieurs événements qui se chevauchent.
+- États Proposition / Confirmé / Réalisé / Annulé.
+- Réalisation indépendante des réunions, GT, formations et missions non liées à une séance.
+- Configuration des horaires des 8 périodes, avec pauses entre périodes.
+- Rapprochement Agenda ↔ Historique renforcé lors des corrections de séance.
+- Préparation des métadonnées nécessaires à une future synchronisation Outlook via Microsoft Graph.
+- Validateur OneDrive/Graph et migration V74 adaptés au nouveau modèle.
+
 Historique synthétique des évolutions importantes. Les détails d'architecture et les contrôles de sécurité sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md) et [SECURITY.md](SECURITY.md). L'historique complet est disponible dans Git.
+
+## V74 — passe UX/UI responsive — 29 septembre 2026
+
+### UX/UI
+- Ajout d'une couche responsive dédiée `src/styles/journalier-ux-responsive.css` sans modification du contenu métier.
+- Passage du socle de hauteur à `100dvh`, amélioration du scroll principal et prise en compte des zones sûres mobiles.
+- Navigation téléphone transformée en barre basse tactile avec les cinq destinations et icônes existantes.
+- Adaptation distincte PC/tablette/téléphone de l'Accueil, de l'Agenda, de la Séance, des dossiers Élèves et de Rapports & PIA.
+- Correction du formulaire de séance sur petit écran, notamment du couple de périodes début → fin.
+- Correction de l'en-tête Rapports & PIA et de l'action Exporter pour éviter les coupures sur téléphone/tablette.
+- Modales adaptées au tactile avec comportement de feuille sur petit écran.
+- Cibles tactiles, focus visible, réduction des mouvements et taille de saisie mobile harmonisés.
+- Adaptation responsive des vues PIA générées dynamiquement, sans modification du modèle PIA.
+
+### Documentation et validation
+- Ajout de `docs/UX_V74_RESPONSIVE.md` avec audit, règles responsive, invariants métier et résultats des simulations.
+- Simulation automatique à 390×844, 375×667, 768×1024, 1024×768 et 1440×900 sur les cinq vues principales.
+- Vérification de l'absence de débordement horizontal de page et de l'atteignabilité de la fin du formulaire de séance.
+- La CSP reste fonctionnellement inchangée : aucune nouvelle origine, aucun script inline et aucun hash de script n'a été ajouté ; seul le chargement d'une feuille CSS locale et le viewport mobile ont été modifiés.
 
 ## V74 — en cours, non publiée — 27 septembre 2026
 

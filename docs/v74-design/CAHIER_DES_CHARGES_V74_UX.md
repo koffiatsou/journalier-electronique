@@ -1,7 +1,7 @@
 # Cahier des charges UX/UI — Rapports & PIA V74
 
 **Version:** 1.0 · **Date:** 27 septembre 2026\
-**Statut:** référence d’intégration active. La première passe visuelle est intégrée; la validation finale desktop/mobile et les parcours authentifiés restent à effectuer.
+**Statut:** référence d’intégration active. La passe visuelle V74 et la couche UX responsive du 29 septembre 2026 sont intégrées. Les simulations desktop/mobile hors authentification sont réalisées; les parcours authentifiés et les essais sur appareils physiques restent à effectuer.
 
 La maquette interactive [maquette-v74-10.html](maquette-v74-10.html) illustre cette direction. Elle utilise des données de démonstration non persistées; elle ne représente pas le contenu d’un dossier réel.
 
@@ -109,7 +109,7 @@ Le menu offre uniquement les exports déjà implémentés: séances, synthèse, 
 
 - Interface opérationnelle claire, calme et éditorialement hiérarchisée; contenu avant décoration.
 - Profondeur par niveaux fonctionnels: toile de fond douce, panneaux de travail blancs, liste sélectionnée en surface légèrement élevée, détail principal focal, preuves en sous-sections. Ombres courtes et bordures fines; pas d’empilement systématique de cartes.
-- Palette fonctionnelle: bleu pour navigation/action, violet réservé à l’identité PIA, vert pour état confirmé, ambre pour examen, rouge pour refus/erreur, gris pour métadonnées.
+- Palette fonctionnelle: bleu pour navigation/action, violet réservé à l’identité PIA, vert pour les états réalisés, ambre pour examen, rouge pour refus/erreur, gris pour métadonnées.
 - Une ligne visuelle n’emploie pas plusieurs accents concurrents. Toujours accompagner un état d’un libellé.
 - Titres compacts mais distincts; métadonnées secondaires; corps de lecture confortable. Ne pas résoudre la densité en diminuant le texte.
 - Cibles tactiles d’au moins 40 × 40 px; focus visible; transitions courtes et neutralisées par `prefers-reduced-motion`.

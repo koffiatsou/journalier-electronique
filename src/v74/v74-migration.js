@@ -139,7 +139,7 @@
   }
 
   function fingerprint(v){return JSON.stringify(syncStableValue(syncWithoutVolatileMeta(v||{})));}
-  function nonEmptyAgenda(a){return Boolean(a&&((Array.isArray(a.__uniqueEvents)&&a.__uniqueEvents.length)||Object.keys(a.__exceptions||{}).length||Object.keys(a).some(k=>!['__uniqueEvents','__exceptions'].includes(k))));}
+  function nonEmptyAgenda(a){return Boolean(a&&((Array.isArray(a.__events)&&a.__events.length)||(Array.isArray(a.__uniqueEvents)&&a.__uniqueEvents.length)||Object.keys(a.__exceptions||{}).length||Object.keys(a).some(k=>!['__events','__uniqueEvents','__exceptions','__config'].includes(k))));}
 
   async function importLegacy(){
     if(state.running)return;

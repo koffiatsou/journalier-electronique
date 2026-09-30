@@ -385,18 +385,48 @@ function validateStrictSession(session,label='Séance'){
 function validateStrictAgenda(agenda,label='Agenda'){
   validateStrictJsonPayload(agenda,label);
   if(!agenda||typeof agenda!=='object'||Array.isArray(agenda))throw new Error(`${label} invalide.`);
-  for(const [key,value] of Object.entries(agenda)){
-    if(key==='__uniqueEvents'){
-      if(!Array.isArray(value)||value.length>JOURNALIER_JSON_LIMITS.maxArray)throw new Error(`${label}.__uniqueEvents invalide.`);
-      continue;
+  const agendaUnknown=Object.keys(agenda).filter(k=>!new Set(['__events','__exceptions','__config','__uniqueEvents']).has(k)&&!/^\d+_.+$/.test(k));
+  if(agendaUnknown.length)throw new Error(`${label} contient des propriétés inattendues : ${agendaUnknown.slice(0,8).join(', ')}${agendaUnknown.length>8?'…':''}.`);
+  if(agenda.__config!=null){
+    if(typeof agenda.__config!=='object'||Array.isArray(agenda.__config))throw new Error(`${label}.__config invalide.`);
+    assertAllowedKeys(agenda.__config,new Set(['version','periods']),`${label}.__config`);
+    if(agenda.__config.version!=null&&!Number.isFinite(Number(agenda.__config.version)))throw new Error(`${label}.__config.version invalide.`);
+    if(agenda.__config.periods!=null){
+      if(!Array.isArray(agenda.__config.periods)||agenda.__config.periods.length!==8)throw new Error(`${label}.__config.periods doit contenir exactement 8 périodes.`);
+      let previousEnd=-1;
+      agenda.__config.periods.forEach((p,i)=>{
+        if(!p||typeof p!=='object'||Array.isArray(p))throw new Error(`${label}.__config.periods[${i}] invalide.`);
+        assertAllowedKeys(p,new Set(['id','label','start','end']),`${label}.__config.periods[${i}]`);
+        if(typeof p.id!=='string'||typeof p.label!=='string'||!/^\d{2}:\d{2}$/.test(String(p.start||''))||!/^\d{2}:\d{2}$/.test(String(p.end||'')))throw new Error(`${label}.__config.periods[${i}] invalide.`);
+        const start=Number(String(p.start).slice(0,2))*60+Number(String(p.start).slice(3));
+        const end=Number(String(p.end).slice(0,2))*60+Number(String(p.end).slice(3));
+        if(start>=end||start<previousEnd)throw new Error(`${label}.__config.periods[${i}] : horaires incohérents ou chevauchants.`);
+        previousEnd=end;
+      });
     }
-    if(key==='__exceptions'){
-      if(!value||typeof value!=='object'||Array.isArray(value))throw new Error(`${label}.__exceptions invalide.`);
-      continue;
-    }
-    if(!value||typeof value!=='object'||Array.isArray(value))throw new Error(`${label}.${key} invalide.`);
-    assertAllowedKeys(value,new Set(['eventId','seriesId','recurrence','type','eleve','matiere','title','detail','local','startIndex','endIndex','startPeriod','endPeriod','occurrenceDate','ownerId','dataVersion']),`${label}.${key}`);
   }
+  if(agenda.__exceptions!=null&&(!agenda.__exceptions||typeof agenda.__exceptions!=='object'||Array.isArray(agenda.__exceptions)))throw new Error(`${label}.__exceptions invalide.`);
+  if(agenda.__events!=null){
+    if(!Array.isArray(agenda.__events)||agenda.__events.length>JOURNALIER_JSON_LIMITS.maxArray)throw new Error(`${label}.__events invalide.`);
+    agenda.__events.forEach((ev,i)=>{
+      if(!ev||typeof ev!=='object'||Array.isArray(ev))throw new Error(`${label}.__events[${i}] invalide.`);
+      assertAllowedKeys(ev,new Set(['eventId','seriesId','recurrence','type','eleve','eleveId','matiere','title','detail','local','dayIndex','date','startPeriod','endPeriod','eventStatus','realized','realizedAt','ownerId','dataVersion','createdAt','updatedAt','timezone','outlook']),`${label}.__events[${i}]`);
+      if(typeof ev.eventId!=='string'||!ev.eventId||ev.eventId.length>160)throw new Error(`${label}.__events[${i}].eventId invalide.`);
+      if(ev.seriesId!=null&&typeof ev.seriesId!=='string')throw new Error(`${label}.__events[${i}].seriesId invalide.`);
+      if(!['weekly','unique'].includes(ev.recurrence))throw new Error(`${label}.__events[${i}].recurrence invalide.`);
+      if(!['ELEVE','COLLAB','FORMATION','ADMIN','LIBRE'].includes(ev.type))throw new Error(`${label}.__events[${i}].type invalide.`);
+      if(!['proposed','realized','cancelled'].includes(ev.eventStatus))throw new Error(`${label}.__events[${i}].eventStatus invalide.`);
+      if(typeof ev.realized!=='boolean')throw new Error(`${label}.__events[${i}].realized invalide.`);
+      if(ev.dayIndex!=null&&(!Number.isInteger(Number(ev.dayIndex))||Number(ev.dayIndex)<0||Number(ev.dayIndex)>4))throw new Error(`${label}.__events[${i}].dayIndex invalide.`);
+      for(const k of ['eleve','eleveId','matiere','title','detail','local','date','startPeriod','endPeriod','ownerId','dataVersion','createdAt','updatedAt','timezone'])if(ev[k]!=null&&typeof ev[k]!=='string')throw new Error(`${label}.__events[${i}].${k} invalide.`);
+      if(ev.outlook!=null){
+        if(typeof ev.outlook!=='object'||Array.isArray(ev.outlook))throw new Error(`${label}.__events[${i}].outlook invalide.`);
+        assertAllowedKeys(ev.outlook,new Set(['calendarId','eventId','iCalUId','changeKey','webLink']),`${label}.__events[${i}].outlook`);
+        for(const k of ['calendarId','eventId','iCalUId','changeKey','webLink'])if(ev.outlook[k]!=null&&typeof ev.outlook[k]!=='string')throw new Error(`${label}.__events[${i}].outlook.${k} invalide.`);
+      }
+    });
+  }
+  if(agenda.__uniqueEvents!=null&&!Array.isArray(agenda.__uniqueEvents))throw new Error(`${label}.__uniqueEvents invalide.`);
   return true;
 }
 function validateStrictSyncRecord(record,label='Synchronisation'){
@@ -448,7 +478,7 @@ async function hydrateMicrosoftDataIfLocalEmpty(){
   const localStudents=DataStore.getStudents();
   const localSessions=DataStore.getSessions();
   const localAgenda=DataStore.getAgenda();
-  const agendaHasData=Object.keys(localAgenda||{}).some(k=>k!=='__uniqueEvents'&&k!=='__exceptions') || (Array.isArray(localAgenda?.__uniqueEvents)&&localAgenda.__uniqueEvents.length>0) || Object.keys(localAgenda?.__exceptions||{}).length>0;
+  const agendaHasData=(Array.isArray(localAgenda?.__events)&&localAgenda.__events.length>0) || (Array.isArray(localAgenda?.__uniqueEvents)&&localAgenda.__uniqueEvents.length>0) || Object.keys(localAgenda?.__exceptions||{}).length>0;
   if(localStudents.length||localSessions.length||agendaHasData) return {imported:false,reason:'local-data-present'};
 
   const structure=await graphEnsureJournalierStructure();
@@ -509,15 +539,15 @@ async function hydrateMicrosoftDataIfLocalEmpty(){
 
   state.students=importedStudents;
   state.sessions=importedSessions;
-  state.agenda=importedAgenda;
+  state.agenda=importedAgenda;window.JournalierAgendaConfig?.refreshSessionPeriodSelectors?.();
   state.syncRegistry=registry;
   state.sync={status:'synced',lastSyncAt:new Date().toISOString(),pendingChanges:0};
   state.meta={...(state.meta||{}),cloudHydratedAt:new Date().toISOString(),cloudHydratedAccount:msAccount?.username||null};
-  securePersistState();
+  await securePersistState();
   renderStudentsView();
   renderAgenda();
   updateMicrosoftUI();
-  return {imported:true,students:importedStudents.length,sessions:importedSessions.length,agenda:Boolean(Object.keys(importedAgenda).length)};
+  return {imported:true,students:importedStudents.length,sessions:importedSessions.length,agenda:Boolean(Array.isArray(importedAgenda?.__events)&&importedAgenda.__events.length)};
 }
 async function verifyMicrosoft365Space(){const b=document.getElementById('ms-verify-cloud-action');if(b)b.disabled=true;try{const root=await graphGetByPath(GRAPH_ROOT_FOLDER),children=await graphListChildren(root.id),names=new Set((children.value||[]).map(x=>x.name)),expected=['profil','eleves','agenda','system'],missing=expected.filter(x=>!names.has(x));if(missing.length)throw new Error('Structure incomplète : '+missing.join(', '));const sync=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/system/sync.json`).catch(()=>null);setCloudStatus('✓ Structure OneDrive vérifiée.\n✓ Journalier/\n✓ profil/\n✓ eleves/\n✓ agenda/\n✓ system/'+(sync?`\n✓ sync.json : ${sync.json.status||'—'}`:''),'success');}catch(e){setCloudStatus('⚠️ '+(e.message||e),'error');}finally{if(b)b.disabled=!msAccount;}}
 function syncStableValue(value){if(Array.isArray(value))return value.map(syncStableValue);if(value&&typeof value==='object')return Object.keys(value).sort().reduce((o,k)=>(o[k]=syncStableValue(value[k]),o),{});return value;}
@@ -598,11 +628,40 @@ async function diagnoseSyncManagerV72(opts={}){if(!msAccount)throw new Error('Co
   const deletions=deletionRemote.json;
   const state=DataStore.state,students=DataStore.getStudents(),sessions=DataStore.getSessions(),agenda=DataStore.getAgenda(),r=v72EnsureSyncRegistry(state),details=[];let missing=0;
   for(const student of students){const path=v72PathForStudent(student),lf=syncFingerprint(syncWithoutVolatileMeta(student));try{const {item,json}=await graphReadItemWithJson(path),rf=syncFingerprint(syncWithoutVolatileMeta(json)),status=v72Classify(r.students[student.studentId],lf,rf,false);r.students[student.studentId]={...r.students[student.studentId],remoteId:item.id,eTag:item.eTag||null,fingerprint:lf,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status};if(status!=='synced')details.push(`• élève ${student.nom||student.studentId} : ${status}`);}catch(e){if(String(e.message||e).includes('Graph 404')){missing++;const tombstone=deletions.students[String(student.studentId)];const deletedRemotely=tombstone?.status==='pending'||tombstone?.status==='deleted';const status=deletedRemotely?'deleted':'local-changed';r.students[student.studentId]={...r.students[student.studentId],remoteId:null,eTag:null,fingerprint:lf,remoteFingerprint:null,lastCheckedAt:new Date().toISOString(),status};details.push(`• élève ${student.nom||student.studentId} : ${deletedRemotely?'deleted (suppression distante publiée)':'local-changed (distant absent)'}`);}else throw e;}}
-  for(const session of sessions){const path=v72PathForSession(session,students);if(!path)continue;const lf=syncFingerprint(syncWithoutVolatileMeta(session));try{const {item,json}=await graphReadItemWithJson(path),rf=syncFingerprint(syncWithoutVolatileMeta(json)),status=v72Classify(r.sessions[session.id],lf,rf,false),studentId=session.identification?.eleveId||syncFindStudentByName(students,session.identification?.eleve)?.studentId;r.sessions[session.id]={...r.sessions[session.id],remoteId:item.id,eTag:item.eTag||null,fingerprint:lf,remoteFingerprint:rf,studentId,lastCheckedAt:new Date().toISOString(),status};if(status!=='synced')details.push(`• séance ${session.id} / ${session.identification?.eleve||studentId} : ${status}`);}catch(e){if(String(e.message||e).includes('Graph 404')){missing++;const studentId=session.identification?.eleveId||syncFindStudentByName(students,session.identification?.eleve)?.studentId;r.sessions[session.id]={...r.sessions[session.id],remoteId:null,eTag:null,fingerprint:lf,remoteFingerprint:null,studentId,lastCheckedAt:new Date().toISOString(),status:'local-changed'};details.push(`• séance ${session.id} / ${session.identification?.eleve||studentId} : local-changed (distant absent)`);}else throw e;}}
+  for(const session of sessions){const path=v72PathForSession(session,students);if(!path)continue;const lf=syncFingerprint(syncWithoutVolatileMeta(session));try{const {item,json}=await graphReadItemWithJson(path),rf=syncFingerprint(syncWithoutVolatileMeta(json)),previousReg=r.sessions[session.id]||{},studentId=session.identification?.eleveId||syncFindStudentByName(students,session.identification?.eleve)?.studentId;let status=v72Classify(previousReg,lf,rf,false);if(previousReg.remoteMovePending)status=status==='conflict'?'conflict':'local-pending';r.sessions[session.id]={...previousReg,remoteId:item.id,eTag:item.eTag||null,fingerprint:lf,remoteFingerprint:rf,studentId,lastCheckedAt:new Date().toISOString(),status};if(status!=='synced')details.push(`• séance ${session.id} / ${session.identification?.eleve||studentId} : ${status}`);}catch(e){if(String(e.message||e).includes('Graph 404')){missing++;const previousReg=r.sessions[session.id]||{},studentId=session.identification?.eleveId||syncFindStudentByName(students,session.identification?.eleve)?.studentId;r.sessions[session.id]={...previousReg,remoteId:null,eTag:null,fingerprint:lf,remoteFingerprint:null,studentId,lastCheckedAt:new Date().toISOString(),status:'local-changed'};details.push(`• séance ${session.id} / ${session.identification?.eleve||studentId} : local-changed (distant absent)`);}else throw e;}}
   try{const {item,json}=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/agenda/agenda.json`),lf=syncFingerprint(syncWithoutVolatileMeta(agenda)),rf=syncFingerprint(syncWithoutVolatileMeta(json)),status=v72Classify(r.agenda,lf,rf,false);r.agenda={...r.agenda,remoteId:item.id,eTag:item.eTag||null,fingerprint:lf,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status};if(status!=='synced')details.push(`• agenda : ${status}`);}catch(e){if(String(e.message||e).includes('Graph 404')){missing++;const lf=syncFingerprint(syncWithoutVolatileMeta(agenda));r.agenda={...r.agenda,remoteId:null,eTag:null,fingerprint:lf,remoteFingerprint:null,lastCheckedAt:new Date().toISOString(),status:'local-changed'};details.push('• agenda : local-changed (distant absent)');}else throw e;}
   state.syncRegistry=r;const counts=v72StatusCount(r);state.sync.status=counts.conflict?'conflict':(counts.local?'pending':'synced');v72RecountPending(state);securePersistState();const lines=['✓ Analyse terminée.',`• Élève(s) découvert(s) sur OneDrive : ${discovery.discoveredStudents}`,`• Séance(s) découverte(s) sur OneDrive : ${discovery.discoveredSessions}`,`• Éléments synchronisés : ${counts.synced}`,`• Modifications locales : ${counts.local}`,`• Modifications distantes : ${counts.remote}`,`• Conflits : ${counts.conflict}`,`• Distants absents : ${missing}`,'','Aucune écriture distante effectuée.'];if(details.length)lines.push('','Détails :',...details.slice(0,15));if(!opts.silent)setCloudStatus(lines.join('\n'),counts.conflict?'error':'success');if(discovery.discoveredStudents||discovery.discoveredSessions){renderStudentsView?.();renderAgenda?.();updateStats?.();updateStudentDropdowns?.();window.JournalierV74?.refreshStudents?.();window.JournalierV74?.renderDashboard?.();}updateMicrosoftUI();}catch(e){if(!opts.silent)setCloudStatus('⚠️ '+(e.message||e),'error');else throw e;}finally{if(b)b.disabled=!msAccount;}}
 async function v72SyncStudent(student,reg){const structure=await graphEnsureJournalierStructure();let folder;const path=`${GRAPH_ROOT_FOLDER}/eleves/${student.studentId}`;try{folder=await graphGetByPath(path);}catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;folder=await graphCreateChildFolder(structure.eleves.id,String(student.studentId));}const item=await graphGetByPath(`${path}/profil.json`).catch(()=>null);const written=await graphWriteJsonWithETag(folder.id,'profil.json',student,item?.eTag||reg?.eTag||null);return await graphReadItemWithJson(`${path}/profil.json`);}
-async function v72SyncSession(session,reg,students){const studentId=reg?.studentId||session.identification?.eleveId||syncFindStudentByName(students,session.identification?.eleve)?.studentId;if(!studentId)throw new Error(`Élève introuvable pour la séance ${session.id}.`);const structure=await graphEnsureJournalierStructure();const studentPath=`${GRAPH_ROOT_FOLDER}/eleves/${studentId}`;let studentFolder;try{studentFolder=await graphGetByPath(studentPath);}catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;studentFolder=await graphCreateChildFolder(structure.eleves.id,String(studentId));}let sessionsFolder;try{sessionsFolder=await graphGetByPath(`${studentPath}/seances`);}catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;sessionsFolder=await graphCreateChildFolder(studentFolder.id,'seances');}const path=`${studentPath}/seances/${session.id}.json`;const existing=await graphGetByPath(path).catch(()=>null);const written=await graphWriteJsonWithETag(sessionsFolder.id,`${session.id}.json`,session,existing?.eTag||reg?.eTag||null);return await graphReadItemWithJson(path);}
+async function v72SyncSession(session,reg,students){
+  const studentId=reg?.studentId||session.identification?.eleveId||syncFindStudentByName(students,session.identification?.eleve)?.studentId;
+  if(!studentId)throw new Error(`Élève introuvable pour la séance ${session.id}.`);
+  const moving=Boolean(reg?.remoteMovePending&&reg?.previousRemoteId&&reg?.previousStudentId&&String(reg.previousStudentId)!==String(studentId));
+  const structure=await graphEnsureJournalierStructure();
+  const studentPath=`${GRAPH_ROOT_FOLDER}/eleves/${studentId}`;
+  let studentFolder;
+  try{studentFolder=await graphGetByPath(studentPath);}catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;studentFolder=await graphCreateChildFolder(structure.eleves.id,String(studentId));}
+  let sessionsFolder;
+  try{sessionsFolder=await graphGetByPath(`${studentPath}/seances`);}catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;sessionsFolder=await graphCreateChildFolder(studentFolder.id,'seances');}
+  const path=`${studentPath}/seances/${session.id}.json`;
+  const existing=await graphGetByPath(path).catch(()=>null);
+  // Lors d'un changement d'élève, l'ETag de l'ancien fichier ne protège pas
+  // le nouveau chemin. On utilise donc uniquement l'ETag du fichier éventuellement
+  // déjà présent au nouvel emplacement ; sinon l'écriture crée la nouvelle copie.
+  const eTagForWrite=moving?(existing?.eTag||null):(existing?.eTag||reg?.eTag||null);
+  await graphWriteJsonWithETag(sessionsFolder.id,`${session.id}.json`,session,eTagForWrite);
+
+  if(moving){
+    try{
+      await graphDeleteItemWithETag(reg.previousRemoteId,reg.previousETag||null);
+    }catch(e){
+      if(!String(e.message||e).includes('Graph 404')){
+        if(String(e.message||e).includes('Graph 412'))throw new Error(`Conflit détecté lors du déplacement de la séance ${session.id} : l’ancienne copie distante a changé.`);
+        throw e;
+      }
+    }
+  }
+  return await graphReadItemWithJson(path);
+}
 async function v72SyncAgenda(agenda,reg){const structure=await graphEnsureJournalierStructure();const existing=await graphGetByPath(`${GRAPH_ROOT_FOLDER}/agenda/agenda.json`).catch(()=>null);await graphWriteJsonWithETag(structure.agenda.id,'agenda.json',agenda,existing?.eTag||reg?.eTag||null);return await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/agenda/agenda.json`);}
 async function v72PullRemoteChanges(){
   const state=DataStore.state,r=v72EnsureSyncRegistry(state);let pulled=0;
@@ -633,7 +692,7 @@ async function v72PullRemoteChanges(){
   if(r.agenda?.status==='remote-changed'){
     try{
       const {item,json}=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/agenda/agenda.json`);
-      validateRemoteAgenda(json||{});state.agenda=secureNormalizeAgenda(json||{});
+      validateRemoteAgenda(json||{});state.agenda=secureNormalizeAgenda(json||{});window.JournalierAgendaConfig?.refreshSessionPeriodSelectors?.();
       const fp=syncFingerprint(syncWithoutVolatileMeta(state.agenda));
       r.agenda={...r.agenda,remoteId:item.id,eTag:item.eTag||null,fingerprint:fp,remoteFingerprint:fp,lastCheckedAt:new Date().toISOString(),status:'synced'};pulled++;
     }catch(e){console.warn('Journalier — pull agenda impossible',e);}
@@ -702,7 +761,7 @@ async function syncPendingLocalChangesV72(opts={}){if(!msAccount)throw new Error
   }
 
   for(const student of students){const reg=r.students[student.studentId];if(!reg||!['local-changed','local-pending'].includes(reg.status))continue;const remote=await v72SyncStudent(student,reg);const fp=syncFingerprint(syncWithoutVolatileMeta(student)),rf=syncFingerprint(syncWithoutVolatileMeta(remote.json));r.students[student.studentId]={...reg,remoteId:remote.item.id,eTag:remote.item.eTag||null,fingerprint:fp,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:fp===rf?'synced':'local-changed'};sent++;details.push(`• élève ${student.nom||student.studentId} : ${r.students[student.studentId].status}`);}
-  for(const session of sessions){const reg=r.sessions[session.id];if(!reg||!['local-changed','local-pending'].includes(reg.status))continue;const remote=await v72SyncSession(session,reg,students);const fp=syncFingerprint(syncWithoutVolatileMeta(session)),rf=syncFingerprint(syncWithoutVolatileMeta(remote.json));r.sessions[session.id]={...reg,remoteId:remote.item.id,eTag:remote.item.eTag||null,fingerprint:fp,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:fp===rf?'synced':'local-changed'};sent++;details.push(`• séance ${session.id} / ${session.identification?.eleve||reg.studentId} : ${r.sessions[session.id].status}`);}
+  for(const session of sessions){const reg=r.sessions[session.id];if(!reg||!['local-changed','local-pending'].includes(reg.status))continue;const remote=await v72SyncSession(session,reg,students);const fp=syncFingerprint(syncWithoutVolatileMeta(session)),rf=syncFingerprint(syncWithoutVolatileMeta(remote.json));const nextReg={...reg,remoteId:remote.item.id,eTag:remote.item.eTag||null,fingerprint:fp,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:fp===rf?'synced':'local-changed'};if(nextReg.status==='synced'){delete nextReg.remoteMovePending;delete nextReg.previousStudentId;delete nextReg.previousRemoteId;delete nextReg.previousETag;}r.sessions[session.id]=nextReg;sent++;details.push(`• séance ${session.id} / ${session.identification?.eleve||reg.studentId} : ${r.sessions[session.id].status}`);}
   if(r.agenda&&['local-changed','local-pending'].includes(r.agenda.status)){const remote=await v72SyncAgenda(agenda,r.agenda),fp=syncFingerprint(syncWithoutVolatileMeta(agenda)),rf=syncFingerprint(syncWithoutVolatileMeta(remote.json));r.agenda={...r.agenda,remoteId:remote.item.id,eTag:remote.item.eTag||null,fingerprint:fp,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:fp===rf?'synced':'local-changed'};sent++;details.push(`• agenda : ${r.agenda.status}`);}
   const piaRecords=state.meta?.piaRecords||{};
   for(const [studentId,reg] of Object.entries(r.pia||{})){
@@ -715,7 +774,7 @@ async function syncPendingLocalChangesV72(opts={}){if(!msAccount)throw new Error
       details.push(`• PIA ${studentId} : ${r.pia[studentId].status}`);
     }catch(e){details.push(`• PIA ${studentId} : échec (${e?.message||e})`);}
   }
-  state.syncRegistry=r;v72RecountPending(state);state.sync.lastSyncAt=new Date().toISOString();state.sync.status=state.sync.pendingChanges?'pending':'synced';securePersistState();const syncRecord={schemaVersion:'JOURNALIER-SYNC-1',architectureVersion:JOURNALIER_ARCHITECTURE_VERSION,ownerId:state.ownerId,status:state.sync.status,students:students.length,sessions:sessions.length,agendaEntries:Object.keys(agenda).length,syncedAt:state.sync.lastSyncAt};const structure=await graphEnsureJournalierStructure();await graphWriteJson(structure.system.id,'sync.json',syncRecord);const summary=`✓ Synchronisation terminée.\n• Éléments envoyés : ${sent}\n• Éléments récupérés : ${pulled}\n• Éléments en attente : ${state.sync.pendingChanges}\n• Conflits : 0`+(details.length?`\n\n${details.join('\n')}`:'');if(!opts.silent)setCloudStatus(summary,'success');else if(sent>0||pulled>0)showAppToast?.(`↕ Synchronisation automatique : ${sent} envoyé(s), ${pulled} récupéré(s).`,'success',3000);updateMicrosoftUI();}catch(e){if(!opts.silent)setCloudStatus('⚠️ '+(e.message||e),'error');else console.warn('Journalier — synchronisation automatique en erreur.',e);}finally{if(b)b.disabled=!msAccount;}}
+  state.syncRegistry=r;v72RecountPending(state);state.sync.lastSyncAt=new Date().toISOString();state.sync.status=state.sync.pendingChanges?'pending':'synced';securePersistState();const syncRecord={schemaVersion:'JOURNALIER-SYNC-1',architectureVersion:JOURNALIER_ARCHITECTURE_VERSION,ownerId:state.ownerId,status:state.sync.status,students:students.length,sessions:sessions.length,agendaEntries:Array.isArray(agenda?.__events)?agenda.__events.length:Object.keys(agenda||{}).length,syncedAt:state.sync.lastSyncAt};const structure=await graphEnsureJournalierStructure();await graphWriteJson(structure.system.id,'sync.json',syncRecord);const summary=`✓ Synchronisation terminée.\n• Éléments envoyés : ${sent}\n• Éléments récupérés : ${pulled}\n• Éléments en attente : ${state.sync.pendingChanges}\n• Conflits : 0`+(details.length?`\n\n${details.join('\n')}`:'');if(!opts.silent)setCloudStatus(summary,'success');else if(sent>0||pulled>0)showAppToast?.(`↕ Synchronisation automatique : ${sent} envoyé(s), ${pulled} récupéré(s).`,'success',3000);updateMicrosoftUI();}catch(e){if(!opts.silent)setCloudStatus('⚠️ '+(e.message||e),'error');else console.warn('Journalier — synchronisation automatique en erreur.',e);}finally{if(b)b.disabled=!msAccount;}}
 function v72ConflictSession(){
   const entry=v72ConflictEntries().find(x=>x.type==='session');
   return entry?.local||null;
@@ -854,8 +913,7 @@ document.addEventListener('click',function(e){
     '.js-home-event,.js-day-event,.js-quick-form,.js-open-slot,'+
     '.js-week-day,.js-week-event,.js-week-slot,.js-month-day,'+
     '.js-student-subject,.js-session-subject,'+
-    '[data-action="student-profile"],[data-action="student-edit"],[data-action="student-delete"],' +
-    '[data-action="history-edit"],[data-action="history-delete"]'
+    '[data-action="student-profile"],[data-action="student-edit"],[data-action="student-delete"]'
   );
   if(!target) return;
 
@@ -876,7 +934,7 @@ document.addEventListener('click',function(e){
   if(target.classList.contains('js-open-slot') || target.classList.contains('js-week-slot')){
     const dayIndex=Number(target.dataset.dayIndex);
     if(!Number.isInteger(dayIndex)) return;
-    openSlotModal(target.dataset.iso||'',target.dataset.period||'',dayIndex);
+    openSlotModal(target.dataset.iso||'',target.dataset.period||'',dayIndex,null,target.dataset.forceCreate==='true');
     return;
   }
 
@@ -901,9 +959,6 @@ document.addEventListener('click',function(e){
   if(action==='student-edit') return openEditStudentModal(id);
   if(action==='student-delete') return deleteStudent(id);
 
-  const sessionId=target.dataset.sessionId;
-  if(action==='history-edit') return editHistorySession(sessionId);
-  if(action==='history-delete') return deleteHistorySession(sessionId);
 });
 
 document.addEventListener('change',function(e){
@@ -934,7 +989,7 @@ async function v74SavePIACloud(pia){
 window.JournalierCloud={savePia:v74SavePIACloud};
 
 window.updateMicrosoftUI = updateMicrosoftUI;
-Object.assign(window,{openMicrosoftConnection,closeMicrosoftConnection,startMicrosoftLogin,disconnectMicrosoft,prepareMicrosoft365Space,verifyMicrosoft365Space,testMicrosoftAppFolder,diagnoseSyncManagerV72,syncPendingLocalChangesV72,openConflictResolutionV72,deleteHistorySession,showAppToast,syncFingerprint,syncWithoutVolatileMeta});
+Object.assign(window,{openMicrosoftConnection,closeMicrosoftConnection,startMicrosoftLogin,disconnectMicrosoft,prepareMicrosoft365Space,verifyMicrosoft365Space,testMicrosoftAppFolder,diagnoseSyncManagerV72,syncPendingLocalChangesV72,openConflictResolutionV72,showAppToast,syncFingerprint,syncWithoutVolatileMeta});
 window.JournalierMigrationBridge = Object.freeze({
   graphDownloadJsonByItemId,
   graphGetAppRoot,

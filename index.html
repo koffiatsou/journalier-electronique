@@ -2,12 +2,13 @@
 <html lang="fr">
 <head>
     <link rel="stylesheet" href="./src/styles/journalier.css">
+    <link rel="stylesheet" href="./src/styles/journalier-ux-responsive.css">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net https://*.files.1drv.com https://*.sharepoint.com; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Pôle Territorial – Agenda & Suivi Orthopédagogique · V74</title>
-    
+
 
 
 
@@ -101,7 +102,7 @@
 
     <!-- TAB 2 : AGENDA VUES (JOUR / SEMAINE 5J / MOIS) -->
     <div id="view-agenda" class="hidden">
-        
+
         <div class="page-head">
             <div>
                 <div class="page-kicker">Organisation du travail</div>
@@ -123,12 +124,15 @@
                 <button class="nav-arrow focus-ring" aria-label="Période suivante" data-jr-handlers="h17">›</button>
             </div>
             <input type="date" id="agenda-picker-input" min="2026-08-24" max="2027-07-02" value="" data-jr-handlers="h18" style="width:auto;margin:0;padding:7px 10px;">
+            <button type="button" class="btn-secondary focus-ring agenda-period-config-button" id="agenda-period-config-open">⚙️ Horaires des périodes</button>
         </div>
         <div class="agenda-legend">
-            <span class="legend-item legend-planned"><span class="legend-dot"></span>Planifié</span>
-            <span class="legend-item legend-done"><span class="legend-dot"></span>Séance enregistrée</span>
-            <span class="legend-item legend-neutral"><span class="legend-dot"></span>Mission / formation</span>
-            <span style="font-size:.7rem;color:#64748b;">Cliquez sur un créneau pour agir.</span>
+            <span class="legend-item legend-planned"><span class="legend-dot"></span>Proposition</span>
+
+
+            <span class="legend-item legend-done"><span class="legend-dot"></span>Réalisé</span>
+            <span class="legend-item legend-neutral"><span class="legend-dot"></span>Annulé</span>
+            <span style="font-size:.7rem;color:#64748b;">Plusieurs événements peuvent occuper le même créneau.</span>
         </div>
 
         <div id="agenda-view-day" class="day-timeline"></div>
@@ -153,6 +157,7 @@
                     <div>
                         <label for="f-eleve">Élève accompagné *</label>
                         <select id="f-eleve" required data-jr-handlers="h20"></select>
+                        <div id="session-student-edit-note" class="search-select-note hidden" aria-live="polite"></div>
                     </div>
                     <div>
                         <label for="f-date">Date *</label>
@@ -171,7 +176,7 @@
                                 <option>5e H</option><option>6e H</option><option>7e H</option><option>8e H</option>
                             </select>
                         </div>
-                        
+
                     </div>
                 </div>
 
@@ -283,7 +288,7 @@
                     <label for="f-q2-txt">Comportement observable <span class="v11-optional">(facultatif)</span></label>
                     <textarea id="f-q2-txt" rows="4" placeholder="Décrire ce que l’élève fait concrètement : action, erreur, stratégie, réaction, contexte de la tâche…"></textarea>
                 </div>
-                
+
             </div>
 
             <!-- Q3 -->
@@ -368,7 +373,7 @@
                     <div class="v11-field full"><label for="f-q4-txt">Précision <span class="v11-optional">(facultatif)</span></label><textarea id="f-q4-txt" rows="3" placeholder="Ce qui a été fait et ce qui a été observé ensuite."></textarea></div>
                 </div>
                 </div>
-                
+
             </div>
 
             <!-- Q5 -->
@@ -376,7 +381,7 @@
                 <div class="card-title">5. Réinvestissement / transfert</div>
                 <p class="form-section-intro">Distinguer ce qui est observé pendant cette séance d’un transfert ou d’une généralisation dans une autre situation.</p>
                 <div class="v11-grid">
-                    <div class="v11-field"><label>Situation de transfert</label><select id="q5-transfer-value" class="choice-select ux-hidden-select"><option value="">-- Sélectionner --</option><option value="observed">Observé</option><option value="not_observed">Non observé</option><option value="no_opportunity">Pas d’occasion</option><option value="later">À observer plus tard</option><option value="not_relevant">Non pertinent</option></select><div class="ux-select-bubbles" data-select-bubbles="q5-transfer-value">
+                    <div class="v11-field q5-choice-panel"><label>Situation de transfert</label><select id="q5-transfer-value" class="choice-select ux-hidden-select"><option value="">-- Sélectionner --</option><option value="observed">Observé</option><option value="not_observed">Non observé</option><option value="no_opportunity">Pas d’occasion</option><option value="later">À observer plus tard</option><option value="not_relevant">Non pertinent</option></select><div class="ux-select-bubbles" data-select-bubbles="q5-transfer-value">
                             <button type="button" class="ux-select-bubble" data-value="observed" data-jr-handlers="h37">Observé</button>
                             <button type="button" class="ux-select-bubble" data-value="not_observed" data-jr-handlers="h38">Non observé</button>
                             <button type="button" class="ux-select-bubble" data-value="no_opportunity" data-jr-handlers="h39">Pas d’occasion</button>
@@ -385,7 +390,7 @@
                         </div><div class="choice-caption">Ces situations sont exclusives : un seul choix est retenu.</div></div>
                     <div class="v11-field"><label for="f-q5-txt">Précision <span class="v11-optional">(facultatif)</span></label><textarea id="f-q5-txt" rows="3" placeholder="Dans quelle situation le transfert a-t-il été observé, ou pourquoi n’était-il pas observable ?"></textarea></div>
                 </div>
-                
+
             </div>
 
             <!-- Q6 -->
@@ -621,19 +626,6 @@
 
 </div>
 
-<!-- MODAL CONFLIT AGENDA -->
-<div id="agendaConflictModal" class="modal-overlay hidden">
-  <div class="modal-card" style="max-width:560px;">
-    <h3 style="margin-top:0;">Conflit de planification</h3>
-    <div id="agenda-conflict-summary" style="font-size:.84rem;line-height:1.55;color:var(--text-sub);margin-bottom:16px;"></div>
-    <div style="display:grid;gap:9px;">
-      <button id="agenda-conflict-replace" class="btn-primary" type="button"></button>
-      <button id="agenda-conflict-both" class="btn-secondary" type="button">Conserver les 2 événements</button>
-      <button id="agenda-conflict-cancel" class="btn-secondary" type="button">Annuler</button>
-    </div>
-  </div>
-</div>
-
 <!-- MODAL CRENEAU -->
 <div id="slotModal" class="modal-overlay hidden">
     <div class="modal-card">
@@ -661,7 +653,7 @@
         <div style="background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px;margin:4px 0 14px;font-size:0.78rem;color:#1e40af;">
             💡 <strong>Plusieurs périodes :</strong> choisissez simplement la première et la dernière période. Le même événement sera automatiquement étendu sur tous les créneaux intermédiaires.
         </div>
-        
+
         <div class="agenda-recurrence-box">
             <label for="modal-slot-recurrence" style="margin-bottom:6px;display:block;">Type de planification :</label>
             <select id="modal-slot-recurrence" data-jr-handlers="h56">
@@ -729,12 +721,35 @@
         <div id="event-action-summary" class="event-summary-box"></div>
         <div class="event-action-list">
             <button class="event-action-btn" id="event-action-observe">📝 Encoder la séance</button>
+
+
+            <button class="event-action-btn" id="event-action-realize">✓ Marquer comme réalisé</button>
+            <button class="event-action-btn" id="event-action-cancel">⏸️ Annuler l’événement</button>
             <button class="event-action-btn" id="event-action-edit">✏️ Modifier la planification</button>
             <button class="event-action-btn" id="event-action-extend">↔️ Étendre / réduire la durée</button>
             <button class="event-action-btn" id="event-action-duplicate">🔁 Dupliquer à une autre date</button>
             <button class="event-action-btn danger" id="event-action-delete">🗑️ Supprimer</button>
         </div>
         <button class="btn-primary" style="background:#64748b; width:100%; margin-top:12px;" data-jr-handlers="h61">Fermer</button>
+    </div>
+</div>
+
+<!-- MODAL CONFIGURATION DES 8 PÉRIODES -->
+<div id="agendaPeriodConfigModal" class="modal-overlay hidden">
+    <div class="modal-card agenda-period-config-modal-card">
+        <div class="agenda-period-config-head">
+            <div>
+                <div class="page-kicker">Organisation du temps</div>
+                <h3 style="margin:0 0 4px;">Horaires des 8 périodes</h3>
+                <p class="agenda-period-config-intro">Les libellés 1e H à 8e H restent fixes. Configurez les heures propres à votre établissement. Les pauses sont les espaces entre deux périodes.</p>
+            </div>
+            <button type="button" class="btn-secondary focus-ring" id="agenda-period-config-cancel">Fermer</button>
+        </div>
+        <div id="agenda-period-config-body" class="agenda-period-config-body"></div>
+        <div class="agenda-period-config-footer">
+            <button type="button" class="btn-secondary focus-ring" id="agenda-period-config-reset">↺ Revenir aux horaires par défaut</button>
+            <button type="button" class="btn-primary focus-ring" id="agenda-period-config-save">Enregistrer les horaires</button>
+        </div>
     </div>
 </div>
 
@@ -767,7 +782,7 @@
     <div class="modal-card">
         <h3 style="margin-top:0;" id="student-modal-title">Élève</h3>
         <input type="hidden" id="student-modal-id">
-        
+
         <label>Nom complet de l'élève *</label>
         <input type="text" id="student-modal-nom" placeholder="Ex: Nom Prénom">
 

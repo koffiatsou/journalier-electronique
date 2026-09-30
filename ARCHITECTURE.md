@@ -69,6 +69,23 @@ L'application est actuellement :
 - utilisant IndexedDB pour le stockage local ;
 - organisée autour d'un DataStore local et d'un SyncManager séparé du modèle pédagogique.
 
+### Couche UX/UI responsive — 29 septembre 2026
+
+La couche `src/styles/journalier-ux-responsive.css` est une couche de présentation chargée après `src/styles/journalier.css`. Elle ne contient aucune logique de persistance, de synchronisation, d'identité ou de modèle métier.
+
+Elle traite :
+
+- `100dvh`, zones sûres et défilement principal ;
+- navigation PC/tablette/téléphone ;
+- cibles tactiles et focus ;
+- agenda, formulaire de séance, dossiers élèves et rapports ;
+- historique maître-détail ;
+- rendu responsive des vues PIA générées par `src/v74/v74-runtime.js` ;
+- modales et panneau d'export sur téléphone ;
+- réduction des mouvements.
+
+Aucun identifiant `v72*`, schéma JSON, DataStore, IndexedDB, Graph, OneDrive, MSAL ou SyncManager n'est modifié par cette couche. Les contrôles et simulations sont documentés dans [`docs/UX_V74_RESPONSIVE.md`](docs/UX_V74_RESPONSIVE.md).
+
 ### Principe général
 
 ```text
@@ -261,32 +278,44 @@ Le modèle de sécurité local prévoit :
 
 Le stockage local est assuré par IndexedDB.
 
-Les données applicatives ne sont pas simplement conservées sous forme JSON en clair dans IndexedDB.
+Le coffre historique est conservé sous son identifiant technique `journalier-secure-v72` afin de préserver la compatibilité et de permettre une migration non destructive. La nouvelle persistance utilise `journalier-secure-v74`.
 
-Le système utilise :
+## 5.1 Coffre granulaire
+
+Le nouveau coffre contient les stores :
 
 ```text
-IndexedDB
-    ↓
-clé dérivée du contexte du compte
-    ↓
-chiffrement AES-GCM
-    ↓
-état applicatif chiffré
+meta
+students
+sessions
+agenda
+pia
+sync
+keys
+migration
 ```
 
-Les fonctions principales comprennent notamment :
+Chaque élève, séance, événement Agenda, PIA et entrée de synchronisation est stocké séparément. La configuration et les exceptions Agenda sont également séparées des événements. Le `DataStore` conserve cependant son modèle en mémoire actuel afin de ne pas casser les dépendances métier existantes.
 
-- ouverture de la base IndexedDB ;
-- lecture ;
-- écriture ;
-- suppression ;
-- génération d'une identité de compte ;
-- obtention de la clé de chiffrement ;
-- chiffrement ;
-- déchiffrement.
+La persistance compare l'état courant avec le dernier état persisté et prépare uniquement les `put`/`delete` nécessaires. Une modification locale d'une séance n'entraîne donc plus la réécriture de tout l'état applicatif dans une seule valeur IndexedDB.
 
-Le système prévoit également un mécanisme d'auto-verrouillage après inactivité.
+## 5.2 Chiffrement et intégrité
+
+Chaque enregistrement métier est chiffré avec AES-GCM 256 bits. La clé est une `CryptoKey` non extractible conservée dans `keys`. Chaque enregistrement reçoit un IV aléatoire et une AAD construite à partir de la version du stockage, de l'identité du compte, du type et de l'identifiant de l'objet.
+
+Une empreinte SHA-256 du ciphertext est conservée pour permettre un contrôle d'intégrité diagnostique.
+
+## 5.3 Migration et récupération
+
+La migration v72 → stockage granulaire est non destructive. Le coffre historique n'est jamais supprimé automatiquement. Le marqueur de migration n'est écrit comme `complete` qu'après l'écriture transactionnelle des données granulaires.
+
+Si l'ancien enregistrement `states` est illisible, ce cas est distingué d'une première installation. Journalier conserve la source historique, initialise le coffre granulaire et peut récupérer les données disponibles dans OneDrive AppFolder. L'application ne prétend pas avoir récupéré les données locales tant que cette récupération n'est pas vérifiée.
+
+## 5.4 Durabilité
+
+Les écritures critiques demandent `durability: 'strict'` lorsque le navigateur le supporte. L'application demande également le stockage persistant du navigateur lorsque l'API est disponible ; cette demande ne constitue pas une garantie contre une suppression volontaire ou une politique du navigateur/OS.
+
+Le détail du schéma est documenté dans [`docs/STOCKAGE_LOCAL_V74.md`](docs/STOCKAGE_LOCAL_V74.md).
 
 ---
 
@@ -361,16 +390,19 @@ L'agenda possède son propre état et son propre registre de synchronisation.
 Il prend notamment en charge :
 
 - les vues jour/semaine/mois ;
-- les périodes ;
-- les événements ;
+- huit périodes configurables, sans transformer les pauses en périodes ;
+- plusieurs événements concurrents sur un même créneau ;
+- les événements planifiés, réalisés et annulés ;
 - les événements récurrents ;
 - les duplications ;
-- les conflits d'agenda.
-
+- la réalisation indépendante des réunions, GT, formations et autres missions ;
 - le rapprochement entre les événements prévisionnels et les séances réellement encodées ;
-- la reconnaissance automatique d'un événement prévisionnel comme enregistré lorsqu'une séance correspondante existe pour le même élève, la même date et des périodes qui se recouvrent.
+- la correction d'un événement élève lorsqu'une séance est déplacée ;
+- les métadonnées réservées à la future synchronisation Outlook.
 
-La fonction `getEncodedForEvent()` utilise volontairement le chevauchement de périodes comme critère de rapprochement. Un chevauchement n'est donc pas considéré comme une anomalie : une activité peut couvrir plusieurs périodes consécutives.
+Le stockage canonique utilise `agenda.__events`, `agenda.__exceptions` et `agenda.__config`. `secureNormalizeAgenda()` assure la compatibilité avec les anciennes structures `__uniqueEvents` et `jour_période` utilisées par les versions précédentes.
+
+La fonction `getEncodedForEvent()` utilise volontairement le chevauchement de périodes comme critère de rapprochement. Un chevauchement n'est donc pas considéré comme une anomalie : plusieurs propositions peuvent occuper le même créneau et une activité peut couvrir plusieurs périodes consécutives.
 
 
 ---
@@ -1057,6 +1089,14 @@ Un PIA précédent est une `SOURCE_DE_CONTINUITE`, jamais une preuve de validit�
 
 Les « observations en classe » ne constituent pas une seconde source de données : elles proviennent des séances. V74 analyse les champs structurés et les précisions textuelles des séances.
 
+### Modification et rattachement d’une séance
+
+Une séance conserve son `id` lors d’une modification. Le champ `identification.eleve` représente le nom actuellement affiché et `identification.eleveId` l’identité stable du dossier élève sélectionné.
+
+La résolution d’une séance en mode édition privilégie `eleveId` lorsqu’il correspond encore à un élève du dossier, puis le nom pour assurer la compatibilité avec les anciennes données. Si aucun élève correspondant n’existe plus, l’ancien nom est conservé uniquement comme repère dans le formulaire ; l’enregistrement doit alors sélectionner un élève actuel.
+
+Lorsqu’une séance déjà synchronisée change de `studentId`, le SyncManager conserve temporairement la référence de l’ancien fichier distant, écrit la séance dans le dossier du nouvel élève sans réutiliser l’ETag de l’ancien emplacement, puis supprime l’ancienne copie avec son ETag. Un `412 Precondition Failed` sur cette suppression est traité comme un conflit et ne provoque pas d’écrasement silencieux.
+
 `objectifLecon` reste un objectif de contexte de séance. `objectifProfessionnel`, lorsqu’il est renseigné, reste également contextuel et ne devient pas automatiquement un objectif PIA.
 
 ## 29.4 Convergence
@@ -1077,8 +1117,8 @@ Deux finalités de données sont distinguées :
 ## 29.6 Règles de sécurité V74
 
 - aucune permission Graph supplémentaire ;
-- aucun accès direct V74 à IndexedDB ou Graph ;
-- réutilisation de `JournalierDataStore` pour la persistance ;
+- les modules V74 runtime/migration n’accèdent pas directement à IndexedDB ou Graph ;
+- le stockage granulaire est centralisé dans `JournalierSecurity` / `JournalierDataStore` ;
 - réutilisation du mécanisme OneDrive/AppFolder existant pour la sauvegarde distante ;
 - aucune donnée pédagogique ne doit être ajoutée au dépôt GitHub ;
 - toute nouvelle fonction V74 doit être ré-auditée selon les contrôles de `SECURITY.md`.

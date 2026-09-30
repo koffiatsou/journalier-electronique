@@ -31,11 +31,15 @@ Cette limitation réduit la surface exposée au module et évite de contourner l
 
 Les évolutions V74 réutilisent le DataStore et les mécanismes de synchronisation existants; elles n'ajoutent ni backend ni permission Graph. Les propositions PIA restent à valider par le professionnel. Les exports dé-identifiés sont une sortie distincte des exports professionnels nominatifs et doivent être ré-audités si le schéma PIA ou les données exportées évoluent.
 
-Toute modification de `index.html` doit déclencher le recalcul des hashes SHA-256 des scripts inline et la vérification de la CSP. Un build réussi ne vérifie pas à lui seul le comportement de la CSP dans un navigateur.
+Toute modification de `index.html` doit déclencher une vérification de la CSP. Lorsque le contenu d'un script inline est modifié ou qu'un nouveau script inline est introduit, les mécanismes CSP correspondants doivent être recalculés. Un build réussi ne vérifie pas à lui seul le comportement de la CSP dans un navigateur.
 
 ### CSP
 
-La modification du script inline de `index.html` nécessite un nouveau hash CSP. La V74 utilise trois hashes SHA-256 correspondant aux trois scripts inline réellement présents et ne réintroduit pas `unsafe-inline` dans `script-src`.
+L'état actuel de `index.html` ne contient pas de script inline : les scripts applicatifs sont chargés depuis des fichiers locaux (`self`). `script-src` n'autorise donc pas `unsafe-inline`. La couche UX responsive ajoute uniquement une feuille CSS locale et ne demande aucune nouvelle origine CSP.
+
+`style-src 'unsafe-inline'` reste présent car le dépôt utilise encore des attributs `style` et des styles dynamiquement injectés par le runtime. Cette permission n'est pas introduite par la passe UX responsive.
+
+La directive `frame-ancestors` est conservée dans la CSP déclarée par méta pour documentation de l'intention, mais les navigateurs indiquent qu'elle n'est pas appliquée depuis une balise `<meta>`. Une protection effective contre l'encadrement doit être délivrée par un en-tête HTTP lorsque l'hébergement le permet.
 
 ## 1. Objet
 
@@ -88,13 +92,17 @@ L'identité Entra est utilisée pour isoler les données locales. L'application 
 
 ## 4. Stockage local
 
-Les données locales sont stockées dans IndexedDB.
+Les données locales sont stockées dans IndexedDB. Depuis le 30 septembre 2026, la persistance métier utilise le coffre granulaire `journalier-secure-v74` plutôt qu'un unique enregistrement d'état. Les élèves, séances, événements Agenda, PIA et registres de synchronisation sont isolés en enregistrements distincts.
 
-Elles sont protégées par un mécanisme de chiffrement AES-GCM.
+Chaque enregistrement métier est protégé par AES-GCM 256 bits avec une `CryptoKey` non extractible, un IV aléatoire propre à l'enregistrement et des données authentifiées (AAD) liées à l'identité du compte, au type et à l'identifiant de l'objet. Une empreinte SHA-256 du ciphertext est conservée pour les diagnostics d'intégrité.
 
-Le modèle de stockage est associé à l'identité de l'utilisateur afin d'éviter qu'un compte puisse récupérer directement les données locales d'un autre compte.
+Les écritures sont appliquées par transaction IndexedDB ; `durability: 'strict'` est demandé lorsque le navigateur le supporte. L'ancien coffre `journalier-secure-v72` reste conservé pour la migration et n'est pas supprimé automatiquement.
 
-Le fonctionnement détaillé du stockage local est décrit dans `ARCHITECTURE.md`.
+Si le coffre historique existe mais que son gros enregistrement `states` est devenu illisible, l'application ne prétend pas avoir récupéré les données : elle conserve la source, initialise un coffre granulaire séparé et peut tenter une récupération depuis l'AppFolder OneDrive.
+
+La granularité réduit le rayon d'impact d'une corruption locale : une valeur métier est isolée des autres. Elle ne supprime cependant pas les risques propres au navigateur : un XSS exécuté dans la même origine peut agir dans le contexte applicatif. La CSP, l'échappement des données et les contrôles d'entrée restent donc indispensables.
+
+Le fonctionnement détaillé du stockage local est décrit dans `ARCHITECTURE.md` et `docs/STOCKAGE_LOCAL_V74.md`.
 
 ---
 
@@ -113,6 +121,10 @@ Il faut distinguer :
 Le fait qu'une donnée soit traitée localement ne constitue pas à lui seul une garantie générale de conformité : la gestion des données introduites dans l'application doit rester conforme aux règles institutionnelles applicables.
 
 ---
+
+### Cycle de vie de la clé locale
+
+La clé du nouveau coffre est générée côté navigateur et conservée comme `CryptoKey` non extractible. L'application ne place pas la clé dans le code source, dans le dépôt ou dans localStorage. La perte de cette clé rend le ciphertext local correspondant indéchiffrable ; la récupération fonctionnelle doit alors repartir d'une copie distante disponible dans OneDrive.
 
 ## 6. Microsoft Graph et OneDrive
 
@@ -135,6 +147,8 @@ Les opérations Graph sont réalisées avec les permissions prévues pour l'AppF
 Les écritures utilisent les ETags lorsque le mécanisme de synchronisation l'exige.
 
 Un conflit `HTTP 412 Precondition Failed` est traité comme un conflit de synchronisation et non comme une autorisation d'écraser silencieusement la donnée distante.
+
+Lorsqu’une séance existante est réattribuée à un autre élève, le fichier distant change de dossier dans `Journalier/eleves/{studentId}/seances/`. L’ancienne référence distante et son ETag sont conservés temporairement dans le registre de synchronisation. La nouvelle copie est écrite sur son nouvel emplacement sans réutiliser l’ETag de l’ancien fichier, puis l’ancienne copie est supprimée avec son propre ETag. Un `HTTP 412 Precondition Failed` pendant ce déplacement bloque l’opération et est présenté comme un conflit ; aucune suppression forcée n’est effectuée. Cette évolution ne requiert aucune permission Graph supplémentaire.
 
 ---
 
@@ -195,11 +209,17 @@ L'application utilise une Content Security Policy.
 
 La CSP limite notamment les origines autorisées pour les connexions nécessaires au fonctionnement de l'application.
 
-Les scripts inline protégés par la CSP utilisent des hashes SHA-256 correspondant aux scripts autorisés.
+Les scripts applicatifs actuels sont externes et limités à l'origine `self` par `script-src`.
 
 Le code comporte également des mécanismes de protection contre certaines injections HTML/XSS.
 
 ---
+
+## 10 bis. Couche UX responsive
+
+`src/styles/journalier-ux-responsive.css` est une feuille locale. Elle n'introduit ni chargement de ressource tierce, ni JavaScript, ni nouvelle permission Graph. La passe responsive n'élargit donc pas la surface réseau de la CSP.
+
+Les simulations responsive ont également contrôlé les débordements horizontaux et la taille des contrôles tactiles ; ces contrôles sont des validations d'interface et ne constituent pas un audit de sécurité complet.
 
 ## 11. Sécurité GitHub
 
@@ -535,3 +555,7 @@ Toute nouvelle fonction V74/V74 doit vérifier au minimum :
 - Le PIA précédent n’est jamais promu automatiquement au rang de vérité ; il est conservé comme source de continuité.
 - Les exports dé-identifiés retirent les identifiants élève connus par le moteur.
 - Les relations entre questions de séance restent documentaires et non causales.
+
+## V74 — Agenda et CSP
+
+La refonte Agenda n'ajoute aucune origine réseau ni script inline. Les nouvelles actions utilisent les mécanismes existants de délégation d'événements et les contrôleurs locaux. La CSP de `index.html` conserve `script-src 'self'` et les mêmes domaines Microsoft Graph/Entra. Les métadonnées Outlook sont stockées comme données métier locales et ne déclenchent aucune synchronisation Outlook dans cette version.

@@ -4,13 +4,25 @@
 
 Le Journalier électronique permet d'organiser les observations, séances, élèves et agendas, d'exploiter une bibliothèque d'indicateurs et de repères, et de produire des éléments utiles au suivi pédagogique.
 
+### Modification des séances
+
+Une séance enregistrée reste modifiable depuis l’Historique, le dossier Élève et l’Agenda lorsque l’événement correspond à une séance enregistrée. Le formulaire de modification reprend les données de la séance et permet également de changer l’élève auquel elle est rattachée.
+
+Si l’ancien élève a été supprimé, son ancienne référence peut être affichée comme repère historique, mais l’enregistrement exige la sélection d’un élève actuellement présent dans le dossier. L’identifiant de la séance est conservé ; son `studentId` est réattribué à l’élève choisi.
+
+Lorsqu’une séance déjà synchronisée change d’élève, le SyncManager traite ce changement comme un déplacement entre dossiers `eleves/{studentId}/seances/` : la nouvelle copie est écrite puis l’ancienne est supprimée avec contrôle d’ETag.
+
 L'application est conçue selon une approche **local-first** : les données de travail sont d'abord gérées localement dans le navigateur, puis synchronisées automatiquement vers l'espace OneDrive de l'utilisateur via Microsoft Graph (envoi et rapatriement bidirectionnel, avec repli manuel possible).
 
 ## État actuel — V74
 
 L'espace Rapports réunit l'historique des séances, les synthèses sur une période choisie, la préparation de réunion et les exports. Le PIA annuel dispose d'un cycle de suivi explicite, de réunions structurées et d'exports professionnels ou dé-identifiés. Les propositions restent soumises à la validation du professionnel.
 
-V74 conserve les mécanismes existants de stockage, d'authentification et de synchronisation. L'architecture technique et les limites connues sont détaillées dans [`ARCHITECTURE.md`](ARCHITECTURE.md) et [`SECURITY.md`](SECURITY.md).
+Une passe UX/UI responsive a été ajoutée le 29 septembre 2026 pour adapter la même application aux PC, tablettes et téléphones, sans modifier le contenu métier ni l'architecture de stockage/synchronisation. Voir [`docs/UX_V74_RESPONSIVE.md`](docs/UX_V74_RESPONSIVE.md).
+
+L'Agenda V74 prend en charge plusieurs événements concurrents, les états **Planifié / Réalisé / Annulé**, la réalisation indépendante des missions non pédagogiques et la configuration des horaires des huit périodes. Pour les séances d'élèves, la réalisation provient de l'encodage dans l'Historique. Voir [`docs/AGENDA_V74.md`](docs/AGENDA_V74.md).
+
+V74 conserve l'architecture local-first, l'authentification Entra ID et la synchronisation Graph/OneDrive, mais le stockage local évolue vers un stockage local granulaire dans un coffre IndexedDB chiffré. L'ancien coffre `journalier-secure-v72` reste conservé pour la migration et la récupération. Voir [`docs/STOCKAGE_LOCAL_V74.md`](docs/STOCKAGE_LOCAL_V74.md), [`ARCHITECTURE.md`](ARCHITECTURE.md) et [`SECURITY.md`](SECURITY.md).
 
 ---
 
@@ -56,7 +68,7 @@ Le module de migration utilise un pont explicite (`JournalierMigrationBridge`) p
 
 ## V74 — PIA annuel et synthèse des séances
 
-La V74 ajoute une couche de synthèse PIA directement dans l’application sans modifier l’architecture de stockage et de synchronisation existante.
+La V74 ajoute une couche de synthèse PIA directement dans l’application sans modifier le modèle métier ni le protocole de synchronisation OneDrive ; la persistance locale granulaire reste portée par le DataStore sécurisé.
 
 ### Cycle PIA
 
@@ -122,6 +134,15 @@ Aucun secret client n'est embarqué dans l'application web.
 ---
 
 ## 4. Stockage local
+
+Le fonctionnement est **local-first**. Depuis le chantier du 30 septembre 2026, le coffre local utilise une architecture granulaire `journalier-secure-v74` : les élèves, séances, événements Agenda, PIA et registres de synchronisation sont persistés séparément. Cela évite qu'une seule valeur IndexedDB volumineuse rende tout l'état local illisible.
+
+Chaque enregistrement est protégé par AES-GCM avec une clé `CryptoKey` non extractible, un IV unique et des données authentifiées liées au compte, au type et à l'identifiant de l'objet. Les écritures critiques utilisent des transactions IndexedDB à durabilité stricte lorsque le navigateur le permet.
+
+L'ancien coffre `journalier-secure-v72` n'est pas supprimé automatiquement : il sert de source de migration non destructive. Si son enregistrement historique est illisible, Journalier conserve la source et peut tenter une récupération depuis OneDrive AppFolder.
+
+La conception détaillée est documentée dans [`docs/STOCKAGE_LOCAL_V74.md`](docs/STOCKAGE_LOCAL_V74.md).
+
 
 Le fonctionnement est **local-first**.
 
