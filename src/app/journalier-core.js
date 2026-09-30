@@ -61,10 +61,20 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
        - SyncManager séparé du modèle pédagogique
        ========================================================= */
     const JOURNALIER_ARCHITECTURE_VERSION = '72.2-secure-appfolder-test';
+
+    // Identifiants historiques conservés volontairement pour la compatibilité.
     const JOURNALIER_DB_NAME = 'journalier-secure-v72';
     const JOURNALIER_DB_VERSION = 1;
     const JOURNALIER_STATE_STORE = 'states';
     const JOURNALIER_KEY_STORE = 'keys';
+
+    // Nouveau coffre local granulaire. L'ancien coffre reste intact pendant la migration.
+    const JOURNALIER_STORAGE_DB_NAME = 'journalier-secure-v74';
+    const JOURNALIER_STORAGE_DB_VERSION = 1;
+    const JOURNALIER_STORAGE_SCHEMA_VERSION = 2;
+    const JOURNALIER_STORAGE_STORES = Object.freeze([
+        'meta', 'students', 'sessions', 'agenda', 'pia', 'sync', 'keys', 'migration'
+    ]);
 
     function journalierUuid(prefix='id') {
         if (globalThis.crypto?.randomUUID) return `${prefix}_${crypto.randomUUID()}`;
@@ -91,11 +101,11 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
             agenda: {},
             sync: { status:'local-only', lastSyncAt:null, pendingChanges:0 },
             syncRegistry: { version:'1', students:{}, sessions:{}, agenda:null, pia:{} },
-            meta: { securityArchitecture:'account-scoped-encrypted-store', createdAt:new Date().toISOString(), piaRecords:{} }
+            meta: { securityArchitecture:'account-scoped-granular-encrypted-store', storageSchemaVersion:JOURNALIER_STORAGE_SCHEMA_VERSION, createdAt:new Date().toISOString(), piaRecords:{}, piaImports:{} }
         };
     }
 
-    function journalierOpenDB() {
+    function journalierOpenLegacyDB() {
         return new Promise((resolve,reject)=>{
             if(!('indexedDB' in window)) return reject(new Error('IndexedDB est requis pour le stockage local sécurisé.'));
             const req=indexedDB.open(JOURNALIER_DB_NAME,JOURNALIER_DB_VERSION);
@@ -105,102 +115,398 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
                 if(!db.objectStoreNames.contains(JOURNALIER_KEY_STORE)) db.createObjectStore(JOURNALIER_KEY_STORE,{keyPath:'accountKey'});
             };
             req.onsuccess=()=>resolve(req.result);
-            req.onerror=()=>reject(req.error||new Error('Impossible d’ouvrir le stockage sécurisé local.'));
+            req.onerror=()=>reject(req.error||new Error('Impossible d’ouvrir le stockage sécurisé local historique.'));
         });
     }
 
-    function journalierIDBRequest(request){
+    function journalierOpenStorageDB() {
+        return new Promise((resolve,reject)=>{
+            if(!('indexedDB' in window)) return reject(new Error('IndexedDB est requis pour le stockage local sécurisé.'));
+            const req=indexedDB.open(JOURNALIER_STORAGE_DB_NAME,JOURNALIER_STORAGE_DB_VERSION);
+            req.onupgradeneeded=()=>{
+                const db=req.result;
+                if(!db.objectStoreNames.contains('meta'))db.createObjectStore('meta',{keyPath:'storageKey'});
+                if(!db.objectStoreNames.contains('students'))db.createObjectStore('students',{keyPath:'storageKey'});
+                if(!db.objectStoreNames.contains('sessions'))db.createObjectStore('sessions',{keyPath:'storageKey'});
+                if(!db.objectStoreNames.contains('agenda'))db.createObjectStore('agenda',{keyPath:'storageKey'});
+                if(!db.objectStoreNames.contains('pia'))db.createObjectStore('pia',{keyPath:'storageKey'});
+                if(!db.objectStoreNames.contains('sync'))db.createObjectStore('sync',{keyPath:'storageKey'});
+                if(!db.objectStoreNames.contains('keys'))db.createObjectStore('keys',{keyPath:'accountKey'});
+                if(!db.objectStoreNames.contains('migration'))db.createObjectStore('migration',{keyPath:'storageKey'});
+            };
+            req.onsuccess=()=>resolve(req.result);
+            req.onerror=()=>reject(req.error||new Error('Impossible d’ouvrir le stockage local sécurisé granulaire.'));
+            req.onblocked=()=>reject(new Error('La migration du stockage local est bloquée par un autre onglet Journalier ouvert. Fermez les autres onglets puis réessayez.'));
+        });
+    }
+
+    function journalierTx(db,stores,mode,callback){
+        let tx;
+        try{tx=db.transaction(stores,mode,{durability:'strict'});}catch(_){tx=db.transaction(stores,mode);}
+        return new Promise((resolve,reject)=>{
+            let result;
+            try{result=callback(tx)}catch(e){try{tx.abort();}catch(_){}reject(e);return;}
+            tx.oncomplete=()=>resolve(result);
+            tx.onerror=()=>reject(tx.error||new Error('Transaction IndexedDB impossible.'));
+            tx.onabort=()=>reject(tx.error||new Error('Transaction IndexedDB interrompue.'));
+        });
+    }
+
+    function journalierRequest(request){
         return new Promise((resolve,reject)=>{
             request.onsuccess=()=>resolve(request.result);
             request.onerror=()=>reject(request.error||new Error('Opération IndexedDB impossible.'));
         });
     }
 
-    async function journalierGetStoreRecord(storeName,key){
-        const db=await journalierOpenDB();
+    async function journalierGetLegacyRecord(storeName,key){
+        const db=await journalierOpenLegacyDB();
+        try{return await journalierRequest(db.transaction(storeName,'readonly').objectStore(storeName).get(key));}
+        finally{db.close();}
+    }
+
+    async function journalierLegacyStatePresence(accountKey){
+        const db=await journalierOpenLegacyDB();
+        try{return Boolean(await journalierRequest(db.transaction(JOURNALIER_STATE_STORE,'readonly').objectStore(JOURNALIER_STATE_STORE).getKey(accountKey)));}
+        finally{db.close();}
+    }
+
+    async function journalierGetStorageRecord(storeName,id,accountKey=null){
+        const db=await journalierOpenStorageDB();
+        const key=storeName==='keys'?id:`${accountKey||''}:${id}`;
+        try{return await journalierRequest(db.transaction(storeName,'readonly').objectStore(storeName).get(key));}
+        finally{db.close();}
+    }
+
+    async function journalierGetAllStorageRecords(storeName){
+        const db=await journalierOpenStorageDB();
+        try{return await journalierRequest(db.transaction(storeName,'readonly').objectStore(storeName).getAll());}
+        finally{db.close();}
+    }
+
+    async function journalierPutKey(accountKey,key){
+        const db=await journalierOpenStorageDB();
         try{
-            const tx=db.transaction(storeName,'readonly');
-            return await journalierIDBRequest(tx.objectStore(storeName).get(key));
+            await journalierTx(db,['keys'],'readwrite',tx=>tx.objectStore('keys').put({accountKey,key,createdAt:new Date().toISOString()}));
         }finally{db.close();}
     }
 
-    async function journalierPutStoreRecord(storeName,value){
-        const db=await journalierOpenDB();
+    async function journalierGetEncryptionKey(accountKey){
+        const record=await journalierGetStorageRecord('keys',accountKey);
+        if(record?.key)return record.key;
+        const key=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+        await journalierPutKey(accountKey,key);
+        return key;
+    }
+
+    function journalierAad(accountKey,type,id){
+        return new TextEncoder().encode(`journalier-storage-v${JOURNALIER_STORAGE_SCHEMA_VERSION}|${accountKey}|${type}|${id}`);
+    }
+
+    function journalierCanonicalJson(value){
+        if(Array.isArray(value))return `[${value.map(journalierCanonicalJson).join(',')}]`;
+        if(value&&typeof value==='object')return `{${Object.keys(value).sort().map(k=>`${JSON.stringify(k)}:${journalierCanonicalJson(value[k])}`).join(',')}}`;
+        return JSON.stringify(value);
+    }
+
+    async function journalierDigestBuffer(buffer){
+        const digest=await crypto.subtle.digest('SHA-256',buffer);
+        return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+
+    async function journalierEncryptRecord(accountKey,type,id,value,key){
+        const iv=crypto.getRandomValues(new Uint8Array(12));
+        const payload=new TextEncoder().encode(journalierCanonicalJson(value));
+        const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:journalierAad(accountKey,type,id)},key,payload);
+        return {
+            storageKey:`${accountKey}:${String(id)}`, id:String(id), ownerId:accountKey, type, schemaVersion:JOURNALIER_STORAGE_SCHEMA_VERSION,
+            iv:iv.buffer, ciphertext, digest:await journalierDigestBuffer(ciphertext), updatedAt:new Date().toISOString()
+        };
+    }
+
+    async function journalierDecryptRecord(record,key){
+        if(!record?.ciphertext||!record?.iv||!record?.ownerId||!record?.type||record?.id==null)throw new Error('Enregistrement local sécurisé invalide.');
+        if(record.schemaVersion!==JOURNALIER_STORAGE_SCHEMA_VERSION)throw new Error('Version de stockage local non prise en charge.');
+        const actual=await journalierDigestBuffer(record.ciphertext);
+        if(record.digest&&actual!==record.digest)throw new Error('Intégrité du stockage local compromise : empreinte invalide.');
+        const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(record.iv),additionalData:journalierAad(record.ownerId,record.type,String(record.id))},key,record.ciphertext);
+        return JSON.parse(new TextDecoder().decode(plain));
+    }
+
+    async function journalierReadLegacyState(accountKey,key){
+        const present=await journalierLegacyStatePresence(accountKey);
+        if(!present)return {found:false,state:null,error:null};
         try{
-            const tx=db.transaction(storeName,'readwrite');
-            tx.objectStore(storeName).put(value);
-            await new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('Écriture IndexedDB impossible.'));tx.onabort=()=>reject(tx.error||new Error('Écriture IndexedDB interrompue.'));});
+            const record=await journalierGetLegacyRecord(JOURNALIER_STATE_STORE,accountKey);
+            if(!record)return {found:false,state:null,error:null};
+            if(!record?.ciphertext||!Array.isArray(record.iv))throw new Error('Données locales historiques invalides.');
+            const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(record.iv)},key,new Uint8Array(record.ciphertext));
+            return {found:true,state:JSON.parse(new TextDecoder().decode(plain)),error:null};
+        }catch(error){return {found:true,state:null,error};}
+    }
+
+    function journalierSplitMeta(state){
+        const meta=journalierClone(state.meta||{});
+        delete meta.piaRecords;
+        delete meta.piaImports;
+        return meta;
+    }
+
+    function journalierBuildSyncRegistryFromRecords(records){
+        const registry={version:'1',students:{},sessions:{},agenda:null,pia:{}};
+        for(const row of records){
+            const id=String(row.id||'');
+            if(row.type==='student')registry.students[id]=row.value;
+            else if(row.type==='session')registry.sessions[id]=row.value;
+            else if(row.type==='agenda')registry.agenda=row.value;
+            else if(row.type==='pia')registry.pia[id]=row.value;
+        }
+        return registry;
+    }
+
+    async function journalierLoadGranularState(accountKey,key,account){
+        const [metaRows,studentRows,sessionRows,agendaRows,piaRows,syncRows,migrationRows]=await Promise.all([
+            journalierGetAllStorageRecords('meta'),journalierGetAllStorageRecords('students'),journalierGetAllStorageRecords('sessions'),
+            journalierGetAllStorageRecords('agenda'),journalierGetAllStorageRecords('pia'),journalierGetAllStorageRecords('sync'),journalierGetAllStorageRecords('migration')
+        ]);
+        const metaRow=metaRows.find(r=>String(r.ownerId)===String(accountKey)&&String(r.id)===String(accountKey));
+        if(!metaRow)return null;
+        const meta=await journalierDecryptRecord(metaRow,key);
+        if(meta.ownerId!==accountKey)throw new Error('Isolation de compte locale invalide : chargement refusé.');
+        if(meta.migrationStatus!=='complete')return null;
+
+        const decryptMany=async(rows)=>Promise.all(rows.filter(r=>r.ownerId===accountKey).map(async r=>({id:String(r.id),type:r.type,value:await journalierDecryptRecord(r,key)})));
+        const [students, sessions, agenda, pia, sync]=await Promise.all([
+            decryptMany(studentRows),decryptMany(sessionRows),decryptMany(agendaRows),decryptMany(piaRows),decryptMany(syncRows)
+        ]);
+        const state=journalierEmptyState(accountKey,account);
+        state.identity=meta.identity||state.identity;
+        state.sync=meta.sync||state.sync;
+        state.meta={...(meta.meta||{}),storageSchemaVersion:JOURNALIER_STORAGE_SCHEMA_VERSION,piaRecords:{},piaImports:{}};
+        for(const row of pia){state.meta.piaRecords[row.id]=row.value.record||row.value.pia||row.value; if(row.value.imported)state.meta.piaImports[row.id]=row.value.imported;}
+        state.students=students.map(r=>r.value);
+        state.sessions=sessions.map(r=>r.value);
+        const agendaEvents=[],agendaSpecial=[];
+        for(const row of agenda){if(row.id==='__config'||row.id==='__exceptions')agendaSpecial.push(row);else agendaEvents.push(row);}
+        state.agenda={__events:agendaEvents.map(r=>r.value),__exceptions:{},__config:{}};
+        for(const row of agendaSpecial){if(row.id==='__config')state.agenda.__config=row.value||{};if(row.id==='__exceptions')state.agenda.__exceptions=row.value||{};}
+        state.syncRegistry=journalierBuildSyncRegistryFromRecords(sync);
+        state.version=JOURNALIER_ARCHITECTURE_VERSION;state.ownerId=accountKey;
+        return {state,migrationRows};
+    }
+
+    async function journalierPreparePersistOperations(snapshot,previous,accountKey,key,force=false){
+        const operations=[];
+        const previousState=previous||{};
+        const changed=(a,b)=>journalierCanonicalJson(a)!==journalierCanonicalJson(b);
+        const maps=[
+            ['students',snapshot.students||[],previousState.students||[],'student',x=>x.studentId],
+            ['sessions',snapshot.sessions||[],previousState.sessions||[],'session',x=>x.id]
+        ];
+        for(const [store,current,old,type,idOf] of maps){
+            const oldMap=new Map((old||[]).map(x=>[String(idOf(x)),x]));
+            const curMap=new Map((current||[]).map(x=>[String(idOf(x)),x]));
+            for(const [id,value] of curMap){if(force||!oldMap.has(id)||changed(value,oldMap.get(id)))operations.push({op:'put',store,id,type,value});}
+            for(const id of oldMap.keys())if(!curMap.has(id))operations.push({op:'delete',store,id});
+        }
+
+        const currentAgenda=snapshot.agenda||{},oldAgenda=previousState.agenda||{};
+        const curEvents=new Map((currentAgenda.__events||[]).map(x=>[String(x.eventId||x.id),x]));
+        const oldEvents=new Map((oldAgenda.__events||[]).map(x=>[String(x.eventId||x.id),x]));
+        for(const [id,value] of curEvents){if(force||!oldEvents.has(id)||changed(value,oldEvents.get(id)))operations.push({op:'put',store:'agenda',id,type:'agenda',value});}
+        for(const id of oldEvents.keys())if(!curEvents.has(id))operations.push({op:'delete',store:'agenda',id});
+        const agendaSpecial=[['__config',currentAgenda.__config||{},oldAgenda.__config||{}],['__exceptions',currentAgenda.__exceptions||{},oldAgenda.__exceptions||{}]];
+        for(const [id,value,old] of agendaSpecial)if(force||changed(value,old))operations.push({op:'put',store:'agenda',id,type:'agenda',value});
+
+        const currentPia=snapshot.meta?.piaRecords||{},oldPia=previousState.meta?.piaRecords||{};
+        const currentImports=snapshot.meta?.piaImports||{},oldImports=previousState.meta?.piaImports||{};
+        const piaIds=new Set([...Object.keys(currentPia),...Object.keys(oldPia),...Object.keys(currentImports),...Object.keys(oldImports)]);
+        for(const id of piaIds){
+            const value=currentPia[id];
+            const imported=currentImports[id];
+            if(value==null){if(oldPia[id]!=null||oldImports[id]!=null)operations.push({op:'delete',store:'pia',id});continue;}
+            if(force||changed(value,oldPia[id])||changed(imported,oldImports[id]))operations.push({op:'put',store:'pia',id,type:'pia',value:{record:value,imported:imported||null}});
+        }
+
+        const currentRegistry=snapshot.syncRegistry||{},oldRegistry=previousState.syncRegistry||{};
+        const syncEntries=[];
+        for(const [id,value] of Object.entries(currentRegistry.students||{}))syncEntries.push({id:`student:${id}`,type:'student',value});
+        for(const [id,value] of Object.entries(currentRegistry.sessions||{}))syncEntries.push({id:`session:${id}`,type:'session',value});
+        if(currentRegistry.agenda)syncEntries.push({id:'agenda:agenda',type:'agenda',value:currentRegistry.agenda});
+        for(const [id,value] of Object.entries(currentRegistry.pia||{}))syncEntries.push({id:`pia:${id}`,type:'pia',value});
+        const oldSyncEntries=[];
+        for(const [id,value] of Object.entries(oldRegistry.students||{}))oldSyncEntries.push({id:`student:${id}`,value});
+        for(const [id,value] of Object.entries(oldRegistry.sessions||{}))oldSyncEntries.push({id:`session:${id}`,value});
+        if(oldRegistry.agenda)oldSyncEntries.push({id:'agenda:agenda',value:oldRegistry.agenda});
+        for(const [id,value] of Object.entries(oldRegistry.pia||{}))oldSyncEntries.push({id:`pia:${id}`,value});
+        const oldSyncMap=new Map(oldSyncEntries.map(x=>[x.id,x.value])),newSyncMap=new Map(syncEntries.map(x=>[x.id,x.value]));
+        for(const item of syncEntries)if(force||!oldSyncMap.has(item.id)||changed(item.value,oldSyncMap.get(item.id)))operations.push({op:'put',store:'sync',id:item.id,type:item.type,value:item.value});
+        for(const id of oldSyncMap.keys())if(!newSyncMap.has(id))operations.push({op:'delete',store:'sync',id});
+
+        const metaValue={ownerId:accountKey,migrationStatus:'complete',identity:snapshot.identity||{},sync:snapshot.sync||{},meta:journalierSplitMeta(snapshot),updatedAt:new Date().toISOString()};
+        const oldMetaValue={ownerId:accountKey,migrationStatus:'complete',identity:previousState.identity||{},sync:previousState.sync||{},meta:journalierSplitMeta(previousState)};
+        if(force||changed(metaValue,oldMetaValue))operations.push({op:'put',store:'meta',id:accountKey,type:'meta',value:metaValue});
+        operations.push({op:'put',store:'migration',id:accountKey,type:'migration',value:{status:'complete',schemaVersion:JOURNALIER_STORAGE_SCHEMA_VERSION,completedAt:new Date().toISOString()}});
+        return operations;
+    }
+
+    async function journalierApplyPersistOperations(operations,accountKey,key){
+        if(!operations.length)return;
+        const prepared=[];
+        for(const op of operations){
+            if(op.op==='delete'){prepared.push(op);continue;}
+            prepared.push({...op,record:await journalierEncryptRecord(accountKey,op.type,op.id,op.value,key)});
+        }
+        const db=await journalierOpenStorageDB();
+        try{
+            await journalierTx(db,JOURNALIER_STORAGE_STORES,'readwrite',tx=>{
+                for(const op of prepared){const store=tx.objectStore(op.store);if(op.op==='delete')store.delete(op.id);else store.put(op.record);}
+            });
         }finally{db.close();}
     }
 
-    async function journalierDeleteStoreRecord(storeName,key){
-        const db=await journalierOpenDB();
-        try{
-            const tx=db.transaction(storeName,'readwrite');
-            tx.objectStore(storeName).delete(key);
-            await new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('Suppression IndexedDB impossible.'));tx.onabort=()=>reject(tx.error||new Error('Suppression IndexedDB interrompue.'));});
-        }finally{db.close();}
+    function securePersistState(){
+        return JournalierSecurity.persist(DataStore.state).then(result=>{journalierScheduleAutoSync?.();return result;}).catch(_=>{console.error('Écriture sécurisée impossible.');setCloudStatus?.('⚠️ Les données locales n’ont pas pu être sécurisées.','error');return false;});
     }
+
+    function secureNormalizeStudent(student) {
+        const out={...(student||{})};
+        if(!out.studentId) out.studentId=out.id!=null?`student_${String(out.id)}`:journalierUuid('student');
+        if(out.id==null) out.id=Date.now()+Math.floor(Math.random()*1000);
+        out.ownerId=JournalierSecurity.accountKey;
+        out.dataVersion=JOURNALIER_ARCHITECTURE_VERSION;
+        return out;
+    }
+
+    function secureNormalizeSession(entry,students=[]) {
+        const out=journalierClone(entry||{});
+        out.type=out.type||'SEANCE';
+        out.schemaVersion=JOURNALIER_ARCHITECTURE_VERSION;
+        out.dataVersion=JOURNALIER_ARCHITECTURE_VERSION;
+        out.ownerId=JournalierSecurity.accountKey;
+        out.id=out.id||journalierUuid('session');
+        const name=out.identification?.eleve||'';
+        const student=students.find(s=>String(s.studentId)===String(out.identification?.eleveId))||(typeof syncFindStudentByName==='function'?syncFindStudentByName(students,name):students.find(s=>s.nom===name));
+        if(student) out.identification={...(out.identification||{}),eleveId:student.studentId};
+        out.metadata={...(out.metadata||{}),createdAt:out.metadata?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),source:out.metadata?.source||'journalier-v72'};
+        return out;
+    }
+
+    function secureNormalizeAgenda(prev) {
+        const ownerId=JournalierSecurity.accountKey;
+        return normalizeAgendaData(prev, ownerId);
+    }
+
+    function v72EnsureSyncRegistry(state){
+        if(!state.syncRegistry||typeof state.syncRegistry!=='object')state.syncRegistry={version:'1',students:{},sessions:{},agenda:null,pia:{}};
+        state.syncRegistry.students=state.syncRegistry.students||{};state.syncRegistry.sessions=state.syncRegistry.sessions||{};
+        if(!('agenda' in state.syncRegistry))state.syncRegistry.agenda=null;state.syncRegistry.pia=state.syncRegistry.pia||{};state.syncRegistry.version='1';
+        state.sync=state.sync||{status:'local-only',lastSyncAt:null,pendingChanges:0};return state.syncRegistry;
+    }
+    function v72RecountPending(state){
+        const r=v72EnsureSyncRegistry(state);let count=0,conflicts=0;
+        for(const x of Object.values(r.students)){if(x?.status==='conflict')conflicts++;if(['local-pending','local-changed','conflict','deleted-pending'].includes(x?.status))count++;}
+        for(const x of Object.values(r.sessions)){if(x?.status==='conflict')conflicts++;if(['local-pending','local-changed','conflict','deleted-pending'].includes(x?.status))count++;}
+        for(const x of Object.values(r.pia||{})){if(x?.status==='conflict')conflicts++;if(['local-pending','local-changed','conflict'].includes(x?.status))count++;}
+        if(r.agenda?.status==='conflict')conflicts++;if(['local-pending','local-changed','conflict'].includes(r.agenda?.status))count++;
+        state.sync.pendingChanges=count;if(conflicts>0)state.sync.status='conflict';else if(count===0)state.sync.status='synced';else if(state.sync.status==='conflict'||state.sync.status==='synced')state.sync.status='pending';
+    }
+    function v72MarkStudentsPending(state,previous,next){
+        const r=v72EnsureSyncRegistry(state),before=new Map((previous||[]).map(x=>[String(x.studentId),{item:x,fingerprint:syncFingerprint(syncWithoutVolatileMeta(x))}])),afterIds=new Set((next||[]).map(x=>String(x.studentId)));
+        for(const item of next||[]){const id=String(item.studentId),previousEntry=before.get(id),old=previousEntry?.fingerprint||null,fp=syncFingerprint(syncWithoutVolatileMeta(item));if(old!==fp){const existing=r.students[id]||{};r.students[id]={...existing,status:existing.status==='conflict'?'conflict':'local-pending',localDirtyAt:new Date().toISOString()};}}
+        for(const [id,previousEntry] of before.entries()){if(afterIds.has(id))continue;const existing=r.students[id]||{};r.students[id]={...existing,status:'deleted-pending',studentId:id,localDeletedAt:new Date().toISOString()};}
+    }
+    function v72MarkSessionsPending(state,previous,next){
+        const r=v72EnsureSyncRegistry(state),before=new Map((previous||[]).map(x=>[x.id,x])),afterIds=new Set((next||[]).map(x=>String(x.id)));
+        for(const item of next||[]){const fp=syncFingerprint(syncWithoutVolatileMeta(item)),oldItem=before.get(item.id),old=oldItem?syncFingerprint(syncWithoutVolatileMeta(oldItem)):null;if(old!==fp){const existing=r.sessions[item.id]||{},previousStudentId=String(existing.studentId||oldItem?.identification?.eleveId||'').trim(),nextStudentId=String(item.identification?.eleveId||'').trim(),studentChanged=Boolean(oldItem&&previousStudentId&&nextStudentId&&previousStudentId!==nextStudentId);r.sessions[item.id]={...existing,status:existing.status==='conflict'?'conflict':'local-pending',studentId:nextStudentId||previousStudentId||null,localDirtyAt:new Date().toISOString(),...(studentChanged&&existing.remoteId?{remoteMovePending:true,previousStudentId,previousRemoteId:existing.remoteId,previousETag:existing.eTag||null}:{}),};}}
+        for(const oldItem of previous||[]){const id=String(oldItem.id);if(!afterIds.has(id)&&r.sessions[id])r.sessions[id]={...r.sessions[id],status:'deleted-pending',studentId:oldItem.identification?.eleveId||r.sessions[id].studentId||null,localDeletedAt:new Date().toISOString()};}
+    }
+    function v72MarkAgendaPending(state,previous,next){const r=v72EnsureSyncRegistry(state),old=syncFingerprint(syncWithoutVolatileMeta(previous||{})),fp=syncFingerprint(syncWithoutVolatileMeta(next||{}));if(old!==fp)r.agenda={...(r.agenda||{}),status:r.agenda?.status==='conflict'?'conflict':'local-pending',localDirtyAt:new Date().toISOString()};}
+    function v72MarkPiaPending(state,studentId){if(!studentId)return;const r=v72EnsureSyncRegistry(state),existing=r.pia[studentId]||{};r.pia[studentId]={...existing,status:existing.status==='conflict'?'conflict':'local-pending',localDirtyAt:new Date().toISOString()};v72RecountPending(state);}
+    function v72MarkPiaSynced(state,studentId,pia){if(!studentId)return;const r=v72EnsureSyncRegistry(state),fp=syncFingerprint(syncWithoutVolatileMeta(pia||{}));r.pia[studentId]={...(r.pia[studentId]||{}),fingerprint:fp,remoteFingerprint:fp,lastCheckedAt:new Date().toISOString(),status:'synced'};v72RecountPending(state);}
+
+    const JournalierSecurity={
+        accountKey:null,account:null,key:null,state:null,ready:false,recoveryRequired:false,recoveryReason:null,
+        writeQueue:Promise.resolve(),persistedSnapshot:null,
+        async activate(account){
+            const accountKey=await journalierHashIdentity(account);
+            const key=await journalierGetEncryptionKey(accountKey);
+            let loaded=await journalierLoadGranularState(accountKey,key,account);
+            let needsMigration=false;
+            this.recoveryRequired=false;this.recoveryReason=null;
+            if(!loaded){
+                const legacyKey=await journalierGetLegacyRecord(JOURNALIER_KEY_STORE,accountKey).catch(()=>null);
+                if(legacyKey?.key){
+                    const legacy=await journalierReadLegacyState(accountKey,legacyKey.key);
+                    if(legacy.state){
+                        loaded={state:legacy.state};
+                        needsMigration=true;
+                    }else if(legacy.error){
+                        this.recoveryRequired=true;this.recoveryReason='legacy-unreadable';
+                        loaded={state:journalierEmptyState(accountKey,account)};
+                    }else{
+                        loaded={state:journalierEmptyState(accountKey,account)};
+                    }
+                }else {loaded={state:journalierEmptyState(accountKey,account)};needsMigration=false;}
+            }
+            const state=journalierClone(loaded.state||journalierEmptyState(accountKey,account));
+            if(!state||state.ownerId&&state.ownerId!==accountKey)throw new Error('Isolation de compte locale invalide : chargement refusé.');
+            state.version=JOURNALIER_ARCHITECTURE_VERSION;state.ownerId=accountKey;
+            state.identity={...(state.identity||{}),accountKey,provider:'microsoft365',displayName:account?.name||account?.username||state.identity?.displayName||'Utilisateur Journalier',microsoftAccount:account?.username||state.identity?.microsoftAccount||null};
+            v72EnsureSyncRegistry(state);state.meta??={};state.meta.piaRecords??={};state.meta.piaImports??={};state.meta.storageSchemaVersion=JOURNALIER_STORAGE_SCHEMA_VERSION;
+            this.accountKey=accountKey;this.account=account;this.key=key;this.state=state;this.ready=true;this.persistedSnapshot=(loaded.state&&!needsMigration&&!this.recoveryRequired)?journalierClone(state):null;
+            if(needsMigration||!this.persistedSnapshot||this.recoveryRequired)await this.persist(state,{force:true});
+            try{await navigator.storage?.persist?.();}catch(_){}
+            return state;
+        },
+        lock(){this.accountKey=null;this.account=null;this.key=null;this.state=null;this.ready=false;this.recoveryRequired=false;this.recoveryReason=null;this.persistedSnapshot=null;this.writeQueue=Promise.resolve();},
+        persist(state,{force=false}={}){
+            if(!this.ready||!this.accountKey||!this.key)return Promise.reject(new Error('Stockage local verrouillé : authentification Microsoft requise.'));
+            this.writeQueue=this.writeQueue.catch(()=>{}).then(async()=>{
+                const snapshot=journalierClone(this.state||state),previous=this.persistedSnapshot;
+                const operations=await journalierPreparePersistOperations(snapshot,previous,this.accountKey,this.key,force||!previous);
+                await journalierApplyPersistOperations(operations,this.accountKey,this.key);
+                this.persistedSnapshot=journalierClone(snapshot);
+                return {ok:true,operations:operations.length};
+            });
+            return this.writeQueue;
+        },
+        async diagnostics(){
+            const db=await journalierOpenStorageDB();
+            try{
+                const counts={};
+                for(const store of JOURNALIER_STORAGE_STORES){if(store==='keys')continue;counts[store]=await journalierRequest(db.transaction(store,'readonly').objectStore(store).count());}
+                let persistent=null;try{persistent=await navigator.storage?.persisted?.();}catch(_){}
+                return {database:JOURNALIER_STORAGE_DB_NAME,schemaVersion:JOURNALIER_STORAGE_SCHEMA_VERSION,stores:counts,persistentStorage:persistent,recoveryRequired:this.recoveryRequired};
+            }finally{db.close();}
+        }
+    };
 
     async function journalierHashIdentity(account){
         const raw=String(account?.homeAccountId||account?.localAccountId||'').trim();
-        if(!raw) throw new Error('Identité Microsoft stable indisponible : connexion refusée.');
+        if(!raw)throw new Error('Identité Microsoft stable indisponible : connexion refusée.');
         const bytes=new TextEncoder().encode(`journalier-v72:${raw}`);
         const digest=await crypto.subtle.digest('SHA-256',bytes);
         return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
     }
 
-    async function journalierGetEncryptionKey(accountKey){
-        let record=await journalierGetStoreRecord(JOURNALIER_KEY_STORE,accountKey);
-        if(record?.key) return record.key;
-        const key=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
-        await journalierPutStoreRecord(JOURNALIER_KEY_STORE,{accountKey,key,createdAt:new Date().toISOString()});
-        return key;
-    }
-
-    async function journalierEncryptState(state,key){
-        const iv=crypto.getRandomValues(new Uint8Array(12));
-        const payload=new TextEncoder().encode(JSON.stringify(state));
-        const cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,payload);
-        return {version:1,iv:Array.from(iv),ciphertext:Array.from(new Uint8Array(cipher)),updatedAt:new Date().toISOString()};
-    }
-
-    async function journalierDecryptState(record,key){
-        if(!record?.ciphertext||!Array.isArray(record.iv)) throw new Error('Données locales sécurisées invalides.');
-        const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(record.iv)},key,new Uint8Array(record.ciphertext));
-        return JSON.parse(new TextDecoder().decode(plain));
-    }
-
-    const JournalierSecurity = {
-        accountKey:null,
-        account:null,
-        key:null,
-        state:null,
-        ready:false,
-        writeQueue:Promise.resolve(),
-        async activate(account){
-            const accountKey=await journalierHashIdentity(account);
-            const key=await journalierGetEncryptionKey(accountKey);
-            const record=await journalierGetStoreRecord(JOURNALIER_STATE_STORE,accountKey);
-            let state=record ? await journalierDecryptState(record,key) : journalierEmptyState(accountKey,account);
-            if(!state || state.ownerId!==accountKey || state.identity?.accountKey!==accountKey) throw new Error('Isolation de compte locale invalide : chargement refusé.');
-            state.version=JOURNALIER_ARCHITECTURE_VERSION;
-            state.ownerId=accountKey;
-            state.identity={...(state.identity||{}),accountKey,provider:'microsoft365',displayName:account?.name||account?.username||state.identity?.displayName||'Utilisateur Journalier',microsoftAccount:account?.username||state.identity?.microsoftAccount||null};
-            v72EnsureSyncRegistry(state); state.meta??={}; state.meta.piaRecords??={};
-            this.accountKey=accountKey; this.account=account; this.key=key; this.state=state; this.ready=true;
-            return state;
+    const DataStore={
+        get state(){
+            if(!JournalierSecurity.ready)return {version:JOURNALIER_ARCHITECTURE_VERSION,ownerId:null,identity:null,students:[],sessions:[],agenda:{},sync:{status:'locked',lastSyncAt:null,pendingChanges:0},syncRegistry:{version:'1',students:{},sessions:{},agenda:null,pia:{}},meta:{locked:true}};
+            const s=JournalierSecurity.state;v72EnsureSyncRegistry(s);return s;
         },
-        lock(){
-            this.accountKey=null; this.account=null; this.key=null; this.state=null; this.ready=false;
-        },
-        persist(state){
-            if(!this.ready||!this.accountKey||!this.key) return Promise.reject(new Error('Stockage local verrouillé : authentification Microsoft requise.'));
-            const snapshot=journalierClone(state), accountKey=this.accountKey, key=this.key;
-            this.writeQueue=this.writeQueue.catch(()=>{}).then(async()=>journalierPutStoreRecord(JOURNALIER_STATE_STORE,{accountKey,...await journalierEncryptState(snapshot,key)}));
-            return this.writeQueue;
-        }
+        getIdentity(){return this.state.identity;},getState(){return this.state;},persistState(state){return securePersistState(state);},isReady(){return JournalierSecurity.ready;},
+        getStudents(){return this.state.students.filter(s=>s.ownerId===this.state.ownerId);},
+        saveStudents(list){if(!JournalierSecurity.ready)throw new Error('Connectez-vous avec votre compte Microsoft avant de modifier les données.');const previous=this.state.students.filter(s=>s.ownerId===this.state.ownerId).map(journalierClone),normalized=(Array.isArray(list)?list:[]).map(secureNormalizeStudent);this.state.students=normalized;v72MarkStudentsPending(this.state,previous,this.getStudents());v72RecountPending(this.state);return securePersistState();},
+        getSessions(){return this.state.sessions.filter(s=>s.ownerId===this.state.ownerId);},
+        saveSessions(list){if(!JournalierSecurity.ready)throw new Error('Connectez-vous avec votre compte Microsoft avant de modifier les données.');const previous=this.state.sessions.filter(s=>s.ownerId===this.state.ownerId).map(journalierClone),students=this.getStudents();this.state.sessions=(Array.isArray(list)?list:[]).map(x=>secureNormalizeSession(x,students));v72MarkSessionsPending(this.state,previous,this.getSessions());v72RecountPending(this.state);return securePersistState();},
+        getAgenda(){return secureNormalizeAgenda(this.state.agenda);},
+        saveAgenda(agenda){if(!JournalierSecurity.ready)throw new Error('Connectez-vous avec votre compte Microsoft avant de modifier les données.');const previous=secureNormalizeAgenda(this.state.agenda||{});this.state.agenda=secureNormalizeAgenda(agenda);v72MarkAgendaPending(this.state,previous,this.getAgenda());v72RecountPending(this.state);return securePersistState();},
+        diagnostics(){const s=this.state,agenda=this.getAgenda();return{architectureVersion:s.version,accountScoped:true,encryptedLocalStore:true,storageDatabase:JOURNALIER_STORAGE_DB_NAME,storageSchemaVersion:JOURNALIER_STORAGE_SCHEMA_VERSION,recoveryRequired:JournalierSecurity.recoveryRequired,students:this.getStudents().length,sessions:this.getSessions().length,agendaEntries:Array.isArray(agenda?.__events)?agenda.__events.length:0,sync:s.sync,syncRegistry:s.syncRegistry};}
     };
+
+    window.JournalierDataStore=DataStore;
+    async function activateJournalierAccount(account){await JournalierSecurity.activate(account);if(JournalierSecurity.recoveryRequired)setCloudStatus?.('⚠️ Le coffre local historique est illisible. Journalier tente une récupération depuis OneDrive sans supprimer les données distantes.','error');window.JournalierV74?.refreshStudents?.();renderStudentsView?.();renderAgenda?.();updateStudentDropdowns?.();updateStats?.();window.JournalierV74?.renderDashboard?.();window.updateMicrosoftUI?.();return JournalierSecurity.state;}
 
     /* AUTO-LOCK — verrouillage mémoire après inactivité.
        Les données restent dans IndexedDB sous forme chiffrée AES-GCM.
@@ -257,146 +563,6 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
         if(JournalierSecurity.ready&&Date.now()-journalierLastActivity>=JOURNALIER_AUTOLOCK_MS)journalierAutoLockNow();
         else if(JournalierSecurity.ready)journalierScheduleAutoLock();
     });
-
-    function securePersistState(){
-        return JournalierSecurity.persist(DataStore.state).then(result=>{ journalierScheduleAutoSync?.(); return result; }).catch(_=>{ console.error('Écriture sécurisée impossible.'); setCloudStatus?.('⚠️ Les données locales n’ont pas pu être sécurisées.','error'); return false; });
-    }
-
-    function secureNormalizeStudent(student) {
-        const out={...(student||{})};
-        if(!out.studentId) out.studentId=out.id!=null?`student_${String(out.id)}`:journalierUuid('student');
-        if(out.id==null) out.id=Date.now()+Math.floor(Math.random()*1000);
-        out.ownerId=JournalierSecurity.accountKey;
-        out.dataVersion=JOURNALIER_ARCHITECTURE_VERSION;
-        return out;
-    }
-
-    function secureNormalizeSession(entry,students=[]) {
-        const out=journalierClone(entry||{});
-        out.type=out.type||'SEANCE';
-        out.schemaVersion=JOURNALIER_ARCHITECTURE_VERSION;
-        out.dataVersion=JOURNALIER_ARCHITECTURE_VERSION;
-        out.ownerId=JournalierSecurity.accountKey;
-        out.id=out.id||journalierUuid('session');
-        const name=out.identification?.eleve||'';
-        const student=students.find(s=>String(s.studentId)===String(out.identification?.eleveId))||(typeof syncFindStudentByName==='function'?syncFindStudentByName(students,name):students.find(s=>s.nom===name));
-        if(student) out.identification={...(out.identification||{}),eleveId:student.studentId};
-        out.metadata={...(out.metadata||{}),createdAt:out.metadata?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),source:out.metadata?.source||'journalier-v72'};
-        return out;
-    }
-
-    function secureNormalizeAgenda(prev) {
-        const ownerId=JournalierSecurity.accountKey;
-        return normalizeAgendaData(prev, ownerId);
-    }
-
-    function v72EnsureSyncRegistry(state){
-        if(!state.syncRegistry||typeof state.syncRegistry!=='object')state.syncRegistry={version:'1',students:{},sessions:{},agenda:null,pia:{}};
-        state.syncRegistry.students=state.syncRegistry.students||{}; state.syncRegistry.sessions=state.syncRegistry.sessions||{};
-        if(!('agenda' in state.syncRegistry))state.syncRegistry.agenda=null; state.syncRegistry.pia=state.syncRegistry.pia||{}; state.syncRegistry.version='1';
-        state.sync=state.sync||{status:'local-only',lastSyncAt:null,pendingChanges:0}; return state.syncRegistry;
-    }
-    function v72RecountPending(state){
-        const r=v72EnsureSyncRegistry(state); let count=0,conflicts=0;
-        for(const x of Object.values(r.students)){if(x?.status==='conflict')conflicts++;if(['local-pending','local-changed','conflict','deleted-pending'].includes(x?.status))count++;}
-        for(const x of Object.values(r.sessions)){if(x?.status==='conflict')conflicts++;if(['local-pending','local-changed','conflict','deleted-pending'].includes(x?.status))count++;}
-        for(const x of Object.values(r.pia||{})){if(x?.status==='conflict')conflicts++;if(['local-pending','local-changed','conflict'].includes(x?.status))count++;}
-        if(r.agenda?.status==='conflict')conflicts++; if(['local-pending','local-changed','conflict'].includes(r.agenda?.status))count++;
-        state.sync.pendingChanges=count; if(conflicts>0)state.sync.status='conflict'; else if(count===0)state.sync.status='synced'; else if(state.sync.status==='conflict'||state.sync.status==='synced')state.sync.status='pending';
-    }
-    function v72MarkStudentsPending(state,previous,next){
-        const r=v72EnsureSyncRegistry(state);
-        const before=new Map(
-            (previous||[]).map(x=>[
-                String(x.studentId),
-                {
-                    item:x,
-                    fingerprint:syncFingerprint(syncWithoutVolatileMeta(x))
-                }
-            ])
-        );
-        const afterIds=new Set((next||[]).map(x=>String(x.studentId)));
-
-        // Élèves encore présents : détecter les modifications locales.
-        for(const item of next||[]){
-            const id=String(item.studentId);
-            const previousEntry=before.get(id);
-            const old=previousEntry?.fingerprint||null;
-            const fp=syncFingerprint(syncWithoutVolatileMeta(item));
-
-            if(old!==fp){
-                const existing=r.students[id]||{};
-                r.students[id]={
-                    ...existing,
-                    status:existing.status==='conflict'
-                        ?'conflict'
-                        :'local-pending',
-                    localDirtyAt:new Date().toISOString()
-                };
-            }
-        }
-
-        // Élèves supprimés localement : conserver une trace persistante.
-        for(const [id,previousEntry] of before.entries()){
-            if(afterIds.has(id))continue;
-
-            const existing=r.students[id]||{};
-            r.students[id]={
-                ...existing,
-                status:'deleted-pending',
-                studentId:id,
-                localDeletedAt:new Date().toISOString()
-            };
-        }
-    }
-    function v72MarkSessionsPending(state,previous,next){
-        const r=v72EnsureSyncRegistry(state),before=new Map((previous||[]).map(x=>[x.id,x])),afterIds=new Set((next||[]).map(x=>String(x.id)));
-        for(const item of next||[]){const fp=syncFingerprint(syncWithoutVolatileMeta(item)),oldItem=before.get(item.id),old=oldItem?syncFingerprint(syncWithoutVolatileMeta(oldItem)):null;if(old!==fp){const existing=r.sessions[item.id]||{};r.sessions[item.id]={...existing,status:existing.status==='conflict'?'conflict':'local-pending',studentId:item.identification?.eleveId||existing.studentId||null,localDirtyAt:new Date().toISOString()};}}
-        for(const oldItem of previous||[]){const id=String(oldItem.id);if(!afterIds.has(id)&&r.sessions[id])r.sessions[id]={...r.sessions[id],status:'deleted-pending',studentId:oldItem.identification?.eleveId||r.sessions[id].studentId||null,localDeletedAt:new Date().toISOString()};}
-    }
-    function v72MarkAgendaPending(state,previous,next){const r=v72EnsureSyncRegistry(state),old=syncFingerprint(syncWithoutVolatileMeta(previous||{})),fp=syncFingerprint(syncWithoutVolatileMeta(next||{}));if(old!==fp)r.agenda={...(r.agenda||{}),status:r.agenda?.status==='conflict'?'conflict':'local-pending',localDirtyAt:new Date().toISOString()};}
-    function v72MarkPiaPending(state,studentId){if(!studentId)return;const r=v72EnsureSyncRegistry(state),existing=r.pia[studentId]||{};r.pia[studentId]={...existing,status:existing.status==='conflict'?'conflict':'local-pending',localDirtyAt:new Date().toISOString()};v72RecountPending(state);}
-    function v72MarkPiaSynced(state,studentId,pia){if(!studentId)return;const r=v72EnsureSyncRegistry(state),fp=syncFingerprint(syncWithoutVolatileMeta(pia||{}));r.pia[studentId]={...(r.pia[studentId]||{}),fingerprint:fp,remoteFingerprint:fp,lastCheckedAt:new Date().toISOString(),status:'synced'};v72RecountPending(state);}
-
-    const DataStore={
-        get state(){
-            if(!JournalierSecurity.ready) return {version:JOURNALIER_ARCHITECTURE_VERSION,ownerId:null,identity:null,students:[],sessions:[],agenda:{},sync:{status:'locked',lastSyncAt:null,pendingChanges:0},syncRegistry:{version:'1',students:{},sessions:{},agenda:null,pia:{}},meta:{locked:true}};
-            const s=JournalierSecurity.state;v72EnsureSyncRegistry(s);return s;
-        },
-        getIdentity(){return this.state.identity;},
-        getState(){return this.state;},
-        persistState(state){return securePersistState(state);},
-        isReady(){return JournalierSecurity.ready;},
-        getStudents(){return this.state.students.filter(s=>s.ownerId===this.state.ownerId);},
-        saveStudents(list){
-            if(!JournalierSecurity.ready)throw new Error('Connectez-vous avec votre compte Microsoft avant de modifier les données.');
-            const previous=this.state.students.filter(s=>s.ownerId===this.state.ownerId).map(journalierClone),normalized=(Array.isArray(list)?list:[]).map(secureNormalizeStudent);
-            this.state.students=normalized;v72MarkStudentsPending(this.state,previous,this.getStudents());v72RecountPending(this.state);securePersistState();
-        },
-        getSessions(){return this.state.sessions.filter(s=>s.ownerId===this.state.ownerId);},
-        saveSessions(list){
-            if(!JournalierSecurity.ready)throw new Error('Connectez-vous avec votre compte Microsoft avant de modifier les données.');
-            const previous=this.state.sessions.filter(s=>s.ownerId===this.state.ownerId).map(journalierClone),students=this.getStudents();
-            this.state.sessions=(Array.isArray(list)?list:[]).map(x=>secureNormalizeSession(x,students));v72MarkSessionsPending(this.state,previous,this.getSessions());v72RecountPending(this.state);securePersistState();
-        },
-        getAgenda(){return secureNormalizeAgenda(this.state.agenda);},
-        saveAgenda(agenda){
-            if(!JournalierSecurity.ready)throw new Error('Connectez-vous avec votre compte Microsoft avant de modifier les données.');
-            const previous=secureNormalizeAgenda(this.state.agenda||{});this.state.agenda=secureNormalizeAgenda(agenda);v72MarkAgendaPending(this.state,previous,this.getAgenda());v72RecountPending(this.state);securePersistState();
-        },
-        diagnostics(){const s=this.state,agenda=this.getAgenda();return{architectureVersion:s.version,accountScoped:true,encryptedLocalStore:true,students:this.getStudents().length,sessions:this.getSessions().length,agendaEntries:Array.isArray(agenda?.__events)?agenda.__events.length:0,sync:s.sync,syncRegistry:s.syncRegistry};}
-    };
-
-    // Interface publique V74 vers le DataStore de Journalier.
-    // Aucun nouveau stockage : V74 utilise le store existant.
-    window.JournalierDataStore = DataStore;
-
-    async function activateJournalierAccount(account){
-        await JournalierSecurity.activate(account);
-        window.JournalierV74?.refreshStudents?.();
-        renderStudentsView?.(); renderAgenda?.(); updateStudentDropdowns?.(); updateStats?.(); window.JournalierV74?.renderDashboard?.(); window.updateMicrosoftUI?.();
-        return JournalierSecurity.state;
-    }
 
     function isJournalSession(entry){return Boolean(entry&&entry.type==='SEANCE'&&String(entry.schemaVersion)===JOURNALIER_ARCHITECTURE_VERSION);}
 
@@ -573,6 +739,40 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
             students.forEach(s=>{const o=document.createElement('option');o.value=String(s.nom??'');o.textContent=`${s.nom??''} (${s.classe??''}${s.ecole?' - '+s.ecole:''})`;el.appendChild(o);});
             if(current)el.value=current;
         });
+    }
+
+    function prepareEditingStudentSelection(entry){
+        const select=document.getElementById('f-eleve');
+        if(!select)return;
+        const students=getStudents();
+        const originalName=String(entry?.identification?.eleve||'').trim();
+        const originalId=String(entry?.identification?.eleveId||'').trim();
+        const currentStudent=students.find(s=>originalId&&String(s.studentId)===originalId)
+            ||students.find(s=>originalName&&String(s.nom)===originalName)
+            ||null;
+
+        const note=document.getElementById('session-student-edit-note');
+        if(currentStudent){
+            select.value=String(currentStudent.nom||'');
+            select.removeAttribute('data-orphan-session-student');
+            if(note){note.textContent='';note.classList.add('hidden');}
+            return currentStudent;
+        }
+
+        if(!originalName)return null;
+        let option=Array.from(select.options).find(o=>String(o.value)===originalName);
+        if(!option){
+            option=document.createElement('option');
+            option.value=originalName;
+            option.textContent=`${originalName} · ancien élève — choisissez un élève actuel`;
+            option.dataset.orphanSessionStudent='true';
+            select.insertBefore(option,select.options[1]||null);
+        }
+        option.dataset.orphanSessionStudent='true';
+        select.value=originalName;
+        select.setAttribute('data-orphan-session-student','true');
+        if(note){note.textContent='Cette séance était rattachée à un élève qui n’existe plus dans le dossier. Choisissez l’élève actuel avant d’enregistrer.';note.classList.remove('hidden');}
+        return null;
     }
 
     function getTodayInApp(){
@@ -836,6 +1036,21 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
     function jumpToDayView(isoDate){selectedDateISO=isoDate;switchAgendaView('day');}
     function viewSlotDetails(id){const entry=getDB().find(e=>e.id==id);if(entry&&isJournalSession(entry)){const p=sessionParts(entry),q2=entry.q2||{},q4=entry.q4||{},q6=entry.q6||{};alert(`👤 ${p.eleve}\n📅 ${p.date} (${sessionPeriodLabel(entry)}) — ${p.matiere}\n\n• Interventions : ${(entry.contexte?.typeIntervention||[]).join(', ')||'N/A'}\n• Fonctionnement : ${(q2.observations||[]).map(x=>x.observation).join(', ')||'Aucune'}\n• Adaptations : ${(q4.types||[]).join(', ')||'Aucune'}\n• Suites : ${(q6.actions||[]).join(', ')||'Aucune'}`);}}
 
+    function updatePIAPrompt() {
+        const studentName = document.getElementById('f-eleve').value;
+        const students = getStudents();
+        const student = students.find(s => s.nom === studentName);
+        const box = document.getElementById('pia-widget-box');
+        const text = document.getElementById('pia-widget-text');
+
+        if (student && student.pia) {
+            text.innerText = student.pia;
+            box.classList.remove('hidden');
+        } else {
+            box.classList.add('hidden');
+        }
+    }
+
     function quickFormForSlot(dateIso,period,eleve,matiere){clearObservationForm();document.getElementById('f-date').value=dateIso;document.getElementById('f-periode-start').value=period;document.getElementById('f-periode-end').value=period;syncSessionPeriodRange();if(eleve)document.getElementById('f-eleve').value=eleve;if(matiere){const input=document.getElementById('f-matiere');input.value=matiere;input.dataset.selectedSubject=matiere;const note=document.getElementById('session-subject-selected-note');if(note)note.textContent=`Matière sélectionnée : ${matiere}`;}updatePIAPrompt();showTab('form');}
 
     function populatePeriodSelectors(startValue,endValue){const start=document.getElementById('modal-slot-period-start'),end=document.getElementById('modal-slot-period-end');if(!start||!end)return;const options=periods.map(p=>`<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');start.innerHTML=options;end.innerHTML=options;start.value=startValue||periods[0];end.value=endValue||startValue||periods[0];syncAgendaEndPeriod();start.onchange=syncAgendaStartPeriod;end.onchange=syncAgendaEndPeriod;}
@@ -957,8 +1172,10 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
         const p=sessionParts(entry);
         if(!p.eleve||!p.date||!p.start||!p.end)throw new Error('Identification de la séance incomplète.');
         const students=getStudents();
-        const student=students.find(s=>s.nom===p.eleve);
-        if(!student)throw new Error('Élève introuvable dans le dossier courant.');
+        const student=students.find(s=>String(s.nom)===String(p.eleve));
+        if(!student){
+            throw new Error('L’élève actuellement sélectionné n’existe plus dans le dossier. Choisissez un élève actuel avant d’enregistrer la séance.');
+        }
         const normalized=secureNormalizeSession({...entry, schemaVersion:JOURNALIER_ARCHITECTURE_VERSION, ownerId:DataStore.getIdentity().ownerId}, students);
         normalized.identification={...(normalized.identification||{}),eleveId:student.studentId};
         const db=getDB();
@@ -1006,6 +1223,9 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
         if(saveButton) saveButton.textContent='💾 Enregistrer la séance';
         const form = document.getElementById('observationForm');
         form.reset();
+        const studentEditNote=document.getElementById('session-student-edit-note');
+        if(studentEditNote){studentEditNote.textContent='';studentEditNote.classList.add('hidden');}
+        document.getElementById('f-eleve')?.removeAttribute('data-orphan-session-student');
         const confirmation=document.getElementById('session-save-confirmation');
         if(confirmation){ confirmation.classList.add('hidden'); confirmation.style.display='none'; }
         document.getElementById('f-date').value = selectedDateISO || getInitialDateISO();
@@ -1996,6 +2216,13 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
             closeAllChoiceMenus();
             clearObservationForm();
             updateStudentDropdowns();
+            renderStudentsView();
+            const profileModal=document.getElementById('studentProfileModal');
+            if(profileModal&&!profileModal.classList.contains('hidden')){
+                const updatedStudent=getStudents().find(s=>String(s.nom)===String(student));
+                if(updatedStudent)openStudentProfile(updatedStudent.id);
+                else closeStudentProfile();
+            }
             const rs=document.getElementById('r-eleve');
             if(rs&&rs.value!==student){rs.value=student;rs.dispatchEvent(new CustomEvent('journalier:student-context-change',{bubbles:true}));}
             loadStudentHistory();
@@ -2406,6 +2633,12 @@ function updateStudentSubjectsSummary(){const box=document.getElementById('stude
         renderSessionMainSubjectBubbles();
         closeAllChoiceMenus();
         showTab('form');
+        // showTab('form') reconstruit les listes d'élèves. Réappliquer ensuite
+        // la référence historique, y compris si l'ancien élève n'existe plus.
+        prepareEditingStudentSelection(entry);
+        refreshSessionSubjectsForStudent();
+        renderSessionMainSubjectBubbles();
+        updatePIAPrompt();
         window.scrollTo({top:0,behavior:'smooth'});
         showAppToast('✏️ Séance chargée pour modification.','success',3000);
     }
@@ -3550,9 +3783,9 @@ document.addEventListener('reset',()=>setTimeout(()=>{syncBubbleSelects();syncBu
 
 
 function renderSessionMainSubjectBubbles(){
-    const studentId=Number(document.getElementById('f-eleve')?.value||0);
+    const selected=String(document.getElementById('f-eleve')?.value||'').trim();
     const box=document.getElementById('session-main-subject-bubbles'); if(!box) return;
-    const student=getStudents().find(s=>Number(s.id)===studentId);
+    const student=getStudents().find(s=>String(s.studentId)===selected||String(s.id)===selected||String(s.nom)===selected);
     const subjects=student?normalizeSubjectList(student.matieres):[];
     box.innerHTML=subjects.map(sub=>`<button type="button" class="ux-main-subject js-session-subject" data-value="${escapeHtml(sub)}">${escapeHtml(sub)}</button>`).join('');
     const current=(document.getElementById('f-matiere')?.value||'').trim().toLowerCase();
@@ -3626,6 +3859,9 @@ JR_HANDLERS["h19"] = {attr:"onclick", fn:function(event){
 showTab('reports')
 }};
 JR_HANDLERS["h20"] = {attr:"onchange", fn:function(event){
+const select=event.currentTarget,note=document.getElementById('session-student-edit-note'),selectedOption=select?.options?.[select.selectedIndex];
+if(select?.dataset) { if(selectedOption?.dataset?.orphanSessionStudent==='true') select.dataset.orphanSessionStudent='true'; else select.removeAttribute('data-orphan-session-student'); }
+if(note){if(selectedOption?.dataset?.orphanSessionStudent==='true'){note.textContent='Cette séance était rattachée à un élève qui n’existe plus dans le dossier. Choisissez l’élève actuel avant d’enregistrer.';note.classList.remove('hidden');}else{note.textContent='';note.classList.add('hidden');}}
 updatePIAPrompt(); refreshSessionSubjectsForStudent(); renderSessionMainSubjectBubbles(); updateObservationSuggestions();
 }};
 JR_HANDLERS["h21"] = {attr:"onchange", fn:function(event){

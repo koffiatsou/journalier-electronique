@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-09-30 — Coffre local granulaire et récupération du stockage
+
+- Remplacement de la persistance monolithique `journalier-secure-v72/states` par le coffre granulaire `journalier-secure-v74`.
+- Séparation des élèves, séances, événements Agenda, PIA, registre de synchronisation, métadonnées et migration en enregistrements indépendants.
+- Conservation volontaire des identifiants techniques `v72` pour la compatibilité historique.
+- Chiffrement AES-GCM 256 bits par enregistrement avec IV unique et AAD liée au compte/type/identifiant.
+- Ajout d'une empreinte SHA-256 du ciphertext pour les diagnostics d'intégrité.
+- Transactions IndexedDB demandant `durability: 'strict'` lorsque disponible.
+- Migration V72 → coffre granulaire non destructive et idempotente ; aucune suppression automatique du coffre historique.
+- Détection explicite du cas `Failed to read large IndexedDB value` et préparation d'une récupération depuis OneDrive lorsque le coffre historique est illisible.
+- La récupération distante est persistée localement avant que l'interface ne considère l'opération terminée.
+- Documentation ajoutée dans `docs/STOCKAGE_LOCAL_V74.md`.
+- Ajout du contrat `tests/storage-v74-contract.test.mjs`.
+
+## 2026-09-30 — Modification des séances et réattribution d’élève
+
+- Le formulaire de modification d’une séance permet de réattribuer la séance à un autre élève existant.
+- Lorsqu’une séance référence un élève supprimé, l’ancien nom reste visible uniquement comme repère historique et l’interface demande explicitement de choisir un élève actuel avant l’enregistrement.
+- La sauvegarde conserve l’identifiant de la séance et réécrit le `studentId` selon l’élève actuellement sélectionné.
+- Lorsqu’un changement d’élève concerne une séance déjà synchronisée, le SyncManager prépare le déplacement du fichier JSON vers le dossier du nouvel élève et supprime l’ancienne copie après écriture validée.
+- Aucun nouveau backend, canal de stockage ou permission Microsoft Graph n’est ajouté.
+- Ajout d’un contrat de test dédié aux scénarios de modification et de réattribution.
+
 ## 2026-09-30 — Nettoyage et cohérence du modèle Agenda V74
 
 - Modèle d’état unifié : Planifié / Réalisé / Annulé.

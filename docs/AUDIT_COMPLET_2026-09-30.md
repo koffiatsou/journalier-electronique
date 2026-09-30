@@ -44,7 +44,7 @@ Lorsqu'une séance est supprimée, le rapprochement rétablit l'état Planifié 
 Le validateur Agenda n'accepte comme états actifs que `proposed`, `realized` et `cancelled`.
 Les propriétés Graph existantes de l'événement sont conservées et les métadonnées Outlook restent réservées à la future synchronisation.
 
-L'architecture SPA + Entra ID + Microsoft Graph + OneDrive AppFolder reste inchangée.
+L'architecture SPA + Entra ID + Microsoft Graph + OneDrive AppFolder reste inchangée ; la persistance locale a toutefois été refondue en coffre IndexedDB granulaire.
 
 ## CSP / sécurité
 
@@ -81,3 +81,71 @@ Le résultat de ces commandes devra être traité comme la validation du build d
 Les artefacts intermédiaires de correction du 30 septembre (`docs/AUDIT_CORRECTIONS_2026-09-30.md` et `.patch`) ne font pas partie de cette base propre. Le nouvel audit global est conservé dans ce fichier.
 
 Les documents historiques et les mentions historiques de décisions antérieures restent distincts du modèle actif ; ils ne constituent pas des états fonctionnels du code actuel.
+
+## 2026-09-30 — Chantier modification des séances
+
+### Diagnostic confirmé
+
+Le formulaire de séance stocke le nom de l’élève dans `f-eleve`. En mode édition, `showTab('form')` reconstruit les listes d’élèves avec les élèves actuellement présents. Une séance dont l’ancien élève a été supprimé perdait donc sa valeur sélectionnée lors de ce rafraîchissement et ne pouvait pas être enregistrée sous un nouvel élève.
+
+### Correction
+
+- résolution prioritaire par `identification.eleveId`, puis compatibilité par nom ;
+- repère explicite pour un ancien élève supprimé ;
+- obligation pratique de sélectionner un élève actuel avant sauvegarde ;
+- conservation de l’`id` de séance et réattribution du `studentId` ;
+- gestion du déplacement OneDrive d’une séance déjà synchronisée ;
+- contrat de test dédié ajouté dans `tests/session-edit-contract.test.mjs`.
+
+### Vérifications réalisées
+
+- syntaxe `journalier-core.js` et `microsoft-core.js` ;
+- contrat de modification de séance ;
+- simulation ancien élève supprimé → nouvel élève ;
+- simulation de conservation de l’identifiant de séance ;
+- vérification statique du déplacement distant et du traitement `412`.
+
+Le build Vite final doit être rejoué dans l’environnement Codespaces après installation complète des dépendances.
+
+
+## 2026-09-30 — Refonte du stockage local granulaire
+
+### Symptôme
+
+Dans le navigateur, la base historique `journalier-secure-v72` et ses stores restaient accessibles, mais la lecture du seul enregistrement `states` échouait avec `UnknownError: Failed to read large IndexedDB value`.
+
+### Cause confirmée
+
+La concentration de l'ensemble de l'état métier dans une seule valeur chiffrée est confirmée comme faiblesse architecturale et point de concentration du risque. Le mécanisme interne exact du navigateur ayant conduit à l'erreur n'est pas considéré comme déterminé.
+
+### Correction implémentée
+
+- ajout du coffre `journalier-secure-v74` ;
+- stores séparés `meta`, `students`, `sessions`, `agenda`, `pia`, `sync`, `keys`, `migration` ;
+- persistance par objet au lieu d'une réécriture monolithique ;
+- AES-GCM 256 bits par enregistrement avec IV unique ;
+- AAD liée à l'identité, au type et à l'identifiant ;
+- empreinte SHA-256 du ciphertext pour diagnostic d'intégrité ;
+- transaction IndexedDB demandant `durability: 'strict'` ;
+- conservation du coffre v72 et migration non destructive ;
+- distinction entre première installation, migration et coffre historique illisible ;
+- récupération distante compatible avec l'hydratation OneDrive existante ;
+- persistance de la récupération distante attendue avant confirmation à l'utilisateur.
+
+### Compatibilité
+
+Les identifiants techniques historiques `v72`, le modèle `DataStore`, le registre de synchronisation et les chemins OneDrive sont conservés. Aucun backend ni nouvelle permission Graph n'est ajouté.
+
+### Tests exécutés
+
+- `node --check` sur tous les fichiers JavaScript sous `src/` : **PASS** ;
+- `node tests/storage-v74-contract.test.mjs` : **PASS** ;
+- `node tests/agenda-v74-contract.test.mjs` : **PASS** ;
+- `node tests/session-edit-contract.test.mjs` : **PASS** ;
+- contrôle statique de l'isolation par clé de stockage compte/type/identifiant : **PASS** ;
+- contrôle statique du chiffrement AES-GCM/AAD/empreinte : **PASS** ;
+- contrôle statique de la transaction stricte : **PASS**.
+
+### Limitation de validation
+
+Le build Vite n'a pas pu être exécuté dans cet environnement : l'installation des dépendances via `npm ci` n'a pas abouti complètement et `node_modules/.bin/vite` reste absent. Le build de production et le parcours navigateur authentifié Entra/Graph/OneDrive restent donc à exécuter dans le Codespace disposant des dépendances complètes.

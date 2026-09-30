@@ -92,13 +92,17 @@ L'identité Entra est utilisée pour isoler les données locales. L'application 
 
 ## 4. Stockage local
 
-Les données locales sont stockées dans IndexedDB.
+Les données locales sont stockées dans IndexedDB. Depuis le 30 septembre 2026, la persistance métier utilise le coffre granulaire `journalier-secure-v74` plutôt qu'un unique enregistrement d'état. Les élèves, séances, événements Agenda, PIA et registres de synchronisation sont isolés en enregistrements distincts.
 
-Elles sont protégées par un mécanisme de chiffrement AES-GCM.
+Chaque enregistrement métier est protégé par AES-GCM 256 bits avec une `CryptoKey` non extractible, un IV aléatoire propre à l'enregistrement et des données authentifiées (AAD) liées à l'identité du compte, au type et à l'identifiant de l'objet. Une empreinte SHA-256 du ciphertext est conservée pour les diagnostics d'intégrité.
 
-Le modèle de stockage est associé à l'identité de l'utilisateur afin d'éviter qu'un compte puisse récupérer directement les données locales d'un autre compte.
+Les écritures sont appliquées par transaction IndexedDB ; `durability: 'strict'` est demandé lorsque le navigateur le supporte. L'ancien coffre `journalier-secure-v72` reste conservé pour la migration et n'est pas supprimé automatiquement.
 
-Le fonctionnement détaillé du stockage local est décrit dans `ARCHITECTURE.md`.
+Si le coffre historique existe mais que son gros enregistrement `states` est devenu illisible, l'application ne prétend pas avoir récupéré les données : elle conserve la source, initialise un coffre granulaire séparé et peut tenter une récupération depuis l'AppFolder OneDrive.
+
+La granularité réduit le rayon d'impact d'une corruption locale : une valeur métier est isolée des autres. Elle ne supprime cependant pas les risques propres au navigateur : un XSS exécuté dans la même origine peut agir dans le contexte applicatif. La CSP, l'échappement des données et les contrôles d'entrée restent donc indispensables.
+
+Le fonctionnement détaillé du stockage local est décrit dans `ARCHITECTURE.md` et `docs/STOCKAGE_LOCAL_V74.md`.
 
 ---
 
@@ -117,6 +121,10 @@ Il faut distinguer :
 Le fait qu'une donnée soit traitée localement ne constitue pas à lui seul une garantie générale de conformité : la gestion des données introduites dans l'application doit rester conforme aux règles institutionnelles applicables.
 
 ---
+
+### Cycle de vie de la clé locale
+
+La clé du nouveau coffre est générée côté navigateur et conservée comme `CryptoKey` non extractible. L'application ne place pas la clé dans le code source, dans le dépôt ou dans localStorage. La perte de cette clé rend le ciphertext local correspondant indéchiffrable ; la récupération fonctionnelle doit alors repartir d'une copie distante disponible dans OneDrive.
 
 ## 6. Microsoft Graph et OneDrive
 
@@ -139,6 +147,8 @@ Les opérations Graph sont réalisées avec les permissions prévues pour l'AppF
 Les écritures utilisent les ETags lorsque le mécanisme de synchronisation l'exige.
 
 Un conflit `HTTP 412 Precondition Failed` est traité comme un conflit de synchronisation et non comme une autorisation d'écraser silencieusement la donnée distante.
+
+Lorsqu’une séance existante est réattribuée à un autre élève, le fichier distant change de dossier dans `Journalier/eleves/{studentId}/seances/`. L’ancienne référence distante et son ETag sont conservés temporairement dans le registre de synchronisation. La nouvelle copie est écrite sur son nouvel emplacement sans réutiliser l’ETag de l’ancien fichier, puis l’ancienne copie est supprimée avec son propre ETag. Un `HTTP 412 Precondition Failed` pendant ce déplacement bloque l’opération et est présenté comme un conflit ; aucune suppression forcée n’est effectuée. Cette évolution ne requiert aucune permission Graph supplémentaire.
 
 ---
 
