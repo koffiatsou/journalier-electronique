@@ -23,7 +23,9 @@
     v72SyncAgenda,
     v72SyncSession,
     v72SyncStudent,
+    v74SavePIACloud,
     validateStrictAgenda,
+    validateStrictPIA,
     validateStrictSession,
     validateStrictStudent,
     DataStore,
@@ -79,6 +81,7 @@
       const studentFolders=(await listChildrenByItemId(studentsFolder.id)).filter(x=>x?.folder);
       const students=[];
       const sessions=[];
+      const pias=[];
       const errors=[];
       let sessionCount=0;
 
@@ -110,6 +113,17 @@
             }
           }catch(e){if(!String(e?.message||e).includes('Graph 404'))errors.push(`${folder.name}/seances: ${e?.message||String(e)}`);}
         }catch(e){errors.push(`${folder.name}/profil.json: ${e?.message||String(e)}`);}
+
+        try{
+          const piaItem=await itemByAppPath(`${LEGACY_NAME}/pia/${folder.name}/pia.json`).catch(()=>null);
+          if(piaItem){
+            const rawPia=await graphDownloadJsonByItemId(piaItem.id);
+            if(rawPia?.json){
+              if(validateStrictPIA)validateStrictPIA(rawPia.json,'PIA legacy');
+              pias.push(rawPia.json);
+            }
+          }
+        }catch(e){if(!String(e?.message||e).includes('Graph 404'))errors.push(`${folder.name}/pia.json: ${e?.message||String(e)}`);}
       }
 
       let agenda=null;
@@ -121,12 +135,13 @@
         if(!String(e?.message||e).includes('Graph 404'))errors.push(`agenda/agenda.json: ${e?.message||String(e)}`);
       }
 
-      const report={legacy,students,sessions,agenda,errors,studentCount:students.length,sessionCount,agendaPresent:Boolean(agenda)};
+      const report={legacy,students,sessions,pias,agenda,errors,studentCount:students.length,sessionCount,piaCount:pias.length,agendaPresent:Boolean(agenda)};
       state.analyzed=report;
       const lines=[
         'Analyse terminée.',
         `✓ ${students.length} élève(s)`,
         `✓ ${sessionCount} séance(s)`,
+        pias.length?`✓ ${pias.length} PIA détecté(s)`:'• aucun PIA legacy spécifique',
         agenda?'✓ agenda.json détecté':'⚠️ agenda.json absent',
         errors.length?`⚠️ ${errors.length} élément(s) à vérifier`:'✓ aucune erreur de validation',
         '',
@@ -204,6 +219,24 @@
       for(const s of r.sessions){
         const id=String(s.id), existing=await graphGetByPath(`${ACTIVE_ROOT}/eleves/${encodeURIComponent(s.identification?.eleveId||s.identification?.eleve)}/seances/${encodeURIComponent(id)}.json`).catch(()=>null);
         if(!existing)await v72SyncSession(s,null,[...studentMap.values()]);
+      }
+      if(r.pias?.length){
+        const stateNow=DataStore.getState();
+        stateNow.meta??={};
+        stateNow.meta.piaRecords??={};
+        stateNow.meta.piaImports??={};
+        for(const p of r.pias){
+          const sid=String(p.studentId||'');
+          if(!sid)continue;
+          if(p.type==='PIA_ANNUEL'){
+            stateNow.meta.piaRecords[sid]=p;
+            if(p.sourceContinuity)stateNow.meta.piaImports[sid]=p.sourceContinuity;
+          }else if(p.sourceContinuity){
+            stateNow.meta.piaImports[sid]=p.sourceContinuity;
+          }
+          if(v74SavePIACloud)await v74SavePIACloud(p).catch(e=>console.warn('Sync PIA legacy impossible',sid,e));
+        }
+        await DataStore.persistState(stateNow);
       }
       if(r.agenda&&!nonEmptyAgenda(existingAgenda))await v72SyncAgenda(r.agenda,null);
 

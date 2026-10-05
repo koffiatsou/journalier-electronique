@@ -3,37 +3,22 @@
 <head>
     <link rel="stylesheet" href="./src/styles/journalier.css">
     <link rel="stylesheet" href="./src/styles/journalier-ux-responsive.css">
+    <link rel="stylesheet" href="./src/styles/apple-premium.css">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net https://*.files.1drv.com https://*.sharepoint.com; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Pôle Territorial – Agenda & Suivi Orthopédagogique · V74</title>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    <title>Pôle territorial WBE BXL – Agenda &amp; Suivi · V74</title>
 </head>
 <body>
 <div id="app-toast" role="status" aria-live="polite"></div>
 
 <header>
     <div class="header-brand">
+        <img src="./logo-poles-territoriaux.svg" alt="Logo Pôles territoriaux" class="brand-logo-img" width="54" height="37">
         <div>
-            <h1 class="brand-title">Orthopédagogie Pôle Territorial</h1>
-            <p class="brand-sub">Suivi Individuel & Collectif • Année Scolaire 2026-2027</p>
+            <h1 class="brand-title">Pôle territorial WBE BXL</h1>
+            <p class="brand-sub">Suivi Individuel &amp; Collectif • Année Scolaire 2026-2027</p>
         </div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end">
@@ -650,8 +635,19 @@
             </div>
         </div>
 
+        <div class="grid-2" style="margin:4px 0 10px;">
+            <div>
+                <label>Heure précise début :</label>
+                <input type="time" id="modal-slot-time-start" step="600">
+            </div>
+            <div>
+                <label>Heure précise fin :</label>
+                <input type="time" id="modal-slot-time-end" step="600">
+            </div>
+        </div>
+
         <div style="background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px;margin:4px 0 14px;font-size:0.78rem;color:#1e40af;">
-            💡 <strong>Plusieurs périodes :</strong> choisissez simplement la première et la dernière période. Le même événement sera automatiquement étendu sur tous les créneaux intermédiaires.
+            💡 <strong>Plusieurs périodes & horaires :</strong> choisissez la première et dernière période, ou ajustez les heures précises ci-dessus.
         </div>
 
         <div class="agenda-recurrence-box">
@@ -659,7 +655,50 @@
             <select id="modal-slot-recurrence" data-jr-handlers="h56">
                 <option value="weekly">Récurrente hebdomadaire</option>
                 <option value="unique">Événement unique</option>
+                <option value="daily">Quotidien</option>
+                <option value="monthly">Mensuel</option>
+                <option value="yearly">Annuel</option>
             </select>
+            <div id="modal-recurrence-advanced" style="margin-top:8px;display:grid;gap:8px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <label style="font-size:0.8rem;margin:0;">Répéter tous les :</label>
+                    <input type="number" id="modal-slot-recurrence-interval" min="1" max="99" value="1" style="width:65px;padding:4px 8px;">
+                    <span id="modal-slot-recurrence-unit" style="font-size:0.8rem;color:#64748b;">semaine(s)</span>
+                </div>
+                <div id="modal-slot-recurrence-days-box" style="display:none;">
+                    <label style="font-size:0.8rem;display:block;margin-bottom:4px;">Jours de la semaine :</label>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <label style="font-size:0.75rem;"><input type="checkbox" class="recurrence-day-checkbox" value="0"> Lun</label>
+                        <label style="font-size:0.75rem;"><input type="checkbox" class="recurrence-day-checkbox" value="1"> Mar</label>
+                        <label style="font-size:0.75rem;"><input type="checkbox" class="recurrence-day-checkbox" value="2"> Mer</label>
+                        <label style="font-size:0.75rem;"><input type="checkbox" class="recurrence-day-checkbox" value="3"> Jeu</label>
+                        <label style="font-size:0.75rem;"><input type="checkbox" class="recurrence-day-checkbox" value="4"> Ven</label>
+                        <label style="font-size:0.75rem;"><input type="checkbox" class="recurrence-day-checkbox" value="5"> Sam</label>
+                        <label style="font-size:0.75rem;"><input type="checkbox" class="recurrence-day-checkbox" value="6"> Dim</label>
+                    </div>
+                </div>
+                <div id="modal-slot-recurrence-monthly-box" style="display:none;">
+                    <label style="font-size:0.8rem;display:block;margin-bottom:4px;">Mode mensuel :</label>
+                    <select id="modal-slot-recurrence-monthly-mode" style="padding:4px 8px;font-size:0.8rem;width:100%;">
+                        <option value="dayOfMonth">Même quantième du mois</option>
+                        <option value="first">Premier jour de ce type du mois</option>
+                        <option value="second">Deuxième jour de ce type du mois</option>
+                        <option value="third">Troisième jour de ce type du mois</option>
+                        <option value="fourth">Quatrième jour de ce type du mois</option>
+                        <option value="last">Dernier jour de ce type du mois</option>
+                    </select>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <label style="font-size:0.8rem;margin:0;">Durée de la série :</label>
+                    <select id="modal-slot-recurrence-end-type" style="padding:4px 8px;font-size:0.8rem;">
+                        <option value="noEnd">Sans fin (année scolaire)</option>
+                        <option value="endDate">Jusqu'à une date</option>
+                        <option value="count">Après N occurrences</option>
+                    </select>
+                    <input type="date" id="modal-slot-recurrence-end-date" style="display:none;padding:4px 8px;font-size:0.8rem;" min="2026-08-24" max="2027-07-02">
+                    <input type="number" id="modal-slot-recurrence-count" style="display:none;width:70px;padding:4px 8px;font-size:0.8rem;" min="1" max="100" value="10" placeholder="10">
+                </div>
+            </div>
             <div id="modal-slot-recurrence-note" class="recurrence-note">Cette activité sera répétée chaque semaine le même jour.</div>
         </div>
 
@@ -851,6 +890,10 @@
       <button id="ms-sync-diagnose-action" class="btn-secondary" type="button" data-jr-handlers="h77" disabled>Analyser la synchronisation</button>
       <button id="ms-sync-action" class="btn-primary" type="button" data-jr-handlers="h78" disabled>Synchroniser maintenant</button>
       <button id="ms-resolve-conflict-action" class="btn-secondary" type="button" data-jr-handlers="h79" disabled>Résoudre un conflit</button>
+      <button id="ms-reset-onedrive-action" class="btn-secondary" type="button" style="border-color:#fca5a5;color:#b91c1c;" disabled>Repartir de OneDrive</button>
+    </div>
+    <div id="ms-reset-onedrive-help" style="margin-top:8px;font-size:.75rem;color:#64748b;line-height:1.45;">
+      <strong>Repartir de OneDrive :</strong> Remplace les données actuellement présentes sur cet appareil par les données enregistrées dans votre espace Journalier OneDrive.
     </div>
     <div id="ms-conflict-resolution-panel" class="ms-status-box" style="display:none;margin-top:12px">
       <div style="font-weight:700;margin-bottom:8px">Résolution contrôlée des conflits</div>
@@ -863,10 +906,42 @@
   </div>
 </div>
 
+<div id="ms-reset-onedrive-modal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="ms-reset-modal-title">
+  <div class="modal-card" style="max-width:540px;width:calc(100% - 32px);padding:24px;border-top:4px solid #dc2626;">
+    <h3 id="ms-reset-modal-title" style="margin-top:0;color:#991b1b;font-size:1.15rem;">REPARTIR DE ONEDRIVE</h3>
+    <div style="font-size:0.88rem;color:#334155;line-height:1.5;margin-bottom:12px;">
+      Cette opération va remplacer les données actuellement enregistrées sur cet appareil par les données présentes dans OneDrive.
+      <br><br>
+      <strong>Les modifications locales non synchronisées ne seront pas conservées.</strong>
+    </div>
+    <div id="ms-reset-uncommitted-warning" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 12px;border-radius:8px;font-size:0.82rem;margin-bottom:14px;">
+      ⚠️ <strong>Des modifications locales non synchronisées ont été détectées.</strong>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;">
+      <button type="button" class="btn-secondary" id="ms-reset-onedrive-cancel">Annuler</button>
+      <button type="button" class="btn-primary" id="ms-reset-onedrive-confirm" style="background:#dc2626;border-color:#b91c1c;">Continuer et écraser le local</button>
+    </div>
+  </div>
+</div>
+
+<div id="eventSeriesChoiceModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal-card" style="max-width:440px;padding:22px;">
+    <h3 style="margin-top:0;font-size:1.1rem;">Modifier une activité récurrente</h3>
+    <p style="font-size:0.85rem;color:#475569;margin-bottom:16px;">Voulez-vous modifier uniquement cette occurrence ou toute la série récurrente ?</p>
+    <div style="display:grid;gap:8px;">
+      <button type="button" class="btn-primary" id="btn-edit-occurrence-only">Modifier cette occurrence uniquement</button>
+      <button type="button" class="btn-secondary" id="btn-edit-following">Cette occurrence et les suivantes</button>
+      <button type="button" class="btn-secondary" id="btn-edit-entire-series">Modifier toute la série</button>
+      <button type="button" class="btn-secondary" id="btn-cancel-series-choice" style="margin-top:4px;">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <script type="module" src="./src/msal-bridge.js"></script>
 <script type="module" src="./src/app/microsoft-core.js"></script>
 <script type="module" src="./src/v74/v74-migration.js"></script>
 <script type="module" src="./src/v74/v74-runtime.js"></script>
+<script type="module" src="./src/app/apple-ux-enhancements.js"></script>
 
 </body>
 </html>

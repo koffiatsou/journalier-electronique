@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node tests/storage-v74-contract.test.mjs && node tests/agenda-v74-contract.test.mjs && node tests/session-edit-contract.test.mjs && node tests/sync-deletion-contract.test.mjs && node tests/pia-sync-contract.test.mjs"
   },
   "dependencies": {
     "@azure/msal-browser": "5.22.0",
