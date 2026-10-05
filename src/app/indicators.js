@@ -83,19 +83,35 @@ window.showJournalierDiagnostics=()=>{
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initJournalierDiagnostics,{once:true});
 else initJournalierDiagnostics();
 
+const SUPPORTED_INDICATOR_VERSIONS = Object.freeze(['0.5', '0.5.1', '0.4']);
+const INDICATOR_ARRAY_FIELDS = Object.freeze([
+    'niveaux',
+    'niveaux_preferentiels',
+    'formes',
+    'mots_cles_rapprochement',
+    'concepts_rapprochement',
+    'actions_associees',
+    'exemples_formulation_terrain'
+]);
+const INDICATOR_STRING_FIELDS = Object.freeze([
+    'domaine',
+    'sous_domaine',
+    'specificite',
+    'specificite_rapprochement',
+    'mode_niveau'
+]);
+
 function normalizeIndicatorLibraryV05(data){
     if(!data || typeof data!=='object') throw new Error('Bibliothèque JSON invalide');
-    if(!['0.5','0.5.1','0.4'].includes(String(data.version||''))) throw new Error(`Version JSON inattendue: ${data.version || 'inconnue'}`);
+    if(!SUPPORTED_INDICATOR_VERSIONS.includes(String(data.version||''))) throw new Error(`Version JSON inattendue: ${data.version || 'inconnue'}`);
     if(!Array.isArray(data.indicateurs_apprentissage)) throw new Error('indicateurs_apprentissage absent ou invalide');
 
     data.indicateurs_apprentissage = data.indicateurs_apprentissage
         .filter(x=>x && typeof x==='object' && x.id && x.matiere && x.texte)
         .map(x=>{
             const out={...x};
-            ['niveaux','niveaux_preferentiels','formes','mots_cles_rapprochement','concepts_rapprochement','actions_associees','exemples_formulation_terrain']
-                .forEach(key=>{ if(!Array.isArray(out[key])) out[key]=[]; });
-            ['domaine','sous_domaine','specificite','specificite_rapprochement','mode_niveau']
-                .forEach(key=>{ if(out[key]==null) out[key]=''; });
+            INDICATOR_ARRAY_FIELDS.forEach(key=>{ if(!Array.isArray(out[key])) out[key]=[]; });
+            INDICATOR_STRING_FIELDS.forEach(key=>{ if(out[key]==null) out[key]=''; });
             return out;
         });
 
@@ -109,16 +125,36 @@ function normalizeIndicatorLibraryV05(data){
 
     const ids=new Set();
     const duplicates=[];
+    const byId = new Map();
     data.indicateurs_apprentissage.forEach(x=>{
-        if(ids.has(String(x.id))) duplicates.push(String(x.id));
-        ids.add(String(x.id));
+        const sid = String(x.id);
+        if(ids.has(sid)) duplicates.push(sid);
+        ids.add(sid);
+        if(!byId.has(sid)) byId.set(sid, x);
     });
+    data.indicateurs_par_id = byId;
     if(duplicates.length) console.warn('⚠ IDs d’indicateurs dupliqués dans la bibliothèque v0.4',duplicates);
     if(!data.indicateurs_apprentissage.some(x=>x.mots_cles_rapprochement.length || x.concepts_rapprochement.length || x.exemples_formulation_terrain.length)){
         console.warn('⚠ La bibliothèque v0.4 ne contient aucun signal sémantique exploitable.');
     }
     return data;
 }
+
+/**
+ * Recherche un indicateur par son identifiant unique.
+ * Utilise l'index Map en O(1) si disponible, avec repli linéaire.
+ * @param {string|number} id
+ * @returns {object|null}
+ */
+function findIndicatorById(id) {
+    if (!id || !INDICATOR_LIBRARY) return null;
+    const sid = String(id);
+    if (INDICATOR_LIBRARY.indicateurs_par_id instanceof Map) {
+        return INDICATOR_LIBRARY.indicateurs_par_id.get(sid) || null;
+    }
+    return INDICATOR_LIBRARY.indicateurs_apprentissage?.find(x => String(x.id || '') === sid) || null;
+}
+window.findIndicatorById = findIndicatorById;
 
 async function loadIndicatorLibrary() {
     const url = './bibliotheque_indicateurs_v0_5_1.json';

@@ -53,9 +53,9 @@ function v72ConflictEntries(){
 }
 function updateMicrosoftUI(){
   const status=document.getElementById('ms-config-status'),login=document.getElementById('ms-login-action'),logout=document.getElementById('ms-logout-action'),dot=document.getElementById('ms-dot'),label=document.getElementById('ms-account-label'),button=document.getElementById('ms-connect-btn');
-  const prepare=document.getElementById('ms-prepare-cloud-action'),verify=document.getElementById('ms-verify-cloud-action'),appTest=document.getElementById('ms-appfolder-test-action'),diagnose=document.getElementById('ms-sync-diagnose-action'),sync=document.getElementById('ms-sync-action'),resolve=document.getElementById('ms-resolve-conflict-action');
-  if(msAccount){if(dot)dot.classList.add('connected');if(label)label.textContent=msAccount.name||msAccount.username||'Microsoft connecté';if(button)button.querySelector('span:last-child').textContent='Compte Microsoft';if(status){status.className='ms-status-box success';status.textContent='Connecté : '+(msAccount.username||msAccount.name||'compte Microsoft');}if(login){login.textContent='Reconnecter';login.disabled=false;}if(logout)logout.disabled=false;if(prepare)prepare.disabled=false;if(verify)verify.disabled=false;if(appTest)appTest.disabled=false;if(diagnose)diagnose.disabled=false;if(sync)sync.disabled=false;if(resolve)resolve.disabled=!v72ConflictEntries().length;return;}
-  if(dot)dot.classList.remove('connected');if(label)label.textContent='Microsoft non connecté';if(button)button.querySelector('span:last-child').textContent='Connexion Microsoft';if(status){status.className='ms-status-box';status.textContent=msConfigReady()?'La configuration est prête. Vous pouvez lancer la connexion Microsoft.':'Configuration Microsoft incomplète.';}if(login)login.disabled=!msConfigReady();if(logout)logout.disabled=true;if(prepare)prepare.disabled=true;if(verify)verify.disabled=true;if(appTest)appTest.disabled=true;if(diagnose)diagnose.disabled=true;if(sync)sync.disabled=true;if(resolve)resolve.disabled=true;
+  const prepare=document.getElementById('ms-prepare-cloud-action'),verify=document.getElementById('ms-verify-cloud-action'),appTest=document.getElementById('ms-appfolder-test-action'),diagnose=document.getElementById('ms-sync-diagnose-action'),sync=document.getElementById('ms-sync-action'),resolve=document.getElementById('ms-resolve-conflict-action'),reset=document.getElementById('ms-reset-onedrive-action');
+  if(msAccount){if(dot)dot.classList.add('connected');if(label)label.textContent=msAccount.name||msAccount.username||'Microsoft connecté';if(button)button.querySelector('span:last-child').textContent='Compte Microsoft';if(status){status.className='ms-status-box success';status.textContent='Connecté : '+(msAccount.username||msAccount.name||'compte Microsoft');}if(login){login.textContent='Reconnecter';login.disabled=false;}if(logout)logout.disabled=false;if(prepare)prepare.disabled=false;if(verify)verify.disabled=false;if(appTest)appTest.disabled=false;if(diagnose)diagnose.disabled=false;if(sync)sync.disabled=false;if(resolve)resolve.disabled=!v72ConflictEntries().length;if(reset)reset.disabled=false;return;}
+  if(dot)dot.classList.remove('connected');if(label)label.textContent='Microsoft non connecté';if(button)button.querySelector('span:last-child').textContent='Connexion Microsoft';if(status){status.className='ms-status-box';status.textContent=msConfigReady()?'La configuration est prête. Vous pouvez lancer la connexion Microsoft.':'Configuration Microsoft incomplète.';}if(login)login.disabled=!msConfigReady();if(logout)logout.disabled=true;if(prepare)prepare.disabled=true;if(verify)verify.disabled=true;if(appTest)appTest.disabled=true;if(diagnose)diagnose.disabled=true;if(sync)sync.disabled=true;if(resolve)resolve.disabled=true;if(reset)reset.disabled=true;
 }
 function openMicrosoftConnection(){animateClick(document.getElementById('ms-connect-btn'),'validating');const modal=document.getElementById('ms-connection-modal');if(modal)modal.style.display='flex';updateMicrosoftUI();}
 function closeMicrosoftConnection(){const modal=document.getElementById('ms-connection-modal');if(modal)modal.style.display='none';}
@@ -215,6 +215,7 @@ async function graphWriteJsonWithETag(parentId,filename,payload,eTag){
   else if(name==='sync.json')validateStrictSyncRecord(payload,'Écriture synchronisation');
   else if(name==='deletions.json')validateStrictDeletionRecord(payload,'Écriture registre des suppressions');
   else if(name==='probe.json')validateStrictJsonPayload(payload,'Écriture probe AppFolder',16*1024);
+  else if(name==='pia.json')validateStrictPIA(payload,'Écriture PIA');
   else if(/\.json$/i.test(name)&&/^[^/]+\.json$/i.test(name))validateStrictSession(payload,'Écriture séance');
   else validateStrictJsonPayload(payload,`Écriture ${name||'JSON'}`);
   const headers={'Content-Type':'text/plain'};
@@ -410,15 +411,17 @@ function validateStrictAgenda(agenda,label='Agenda'){
     if(!Array.isArray(agenda.__events)||agenda.__events.length>JOURNALIER_JSON_LIMITS.maxArray)throw new Error(`${label}.__events invalide.`);
     agenda.__events.forEach((ev,i)=>{
       if(!ev||typeof ev!=='object'||Array.isArray(ev))throw new Error(`${label}.__events[${i}] invalide.`);
-      assertAllowedKeys(ev,new Set(['eventId','seriesId','recurrence','type','eleve','eleveId','matiere','title','detail','local','dayIndex','date','startPeriod','endPeriod','eventStatus','realized','realizedAt','ownerId','dataVersion','createdAt','updatedAt','timezone','outlook']),`${label}.__events[${i}]`);
+      assertAllowedKeys(ev,new Set(['eventId','seriesId','recurrence','type','eleve','eleveId','matiere','title','detail','local','dayIndex','date','startPeriod','endPeriod','startDateTime','endDateTime','eventStatus','realized','realizedAt','ownerId','dataVersion','createdAt','updatedAt','timezone','recurrencePattern','recurrenceRange','pattern','range','interval','daysOfWeek','outlook']),`${label}.__events[${i}]`);
       if(typeof ev.eventId!=='string'||!ev.eventId||ev.eventId.length>160)throw new Error(`${label}.__events[${i}].eventId invalide.`);
       if(ev.seriesId!=null&&typeof ev.seriesId!=='string')throw new Error(`${label}.__events[${i}].seriesId invalide.`);
-      if(!['weekly','unique'].includes(ev.recurrence))throw new Error(`${label}.__events[${i}].recurrence invalide.`);
+      if(!['weekly','unique','daily','monthly','yearly'].includes(ev.recurrence))throw new Error(`${label}.__events[${i}].recurrence invalide.`);
       if(!['ELEVE','COLLAB','FORMATION','ADMIN','LIBRE'].includes(ev.type))throw new Error(`${label}.__events[${i}].type invalide.`);
       if(!['proposed','realized','cancelled'].includes(ev.eventStatus))throw new Error(`${label}.__events[${i}].eventStatus invalide.`);
       if(typeof ev.realized!=='boolean')throw new Error(`${label}.__events[${i}].realized invalide.`);
-      if(ev.dayIndex!=null&&(!Number.isInteger(Number(ev.dayIndex))||Number(ev.dayIndex)<0||Number(ev.dayIndex)>4))throw new Error(`${label}.__events[${i}].dayIndex invalide.`);
-      for(const k of ['eleve','eleveId','matiere','title','detail','local','date','startPeriod','endPeriod','ownerId','dataVersion','createdAt','updatedAt','timezone'])if(ev[k]!=null&&typeof ev[k]!=='string')throw new Error(`${label}.__events[${i}].${k} invalide.`);
+      if(ev.dayIndex!=null&&(!Number.isInteger(Number(ev.dayIndex))||Number(ev.dayIndex)<0||Number(ev.dayIndex)>6))throw new Error(`${label}.__events[${i}].dayIndex invalide.`);
+      for(const k of ['eleve','eleveId','matiere','title','detail','local','date','startPeriod','endPeriod','startDateTime','endDateTime','ownerId','dataVersion','createdAt','updatedAt','timezone'])if(ev[k]!=null&&typeof ev[k]!=='string')throw new Error(`${label}.__events[${i}].${k} invalide.`);
+      if(ev.recurrencePattern!=null&&typeof ev.recurrencePattern!=='object')throw new Error(`${label}.__events[${i}].recurrencePattern invalide.`);
+      if(ev.recurrenceRange!=null&&typeof ev.recurrenceRange!=='object')throw new Error(`${label}.__events[${i}].recurrenceRange invalide.`);
       if(ev.outlook!=null){
         if(typeof ev.outlook!=='object'||Array.isArray(ev.outlook))throw new Error(`${label}.__events[${i}].outlook invalide.`);
         assertAllowedKeys(ev.outlook,new Set(['calendarId','eventId','iCalUId','changeKey','webLink']),`${label}.__events[${i}].outlook`);
@@ -470,9 +473,77 @@ async function v72WriteDeletionRegistry(registry,eTag=null){
 }
 
 function validateRemoteJsonObject(value,label,maxBytes=1048576){return validateStrictJsonPayload(value,label,maxBytes);}
+function validateStrictPIA(pia,label='PIA'){
+  validateStrictJsonPayload(pia,label,10*1024*1024);
+  if(!pia||typeof pia!=='object'||Array.isArray(pia))throw new Error(`${label} invalide.`);
+  const sid=String(pia.studentId||'').trim();
+  if(!sid)throw new Error(`${label} : identifiant élève (studentId) manquant.`);
+  if(pia.type==='PIA_IMPORT_CONTINUITE'){
+    assertAllowedKeys(pia,new Set(['schemaVersion','type','studentId','role','sourceContinuity','metadata']),label);
+    if(!pia.sourceContinuity||typeof pia.sourceContinuity!=='object'){
+      throw new Error(`${label} : sourceContinuity manquante.`);
+    }
+  }else if(pia.type==='PIA_ANNUEL'){
+    if(typeof pia.id!=='string'&&typeof pia.id!=='number')throw new Error(`${label} : id invalide.`);
+  }else if(!pia.sourceContinuity&&!pia.extracted&&!pia.sections&&!pia.amenagements&&!pia.propositions){
+    throw new Error(`${label} : format de PIA non reconnu.`);
+  }
+  return true;
+}
+function validateRemotePIA(pia){return validateStrictPIA(pia,'PIA');}
 function validateRemoteStudent(student){return validateStrictStudent(student,'Profil élève');}
 function validateRemoteSession(session){return validateStrictSession(session,'Séance');}
 function validateRemoteAgenda(agenda){return validateStrictAgenda(agenda,'Agenda');}
+function countUncommittedSyncChanges(state){
+  const reg=state?.syncRegistry||{};
+  return Object.values(reg.students||{}).filter(x=>x?.status&&x.status!=='synced').length
+    +Object.values(reg.sessions||{}).filter(x=>x?.status&&x.status!=='synced').length
+    +Object.values(reg.pia||{}).filter(x=>x?.status&&x.status!=='synced').length
+    +(reg.agenda?.status&&reg.agenda.status!=='synced'?1:0);
+}
+function applyRemotePiaPayload(piaData,studentId,piaRecordsTarget,piaImportsTarget){
+  if(!piaData||!studentId)return;
+  if(piaData.type==='PIA_ANNUEL'){
+    if(piaRecordsTarget)piaRecordsTarget[studentId]=piaData;
+    if(piaData.sourceContinuity&&piaImportsTarget)piaImportsTarget[studentId]=piaData.sourceContinuity;
+  }else if(piaData.sourceContinuity&&piaImportsTarget){
+    piaImportsTarget[studentId]=piaData.sourceContinuity;
+  }
+}
+async function readRemoteStudentFolderInto(folderName,ownerId,importedStudents,importedSessions,registry){
+  try{
+    const profile=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/eleves/${encodeURIComponent(folderName)}/profil.json`);
+    validateRemoteStudent(profile.json);
+    const student=secureNormalizeStudent(profile.json);
+    student.ownerId=ownerId;
+    if(!student.studentId)student.studentId=folderName;
+    importedStudents.push(student);
+    const fp=syncFingerprint(syncWithoutVolatileMeta(student));
+    registry.students[student.studentId]={remoteId:profile.item.id,eTag:profile.item.eTag||null,fingerprint:fp,remoteFingerprint:fp,lastCheckedAt:new Date().toISOString(),status:'synced'};
+  }catch(e){
+    if(!String(e.message||e).includes('Graph 404'))throw e;
+  }
+  try{
+    const sessionsFolder=await graphGetByPath(`${GRAPH_ROOT_FOLDER}/eleves/${encodeURIComponent(folderName)}/seances`);
+    const sessionItems=await graphListChildren(sessionsFolder.id);
+    for(const item of (sessionItems?.value||[])){
+      if(!item?.file||!String(item.name||'').toLowerCase().endsWith('.json'))continue;
+      try{
+        const raw=await graphReadItemByIdWithJson(item.id);
+        validateRemoteSession(raw.json);
+        const session=secureNormalizeSession(raw.json,importedStudents);
+        session.ownerId=ownerId;
+        importedSessions.push(session);
+        const fp=syncFingerprint(syncWithoutVolatileMeta(session));
+        registry.sessions[session.id]={remoteId:item.id,eTag:item.item?.eTag||item.eTag||null,fingerprint:fp,remoteFingerprint:fp,studentId:session.identification?.eleveId||null,lastCheckedAt:new Date().toISOString(),status:'synced'};
+      }catch(e){
+        console.warn('Journalier — séance distante ignorée',item.name,e);
+      }
+    }
+  }catch(e){
+    if(!String(e.message||e).includes('Graph 404'))throw e;
+  }
+}
 async function hydrateMicrosoftDataIfLocalEmpty(){
   const state=DataStore.state;
   const localStudents=DataStore.getStudents();
@@ -495,36 +566,7 @@ async function hydrateMicrosoftDataIfLocalEmpty(){
   let children=await graphListChildren(structure.eleves.id);
   for(const folder of (children?.value||[])){
     if(!folder?.folder) continue;
-    try{
-      const profile=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/eleves/${encodeURIComponent(folder.name)}/profil.json`);
-      validateRemoteStudent(profile.json); const student=secureNormalizeStudent(profile.json);
-      student.ownerId=state.ownerId;
-      if(!student.studentId) student.studentId=folder.name;
-      importedStudents.push(student);
-      const fp=syncFingerprint(syncWithoutVolatileMeta(student));
-      registry.students[student.studentId]={remoteId:profile.item.id,eTag:profile.item.eTag||null,fingerprint:fp,remoteFingerprint:fp,lastCheckedAt:new Date().toISOString(),status:'synced'};
-    }catch(e){
-      if(!String(e.message||e).includes('Graph 404')) throw e;
-    }
-    try{
-      const sessionsFolder=await graphGetByPath(`${GRAPH_ROOT_FOLDER}/eleves/${encodeURIComponent(folder.name)}/seances`);
-      const sessionItems=await graphListChildren(sessionsFolder.id);
-      for(const item of (sessionItems?.value||[])){
-        if(!item?.file || !String(item.name||'').toLowerCase().endsWith('.json')) continue;
-        try{
-          const raw=await graphReadItemByIdWithJson(item.id);
-          validateRemoteSession(raw.json); const session=secureNormalizeSession(raw.json,importedStudents);
-          session.ownerId=state.ownerId;
-          importedSessions.push(session);
-          const fp=syncFingerprint(syncWithoutVolatileMeta(session));
-          registry.sessions[session.id]={remoteId:item.id,eTag:item.eTag||null,fingerprint:fp,remoteFingerprint:fp,studentId:session.identification?.eleveId||null,lastCheckedAt:new Date().toISOString(),status:'synced'};
-        }catch(e){
-          console.warn('Journalier — séance distante ignorée',item.name,e);
-        }
-      }
-    }catch(e){
-      if(!String(e.message||e).includes('Graph 404')) throw e;
-    }
+    await readRemoteStudentFolderInto(folder.name,state.ownerId,importedStudents,importedSessions,registry);
   }
 
   let importedAgenda={};
@@ -549,6 +591,82 @@ async function hydrateMicrosoftDataIfLocalEmpty(){
   updateMicrosoftUI();
   return {imported:true,students:importedStudents.length,sessions:importedSessions.length,agenda:Boolean(Array.isArray(importedAgenda?.__events)&&importedAgenda.__events.length)};
 }
+
+async function v74RepartirDeOneDrive(options={}){
+  if(!msAccount)throw new Error('Connectez-vous à votre compte Microsoft avant de repartir de OneDrive.');
+  const state=DataStore.state;
+  const pendingChanges=countUncommittedSyncChanges(state);
+  if(!options.confirmed){
+    return {status:'confirmation_required',uncommittedChanges:pendingChanges,message:pendingChanges>0?'Des modifications locales non synchronisées ont été détectées.':'Cette opération va remplacer les données actuellement enregistrées sur cet appareil par les données présentes dans OneDrive.'};
+  }
+  setCloudStatus('Lecture et validation des données OneDrive…','loading');
+  const structure=await graphEnsureJournalierStructure();
+  const importedStudents=[];
+  const importedSessions=[];
+  const importedPiaRecords={};
+  const importedPiaImports={};
+  const registry={version:'1',students:{},sessions:{},agenda:null,pia:{}};
+
+  // 1. Lire et valider les élèves
+  const children=await graphListChildren(structure.eleves.id);
+  for(const folder of (children?.value||[])){
+    if(!folder?.folder)continue;
+    await readRemoteStudentFolderInto(folder.name,state.ownerId,importedStudents,importedSessions,registry);
+  }
+
+  // 2. Lire et valider l'Agenda
+  let importedAgenda={__events:[],__exceptions:{},__config:{}};
+  try{
+    const remoteAgenda=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/agenda/agenda.json`);
+    validateRemoteAgenda(remoteAgenda.json||{});
+    importedAgenda=secureNormalizeAgenda(remoteAgenda.json||{});
+    const fp=syncFingerprint(syncWithoutVolatileMeta(importedAgenda));
+    registry.agenda={remoteId:remoteAgenda.item.id,eTag:remoteAgenda.item.eTag||null,fingerprint:fp,remoteFingerprint:fp,lastCheckedAt:new Date().toISOString(),status:'synced'};
+  }catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;}
+
+  // 3. Lire et valider les PIA
+  try{
+    const piaChildren=await graphListChildren(structure.pia.id);
+    for(const folder of (piaChildren?.value||[])){
+      if(!folder?.folder)continue;
+      const sid=folder.name;
+      try{
+        const remotePia=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/pia/${encodeURIComponent(sid)}/pia.json`);
+        validateRemotePIA(remotePia.json);
+        const piaData=remotePia.json;
+        applyRemotePiaPayload(piaData,sid,importedPiaRecords,importedPiaImports);
+        const fp=syncFingerprint(syncWithoutVolatileMeta(piaData));
+        registry.pia[sid]={remoteId:remotePia.item.id,eTag:remotePia.item.eTag||null,fingerprint:fp,remoteFingerprint:fp,lastCheckedAt:new Date().toISOString(),status:'synced'};
+      }catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;}
+    }
+  }catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;}
+
+  // 4. Remplacement atomique de l'espace local
+  state.students=importedStudents;
+  state.sessions=importedSessions;
+  state.agenda=importedAgenda;
+  state.meta={...(state.meta||{}),piaRecords:importedPiaRecords,piaImports:importedPiaImports,cloudHydratedAt:new Date().toISOString(),cloudHydratedAccount:msAccount?.username||null};
+  state.syncRegistry=registry;
+  state.sync={status:'synced',lastSyncAt:new Date().toISOString(),pendingChanges:0};
+
+  if(importedAgenda?.__config&&window.JournalierAgendaConfig?.applyConfig){
+    window.JournalierAgendaConfig.applyConfig(importedAgenda.__config);
+  }
+
+  await JournalierSecurity.persist(state,{force:true,purgeBefore:true});
+
+  window.JournalierAgendaConfig?.refreshSessionPeriodSelectors?.();
+  window.JournalierV74?.refreshStudents?.();
+  if(typeof renderStudentsView==='function')renderStudentsView();
+  if(typeof renderAgenda==='function')renderAgenda();
+  if(typeof updateStudentDropdowns==='function')updateStudentDropdowns();
+  if(typeof updateStats==='function')updateStats();
+  updateMicrosoftUI();
+
+  setCloudStatus(`✓ Reparti de OneDrive avec succès.\n✓ ${importedStudents.length} élève(s) restauré(s)\n✓ ${importedSessions.length} séance(s) restaurée(s)\n✓ Agenda et ${Object.keys(importedPiaImports).length+Object.keys(importedPiaRecords).length} PIA synchronisés.`,'success');
+  showAppToast('Espace local reconstruit avec succès depuis OneDrive.','success');
+  return {ok:true,students:importedStudents.length,sessions:importedSessions.length,agenda:true};
+}
 async function verifyMicrosoft365Space(){const b=document.getElementById('ms-verify-cloud-action');if(b)b.disabled=true;try{const root=await graphGetByPath(GRAPH_ROOT_FOLDER),children=await graphListChildren(root.id),names=new Set((children.value||[]).map(x=>x.name)),expected=['profil','eleves','agenda','system'],missing=expected.filter(x=>!names.has(x));if(missing.length)throw new Error('Structure incomplète : '+missing.join(', '));const sync=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/system/sync.json`).catch(()=>null);setCloudStatus('✓ Structure OneDrive vérifiée.\n✓ Journalier/\n✓ profil/\n✓ eleves/\n✓ agenda/\n✓ system/'+(sync?`\n✓ sync.json : ${sync.json.status||'—'}`:''),'success');}catch(e){setCloudStatus('⚠️ '+(e.message||e),'error');}finally{if(b)b.disabled=!msAccount;}}
 function syncStableValue(value){if(Array.isArray(value))return value.map(syncStableValue);if(value&&typeof value==='object')return Object.keys(value).sort().reduce((o,k)=>(o[k]=syncStableValue(value[k]),o),{});return value;}
 function syncFingerprint(value){return JSON.stringify(syncStableValue(value));}
@@ -557,7 +675,28 @@ function v72PathForStudent(student){return `${GRAPH_ROOT_FOLDER}/eleves/${studen
 function syncNormalizeName(s){return String(s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 function syncFindStudentByName(students,name){const target=syncNormalizeName(name);if(!target)return null;return (students||[]).find(s=>syncNormalizeName(s.nom)===target)||null;}
 function v72PathForSession(session,students){const studentId=session.identification?.eleveId||syncFindStudentByName(students,session.identification?.eleve)?.studentId;return studentId?`${GRAPH_ROOT_FOLDER}/eleves/${studentId}/seances/${session.id}.json`:null;}
-function v72StatusCount(registry){let c={synced:0,local:0,remote:0,conflict:0,missing:0};for(const x of Object.values(registry.students||{})){if(x.status==='synced')c.synced++;else if(x.status==='local-changed'||x.status==='local-pending')c.local++;else if(x.status==='remote-changed')c.remote++;else if(x.status==='conflict')c.conflict++;}for(const x of Object.values(registry.sessions||{})){if(x.status==='synced')c.synced++;else if(x.status==='local-changed'||x.status==='local-pending')c.local++;else if(x.status==='remote-changed')c.remote++;else if(x.status==='conflict')c.conflict++;}if(registry.agenda){if(registry.agenda.status==='synced')c.synced++;else if(registry.agenda.status==='local-changed'||registry.agenda.status==='local-pending')c.local++;else if(registry.agenda.status==='remote-changed')c.remote++;else if(registry.agenda.status==='conflict')c.conflict++;}return c;}
+function v72StatusCount(registry){
+  let c={synced:0,local:0,remote:0,conflict:0,missing:0};
+  for(const x of Object.values(registry.students||{})){
+    if(x.status==='synced')c.synced++;
+    else if(x.status==='local-changed'||x.status==='local-pending')c.local++;
+    else if(x.status==='remote-changed')c.remote++;
+    else if(x.status==='conflict')c.conflict++;
+  }
+  for(const x of Object.values(registry.sessions||{})){
+    if(x.status==='synced')c.synced++;
+    else if(x.status==='local-changed'||x.status==='local-pending')c.local++;
+    else if(x.status==='remote-changed')c.remote++;
+    else if(x.status==='conflict')c.conflict++;
+  }
+  if(registry.agenda){
+    if(registry.agenda.status==='synced')c.synced++;
+    else if(registry.agenda.status==='local-changed'||registry.agenda.status==='local-pending')c.local++;
+    else if(registry.agenda.status==='remote-changed')c.remote++;
+    else if(registry.agenda.status==='conflict')c.conflict++;
+  }
+  return c;
+}
 function v72Classify(previous,localFp,remoteFp,remoteMissing=false){
   if(remoteMissing)return 'local-changed';
   if(localFp===remoteFp)return 'synced';
@@ -570,6 +709,65 @@ function v72Classify(previous,localFp,remoteFp,remoteMissing=false){
   if(rc)return'remote-changed';
   return'synced';
 }
+async function v72ProcessPendingDeletions(state,r,details=[]){
+  let sent=0;
+  for(const [sessionId,reg] of Object.entries(r.sessions||{})){
+    if(reg?.status!=='deleted-pending')continue;
+    if(!reg.remoteId){delete r.sessions[sessionId];continue;}
+    try{
+      await graphDeleteItemWithETag(reg.remoteId,reg.eTag||null);
+      delete r.sessions[sessionId];
+      sent++;
+      details.push(`• séance ${sessionId} : supprimée de OneDrive`);
+    }catch(e){
+      if(String(e.message||e).includes('Graph 404')){delete r.sessions[sessionId];continue;}
+      if(String(e.message||e).includes('Graph 412')){r.sessions[sessionId]={...reg,status:'conflict',lastCheckedAt:new Date().toISOString()};throw new Error(`Conflit détecté lors de la suppression de la séance ${sessionId}.`);}
+      throw e;
+    }
+  }
+  const deletionRemote=await v72ReadDeletionRegistry();
+  const deletions=deletionRemote.json;
+  let deletionETag=deletionRemote.item?.eTag||null;
+  for(const [studentId,reg] of Object.entries(r.students||{})){
+    if(reg?.status!=='deleted-pending')continue;
+    const now=new Date().toISOString();
+    const existingTombstone=deletions.students[String(studentId)];
+    deletions.students[String(studentId)]={status:'pending',deletedAt:existingTombstone?.deletedAt||reg.localDeletedAt||now,updatedAt:now};
+    const pendingItem=await v72WriteDeletionRegistry(deletions,deletionETag);
+    deletionETag=pendingItem?.eTag||null;
+    if(!reg.remoteId){
+      deletions.students[String(studentId)]={...deletions.students[String(studentId)],status:'deleted',updatedAt:new Date().toISOString()};
+      const deletedItem=await v72WriteDeletionRegistry(deletions,deletionETag);
+      deletionETag=deletedItem?.eTag||null;
+      r.students[studentId]={...reg,status:'deleted',deletedAt:deletions.students[String(studentId)].deletedAt,updatedAt:deletions.students[String(studentId)].updatedAt};
+      continue;
+    }
+    try{
+      await graphDeleteItemWithETag(reg.remoteId,reg.eTag||null);
+      deletions.students[String(studentId)]={...deletions.students[String(studentId)],status:'deleted',updatedAt:new Date().toISOString()};
+      const deletedItem=await v72WriteDeletionRegistry(deletions,deletionETag);
+      deletionETag=deletedItem?.eTag||null;
+      r.students[studentId]={...reg,status:'deleted',deletedAt:deletions.students[String(studentId)].deletedAt,lastCheckedAt:new Date().toISOString()};
+      sent++;
+      details.push(`• élève ${studentId} : supprimé de OneDrive`);
+    }catch(e){
+      if(String(e.message||e).includes('Graph 404')){
+        deletions.students[String(studentId)]={...deletions.students[String(studentId)],status:'deleted',updatedAt:new Date().toISOString()};
+        const deletedItem=await v72WriteDeletionRegistry(deletions,deletionETag);
+        deletionETag=deletedItem?.eTag||null;
+        r.students[studentId]={...reg,status:'deleted',deletedAt:deletions.students[String(studentId)].deletedAt,lastCheckedAt:new Date().toISOString()};
+        continue;
+      }
+      if(String(e.message||e).includes('Graph 412')){
+        r.students[studentId]={...reg,status:'conflict',lastCheckedAt:new Date().toISOString()};
+        throw new Error(`Conflit détecté lors de la suppression de l’élève ${studentId}.`);
+      }
+      throw e;
+    }
+  }
+  return sent;
+}
+
 async function v72DiscoverRemoteEntities(){
   // Un appareil ayant déjà des données locales ne relance jamais l'hydratation complète :
   // sans ce balayage des dossiers distants, les élèves/séances ajoutés ailleurs restent invisibles ici.
@@ -606,6 +804,10 @@ async function v72DiscoverRemoteEntities(){
         if(!item?.file||!String(item.name||'').toLowerCase().endsWith('.json'))continue;
         const sessionId=item.name.replace(/\.json$/i,'');
         if(localSessionIds.has(sessionId))continue;
+        const sessionRegistryEntry=r.sessions[sessionId];
+        const locallyDeletedSession=sessionRegistryEntry?.status==='deleted-pending'
+            || sessionRegistryEntry?.status==='deleted';
+        if(locallyDeletedSession)continue;
         try{
           const raw=await graphReadItemByIdWithJson(item.id);
           validateRemoteSession(raw.json);
@@ -619,18 +821,72 @@ async function v72DiscoverRemoteEntities(){
       }
     }catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;}
   }
-  if(discoveredStudents||discoveredSessions){state.syncRegistry=r;v72RecountPending(state);securePersistState();}
-  return {discoveredStudents,discoveredSessions};
+  let discoveredPIA=0;
+  try{
+    const piaFolder=await graphGetByPath(`${GRAPH_ROOT_FOLDER}/pia`);
+    const piaChildren=await graphListChildren(piaFolder.id);
+    for(const folder of (piaChildren?.value||[])){
+      if(!folder?.folder)continue;
+      const studentId=folder.name;
+      if(state.meta?.piaRecords?.[studentId]||state.meta?.piaImports?.[studentId])continue;
+      try{
+        const raw=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/pia/${encodeURIComponent(studentId)}/pia.json`);
+        if(raw?.json){
+          state.meta??={};state.meta.piaRecords??={};state.meta.piaImports??={};
+          applyRemotePiaPayload(raw.json,studentId,state.meta.piaRecords,state.meta.piaImports);
+          const fp=syncFingerprint(syncWithoutVolatileMeta(raw.json));
+          r.pia[studentId]={remoteId:raw.item.id,eTag:raw.item.eTag||null,fingerprint:fp,remoteFingerprint:fp,lastCheckedAt:new Date().toISOString(),status:'synced'};
+          discoveredPIA++;
+        }
+      }catch(e){if(!String(e.message||e).includes('Graph 404'))console.warn('Journalier — découverte PIA ignorée',studentId,e);}
+    }
+  }catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;}
+  if(discoveredStudents||discoveredSessions||discoveredPIA){state.syncRegistry=r;v72RecountPending(state);securePersistState();}
+  return {discoveredStudents,discoveredSessions,discoveredPIA};
+}
+function refreshUIAfterCloudSync(){
+  renderStudentsView?.();
+  renderAgenda?.();
+  updateStats?.();
+  updateStudentDropdowns?.();
+  window.JournalierV74?.refreshStudents?.();
+  window.JournalierV74?.renderDashboard?.();
 }
 async function diagnoseSyncManagerV72(opts={}){if(!msAccount)throw new Error('Connectez d’abord votre compte Microsoft.');const b=document.getElementById('ms-sync-diagnose-action');if(b)b.disabled=true;if(!opts.silent)setCloudStatus('Analyse de la synchronisation en cours…','');try{
+  const state=DataStore.state,r=v72EnsureSyncRegistry(state);
+  const deletionDetails=[];
+  const deletedCount=await v72ProcessPendingDeletions(state,r,deletionDetails);
+  if(deletedCount>0){state.syncRegistry=r;v72RecountPending(state);securePersistState();}
   const discovery=await v72DiscoverRemoteEntities();
   const deletionRemote=await v72ReadDeletionRegistry();
   const deletions=deletionRemote.json;
-  const state=DataStore.state,students=DataStore.getStudents(),sessions=DataStore.getSessions(),agenda=DataStore.getAgenda(),r=v72EnsureSyncRegistry(state),details=[];let missing=0;
+  const students=DataStore.getStudents(),sessions=DataStore.getSessions(),agenda=DataStore.getAgenda(),details=[...deletionDetails];let missing=0;
   for(const student of students){const path=v72PathForStudent(student),lf=syncFingerprint(syncWithoutVolatileMeta(student));try{const {item,json}=await graphReadItemWithJson(path),rf=syncFingerprint(syncWithoutVolatileMeta(json)),status=v72Classify(r.students[student.studentId],lf,rf,false);r.students[student.studentId]={...r.students[student.studentId],remoteId:item.id,eTag:item.eTag||null,fingerprint:lf,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status};if(status!=='synced')details.push(`• élève ${student.nom||student.studentId} : ${status}`);}catch(e){if(String(e.message||e).includes('Graph 404')){missing++;const tombstone=deletions.students[String(student.studentId)];const deletedRemotely=tombstone?.status==='pending'||tombstone?.status==='deleted';const status=deletedRemotely?'deleted':'local-changed';r.students[student.studentId]={...r.students[student.studentId],remoteId:null,eTag:null,fingerprint:lf,remoteFingerprint:null,lastCheckedAt:new Date().toISOString(),status};details.push(`• élève ${student.nom||student.studentId} : ${deletedRemotely?'deleted (suppression distante publiée)':'local-changed (distant absent)'}`);}else throw e;}}
-  for(const session of sessions){const path=v72PathForSession(session,students);if(!path)continue;const lf=syncFingerprint(syncWithoutVolatileMeta(session));try{const {item,json}=await graphReadItemWithJson(path),rf=syncFingerprint(syncWithoutVolatileMeta(json)),previousReg=r.sessions[session.id]||{},studentId=session.identification?.eleveId||syncFindStudentByName(students,session.identification?.eleve)?.studentId;let status=v72Classify(previousReg,lf,rf,false);if(previousReg.remoteMovePending)status=status==='conflict'?'conflict':'local-pending';r.sessions[session.id]={...previousReg,remoteId:item.id,eTag:item.eTag||null,fingerprint:lf,remoteFingerprint:rf,studentId,lastCheckedAt:new Date().toISOString(),status};if(status!=='synced')details.push(`• séance ${session.id} / ${session.identification?.eleve||studentId} : ${status}`);}catch(e){if(String(e.message||e).includes('Graph 404')){missing++;const previousReg=r.sessions[session.id]||{},studentId=session.identification?.eleveId||syncFindStudentByName(students,session.identification?.eleve)?.studentId;r.sessions[session.id]={...previousReg,remoteId:null,eTag:null,fingerprint:lf,remoteFingerprint:null,studentId,lastCheckedAt:new Date().toISOString(),status:'local-changed'};details.push(`• séance ${session.id} / ${session.identification?.eleve||studentId} : local-changed (distant absent)`);}else throw e;}}
+  for(const session of sessions){const path=v72PathForSession(session,students);if(!path)continue;const lf=syncFingerprint(syncWithoutVolatileMeta(session));try{const {item,json}=await graphReadItemWithJson(path),rf=syncFingerprint(syncWithoutVolatileMeta(json)),previousReg=r.sessions[session.id]||{},studentId=session.identification?.eleveId||syncFindStudentByName(students,session.identification?.eleve)?.studentId;let status=v72Classify(previousReg,lf,rf,false);if(previousReg.remoteMovePending)status=status==='conflict'?'conflict':'local-pending';r.sessions[session.id]={...previousReg,remoteId:item.id,eTag:item.eTag||null,fingerprint:lf,remoteFingerprint:rf,studentId,lastCheckedAt:new Date().toISOString(),status};if(status!=='synced')details.push(`• séance ${session.id} / ${session.identification?.eleve||studentId} : ${status}`);}catch(e){if(String(e.message||e).includes('Graph 404')){missing++;const previousReg=r.sessions[session.id]||{},studentId=session.identification?.eleveId||syncFindStudentByName(students,session.identification?.eleve)?.studentId;if(previousReg.remoteId){const idx=state.sessions.findIndex(s=>String(s.id)===String(session.id)&&s.ownerId===state.ownerId);if(idx>=0)state.sessions.splice(idx,1);delete r.sessions[session.id];details.push(`• séance ${session.id} / ${session.identification?.eleve||studentId} : supprimée de OneDrive`);}else{r.sessions[session.id]={...previousReg,remoteId:null,eTag:null,fingerprint:lf,remoteFingerprint:null,studentId,lastCheckedAt:new Date().toISOString(),status:'local-changed'};details.push(`• séance ${session.id} / ${session.identification?.eleve||studentId} : local-changed (distant absent)`);}}else throw e;}}
   try{const {item,json}=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/agenda/agenda.json`),lf=syncFingerprint(syncWithoutVolatileMeta(agenda)),rf=syncFingerprint(syncWithoutVolatileMeta(json)),status=v72Classify(r.agenda,lf,rf,false);r.agenda={...r.agenda,remoteId:item.id,eTag:item.eTag||null,fingerprint:lf,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status};if(status!=='synced')details.push(`• agenda : ${status}`);}catch(e){if(String(e.message||e).includes('Graph 404')){missing++;const lf=syncFingerprint(syncWithoutVolatileMeta(agenda));r.agenda={...r.agenda,remoteId:null,eTag:null,fingerprint:lf,remoteFingerprint:null,lastCheckedAt:new Date().toISOString(),status:'local-changed'};details.push('• agenda : local-changed (distant absent)');}else throw e;}
-  state.syncRegistry=r;const counts=v72StatusCount(r);state.sync.status=counts.conflict?'conflict':(counts.local?'pending':'synced');v72RecountPending(state);securePersistState();const lines=['✓ Analyse terminée.',`• Élève(s) découvert(s) sur OneDrive : ${discovery.discoveredStudents}`,`• Séance(s) découverte(s) sur OneDrive : ${discovery.discoveredSessions}`,`• Éléments synchronisés : ${counts.synced}`,`• Modifications locales : ${counts.local}`,`• Modifications distantes : ${counts.remote}`,`• Conflits : ${counts.conflict}`,`• Distants absents : ${missing}`,'','Aucune écriture distante effectuée.'];if(details.length)lines.push('','Détails :',...details.slice(0,15));if(!opts.silent)setCloudStatus(lines.join('\n'),counts.conflict?'error':'success');if(discovery.discoveredStudents||discovery.discoveredSessions){renderStudentsView?.();renderAgenda?.();updateStats?.();updateStudentDropdowns?.();window.JournalierV74?.refreshStudents?.();window.JournalierV74?.renderDashboard?.();}updateMicrosoftUI();}catch(e){if(!opts.silent)setCloudStatus('⚠️ '+(e.message||e),'error');else throw e;}finally{if(b)b.disabled=!msAccount;}}
+  const piaRecords=state.meta?.piaRecords||{}, piaImports=state.meta?.piaImports||{};
+  const piaStudentIds=new Set([...students.map(s=>String(s.studentId)),...Object.keys(piaRecords),...Object.keys(piaImports)]);
+  for(const sid of piaStudentIds){
+    const student=students.find(s=>String(s.studentId)===sid);
+    const piaPayload=piaRecords[sid]||(piaImports[sid]?{schemaVersion:"73.0.0",type:"PIA_IMPORT_CONTINUITE",studentId:sid,role:"SOURCE_DE_CONTINUITE",sourceContinuity:piaImports[sid]}:null);
+    if(!piaPayload)continue;
+    const path=`${GRAPH_ROOT_FOLDER}/pia/${encodeURIComponent(sid)}/pia.json`;
+    const lf=syncFingerprint(syncWithoutVolatileMeta(piaPayload));
+    try{
+      const {item,json}=await graphReadItemWithJson(path),rf=syncFingerprint(syncWithoutVolatileMeta(json)),previousReg=r.pia[sid]||{};
+      const status=v72Classify(previousReg,lf,rf,false);
+      r.pia[sid]={...previousReg,remoteId:item.id,eTag:item.eTag||null,fingerprint:lf,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status};
+      if(status!=='synced')details.push(`• PIA ${student?.nom||sid} : ${status}`);
+    }catch(e){
+      if(String(e.message||e).includes('Graph 404')){
+        missing++;
+        const previousReg=r.pia[sid]||{};
+        r.pia[sid]={...previousReg,remoteId:null,eTag:null,fingerprint:lf,remoteFingerprint:null,lastCheckedAt:new Date().toISOString(),status:'local-changed'};
+        details.push(`• PIA ${student?.nom||sid} : local-changed (distant absent)`);
+      }else throw e;
+    }
+  }
+  state.syncRegistry=r;const counts=v72StatusCount(r);state.sync.status=counts.conflict?'conflict':(counts.local?'pending':'synced');v72RecountPending(state);securePersistState();const lines=['✓ Analyse terminée.',`• Élève(s) découvert(s) sur OneDrive : ${discovery.discoveredStudents}`,`• Séance(s) découverte(s) sur OneDrive : ${discovery.discoveredSessions}`,`• PIA découvert(s) sur OneDrive : ${discovery.discoveredPIA||0}`,`• Éléments synchronisés : ${counts.synced}`,`• Modifications locales : ${counts.local}`,`• Modifications distantes : ${counts.remote}`,`• Conflits : ${counts.conflict}`,`• Distants absents : ${missing}`,'','Aucune écriture distante effectuée.'];if(details.length)lines.push('','Détails :',...details.slice(0,15));if(!opts.silent)setCloudStatus(lines.join('\n'),counts.conflict?'error':'success');if(discovery.discoveredStudents||discovery.discoveredSessions||discovery.discoveredPIA||deletedCount>0){refreshUIAfterCloudSync();}updateMicrosoftUI();}catch(e){if(!opts.silent)setCloudStatus('⚠️ '+(e.message||e),'error');else throw e;}finally{if(b)b.disabled=!msAccount;}}
 async function v72SyncStudent(student,reg){const structure=await graphEnsureJournalierStructure();let folder;const path=`${GRAPH_ROOT_FOLDER}/eleves/${student.studentId}`;try{folder=await graphGetByPath(path);}catch(e){if(!String(e.message||e).includes('Graph 404'))throw e;folder=await graphCreateChildFolder(structure.eleves.id,String(student.studentId));}const item=await graphGetByPath(`${path}/profil.json`).catch(()=>null);const written=await graphWriteJsonWithETag(folder.id,'profil.json',student,item?.eTag||reg?.eTag||null);return await graphReadItemWithJson(`${path}/profil.json`);}
 async function v72SyncSession(session,reg,students){
   const studentId=reg?.studentId||session.identification?.eleveId||syncFindStudentByName(students,session.identification?.eleve)?.studentId;
@@ -697,80 +953,48 @@ async function v72PullRemoteChanges(){
       r.agenda={...r.agenda,remoteId:item.id,eTag:item.eTag||null,fingerprint:fp,remoteFingerprint:fp,lastCheckedAt:new Date().toISOString(),status:'synced'};pulled++;
     }catch(e){console.warn('Journalier — pull agenda impossible',e);}
   }
+  for(const [studentId,reg] of Object.entries(r.pia||{})){
+    if(reg?.status!=='remote-changed')continue;
+    try{
+      const {item,json}=await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/pia/${encodeURIComponent(studentId)}/pia.json`);
+      state.meta??={};state.meta.piaRecords??={};state.meta.piaImports??={};
+      applyRemotePiaPayload(json,studentId,state.meta.piaRecords,state.meta.piaImports);
+      const fp=syncFingerprint(syncWithoutVolatileMeta(json));
+      r.pia[studentId]={...reg,remoteId:item.id,eTag:item.eTag||null,fingerprint:fp,remoteFingerprint:fp,lastCheckedAt:new Date().toISOString(),status:'synced'};pulled++;
+    }catch(e){console.warn('Journalier — pull PIA impossible',studentId,e);}
+  }
   if(pulled>0){
     state.syncRegistry=r;v72RecountPending(state);
-    renderStudentsView?.();renderAgenda?.();updateStats?.();updateStudentDropdowns?.();window.JournalierV74?.refreshStudents?.();window.JournalierV74?.renderDashboard?.();
+    refreshUIAfterCloudSync();
   }
   return pulled;
 }
-async function syncPendingLocalChangesV72(opts={}){if(!msAccount)throw new Error('Connectez d’abord votre compte Microsoft.');const b=document.getElementById('ms-sync-action');if(b)b.disabled=true;try{await diagnoseSyncManagerV72();const state=DataStore.state,r=v72EnsureSyncRegistry(state),students=DataStore.getStudents(),sessions=DataStore.getSessions(),agenda=DataStore.getAgenda();if(v72ConflictEntries().length){if(!opts.silent)throw new Error('Conflit détecté : aucune écriture automatique n’a été effectuée. Résolvez d’abord les conflits.');return;}let sent=0;const details=[];
+async function syncPendingLocalChangesV72(opts={}){if(!msAccount)throw new Error('Connectez d’abord votre compte Microsoft.');const b=document.getElementById('ms-sync-action');if(b)b.disabled=true;try{
+  const state=DataStore.state,r=v72EnsureSyncRegistry(state);let sent=0;const details=[];
+  // Étape 1 : Exécuter en priorité absolue les suppressions en attente
+  sent += await v72ProcessPendingDeletions(state,r,details);
+
+  // Étape 2 : Analyser l'état de synchronisation (découverte comprise)
+  await diagnoseSyncManagerV72({silent:true});
+
+  const students=DataStore.getStudents(),sessions=DataStore.getSessions(),agenda=DataStore.getAgenda();
+  if(v72ConflictEntries().length){if(!opts.silent)throw new Error('Conflit détecté : aucune écriture automatique n’a été effectuée. Résolvez d’abord les conflits.');return;}
+
+  // Étape 3 : Récupérer les modifications distantes
   const pulled=await v72PullRemoteChanges();
-  const deletionRemote=await v72ReadDeletionRegistry();
-  const deletions=deletionRemote.json;
-  let deletionETag=deletionRemote.item?.eTag||null;
-  for(const [sessionId,reg] of Object.entries(r.sessions||{})){
-    if(reg?.status!=='deleted-pending')continue;
-    if(!reg.remoteId){delete r.sessions[sessionId];continue;}
-    try{
-      await graphDeleteItemWithETag(reg.remoteId,reg.eTag||null);
-      delete r.sessions[sessionId];
-      sent++;
-      details.push(`• séance ${sessionId} : supprimée de OneDrive`);
-    }catch(e){
-      if(String(e.message||e).includes('Graph 404')){delete r.sessions[sessionId];continue;}
-      if(String(e.message||e).includes('Graph 412')){r.sessions[sessionId]={...reg,status:'conflict',lastCheckedAt:new Date().toISOString()};throw new Error(`Conflit détecté lors de la suppression de la séance ${sessionId}.`);}
-      throw e;
-    }
-  }
-  for(const [studentId,reg] of Object.entries(r.students||{})){
-    if(reg?.status!=='deleted-pending')continue;
-    const now=new Date().toISOString();
-    const existingTombstone=deletions.students[String(studentId)];
-    deletions.students[String(studentId)]={status:'pending',deletedAt:existingTombstone?.deletedAt||reg.localDeletedAt||now,updatedAt:now};
-    const pendingItem=await v72WriteDeletionRegistry(deletions,deletionETag);
-    deletionETag=pendingItem?.eTag||null;
-    if(!reg.remoteId){
-      deletions.students[String(studentId)]={...deletions.students[String(studentId)],status:'deleted',updatedAt:new Date().toISOString()};
-      const deletedItem=await v72WriteDeletionRegistry(deletions,deletionETag);
-      deletionETag=deletedItem?.eTag||null;
-      r.students[studentId]={...reg,status:'deleted',deletedAt:deletions.students[String(studentId)].deletedAt,updatedAt:deletions.students[String(studentId)].updatedAt};
-      continue;
-    }
-    try{
-      await graphDeleteItemWithETag(reg.remoteId,reg.eTag||null);
-      deletions.students[String(studentId)]={...deletions.students[String(studentId)],status:'deleted',updatedAt:new Date().toISOString()};
-      const deletedItem=await v72WriteDeletionRegistry(deletions,deletionETag);
-      deletionETag=deletedItem?.eTag||null;
-      r.students[studentId]={...reg,status:'deleted',deletedAt:deletions.students[String(studentId)].deletedAt,lastCheckedAt:new Date().toISOString()};
-      sent++;
-      details.push(`• élève ${studentId} : supprimé de OneDrive`);
-    }catch(e){
-      if(String(e.message||e).includes('Graph 404')){
-        deletions.students[String(studentId)]={...deletions.students[String(studentId)],status:'deleted',updatedAt:new Date().toISOString()};
-        const deletedItem=await v72WriteDeletionRegistry(deletions,deletionETag);
-        deletionETag=deletedItem?.eTag||null;
-        r.students[studentId]={...reg,status:'deleted',deletedAt:deletions.students[String(studentId)].deletedAt,lastCheckedAt:new Date().toISOString()};
-        continue;
-      }
-      if(String(e.message||e).includes('Graph 412')){
-        r.students[studentId]={...reg,status:'conflict',lastCheckedAt:new Date().toISOString()};
-        throw new Error(`Conflit détecté lors de la suppression de l’élève ${studentId}.`);
-      }
-      throw e;
-    }
-  }
 
   for(const student of students){const reg=r.students[student.studentId];if(!reg||!['local-changed','local-pending'].includes(reg.status))continue;const remote=await v72SyncStudent(student,reg);const fp=syncFingerprint(syncWithoutVolatileMeta(student)),rf=syncFingerprint(syncWithoutVolatileMeta(remote.json));r.students[student.studentId]={...reg,remoteId:remote.item.id,eTag:remote.item.eTag||null,fingerprint:fp,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:fp===rf?'synced':'local-changed'};sent++;details.push(`• élève ${student.nom||student.studentId} : ${r.students[student.studentId].status}`);}
   for(const session of sessions){const reg=r.sessions[session.id];if(!reg||!['local-changed','local-pending'].includes(reg.status))continue;const remote=await v72SyncSession(session,reg,students);const fp=syncFingerprint(syncWithoutVolatileMeta(session)),rf=syncFingerprint(syncWithoutVolatileMeta(remote.json));const nextReg={...reg,remoteId:remote.item.id,eTag:remote.item.eTag||null,fingerprint:fp,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:fp===rf?'synced':'local-changed'};if(nextReg.status==='synced'){delete nextReg.remoteMovePending;delete nextReg.previousStudentId;delete nextReg.previousRemoteId;delete nextReg.previousETag;}r.sessions[session.id]=nextReg;sent++;details.push(`• séance ${session.id} / ${session.identification?.eleve||reg.studentId} : ${r.sessions[session.id].status}`);}
   if(r.agenda&&['local-changed','local-pending'].includes(r.agenda.status)){const remote=await v72SyncAgenda(agenda,r.agenda),fp=syncFingerprint(syncWithoutVolatileMeta(agenda)),rf=syncFingerprint(syncWithoutVolatileMeta(remote.json));r.agenda={...r.agenda,remoteId:remote.item.id,eTag:remote.item.eTag||null,fingerprint:fp,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:fp===rf?'synced':'local-changed'};sent++;details.push(`• agenda : ${r.agenda.status}`);}
-  const piaRecords=state.meta?.piaRecords||{};
+  const piaRecords=state.meta?.piaRecords||{}, piaImports=state.meta?.piaImports||{};
   for(const [studentId,reg] of Object.entries(r.pia||{})){
     if(!reg||!['local-changed','local-pending'].includes(reg.status))continue;
-    const pia=piaRecords[studentId];if(!pia){delete r.pia[studentId];continue;}
+    const pia=piaRecords[studentId]||(piaImports[studentId]?{schemaVersion:"73.0.0",type:"PIA_IMPORT_CONTINUITE",studentId:String(studentId),role:"SOURCE_DE_CONTINUITE",sourceContinuity:piaImports[studentId]}:null);
+    if(!pia){delete r.pia[studentId];continue;}
     try{
       const remote=await v74SavePIACloud(pia);
       const fp=syncFingerprint(syncWithoutVolatileMeta(pia)),rf=syncFingerprint(syncWithoutVolatileMeta(remote.json));
-      r.pia[studentId]={...reg,fingerprint:fp,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:fp===rf?'synced':'local-changed'};sent++;
+      r.pia[studentId]={...reg,remoteId:remote.item.id,eTag:remote.item.eTag||null,fingerprint:fp,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:fp===rf?'synced':'local-changed'};sent++;
       details.push(`• PIA ${studentId} : ${r.pia[studentId].status}`);
     }catch(e){details.push(`• PIA ${studentId} : échec (${e?.message||e})`);}
   }
@@ -909,6 +1133,11 @@ function animateClick(el,state='validating'){
    Les actions passent par délégation d'événements et data-*.
    ========================================================= */
 document.addEventListener('click',function(e){
+  if(window._jrSuppressNextClick && Date.now()-window._jrSuppressNextClick<350){
+    window._jrSuppressNextClick=0;
+    return;
+  }
+  if(e.target.closest?.('.event-resize-handle')) return;
   const target=e.target.closest(
     '.js-home-event,.js-day-event,.js-quick-form,.js-open-slot,'+
     '.js-week-day,.js-week-event,.js-week-slot,.js-month-day,'+
@@ -1006,7 +1235,10 @@ window.JournalierMigrationBridge = Object.freeze({
   v72SyncStudent,
   v72MarkPiaPending,
   v72MarkPiaSynced,
+  v74RepartirDeOneDrive,
+  v74SavePIACloud,
   validateStrictAgenda,
+  validateStrictPIA,
   validateStrictSession,
   validateStrictStudent,
   DataStore,
@@ -1033,4 +1265,24 @@ document.getElementById('ms-conflict-resolution-list')?.addEventListener('click'
   }
 });
 document.getElementById('ms-cancel-conflict-resolution')?.addEventListener('click',closeConflictResolutionV72);
+document.getElementById('ms-reset-onedrive-action')?.addEventListener('click',()=>{
+  if(!msAccount){showAppToast('Connectez-vous d’abord avec votre compte Microsoft.','error');return;}
+  const state=DataStore.state,pending=countUncommittedSyncChanges(state);
+  const warn=document.getElementById('ms-reset-uncommitted-warning');
+  if(warn)warn.style.display=pending>0?'block':'none';
+  const modal=document.getElementById('ms-reset-onedrive-modal');
+  if(modal)modal.style.display='flex';
+});
+document.getElementById('ms-reset-onedrive-cancel')?.addEventListener('click',()=>{
+  const modal=document.getElementById('ms-reset-onedrive-modal');if(modal)modal.style.display='none';
+});
+document.getElementById('ms-reset-onedrive-confirm')?.addEventListener('click',async()=>{
+  const modal=document.getElementById('ms-reset-onedrive-modal');if(modal)modal.style.display='none';
+  try{
+    await v74RepartirDeOneDrive({confirmed:true});
+  }catch(e){
+    setCloudStatus('⚠️ Échec de la récupération OneDrive : '+(e?.message||e),'error');
+    showAppToast('Échec de la récupération : '+(e?.message||e),'error',5000);
+  }
+});
 document.addEventListener('DOMContentLoaded',async()=>{updateMicrosoftUI();await initMicrosoftAuth();});

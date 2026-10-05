@@ -1,0 +1,6 @@
+{
+  "name": "Journalier électronique",
+  "description": "Pôle territorial WBE BXL – Suivi Individuel & Collectif • Année Scolaire 2026-2027",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

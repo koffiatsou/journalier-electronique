@@ -147,7 +147,16 @@ journalier-electronique/
 ├── SECURITY.md
 ├── CHANGELOG.md
 ├── AUDIT_V74_PHASE0.md
+├── REFACTORING_LOT1.md
+├── REFACTORING_LOT2.md
+├── REFACTORING_LOT3.md
+├── REFACTORING_LOT4.md
+├── REFACTORING_LOT5.md
 ├── docs/
+│   ├── AGENDA_V74.md
+│   ├── REFACTORING_V74.md
+│   ├── STOCKAGE_LOCAL_V74.md
+│   ├── UX_V74_RESPONSIVE.md
 │   └── v74-design/
 │       ├── CAHIER_DES_CHARGES_V74_UX.md
 │       ├── maquette-v74-10.html
@@ -161,9 +170,23 @@ journalier-electronique/
 ├── src/
 │   ├── msal-bridge.js
 │   ├── msal-redirect.js
+│   ├── app/
+│   │   ├── indicators.js
+│   │   ├── journalier-core.js
+│   │   └── microsoft-core.js
+│   ├── styles/
+│   │   ├── journalier.css
+│   │   └── journalier-ux-responsive.css
 │   └── v74/
 │       ├── v74-migration.js
 │       └── v74-runtime.js
+│
+├── tests/
+│   ├── storage-v74-contract.test.mjs
+│   ├── agenda-v74-contract.test.mjs
+│   ├── session-edit-contract.test.mjs
+│   ├── sync-deletion-contract.test.mjs
+│   └── pia-sync-contract.test.mjs
 │
 ├── public/
 │   ├── bibliotheque_indicateurs_v0_5_1.json
@@ -176,11 +199,16 @@ journalier-electronique/
           └── main.yml
 ```
 
-### Particularité importante
+### Particularité importante et Refactorisation V74 (Lots 1 à 5)
 
-L'essentiel du cœur historique et de l'interface reste dans `index.html`. `src/v74/v74-runtime.js` porte le runtime PIA et `src/v74/v74-migration.js` la migration legacy; les autres modules `src/` prennent en charge l'intégration MSAL/redirection.
+Le code initialement inline dans `index.html` a été extrait dans des modules dédiés sans modifier les contrats globaux :
+- `src/app/journalier-core.js` : cœur applicatif principal (`DataStore`, `JournalierSecurity`, élève, séances, historique, Agenda niveau Outlook avec timeline horaire continue, Drag & Drop, redimensionnement, sélection glissée et récurrences avancées) ;
+- `src/app/microsoft-core.js` : couche Microsoft Graph, OneDrive AppFolder, `SyncManager`, récupération distante et fonctionnalité « Repartir de OneDrive » (`v74RepartirDeOneDrive`) ;
+- `src/app/indicators.js` : bibliothèque et diagnostic des indicateurs WBE ;
+- `src/v74/v74-runtime.js` : runtime PIA annuel, import local DOCX/PDF, tableau de bord et exports ;
+- `src/v74/v74-migration.js` : migration contrôlée et non destructive depuis `Journalier-legacy`.
 
-Cette organisation doit être prise en compte lors des audits futurs : il ne faut pas supposer que la logique métier est déjà répartie dans une architecture modulaire classique.
+Les cinq lots de refactorisation structurelle conservatrice (`REFACTORING_LOT1.md` à `REFACTORING_LOT5.md`, synthétisés dans [`docs/REFACTORING_V74.md`](docs/REFACTORING_V74.md)) sont couverts et verrouillés par les cinq suites de tests contractuels situées dans `tests/`.
 
 ---
 

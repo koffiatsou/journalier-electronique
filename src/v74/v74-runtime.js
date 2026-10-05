@@ -37,10 +37,15 @@ const THEMES = [
    re:/\b(math|calcul|multiplication|division|fraction|nombre|équation|algèbre|géométr|angle|périmètre|proportion)\b/i}
 ];
 
+/** Échappe les caractères HTML sensibles pour sécuriser les interpolations DOM. */
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
+/** Génère un identifiant unique horodaté préfixé pour les objets runtime V74. */
 function uid(prefix="v74"){return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;}
+/** Normalise une chaîne (minuscules, sans accents ni espaces multiples) pour les comparaisons. */
 function norm(s){return String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();}
+/** Extrait le format de date YYYY-MM-DD (10 premiers caractères). */
 function dateOnly(s){return String(s||"").slice(0,10);}
+/** Garantit le retour d'un tableau sain (fallback vers tableau vide si non tableau). */
 function safeArray(x){return Array.isArray(x)?x:[];}
 function getData(){
   const ds=window.JournalierDataStore;
@@ -99,13 +104,19 @@ function extractUnits(s){
   });
   return units;
 }
+const DEFAULT_CONVERGENCE_THRESHOLDS = Object.freeze({
+  SIGNAL_MIN_SESSIONS: 2,
+  TREND_MIN_SESSIONS: 3,
+  PROPOSAL_MIN_SOURCES: 2
+});
+
 function getConvergenceConfig(){
   const c=V74.referential?.convergence||{};
   const thresholds=c.seuils||{};
   return {
-    signalMinSessions:Number(thresholds.signal_min_sessions_distinctes)||2,
-    trendMinSessions:Number(thresholds.tendance_min_sessions_distinctes)||3,
-    proposalMinSources:Number(thresholds.proposition_exception_intra_session?.minimum_sources_q_distinctes)||2
+    signalMinSessions:Number(thresholds.signal_min_sessions_distinctes)||DEFAULT_CONVERGENCE_THRESHOLDS.SIGNAL_MIN_SESSIONS,
+    trendMinSessions:Number(thresholds.tendance_min_sessions_distinctes)||DEFAULT_CONVERGENCE_THRESHOLDS.TREND_MIN_SESSIONS,
+    proposalMinSources:Number(thresholds.proposition_exception_intra_session?.minimum_sources_q_distinctes)||DEFAULT_CONVERGENCE_THRESHOLDS.PROPOSAL_MIN_SOURCES
   };
 }
 function compareUnits(units){
@@ -140,20 +151,25 @@ function compareUnits(units){
   });
 }
 
+const PROPOSAL_TEMPLATES = Object.freeze({
+  autonomie: theme => `Renforcer l’autonomie dans ${theme.toLowerCase()}, en ajustant progressivement les relances et les supports selon la situation.`,
+  comprehension_consignes: _ => `Soutenir la compréhension et la reformulation des consignes, avec vérification de la compréhension lorsque nécessaire.`,
+  organisation: _ => `Structurer les étapes de travail et les repères d’organisation afin de favoriser une réalisation plus autonome.`,
+  raisonnement_procedure: _ => `Consolider les procédures et stratégies de résolution dans les situations où une aide reste nécessaire.`,
+  vocabulaire_communication: _ => `Soutenir l’accès au vocabulaire et la reformulation des informations nécessaires à la tâche.`,
+  attention_engagement: _ => `Favoriser le maintien de l’engagement et de l’attention dans les situations où une variabilité est observée.`,
+  transfert: _ => `Favoriser le réinvestissement des stratégies dans des situations comparables puis progressivement différentes.`,
+  geste_graphique: _ => `Adapter ou soutenir la réalisation graphique et la manipulation des outils lorsque la situation le nécessite.`,
+  fatigue: _ => `Observer et aménager l’endurance dans la tâche lorsque la fatigue est documentée.`,
+  mathematiques: _ => `Consolider les apprentissages mathématiques ciblés dans les situations documentées par les séances.`
+});
+
 function proposalText(g){
-  const map={
-    autonomie:`Renforcer l’autonomie dans ${g.theme.toLowerCase()}, en ajustant progressivement les relances et les supports selon la situation.`,
-    comprehension_consignes:`Soutenir la compréhension et la reformulation des consignes, avec vérification de la compréhension lorsque nécessaire.`,
-    organisation:`Structurer les étapes de travail et les repères d’organisation afin de favoriser une réalisation plus autonome.`,
-    raisonnement_procedure:`Consolider les procédures et stratégies de résolution dans les situations où une aide reste nécessaire.`,
-    vocabulaire_communication:`Soutenir l’accès au vocabulaire et la reformulation des informations nécessaires à la tâche.`,
-    attention_engagement:`Favoriser le maintien de l’engagement et de l’attention dans les situations où une variabilité est observée.`,
-    transfert:`Favoriser le réinvestissement des stratégies dans des situations comparables puis progressivement différentes.`,
-    geste_graphique:`Adapter ou soutenir la réalisation graphique et la manipulation des outils lorsque la situation le nécessite.`,
-    fatigue:`Observer et aménager l’endurance dans la tâche lorsque la fatigue est documentée.`,
-    mathematiques:`Consolider les apprentissages mathématiques ciblés dans les situations documentées par les séances.`
-  };
-  return map[g.themeId]||`Poursuivre l’accompagnement autour de ${g.theme.toLowerCase()} selon les besoins documentés.`;
+  const template = PROPOSAL_TEMPLATES[g?.themeId];
+  if (typeof template === 'function') {
+    return template(g?.theme || '');
+  }
+  return `Poursuivre l’accompagnement autour de ${String(g?.theme || '').toLowerCase()} selon les besoins documentés.`;
 }
 function parsePreviousObjectives(student,existing){
   const validated=safeArray(existing?.meeting1?.objectivesValidated);
@@ -229,13 +245,21 @@ function normalizePIALifecycle(pia){
   if(pia?.lifecycle==="ACTIF"||["VALIDÉ","VALIDÉE"].includes(pia?.meeting1?.status))return "EN_VIGUEUR";
   return pia?.lifecycle||"EN_CONSTRUCTION";
 }
+const PIA_CANONICAL_ASPECTS = Object.freeze([
+  "Physique et psychomoteur",
+  "Lié à l’autonomie",
+  "Comportemental et affectif",
+  "Communication",
+  "Cognitif (pédagogique)"
+]);
+
 function buildPIA(student,sessions,until,existing){
   const schoolYear=piaSchoolYear(until);
   if(!schoolYear)throw new Error("La date de référence doit appartenir à une année scolaire en cours.");
   const logs=studentSessions(student,sessions,until);
   const units=logs.flatMap(extractUnits);
   const groups=compareUnits(units);
-  const aspects=["Physique et psychomoteur","Lié à l’autonomie","Comportemental et affectif","Communication","Cognitif (pédagogique)"];
+  const aspects=PIA_CANONICAL_ASPECTS;
   const previousSections=new Map(safeArray(existing?.sections).map(section=>[section.aspect,section]));
   const sections=aspects.map(aspect=>{
     const gs=groups.filter(g=>g.aspect===aspect);
@@ -409,12 +433,32 @@ async function unzipEntries(buffer){
   const bytes=new Uint8Array(buffer),view=new DataView(buffer),max=Math.max(0,bytes.length-65557);let eocd=-1;for(let i=bytes.length-22;i>=max;i--){if(view.getUint32(i,true)===0x06054b50){eocd=i;break;}}if(eocd<0)throw new Error("Archive DOCX invalide ou non lisible.");
   const count=view.getUint16(eocd+10,true),cdOffset=view.getUint32(eocd+16,true),entries={};if(count>MAX_PIA_ZIP_ENTRIES)throw new Error("Le document Word contient trop d’éléments.");let p=cdOffset,totalSize=0;for(let i=0;i<count;i++){if(view.getUint32(p,true)!==0x02014b50)throw new Error("Répertoire DOCX invalide.");const method=view.getUint16(p+10,true),csize=view.getUint32(p+20,true),usize=view.getUint32(p+24,true),nlen=view.getUint16(p+28,true),elen=view.getUint16(p+30,true),clen=view.getUint16(p+32,true),loff=view.getUint32(p+42,true),name=new TextDecoder().decode(bytes.slice(p+46,p+46+nlen));const lName=view.getUint16(loff+26,true),lExtra=view.getUint16(loff+28,true),start=loff+30+lName+lExtra;const compressed=bytes.slice(start,start+csize);totalSize+=usize;if(totalSize>MAX_PIA_TEXT_BYTES)throw new Error("Le document Word est trop volumineux après décompression.");let data;if(method===0)data=compressed;else if(method===8){if(typeof DecompressionStream!=="function")throw new Error("Ce navigateur ne permet pas de décompresser le document Word localement.");const ds=new DecompressionStream("deflate-raw");data=new Uint8Array(await new Response(new Blob([compressed]).stream().pipeThrough(ds)).arrayBuffer());if(data.length>MAX_PIA_TEXT_BYTES)throw new Error("Le document Word est trop volumineux après décompression.");}else throw new Error("Méthode de compression DOCX non prise en charge.");entries[name]=data;p+=46+nlen+elen+clen;}return entries;
 }
-async function extractDocxText(file){if(file.size>MAX_PIA_FILE_BYTES)throw new Error("Le fichier PIA dépasse la taille maximale de 20 Mo.");const entries=await unzipEntries(await file.arrayBuffer()),xml=entries["word/document.xml"];if(!xml)throw new Error("Le document Word ne contient pas de document.xml exploitable.");const text=new TextDecoder("utf-8").decode(xml),doc=new DOMParser().parseFromString(text,"application/xml"),ns="http://schemas.openxmlformats.org/wordprocessingml/2006/main",paras=[...doc.getElementsByTagNameNS(ns,"p")];const lines=paras.map(p=>[...p.getElementsByTagNameNS(ns,"t")].map(x=>x.textContent||"").join("").trim()).filter(Boolean);if(!lines.length)throw new Error("Aucun texte exploitable n'a été trouvé dans le document Word.");return lines.join("\n");}
-function docxCellText(tc,ns){const paras=[...tc.getElementsByTagNameNS(ns,"p")];return paras.map(p=>[...p.getElementsByTagNameNS(ns,"t")].map(t=>t.textContent||"").join("")).join("\n").replace(/\u00a0/g," ").trim();}
-async function extractDocxTables(file){if(file.size>MAX_PIA_FILE_BYTES)throw new Error("Le fichier PIA dépasse la taille maximale de 20 Mo.");const entries=await unzipEntries(await file.arrayBuffer()),xml=entries["word/document.xml"];if(!xml)return [];const text=new TextDecoder("utf-8").decode(xml),doc=new DOMParser().parseFromString(text,"application/xml"),ns="http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+async function extractDocxText(file){
+  if(file.size>MAX_PIA_FILE_BYTES)throw new Error("Le fichier PIA dépasse la taille maximale de 20 Mo.");
+  const entries=await unzipEntries(await file.arrayBuffer()),xml=entries["word/document.xml"];
+  if(!xml)throw new Error("Le document Word ne contient pas de document.xml exploitable.");
+  const text=new TextDecoder("utf-8").decode(xml),doc=new DOMParser().parseFromString(text,"application/xml"),ns="http://schemas.openxmlformats.org/wordprocessingml/2006/main",paras=[...doc.getElementsByTagNameNS(ns,"p")];
+  const lines=paras.map(p=>[...p.getElementsByTagNameNS(ns,"t")].map(x=>x.textContent||"").join("").trim()).filter(Boolean);
+  if(!lines.length)throw new Error("Aucun texte exploitable n'a été trouvé dans le document Word.");
+  return lines.join("\n");
+}
+function docxCellText(tc,ns){
+  const paras=[...tc.getElementsByTagNameNS(ns,"p")];
+  return paras.map(p=>[...p.getElementsByTagNameNS(ns,"t")].map(t=>t.textContent||"").join("")).join("\n").replace(/\u00a0/g," ").trim();
+}
+async function extractDocxTables(file){
+  if(file.size>MAX_PIA_FILE_BYTES)throw new Error("Le fichier PIA dépasse la taille maximale de 20 Mo.");
+  const entries=await unzipEntries(await file.arrayBuffer()),xml=entries["word/document.xml"];
+  if(!xml)return [];
+  const text=new TextDecoder("utf-8").decode(xml),doc=new DOMParser().parseFromString(text,"application/xml"),ns="http://schemas.openxmlformats.org/wordprocessingml/2006/main";
   return [...doc.getElementsByTagNameNS(ns,"tbl")].map(tbl=>[...tbl.getElementsByTagNameNS(ns,"tr")].map(tr=>[...tr.children].filter(c=>c.localName==="tc").map(tc=>docxCellText(tc,ns))));
 }
-function findDomainTable(tables){return tables.find(rows=>{const header=(rows[0]||[]).map(norm);return header.some(c=>c.includes(norm("Aspect")))&&header.some(c=>c.includes(norm("Objectifs")));});}
+function findDomainTable(tables){
+  return tables.find(rows=>{
+    const header=(rows[0]||[]).map(norm);
+    return header.some(c=>c.includes(norm("Aspect")))&&header.some(c=>c.includes(norm("Objectifs")));
+  });
+}
 function parseDomainTableRows(rows){
   if(!rows||rows.length<2)return [];
   const header=rows[0].map(norm),idx=label=>header.findIndex(h=>h.includes(norm(label)));
@@ -422,7 +466,12 @@ function parseDomainTableRows(rows){
   const splitCell=txt=>String(txt||"").split(/\n|;|•|●|▪/).map(x=>x.trim()).filter(x=>x.length>1&&!/^x$/i.test(x));
   return rows.slice(1).map(row=>({aspect:(row[iAspect]||"").replace(/[:：]\s*$/,"").trim(),ressources:iRes>=0?splitCell(row[iRes]):[],difficultes:iDiff>=0?splitCell(row[iDiff]):[],objectifs:iObj>=0?splitCell(row[iObj]):[],moyens:[]})).filter(s=>s.aspect);
 }
-function findAdaptationTables(tables){return tables.filter(rows=>{const header=rows.slice(0,2).flat().map(norm);return header.includes("p")&&header.includes("o")&&header.includes("m")&&header.some(h=>h.includes(norm("Description")));});}
+function findAdaptationTables(tables){
+  return tables.filter(rows=>{
+    const header=rows.slice(0,2).flat().map(norm);
+    return header.includes("p")&&header.includes("o")&&header.includes("m")&&header.some(h=>h.includes(norm("Description")));
+  });
+}
 function parseAdaptationRows(rows){
   if(!rows||rows.length<2)return [];
   const headerRowIndex=rows.findIndex(r=>{const n=r.map(norm);return n.includes("p")&&n.includes("o")&&n.includes("m");});
@@ -446,16 +495,26 @@ async function extractPIAFromDocxTables(file){
   const objectives=[...new Set(sections.flatMap(s=>s.objectifs))],difficulties=[...new Set(sections.flatMap(s=>s.difficultes))],resources=[...new Set(sections.flatMap(s=>s.ressources))];
   return {format:"docx",fileName:"",importedAt:new Date().toISOString(),role:"SOURCE_DE_CONTINUITE",extracted:{objectives:objectives.slice(0,30),resources:resources.slice(0,30),difficulties:difficulties.slice(0,30),means:[],adaptations:adaptations.slice(0,30),sections}};
 }
-function winAnsiDecode(bytes){const map={0x80:"€",0x82:"‚",0x83:"ƒ",0x84:"„",0x85:"…",0x86:"†",0x87:"‡",0x88:"ˆ",0x89:"‰",0x8A:"Š",0x8B:"‹",0x8C:"Œ",0x8E:"Ž",0x91:"‘",0x92:"’",0x93:"“",0x94:"”",0x95:"•",0x96:"–",0x97:"—",0x98:"˜",0x99:"™",0x9A:"š",0x9B:"›",0x9C:"œ",0x9E:"ž",0x9F:"Ÿ"};let out="";for(const b of bytes)out+=map[b]||String.fromCharCode(b);return out;}
+const WIN_ANSI_DECODE_MAP = Object.freeze({
+  0x80:"€",0x82:"‚",0x83:"ƒ",0x84:"„",0x85:"…",0x86:"†",0x87:"‡",0x88:"ˆ",0x89:"‰",0x8A:"Š",0x8B:"‹",0x8C:"Œ",0x8E:"Ž",
+  0x91:"‘",0x92:"’",0x93:"“",0x94:"”",0x95:"•",0x96:"–",0x97:"—",0x98:"˜",0x99:"™",0x9A:"š",0x9B:"›",0x9C:"œ",0x9E:"ž",0x9F:"Ÿ"
+});
+function winAnsiDecode(bytes){
+  let out="";
+  for(const b of bytes)out+=WIN_ANSI_DECODE_MAP[b]||String.fromCharCode(b);
+  return out;
+}
 function pdfDecodeString(raw,hex=false){if(hex){const h=raw.replace(/[^0-9A-Fa-f]/g,"");const bytes=[];for(let i=0;i<h.length;i+=2)bytes.push(parseInt(h.slice(i,i+2).padEnd(2,"0"),16));if(bytes[0]===0xFE&&bytes[1]===0xFF){let out="";for(let i=2;i+1<bytes.length;i+=2)out+=String.fromCharCode((bytes[i]<<8)|bytes[i+1]);return out;}return winAnsiDecode(bytes);}
   const out=[];for(let i=0;i<raw.length;i++){if(raw[i]!=="\\"){out.push(raw.charCodeAt(i)&255);continue;}i++;if(i>=raw.length)break;const c=raw[i];if("nrtbf".includes(c)){out.push({n:10,r:13,t:9,b:8,f:12}[c]);continue;}if(c==="("||c===")"||c==="\\"){out.push(c.charCodeAt(0));continue;}if(/[0-7]/.test(c)){let oct=c;for(let j=0;j<2&&i+1<raw.length&&/[0-7]/.test(raw[i+1]);j++)oct+=raw[++i];out.push(parseInt(oct,8));continue;}if(c==="\n")continue;out.push(c.charCodeAt(0)&255);}return winAnsiDecode(out);}
 function extractPdfStrings(text){const lines=[];const btBlocks=text.match(/BT[\s\S]*?ET/g)||[];for(const block of btBlocks){let i=0,lastOperator="";while(i<block.length){if(block[i]==="("){let j=i+1,depth=1,raw="";for(;j<block.length&&depth;j++){if(block[j]==="\\"){raw+=block[j]+(block[j+1]||"");j++;continue;}if(block[j]==="(")depth++;else if(block[j]===")")depth--;if(depth)raw+=block[j];}const tail=block.slice(j).match(/^\s*(?:Tj|TJ|['"])/);if(tail)lines.push(pdfDecodeString(raw,false));i=j;continue;}if(block[i]==="<"&&block[i+1]!=="<"){const j=block.indexOf(">",i+1);if(j>0){const raw=block.slice(i+1,j),tail=block.slice(j+1).match(/^\s*(?:Tj|TJ|['"])/);if(tail)lines.push(pdfDecodeString(raw,true));i=j+1;continue;}}i++;} }return lines.map(x=>x.replace(/\s+/g," ").trim()).filter(Boolean);}
 function ascii85Decode(input){let s=String(input||"").replace(/\s+/g,"");if(s.startsWith("<~"))s=s.slice(2);if(s.endsWith("~>"))s=s.slice(0,-2);const out=[];let group="";for(let i=0;i<s.length;i++){const c=s[i];if(c==="z"&&group.length===0){out.push(0,0,0,0);continue;}group+=c;if(group.length===5){let acc=0;for(const ch of group)acc=acc*85+(ch.charCodeAt(0)-33);out.push((acc>>>24)&255,(acc>>>16)&255,(acc>>>8)&255,acc&255);group="";}}if(group.length){const orig=group.length;while(group.length<5)group+="u";let acc=0;for(const ch of group)acc=acc*85+(ch.charCodeAt(0)-33);const bytes=[(acc>>>24)&255,(acc>>>16)&255,(acc>>>8)&255,acc&255];out.push(...bytes.slice(0,orig-1));}return new Uint8Array(out);}
 async function inflatePdf(bytes){if(typeof DecompressionStream!=="function")throw new Error("Ce navigateur ne permet pas de décompresser localement ce PDF.");for(const format of ["deflate","deflate-raw"]){try{const ds=new DecompressionStream(format);const out=new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(ds)).arrayBuffer());if(out.length>MAX_PIA_TEXT_BYTES)throw new Error("Le PDF est trop volumineux après décompression.");return out;}catch(_){}}throw new Error("Flux PDF compressé non exploitable localement.");}
 async function extractPdfText(file){if(file.size>MAX_PIA_FILE_BYTES)throw new Error("Le fichier PIA dépasse la taille maximale de 20 Mo.");const buffer=await file.arrayBuffer(),raw=new TextDecoder("latin1").decode(new Uint8Array(buffer));const streams=[];const re=/<<([\s\S]*?)>>\s*stream\r?\n([\s\S]*?)\r?\n?endstream/g;let m;while((m=re.exec(raw))){let bytes=Uint8Array.from([...m[2]].map(c=>c.charCodeAt(0)&255));const filters=m[1];try{if(/ASCII85Decode/.test(filters))bytes=ascii85Decode(new TextDecoder("latin1").decode(bytes));if(/FlateDecode/.test(filters))bytes=await inflatePdf(bytes);streams.push(new TextDecoder("latin1").decode(bytes));}catch(_){if(!/FlateDecode|ASCII85Decode/.test(filters))streams.push(m[2]);}}const lines=extractPdfStrings(streams.join("\n"));if(lines.length<2){const fallback=raw.match(/\(([^()\\]*(?:\\.[^()\\]*)*)\)\s*Tj/g)||[];fallback.forEach(x=>{const a=x.indexOf("(")+1,b=x.lastIndexOf(")");if(b>a)lines.push(pdfDecodeString(x.slice(a,b),false));});}if(lines.length<2)throw new Error("Aucun texte exploitable n'a été trouvé dans le PDF. Un PDF scanné/image peut nécessiter un OCR, non inclus dans Journalier.");return lines.join("\n");}
-function normalizeImportedLines(text){return String(text||"").replace(/\u00a0/g," ").replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,"").replace(/\r/g,"").split("\n").map(x=>x.replace(/[ \t]+/g," ").trim()).filter(Boolean);}
+function normalizeImportedLines(text){
+  return String(text||"").replace(/\u00a0/g," ").replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,"").replace(/\r/g,"").split("\n").map(x=>x.replace(/[ \t]+/g," ").trim()).filter(Boolean);
+}
 function extractPIAStructure(text,fileName,format){
-  const lines=normalizeImportedLines(text),nlines=lines.map(norm),aspects=["Physique et psychomoteur","Lié à l’autonomie","Comportemental et affectif","Communication","Cognitif (pédagogique)"],blocks={};
+  const lines=normalizeImportedLines(text),nlines=lines.map(norm),aspects=PIA_CANONICAL_ASPECTS,blocks={};
   aspects.forEach((aspect,i)=>{const idx=nlines.findIndex(x=>x===norm(aspect)||x.includes(norm(aspect)));if(idx<0)return;const next=aspects.slice(i+1).map(norm).map(a=>nlines.findIndex((x,j)=>j>idx&&(x===a||x.includes(a)))).find(x=>x>=0);blocks[aspect]=lines.slice(idx+1,next>=0?next:lines.length);});
   function labelled(block,label){const b=block||[],nl=b.map(norm),i=nl.findIndex(x=>x.includes(norm(label)));if(i<0)return [];const stops=["ressources","difficultes","difficultés","objectifs à poursuivre","objectifs vises","objectifs visés","objectifs","moyens","retours des acteurs","amenagements","aménagements"];let end=b.length;for(let j=i+1;j<b.length;j++){if(stops.some(stop=>nl[j].startsWith(norm(stop)))){end=j;break;}}return b.slice(i+1,end).map(x=>x.replace(/^[•●▪\-–—]+\s*/,"").trim()).filter(x=>x.length>1);}
   const sections=aspects.filter(a=>blocks[a]).map(aspect=>({aspect,ressources:labelled(blocks[aspect],"Ressources"),difficultes:[...new Set(labelled(blocks[aspect],"Difficultés"))],objectifs:labelled(blocks[aspect],"Objectifs à poursuivre"),moyens:labelled(blocks[aspect],"Moyens")}));
@@ -478,7 +537,10 @@ async function parsePIAFile(file){
   if(!parsed.extracted.objectives.length&&!parsed.extracted.sections.length&&!parsed.extracted.difficulties.length&&!parsed.extracted.adaptations.length)throw new Error("Le document a été lu, mais aucune structure PIA reconnaissable n'a été extraite. Le document original n'a pas été conservé.");
   return parsed;
 }
-function importedSummaryHtml(imported){const e=imported?.extracted||{};return `<div class="v74-import-summary"><b>✓ PIA analysé localement</b><span>${esc(imported?.format?.toUpperCase()||"DOCUMENT")}</span><span>${safeArray(e.objectives).length} objectif(s)</span><span>${safeArray(e.difficulties).length} difficulté(s)</span><span>${safeArray(e.adaptations).length} adaptation(s)</span></div>`;}
+function importedSummaryHtml(imported){
+  const e=imported?.extracted||{};
+  return `<div class="v74-import-summary"><b>✓ PIA analysé localement</b><span>${esc(imported?.format?.toUpperCase()||"DOCUMENT")}</span><span>${safeArray(e.objectives).length} objectif(s)</span><span>${safeArray(e.difficulties).length} difficulté(s)</span><span>${safeArray(e.adaptations).length} adaptation(s)</span></div>`;
+}
 function piaImportDossierHtml(studentId){
   const imported=getImportedPIA(studentId);
   if(!imported?.extracted)return '<div class="v74-import-help">Aucun PIA importé pour ce dossier. Utilisez « Importer le PIA » dans la fiche de l’élève.</div>';
@@ -499,7 +561,23 @@ function piaImportDossierHtml(studentId){
     ${globalAdaptations.length?`<div class="v74-domain-value-list-row"><span class="v74-domain-value-label">Adaptations validées</span><div class="v74-domain-value-list">${globalAdaptations.map(item=>`<span class="v74-domain-value">${esc(item)}</span>`).join("")}</div></div>`:""}
   </details>`;
 }
-function pdfWinAnsiBytes(text){const map={"€":0x80,"‚":0x82,"ƒ":0x83,"„":0x84,"…":0x85,"†":0x86,"‡":0x87,"ˆ":0x88,"‰":0x89,"Š":0x8A,"‹":0x8B,"Œ":0x8C,"Ž":0x8E,"‘":0x91,"’":0x92,"“":0x93,"”":0x94,"•":0x95,"–":0x96,"—":0x97,"˜":0x98,"™":0x99,"š":0x9A,"›":0x9B,"œ":0x9C,"ž":0x9E,"Ÿ":0x9F};const out=[];for(const ch of String(text||"")){const cp=ch.codePointAt(0);if(cp<128)out.push(cp);else if(map[ch]!=null)out.push(map[ch]);else if(cp<=255)out.push(cp);else out.push(63);}return out;}
+const WIN_ANSI_BYTE_MAP = Object.freeze({
+  "€":0x80,"‚":0x82,"ƒ":0x83,"„":0x84,"…":0x85,"†":0x86,"‡":0x87,"ˆ":0x88,"‰":0x89,
+  "Š":0x8A,"‹":0x8B,"Œ":0x8C,"Ž":0x8E,"‘":0x91,"’":0x92,"“":0x93,"”":0x94,"•":0x95,
+  "–":0x96,"—":0x97,"˜":0x98,"™":0x99,"š":0x9A,"›":0x9B,"œ":0x9C,"ž":0x9E,"Ÿ":0x9F
+});
+
+function pdfWinAnsiBytes(text){
+  const out=[];
+  for(const ch of String(text||"")){
+    const cp=ch.codePointAt(0);
+    if(cp<128)out.push(cp);
+    else if(WIN_ANSI_BYTE_MAP[ch]!=null)out.push(WIN_ANSI_BYTE_MAP[ch]);
+    else if(cp<=255)out.push(cp);
+    else out.push(63);
+  }
+  return out;
+}
 function pdfLiteral(text){return "("+String.fromCharCode(...pdfWinAnsiBytes(text).flatMap(b=>b===40||b===41||b===92?[92,b]:[b]))+")";}
 function makePdf(lines){const pages=[];const perPage=48;for(let i=0;i<lines.length;i+=perPage)pages.push(lines.slice(i,i+perPage));const objs=[];const add=x=>{objs.push(x);return objs.length;};const fontId=add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");const pageIds=[];for(const pageLines of pages){const content=["BT","/F1 10 Tf","50 790 Td",...pageLines.map((line,i)=>`${pdfLiteral(String(line).slice(0,180))} Tj 0 -15 Td`),"ET"].join("\n");const contentId=add(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`);pageIds.push({contentId});}const pagesId=add("");const catalogId=add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);const pageObjects=pageIds.map(x=>{const id=add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${x.contentId} 0 R >>`);return id;});objs[pagesId-1]=`<< /Type /Pages /Kids [${pageObjects.map(id=>`${id} 0 R`).join(" ")}] /Count ${pageObjects.length} >>`;let out="%PDF-1.4\n%\xFF\xFF\xFF\xFF\n",offsets=[0];for(let i=0;i<objs.length;i++){offsets[i+1]=out.length;out+=`${i+1} 0 obj\n${objs[i]}\nendobj\n`;}const xref=out.length;out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`;for(let i=1;i<offsets.length;i++)out+=String(offsets[i]).padStart(10,"0")+" 00000 n \n";out+=`trailer\n<< /Size ${objs.length+1} /Root ${catalogId} 0 R >>\nstartxref\n${xref}\n%%EOF`;return Uint8Array.from([...out].map(c=>c.charCodeAt(0)&255));}
 function downloadBytes(name,bytes,type){const blob=new Blob([bytes],{type});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
@@ -577,13 +655,28 @@ const PIA_DOMAIN_FIELDS=[
   ["objectifs","Objectifs"],["criteres","Critères d’évaluation"],
   ["moyens","Moyens / adaptations"],["evolution","Évolution documentée"]
 ];
-function piaDomainIcon(aspect,index){
+/**
+ * Détermine la catégorie visuelle standardisée d'un aspect de développement.
+ * @param {string} aspect
+ * @returns {'cognitive'|'communication'|'affective'|'autonomy'|'physical'|'neutral'}
+ */
+function resolvePiaAspectCategory(aspect){
   const name=String(aspect||"").toLocaleLowerCase("fr");
-  if(name.includes("cogn"))return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M6 13.5c6-2.3 12-.8 18 3.3v23c-6-4.1-12-5.6-18-3.3zM42 13.5c-6-2.3-12-.8-18 3.3v23c6-4.1 12-5.6 18-3.3z"/><path d="M11 20c3-.8 6-.3 9 1.2M11 26c3-.7 6-.2 9 1.2M37 20c-3-.8-6-.3-9 1.2M37 26c-3-.7-6-.2-9 1.2"/></svg>`;
-  if(name.includes("commun"))return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M7 10.5h24a5 5 0 0 1 5 5v11a5 5 0 0 1-5 5H19l-8 6v-6h-4a5 5 0 0 1-5-5v-11a5 5 0 0 1 5-5z"/><path d="M15 19h13M15 24h9"/><path d="M31 17h5a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5h-1v5l-7-5"/></svg>`;
-  if(name.includes("comport")||name.includes("affect"))return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M24 39s-16-9.5-16-21a9 9 0 0 1 16-5.8A9 9 0 0 1 40 18c0 11.5-16 21-16 21z"/><path d="M16 23h.1M32 23h.1M19 29c1.4 1.6 3.1 2.4 5 2.4s3.6-.8 5-2.4"/></svg>`;
-  if(name.includes("autonom"))return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle cx="24" cy="24" r="17"/><path d="m31 17-4.5 10.5L17 32l4.5-10.5z"/><circle cx="24" cy="24" r="2"/></svg>`;
-  if(name.includes("phys")||name.includes("psychom"))return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle cx="29" cy="9" r="4"/><path d="m24 17 7 4 6-2M27 20l-6 9 8 4 5 9M21 29l-8 3-4 8M14 15l7 2 4-4"/><path d="m31 17 4 4"/></svg>`;
+  if(name.includes("cogn"))return "cognitive";
+  if(name.includes("commun"))return "communication";
+  if(name.includes("comport")||name.includes("affect"))return "affective";
+  if(name.includes("autonom"))return "autonomy";
+  if(name.includes("phys")||name.includes("psychom"))return "physical";
+  return "neutral";
+}
+
+function piaDomainIcon(aspect,index){
+  const category=resolvePiaAspectCategory(aspect);
+  if(category==="cognitive")return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M6 13.5c6-2.3 12-.8 18 3.3v23c-6-4.1-12-5.6-18-3.3zM42 13.5c-6-2.3-12-.8-18 3.3v23c6-4.1 12-5.6 18-3.3z"/><path d="M11 20c3-.8 6-.3 9 1.2M11 26c3-.7 6-.2 9 1.2M37 20c-3-.8-6-.3-9 1.2M37 26c-3-.7-6-.2-9 1.2"/></svg>`;
+  if(category==="communication")return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M7 10.5h24a5 5 0 0 1 5 5v11a5 5 0 0 1-5 5H19l-8 6v-6h-4a5 5 0 0 1-5-5v-11a5 5 0 0 1 5-5z"/><path d="M15 19h13M15 24h9"/><path d="M31 17h5a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5h-1v5l-7-5"/></svg>`;
+  if(category==="affective")return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M24 39s-16-9.5-16-21a9 9 0 0 1 16-5.8A9 9 0 0 1 40 18c0 11.5-16 21-16 21z"/><path d="M16 23h.1M32 23h.1M19 29c1.4 1.6 3.1 2.4 5 2.4s3.6-.8 5-2.4"/></svg>`;
+  if(category==="autonomy")return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle cx="24" cy="24" r="17"/><path d="m31 17-4.5 10.5L17 32l4.5-10.5z"/><circle cx="24" cy="24" r="2"/></svg>`;
+  if(category==="physical")return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle cx="29" cy="9" r="4"/><path d="m24 17 7 4 6-2M27 20l-6 9 8 4 5 9M21 29l-8 3-4 8M14 15l7 2 4-4"/><path d="m31 17 4 4"/></svg>`;
   const fallback=index%2?`<circle cx="24" cy="24" r="15"/><path d="M24 16v16M16 24h16"/>`:`<circle cx="24" cy="24" r="15"/><circle cx="24" cy="24" r="6"/>`;
   return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">${fallback}</svg>`;
 }
@@ -594,13 +687,7 @@ function piaDomainObjectives(pia,section){
   return [...new Set([...safeArray(section.objectifs),...validated])];
 }
 function piaDomainTone(aspect){
-  const name=String(aspect||"").toLocaleLowerCase("fr");
-  if(name.includes("cogn"))return "cognitive";
-  if(name.includes("commun"))return "communication";
-  if(name.includes("comport")||name.includes("affect"))return "affective";
-  if(name.includes("autonom"))return "autonomy";
-  if(name.includes("phys")||name.includes("psychom"))return "physical";
-  return "neutral";
+  return resolvePiaAspectCategory(aspect);
 }
 function piaDomainCard(pia,section,index){
   const objectives=piaDomainObjectives(pia,section);
@@ -1115,7 +1202,23 @@ async function loadRef(){
 function getImportedPIA(studentId){try{return getData().state.meta?.piaImports?.[studentId]||getData().state.meta?.piaRecords?.[studentId]?.sourceContinuity||null;}catch(_){return null;}}
 async function persistImportedPIA(studentId,imported){
   const ds=window.JournalierDataStore; if(!ds?.isReady?.())throw new Error("Connectez-vous à Microsoft avant d’enregistrer le PIA.");
-  const st=ds.getState();st.meta??={};st.meta.piaImports??={};const safe=JSON.parse(JSON.stringify(imported||{}));delete safe.displayName;safe.fileName="";st.meta.piaImports[studentId]=safe;await ds.persistState(st);
+  const st=ds.getState();st.meta??={};st.meta.piaImports??={};const safe=JSON.parse(JSON.stringify(imported||{}));delete safe.displayName;safe.fileName="";st.meta.piaImports[studentId]=safe;
+  if(st.meta.piaRecords?.[studentId]){
+    st.meta.piaRecords[studentId].sourceContinuity=safe;
+  }
+  const markPending=window.JournalierMigrationBridge?.v72MarkPiaPending||window.v72MarkPiaPending;
+  markPending?.(st,studentId);
+  await ds.persistState(st);
+  const piaPayload=st.meta.piaRecords?.[studentId]||{schemaVersion:"73.0.0",type:"PIA_IMPORT_CONTINUITE",studentId:String(studentId),role:"SOURCE_DE_CONTINUITE",sourceContinuity:safe};
+  if(window.JournalierCloud?.savePia){
+    try{
+      await window.JournalierCloud.savePia(piaPayload);
+      const markSynced=window.JournalierMigrationBridge?.v72MarkPiaSynced||window.v72MarkPiaSynced;
+      markSynced?.(st,studentId,piaPayload);
+      await ds.persistState(st);
+    }catch(_){/* En cas d'erreur réseau ou hors-ligne, la synchro automatique différée prend le relais */}
+  }
+  window.journalierScheduleAutoSync?.();
 }
 function dashboardTrendData(){
   const d=getData(), since=new Date(); since.setDate(since.getDate()-30); const recent=d.sessions.filter(s=>s?.type==="SEANCE"&&dateOnly(s.identification?.date)>=since.toISOString().slice(0,10));
