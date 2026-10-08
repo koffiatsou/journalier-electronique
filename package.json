@@ -10,7 +10,7 @@
     "test": "node tests/storage-v74-contract.test.mjs && node tests/agenda-v74-contract.test.mjs && node tests/session-edit-contract.test.mjs && node tests/sync-deletion-contract.test.mjs && node tests/pia-sync-contract.test.mjs"
   },
   "dependencies": {
-    "@azure/msal-browser": "5.22.0",
+    "@azure/msal-browser": "5.24.0",
     "vite": "8.3.0"
   }
 }
