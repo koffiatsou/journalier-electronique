@@ -8,7 +8,7 @@ import type { Aide, Eleve, Effet, Niveau, Observation, Presence, Seance, Situati
 import { Button } from '../../ui/Button.tsx';
 import { Chips } from '../../ui/Chip.tsx';
 import { Field, Input, Select, Textarea } from '../../ui/Field.tsx';
-import { anneeDeNiveau, cibleDeMatiere, formeDeFiliere } from '../../domain/referentiel/index.ts';
+import { analyserClasse, anneeDeNiveau, cibleDeMatiere, formeDeFiliere } from '../../domain/referentiel/index.ts';
 import type { Piste } from '../../domain/referentiel/index.ts';
 import { indexDe } from '../../domain/referentiel/charger.ts';
 import { Point, TEINTES_EFFET, TEINTES_NIVEAU } from '../../ui/Point.tsx';
@@ -46,7 +46,7 @@ export function FormulaireCreneau({ s, maj, eleves }: PropsFormulaire & { eleves
           {(id) => (
             <Select id={id} value={s.eleveId} onChange={(e) => {
               const el = eleves.find((x) => x.id === e.target.value);
-              maj({ eleveId: e.target.value, matiere: '', niveauScolaire: el?.niveau ?? anneeDeNiveau(el?.classe ?? '') ?? el?.classe ?? '', forme: el?.filiere ?? '' });
+              maj({ eleveId: e.target.value, matiere: '', niveauScolaire: el?.niveau ?? anneeDeNiveau(el?.classe ?? '') ?? el?.classe ?? '', forme: el?.filiere ?? analyserClasse(el?.classe ?? '')?.filiere ?? '' });
             }}>
               <option value="">Choisir un élève</option>
               {eleves.map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
@@ -81,7 +81,7 @@ export function FormulaireCreneau({ s, maj, eleves }: PropsFormulaire & { eleves
           )}
         </Field>
         <Field label="Classe ou niveau" optionnel>
-          {(id) => <Input id={id} value={s.niveauScolaire} placeholder="S1, S2…" onChange={(e) => maj({ niveauScolaire: e.target.value })} />}
+          {(id) => <Input id={id} value={s.niveauScolaire} placeholder="3CB, 4TQ, S2…" onChange={(e) => maj({ niveauScolaire: e.target.value })} />}
         </Field>
         <Field label="Niveau d’étude" optionnel>
           {(id) => (

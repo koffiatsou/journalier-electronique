@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { IndexReferentiel, anneeDeNiveau, cibleDeMatiere, formeDeFiliere, formeDeTexte } from '../src/domain/referentiel/index.ts';
+import { IndexReferentiel, anneeDeNiveau, analyserClasse, cibleDeMatiere, formeDeFiliere, formeDeTexte } from '../src/domain/referentiel/index.ts';
 import type { EntreeReferentiel } from '../src/domain/referentiel/index.ts';
 
 const e = (a: string, extra: Partial<EntreeReferentiel> = {}): EntreeReferentiel => ({ m: 'Mathématiques', f: 'TC', t: 'f', a, r: 'test', ...extra });
@@ -58,6 +58,18 @@ describe('contexte', () => {
     assert.equal(formeDeFiliere('cefa'), 'P');
     assert.equal(formeDeFiliere('primaire'), undefined);
     assert.equal(formeDeFiliere('technique_qualification'), 'TQ');
+  });
+});
+
+describe('notation des classes', () => {
+  it('lit 3CB, 1DB, 4TQ, 5P', () => {
+    assert.deepEqual(analyserClasse('3CB'), { annee: 'S3', filiere: 'secondaire' });
+    assert.deepEqual(analyserClasse('1DB'), { annee: 'S1', filiere: 'secondaire' });
+    assert.deepEqual(analyserClasse('4TQ'), { annee: 'S4', filiere: 'technique_qualification' });
+    assert.deepEqual(analyserClasse('5P'), { annee: 'S5', filiere: 'professionnel' });
+    assert.deepEqual(analyserClasse('4 TTB'), { annee: 'S4', filiere: 'technique_transition' });
+    assert.equal(analyserClasse('Classe de Mme X'), undefined);
+    assert.equal(anneeDeNiveau('3CB'), 'S3');
   });
 });
 

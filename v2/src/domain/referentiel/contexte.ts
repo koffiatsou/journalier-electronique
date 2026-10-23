@@ -1,6 +1,7 @@
 import { sansAccents } from './texte.ts';
 import { ANNEES } from './types.ts';
 import type { Annee, FormeEnseignement } from './types.ts';
+import type { Filiere } from '../types.ts';
 
 export type Jeu = 'mathematiques' | 'francais' | 'langues' | 'sciences' | 'economie';
 
@@ -25,6 +26,28 @@ export function cibleDeMatiere(matiere: string): Cible | null {
   return null;
 }
 
+export interface ClasseAnalysee {
+  annee: Annee;
+  filiere: Filiere | undefined;
+}
+
+const CLASSE = /^\s*([1-7])\s*(?:e|re|ère|ème|eme)?\s*(CEFA|TTR|TT|TQ|C|D|G|T|P)\s*([A-Z0-9]{0,3})\s*$/i;
+const LETTRE_FILIERE: Readonly<Record<string, Filiere | undefined>> = {
+  C: 'secondaire', D: 'secondaire', G: 'secondaire', TT: 'technique_transition', TTR: 'technique_transition',
+  TQ: 'technique_qualification', P: 'professionnel', CEFA: 'cefa', T: undefined
+};
+
+/**
+ * Notation des classes de la FWB : chiffre + lettre(s) de l'organisation des études + section.
+ * 3CB = 3e commune, section B ; 1DB = 1re différenciée ; 4TQ = 4e technique de qualification ; 5P = 5e professionnelle.
+ */
+export function analyserClasse(classe: string): ClasseAnalysee | undefined {
+  const m = CLASSE.exec(classe);
+  if (!m) return undefined;
+  const annee = `S${Math.min(Number(m[1]), 6)}` as Annee;
+  return { annee, filiere: LETTRE_FILIERE[m[2]!.toUpperCase()] };
+}
+
 /** « S3 », « 3e secondaire », « 3ème »… → S3. */
 export function anneeDeNiveau(texte: string): Annee | undefined {
   const t = sansAccents(texte).replace(/\s+/g, '');
@@ -36,7 +59,8 @@ export function anneeDeNiveau(texte: string): Annee | undefined {
   const pr = /^([1-6])(e|eme|re|ere)?(primaire|prim)$/.exec(t);
   if (pr) return `P${pr[1]}` as Annee;
   const n = /^([1-6])(e|eme|re|ere)?(sec|secondaire)?$/.exec(t);
-  return n ? (`S${n[1]}` as Annee) : undefined;
+  if (n) return `S${n[1]}` as Annee;
+  return analyserClasse(texte)?.annee;
 }
 
 /** Niveau d'étude du dossier → forme d'enseignement du référentiel (le primaire n'en a pas). */
