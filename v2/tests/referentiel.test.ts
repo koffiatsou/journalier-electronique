@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { IndexReferentiel, anneeDeNiveau, cibleDeMatiere, formeDeTexte } from '../src/domain/referentiel/index.ts';
+import { IndexReferentiel, anneeDeNiveau, cibleDeMatiere, formeDeFiliere, formeDeTexte } from '../src/domain/referentiel/index.ts';
 import type { EntreeReferentiel } from '../src/domain/referentiel/index.ts';
 
 const e = (a: string, extra: Partial<EntreeReferentiel> = {}): EntreeReferentiel => ({ m: 'Mathématiques', f: 'TC', t: 'f', a, r: 'test', ...extra });
@@ -54,6 +54,10 @@ describe('contexte', () => {
     assert.equal(anneeDeNiveau(''), undefined);
     assert.equal(formeDeTexte('Général'), 'G');
     assert.equal(formeDeTexte('professionnel'), 'P');
+    assert.equal(anneeDeNiveau('4e primaire'), 'P4');
+    assert.equal(formeDeFiliere('cefa'), 'P');
+    assert.equal(formeDeFiliere('primaire'), undefined);
+    assert.equal(formeDeFiliere('technique_qualification'), 'TQ');
   });
 });
 

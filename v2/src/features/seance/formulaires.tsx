@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import {
   ACTIONS_SUITE_SUGGEREES, AIDES_SUGGEREES, COLLABORATIONS_SUGGEREES, EFFETS_LIBELLES, INTERVENTIONS_SUGGEREES,
-  FORMES_LIBELLES, MODALITES_SUITE, NIVEAUX_LIBELLES, OBSERVATIONS_SUGGEREES, PERIODES_DEFAUT, PRESENCE_LIBELLES, SITUATION_AIDE_LIBELLES,
+  FILIERES_LIBELLES, MODALITES_SUITE, NIVEAUX_LIBELLES, OBSERVATIONS_SUGGEREES, PERIODES_DEFAUT, PRESENCE_LIBELLES, SITUATION_AIDE_LIBELLES,
   TRANSFERT_LIBELLES
 } from '../../domain/types.ts';
 import type { Aide, Eleve, Effet, Niveau, Observation, Presence, Seance, SituationAide, Transfert } from '../../domain/types.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Chips } from '../../ui/Chip.tsx';
 import { Field, Input, Select, Textarea } from '../../ui/Field.tsx';
-import { anneeDeNiveau, cibleDeMatiere, formeDeTexte } from '../../domain/referentiel/index.ts';
+import { anneeDeNiveau, cibleDeMatiere, formeDeFiliere } from '../../domain/referentiel/index.ts';
 import type { Piste } from '../../domain/referentiel/index.ts';
 import { indexDe } from '../../domain/referentiel/charger.ts';
 import { Point, TEINTES_EFFET, TEINTES_NIVEAU } from '../../ui/Point.tsx';
@@ -46,7 +46,7 @@ export function FormulaireCreneau({ s, maj, eleves }: PropsFormulaire & { eleves
           {(id) => (
             <Select id={id} value={s.eleveId} onChange={(e) => {
               const el = eleves.find((x) => x.id === e.target.value);
-              maj({ eleveId: e.target.value, matiere: '', niveauScolaire: el?.niveau ?? anneeDeNiveau(el?.classe ?? '') ?? '', forme: el?.forme ?? '' });
+              maj({ eleveId: e.target.value, matiere: '', niveauScolaire: el?.niveau ?? anneeDeNiveau(el?.classe ?? '') ?? '', forme: el?.filiere ?? '' });
             }}>
               <option value="">Choisir un élève</option>
               {eleves.map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
@@ -83,11 +83,11 @@ export function FormulaireCreneau({ s, maj, eleves }: PropsFormulaire & { eleves
         <Field label="Niveau" optionnel>
           {(id) => <Input id={id} value={s.niveauScolaire} placeholder="S1, S2…" onChange={(e) => maj({ niveauScolaire: e.target.value })} />}
         </Field>
-        <Field label="Forme" optionnel>
+        <Field label="Niveau d’étude" optionnel>
           {(id) => (
-            <Select id={id} value={formeDeTexte(s.forme) ?? ''} onChange={(e) => maj({ forme: e.target.value })}>
+            <Select id={id} value={s.forme} onChange={(e) => maj({ forme: e.target.value })}>
               <option value="">Non précisée</option>
-              {Object.entries(FORMES_LIBELLES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              {Object.entries(FILIERES_LIBELLES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </Select>
           )}
         </Field>
@@ -170,7 +170,7 @@ function usePistes(s: Seance, eleve: Eleve | undefined, nombre: number): Piste[]
     let actif = true;
     const t = setTimeout(() => {
       void indexDe(cible.jeu).then((index) => {
-        if (actif) setPistes(index.suggerer({ objectif, annee: anneeDeNiveau(s.niveauScolaire), forme: formeDeTexte(s.forme), langue: cible.langue ?? eleve?.langue }, nombre));
+        if (actif) setPistes(index.suggerer({ objectif, annee: anneeDeNiveau(s.niveauScolaire), forme: formeDeFiliere(s.forme), langue: cible.langue ?? eleve?.langue }, nombre));
       }).catch(() => { if (actif) setPistes([]); });
     }, 300);
     return () => { actif = false; clearTimeout(t); };

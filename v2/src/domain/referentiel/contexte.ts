@@ -33,8 +33,22 @@ export function anneeDeNiveau(texte: string): Annee | undefined {
     const a = `${direct[1]!.toUpperCase()}${direct[2]}` as Annee;
     if ((ANNEES as readonly string[]).includes(a)) return a;
   }
+  const pr = /^([1-6])(e|eme|re|ere)?(primaire|prim)$/.exec(t);
+  if (pr) return `P${pr[1]}` as Annee;
   const n = /^([1-6])(e|eme|re|ere)?(sec|secondaire)?$/.exec(t);
   return n ? (`S${n[1]}` as Annee) : undefined;
+}
+
+/** Niveau d'étude du dossier → forme d'enseignement du référentiel (le primaire n'en a pas). */
+export function formeDeFiliere(filiere: string): FormeEnseignement | undefined {
+  switch (filiere) {
+    case 'secondaire': return 'G';
+    case 'technique_transition': return 'TTR';
+    case 'technique_qualification': return 'TQ';
+    case 'primaire': return undefined;
+    case 'professionnel': case 'cefa': return 'P';
+    default: return formeDeTexte(filiere);
+  }
 }
 
 export function formeDeTexte(texte: string): FormeEnseignement | undefined {
@@ -43,6 +57,6 @@ export function formeDeTexte(texte: string): FormeEnseignement | undefined {
   if (/^(g|general)/.test(t)) return 'G';
   if (/^(ttr|transition)/.test(t)) return 'TTR';
   if (/^(tq|technique|qualification)/.test(t)) return 'TQ';
-  if (/^(p|prof)/.test(t)) return 'P';
+  if (/^(p$|prof)/.test(t)) return 'P';
   return undefined;
 }

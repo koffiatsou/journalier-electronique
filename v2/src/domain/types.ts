@@ -114,13 +114,21 @@ export interface Eleve {
   matieres: string[];
   /** Année (S1…S6), si elle diffère de ce que dit la classe. */
   niveau?: string;
-  /** Forme d'enseignement : G, TTR, TQ ou P. */
-  forme?: 'G' | 'TTR' | 'TQ' | 'P';
+  /** Niveau d'étude : primaire, secondaire général, technique, professionnel, CEFA. */
+  filiere?: Filiere;
   /** Langue moderne suivie (Néerlandais, Anglais…). */
   langue?: string;
 }
 
-export const FORMES_LIBELLES = { G: 'Général', TTR: 'Technique de transition', TQ: 'Technique de qualification', P: 'Professionnel' } as const;
+export type Filiere = 'primaire' | 'secondaire' | 'technique_transition' | 'technique_qualification' | 'professionnel' | 'cefa';
+export const FILIERES_LIBELLES: Readonly<Record<Filiere, string>> = {
+  primaire: 'Primaire',
+  secondaire: 'Secondaire général',
+  technique_transition: 'Technique de transition',
+  technique_qualification: 'Technique de qualification',
+  professionnel: 'Professionnel',
+  cefa: 'CEFA'
+};
 
 export const PERIODES_DEFAUT = ['1e H', '2e H', '3e H', '4e H', '5e H', '6e H', '7e H', '8e H'] as const;
 
