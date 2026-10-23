@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 
 const core = fs.readFileSync(new URL('../src/app/journalier-core.js', import.meta.url), 'utf8');
+const vault = fs.readFileSync(new URL('../src/app/storage-vault.js', import.meta.url), 'utf8');
+const appCode = core + '\n' + vault;
 const ms = fs.readFileSync(new URL('../src/app/microsoft-core.js', import.meta.url), 'utf8');
 
 function assert(condition, message) {
@@ -8,8 +10,8 @@ function assert(condition, message) {
 }
 
 // 1. Enregistrement systématique des suppressions locales
-assert(core.includes("r.sessions[id]={...existing,status:'deleted-pending'"), 'Les séances supprimées doivent toujours être marquées deleted-pending dans le registre.');
-assert(core.includes('renderAgenda?.();'), 'La suppression d’une séance doit rafraîchir l’Agenda immédiatement.');
+assert(appCode.includes("r.sessions[id]={...existing,status:'deleted-pending'"), 'Les séances supprimées doivent toujours être marquées deleted-pending dans le registre.');
+assert(appCode.includes('renderAgenda?.();'), 'La suppression d’une séance doit rafraîchir l’Agenda immédiatement.');
 
 // 2. Traitement prioritaire des suppressions avant découverte
 assert(ms.includes('async function v72ProcessPendingDeletions'), 'La fonction v72ProcessPendingDeletions doit être définie.');

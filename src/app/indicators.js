@@ -39,23 +39,23 @@ function updateIndicatorDiagnosticPanel(){
         : lib.status==='error'
             ? `⚠ Bibliothèque indisponible${lib.error ? ` — ${escapeHtml(lib.error)}` : ''}`
             : '⏳ Chargement…';
-    const attempts=(lib.attempted||[]).map(x=>`<div style=\"margin-top:3px\">${escapeHtml(x.url)} → ${escapeHtml(x.result||'…')}</div>`).join('');
+    const attempts=(lib.attempted||[]).map(x=>`<div style="margin-top:3px">${escapeHtml(x.url)} → ${escapeHtml(x.result||'…')}</div>`).join('');
     panel.innerHTML=`
-      <div style=\"font-weight:800;font-size:14px;margin-bottom:10px\">DIAGNOSTIC TECHNIQUE</div>
-      <div style=\"font-weight:750\">Bibliothèque indicateurs</div>
-      <div style=\"margin-top:4px;line-height:1.45\">${status}</div>
-      ${lib.source?`<div style=\"margin-top:4px;color:#555\">Source : ${escapeHtml(lib.source)}</div>`:''}
-      ${lib.loadedAt?`<div style=\"margin-top:3px;color:#777\">Chargée : ${escapeHtml(new Date(lib.loadedAt).toLocaleString('fr-BE'))}</div>`:''}
-      ${lib.status==='error'?`<div style=\"margin-top:8px;color:#9b1c1c\">Dernière erreur : ${escapeHtml(lib.error||'inconnue')}</div>`:''}
-      ${attempts?`<div style=\"margin-top:10px;padding-top:8px;border-top:1px solid #ddd;font-size:11px;color:#555\"><strong>Tentatives</strong>${attempts}</div>`:''}
-      <div style=\"margin-top:12px;padding-top:8px;border-top:1px solid #ddd\">
-        <div style=\"font-weight:750\">Moteur Q3</div>
-        <div style=\"margin-top:4px\">${ok?'✓ Actif':'⚠ Bloqué : bibliothèque non chargée'}</div>
-        ${q3.objective?`<div style=\"margin-top:5px;color:#555\">Objectif : ${escapeHtml(q3.objective)}</div>`:''}
-        ${q3.subject?`<div style=\"margin-top:3px;color:#555\">Matière : ${escapeHtml(q3.subject)}</div>`:''}
-        ${q3.level?`<div style=\"margin-top:3px;color:#555\">Niveau : ${escapeHtml(q3.level)}</div>`:''}
-        ${q3.form?`<div style=\"margin-top:3px;color:#555\">Forme : ${escapeHtml(q3.form)}</div>`:''}
-        <div style=\"margin-top:3px;color:#555\">Suggestions : ${Number(q3.suggestions||0)}</div>
+      <div style="font-weight:800;font-size:14px;margin-bottom:10px">DIAGNOSTIC TECHNIQUE</div>
+      <div style="font-weight:750">Bibliothèque indicateurs</div>
+      <div style="margin-top:4px;line-height:1.45">${status}</div>
+      ${lib.source?`<div style="margin-top:4px;color:#555">Source : ${escapeHtml(lib.source)}</div>`:''}
+      ${lib.loadedAt?`<div style="margin-top:3px;color:#777">Chargée : ${escapeHtml(new Date(lib.loadedAt).toLocaleString('fr-BE'))}</div>`:''}
+      ${lib.status==='error'?`<div style="margin-top:8px;color:#9b1c1c">Dernière erreur : ${escapeHtml(lib.error||'inconnue')}</div>`:''}
+      ${attempts?`<div style="margin-top:10px;padding-top:8px;border-top:1px solid #ddd;font-size:11px;color:#555"><strong>Tentatives</strong>${attempts}</div>`:''}
+      <div style="margin-top:12px;padding-top:8px;border-top:1px solid #ddd">
+        <div style="font-weight:750">Moteur Q3</div>
+        <div style="margin-top:4px">${ok?'✓ Actif':'⚠ Bloqué : bibliothèque non chargée'}</div>
+        ${q3.objective?`<div style="margin-top:5px;color:#555">Objectif : ${escapeHtml(q3.objective)}</div>`:''}
+        ${q3.subject?`<div style="margin-top:3px;color:#555">Matière : ${escapeHtml(q3.subject)}</div>`:''}
+        ${q3.level?`<div style="margin-top:3px;color:#555">Niveau : ${escapeHtml(q3.level)}</div>`:''}
+        ${q3.form?`<div style="margin-top:3px;color:#555">Forme : ${escapeHtml(q3.form)}</div>`:''}
+        <div style="margin-top:3px;color:#555">Suggestions : ${Number(q3.suggestions||0)}</div>
       </div>`;
 }
 
@@ -157,44 +157,86 @@ function findIndicatorById(id) {
 window.findIndicatorById = findIndicatorById;
 
 async function loadIndicatorLibrary() {
-    const url = './bibliotheque_indicateurs_v0_5_1.json';
-    JOURNALIER_DIAGNOSTICS.indicatorLibrary.status='pending';
-    JOURNALIER_DIAGNOSTICS.indicatorLibrary.attempted=[];
+    JOURNALIER_DIAGNOSTICS.indicatorLibrary.status = 'pending';
+    JOURNALIER_DIAGNOSTICS.indicatorLibrary.attempted = [];
     updateIndicatorDiagnosticPanel();
-    try {
-        JOURNALIER_DIAGNOSTICS.indicatorLibrary.attempted.push({url,result:'en cours'});
-        updateIndicatorDiagnosticPanel();
-        const response = await fetch(url, { cache: 'no-store' });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
-        INDICATOR_LIBRARY = normalizeIndicatorLibraryV05(data);
-        INDICATOR_LIBRARY_STATUS = 'loaded';
-        const attempt=JOURNALIER_DIAGNOSTICS.indicatorLibrary.attempted.at(-1);
-        if(attempt) attempt.result=`HTTP ${response.status} — valide`;
-        JOURNALIER_DIAGNOSTICS.indicatorLibrary={
-            ...JOURNALIER_DIAGNOSTICS.indicatorLibrary,
-            status:'loaded',
-            version:String(data.version||''),
-            count:Number(data.indicateurs_apprentissage?.length||0),
-            source:url.replace(/^\.\//,''),
-            loadedAt:new Date().toISOString(),
-            error:null
-        };
-        updateIndicatorDiagnosticPanel();
-        if (typeof updateObservationSuggestions === 'function') updateObservationSuggestions();
-        console.log('✓ Bibliothèque JSON chargée', {source:url,version:data.version,apprentissage:data.indicateurs_apprentissage.length});
-    } catch (error) {
-        INDICATOR_LIBRARY_STATUS='error';
-        JOURNALIER_DIAGNOSTICS.indicatorLibrary={
-            ...JOURNALIER_DIAGNOSTICS.indicatorLibrary,
-            status:'error', source:url.replace(/^\.\//,''), loadedAt:null,
-            error:error?.message||String(error||'Erreur inconnue')
-        };
-        const attempt=JOURNALIER_DIAGNOSTICS.indicatorLibrary.attempted.at(-1);
-        if(attempt) attempt.result=error?.message||String(error);
-        updateIndicatorDiagnosticPanel();
-        console.error('✗ Impossible de charger la bibliothèque d’indicateurs',error);
+
+    const candidateUrls = [];
+    const pathName = (typeof window !== 'undefined' && window.location?.pathname) || '';
+    const basePath = pathName.startsWith('/journalier-electronique')
+        ? '/journalier-electronique'
+        : '';
+    if (basePath) {
+        candidateUrls.push(`${basePath}/bibliotheque_indicateurs_v0_5_1.json`);
     }
+    candidateUrls.push('./bibliotheque_indicateurs_v0_5_1.json');
+    candidateUrls.push('/journalier-electronique/bibliotheque_indicateurs_v0_5_1.json');
+    candidateUrls.push('/bibliotheque_indicateurs_v0_5_1.json');
+
+    const uniqueUrls = [...new Set(candidateUrls)];
+    let lastError = null;
+
+    for (const url of uniqueUrls) {
+        try {
+            JOURNALIER_DIAGNOSTICS.indicatorLibrary.attempted.push({ url, result: 'en cours' });
+            updateIndicatorDiagnosticPanel();
+            const response = await fetch(url, { cache: 'no-store' });
+            if (!response.ok) {
+                const attempt = JOURNALIER_DIAGNOSTICS.indicatorLibrary.attempted.at(-1);
+                if (attempt) attempt.result = `HTTP ${response.status}`;
+                throw new Error(`HTTP ${response.status}`);
+            }
+            let data = null;
+            if (typeof response.text === 'function') {
+                const text = await response.text();
+                if (!text || text.trim().startsWith('<')) {
+                    const attempt = JOURNALIER_DIAGNOSTICS.indicatorLibrary.attempted.at(-1);
+                    if (attempt) attempt.result = 'Réponse HTML non-JSON';
+                    throw new Error('Réponse non-JSON reçue (document HTML)');
+                }
+                data = JSON.parse(text);
+            } else if (typeof response.json === 'function') {
+                data = await response.json();
+            } else {
+                throw new Error('Réponse invalide (ni text() ni json() disponibles)');
+            }
+            INDICATOR_LIBRARY = normalizeIndicatorLibraryV05(data);
+            INDICATOR_LIBRARY_STATUS = 'loaded';
+            const attempt = JOURNALIER_DIAGNOSTICS.indicatorLibrary.attempted.at(-1);
+            if (attempt) attempt.result = `HTTP ${response.status} — valide`;
+            JOURNALIER_DIAGNOSTICS.indicatorLibrary = {
+                ...JOURNALIER_DIAGNOSTICS.indicatorLibrary,
+                status: 'loaded',
+                version: String(data.version || ''),
+                count: Number(data.indicateurs_apprentissage?.length || 0),
+                source: url.replace(/^\.\//, ''),
+                loadedAt: new Date().toISOString(),
+                error: null
+            };
+            updateIndicatorDiagnosticPanel();
+            if (typeof updateObservationSuggestions === 'function') updateObservationSuggestions();
+            console.log('✓ Bibliothèque JSON chargée', { source: url, version: data.version, apprentissage: data.indicateurs_apprentissage.length });
+            return;
+        } catch (error) {
+            lastError = error;
+            const attempt = JOURNALIER_DIAGNOSTICS.indicatorLibrary.attempted.at(-1);
+            if (attempt && attempt.result === 'en cours') {
+                attempt.result = error?.message || String(error);
+            }
+            updateIndicatorDiagnosticPanel();
+        }
+    }
+
+    INDICATOR_LIBRARY_STATUS = 'error';
+    JOURNALIER_DIAGNOSTICS.indicatorLibrary = {
+        ...JOURNALIER_DIAGNOSTICS.indicatorLibrary,
+        status: 'error',
+        source: uniqueUrls[0]?.replace(/^\.\//, '') || 'bibliotheque_indicateurs_v0_5_1.json',
+        loadedAt: null,
+        error: lastError?.message || String(lastError || 'Erreur inconnue')
+    };
+    updateIndicatorDiagnosticPanel();
+    console.error('✗ Impossible de charger la bibliothèque d’indicateurs', lastError);
 }
 
 loadIndicatorLibrary();

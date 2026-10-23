@@ -153,7 +153,8 @@ textarea:disabled {
 /* Agenda: preserve the five-day desktop model while making cells scroll-safe. */
 .agenda-grid-week {
   max-width: 100%;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
   scrollbar-gutter: stable;
 }
 

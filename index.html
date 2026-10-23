@@ -4,11 +4,14 @@
     <link rel="stylesheet" href="./src/styles/journalier.css">
     <link rel="stylesheet" href="./src/styles/journalier-ux-responsive.css">
     <link rel="stylesheet" href="./src/styles/apple-premium.css">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net https://*.files.1drv.com https://*.sharepoint.com; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net https://*.files.1drv.com https://*.sharepoint.com; frame-src 'self' https://login.microsoftonline.com https://*.microsoftonline.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self' https://login.microsoftonline.com https://*.microsoftonline.com; upgrade-insecure-requests;">
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Pôle territorial WBE BXL – Agenda &amp; Suivi · V74</title>
+    <meta name="description" content="Pôle territorial WBE BXL – Suivi Individuel &amp; Collectif • Année Scolaire 2026-2027">
+    <meta property="og:title" content="Journalier électronique">
+    <meta property="og:description" content="Pôle territorial WBE BXL – Suivi Individuel &amp; Collectif • Année Scolaire 2026-2027">
+    <title>Pôle territorial WBE BXL – Agenda &amp; Suivi · V75</title>
 </head>
 <body>
 <div id="app-toast" role="status" aria-live="polite"></div>
@@ -22,6 +25,10 @@
         </div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end">
+        <button id="download-zip-btn" class="btn-secondary focus-ring" type="button" data-jr-handlers="h80" title="Télécharger le code source de l’application (.zip)" style="padding:7px 12px;font-size:0.78rem;border-radius:999px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;">
+            <span aria-hidden="true">📥</span>
+            <span>Télécharger ZIP</span>
+        </button>
         <button id="ms-connect-btn" class="ms-connect-btn focus-ring" type="button" data-jr-handlers="h1" aria-label="Connexion Microsoft">
             <span class="ms-logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
             <span>Connexion Microsoft</span>
@@ -80,7 +87,16 @@
             <div class="grid-3">
                 <button class="btn-primary primary-action focus-ring" data-jr-handlers="h8">Agenda</button>
                 <button class="btn-secondary primary-action focus-ring" data-jr-handlers="h9">Dossiers élèves</button>
-                <button class="btn-secondary primary-action focus-ring" data-jr-handlers="h10">Rapports & PIA</button>
+                <button class="btn-secondary primary-action focus-ring" data-jr-handlers="h10">Rapports &amp; PIA</button>
+            </div>
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border,#e2e8f0);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                <div>
+                    <strong style="font-size:0.85rem;color:var(--text,#0f172a);">Sauvegarde &amp; Code source (version 0.75.0)</strong>
+                    <p style="font-size:0.75rem;color:var(--muted,#64748b);margin:2px 0 0;">Téléchargez l’archive ZIP complète (code source, référentiel WBE 544 fiches, tests, documentation).</p>
+                </div>
+                <button type="button" class="btn-primary focus-ring" data-jr-handlers="h80" style="padding:8px 16px;font-size:0.82rem;border-radius:8px;cursor:pointer;">
+                    📥 Télécharger l’application (.zip)
+                </button>
             </div>
         </div>
     </div>
@@ -112,7 +128,7 @@
             <button type="button" class="btn-secondary focus-ring agenda-period-config-button" id="agenda-period-config-open">⚙️ Horaires des périodes</button>
         </div>
         <div class="agenda-legend">
-            <span class="legend-item legend-planned"><span class="legend-dot"></span>Proposition</span>
+            <span class="legend-item legend-planned"><span class="legend-dot"></span>Planifié</span>
 
 
             <span class="legend-item legend-done"><span class="legend-dot"></span>Réalisé</span>
@@ -134,10 +150,40 @@
             </div>
             <!-- Q1 -->
             <div class="card">
-                <div class="card-title">1. Contexte de la séance</div>
+                <div class="card-title">1. Créneau et partie pédagogique</div>
+                <div class="zone-banner zone-peda">Partie pédagogique — ce qui se passe en classe</div>
                 <p class="form-section-intro">
-                    Situer la séance dans la réalité de la classe. Les informations déjà connues peuvent être reprises depuis le dossier de l’élève et l’Agenda.
+                    Comme en haut de la feuille papier : date, cours, objectif de la leçon, votre objectif et votre intervention. L’élève, la date et la matière sont repris de l’Agenda quand vous partez d’un créneau planifié.
                 </p>
+                <div class="session-presence-banner" id="session-presence-banner">
+                    <div class="session-presence-head">
+                        <span class="session-presence-label">Statut de présence / déroulé du créneau</span>
+                        <span class="session-presence-hint" id="session-presence-hint">Séance d’accompagnement habituelle avec l’élève présent.</span>
+                    </div>
+                    <input type="hidden" id="f-presence-status" value="present">
+                    <div class="session-presence-pills" role="radiogroup" aria-label="Statut de présence">
+                        <button type="button" class="session-presence-pill is-active is-present" data-presence-choice="present" aria-checked="true" role="radio">
+                            <span class="session-presence-dot"></span>
+                            <span>Présence normale (Accompagnement)</span>
+                        </button>
+                        <button type="button" class="session-presence-pill is-coteach" data-presence-choice="absent_eleve_coteach" aria-checked="false" role="radio">
+                            <span class="session-presence-dot"></span>
+                            <span>Élève absent — Co-enseignement / Notes de cours</span>
+                        </button>
+                        <button type="button" class="session-presence-pill is-absent-eleve" data-presence-choice="absent_eleve" aria-checked="false" role="radio">
+                            <span class="session-presence-dot"></span>
+                            <span>Élève absent — Séance non tenue</span>
+                        </button>
+                        <button type="button" class="session-presence-pill is-absent-prof" data-presence-choice="absent_prof" aria-checked="false" role="radio">
+                            <span class="session-presence-dot"></span>
+                            <span>Professeur absent / Cours annulé</span>
+                        </button>
+                        <button type="button" class="session-presence-pill is-absent-agent" data-presence-choice="absent_agent" aria-checked="false" role="radio">
+                            <span class="session-presence-dot"></span>
+                            <span>Agent du pôle absent</span>
+                        </button>
+                    </div>
+                </div>
                 <div class="grid-3">
                     <div>
                         <label for="f-eleve">Élève accompagné *</label>
@@ -202,7 +248,7 @@
                         <div id="wbe-objective-prediction" class="hidden" style="margin-top:10px;"></div>
                     </div>
                     <div class="v11-field full">
-                        <label>Modalité d’intervention</label>
+                        <label>Mon intervention</label>
                         <div class="ux-bubble-grid">
                             <label class="ux-bubble"><input type="checkbox" name="f-type-interv" value="Accompagnement individuel"><span class="ux-bubble-label">Accompagnement individuel</span></label>
                             <label class="ux-bubble"><input type="checkbox" name="f-type-interv" value="Accompagnement groupe classe"><span class="ux-bubble-label">Accompagnement groupe classe</span></label>
@@ -212,8 +258,12 @@
                         </div>
                     </div>
                     <div class="v11-field full">
-                        <label for="f-objAgent">Objectif spécifique d’accompagnement <span class="v11-optional">(facultatif)</span></label>
+                        <label for="f-objAgent">Mon objectif <span class="v11-optional">(facultatif)</span></label>
                         <input type="text" id="f-objAgent" placeholder="Objectif spécifique lié à cette séance…">
+                    </div>
+                    <div class="v11-field full hidden" id="f-class-notes-field">
+                        <label for="f-classNotes">Contenu vu en classe <span class="v11-optional">(chapitre, exercices réalisés, consignes ou devoirs — surtout utile si l’élève est absent)</span></label>
+                        <textarea id="f-classNotes" rows="3" placeholder="Ex : Chapitre 4 — Équations du 1er degré (p. 42-45). Exercices 1 à 4 faits en co-enseignement. Photocopies mises de côté pour l’élève…"></textarea>
                     </div>
                 </div>
             </div>
@@ -221,8 +271,9 @@
             <!-- Q2 -->
             <div class="card">
                 <div class="card-title">2. Fonctionnement observé</div>
+                <div class="zone-banner zone-ortho">Partie orthopédagogique — ce que vous observez et mettez en place</div>
                 <p class="form-section-intro">
-                    Sélectionner les éléments effectivement observés. Pour les trois premiers groupes, préciser le niveau constaté si nécessaire.
+                    Cochez ce que vous avez observé, puis choisissez le niveau : partiellement, suffisamment ou totalement. Le niveau choisi reste seul affiché ; touchez-le pour le modifier.
                 </p>
 
                 <div class="v15-subsection q2-theme q2-theme-comprehension">
@@ -278,26 +329,26 @@
 
             <!-- Q3 -->
             <div class="card">
-                <div class="card-title">3. Indicateurs d’apprentissage</div>
+                <div class="card-title">3. Compétence travaillée</div>
                 <p class="form-section-intro">
-                    Pointer un élément précis de l’apprentissage. La sélection reste facultative.
+                    Indiquez en une phrase la compétence ou la notion travaillée pendant la séance (facultatif).
                 </p>
 
-                <div class="v11-field full q3-indicator-panel">
+                <div class="v11-field full q3-indicator-panel wbe-later" hidden>
                     <label class="q3-subtitle">Indicateurs d’apprentissage</label>
                     <div id="q3-wbe-validated-note" class="q3-wbe-validated-note hidden" aria-live="polite"></div>
                     <div id="q3-learning-suggestions" class="ux-bubble-grid q3-library-grid" aria-label="Suggestions d’indicateurs d’apprentissage"></div>
-                    <div id="q3-assessment-section" class="q3-assessment-section hidden">
+                    <div id="q3-assessment-section" class="q3-assessment-section hidden" style="display:none !important;" aria-hidden="true">
                         <div class="q3-assessment-title">Pour chaque indicateur sélectionné, préciser le niveau d’appropriation.</div>
                         <div id="q3-assessment-list" class="q3-assessment-list"></div>
                     </div>
                     <button type="button" id="q3-learning-more" class="q3-more-btn hidden" data-jr-handlers="h30">Afficher 4 suggestions supplémentaires</button>
                     <div class="q3-legend">
-                        <strong>Légende :</strong> <strong>À renforcer</strong> → l’apprentissage reste à consolider dans la situation observée · <strong>En cours d’appropriation</strong> → l’élève commence à mobiliser l’apprentissage, avec une réussite encore variable ou un étayage nécessaire · <strong>Mobilisé</strong> → l’élève mobilise l’apprentissage dans la situation observée.
+                        <strong>Légende :</strong> <strong>À renforcer</strong> → l’apprentissage reste à consolider dans la situation observée · <strong>En cours d’appropriation</strong> → l’élève commence à s’approprier l’apprentissage, avec une réussite encore variable ou un étayage nécessaire · <strong>Maîtrisé</strong> → l’élève maîtrise l’apprentissage dans la situation observée.
                     </div>
                 </div>
 
-                <div class="v11-field full q3-add-field q3-add-panel">
+                <div class="v11-field full q3-add-field q3-add-panel wbe-later" hidden>
                     <label for="q3-add-input">Ajouter un indicateur <span class="v11-optional">(facultatif)</span></label>
                     <div class="q3-add-row">
                         <input type="text" id="q3-add-input" placeholder="Saisir un indicateur à ajouter…" autocomplete="off">
@@ -307,14 +358,14 @@
                 </div>
 
                 <div class="v11-field full">
-                    <label for="f-q3-txt">Précision <span class="v11-optional">(facultatif)</span></label>
-                    <textarea id="f-q3-txt" rows="3" placeholder="Précision sur l’élément d’apprentissage observé."></textarea>
+                    <label for="f-q3-txt">Compétence travaillée <span class="v11-optional">(facultatif)</span></label>
+                    <textarea id="f-q3-txt" rows="3" placeholder="Ex : résoudre un problème à une opération, repérer le sujet d’une phrase…"></textarea>
                 </div>
             </div>
 
             <!-- Q4 -->
             <div class="card">
-                <div class="card-title">4. Adaptation / médiation</div>
+                <div class="card-title">4. Ce qui a aidé</div>
                 <p class="form-section-intro">Décrire ce qui a réellement été utilisé ou envisagé. Les adaptations déjà présentes dans le PIA peuvent servir de repère.</p>
                 <div class="compact-choice-grid q4-choice-groups">
                     <div class="v11-field q4-choice-panel q4-situation-panel">
@@ -351,7 +402,7 @@
                 </div>
                 <div class="v11-grid" style="margin-top:12px;">
                     <div class="v11-field full q4-effect-note q4-effect-panel">
-                    <div class="q4-effect-caption">Pour chaque adaptation / médiation sélectionnée, préciser l’effet constaté.</div>
+                    <div class="q4-effect-caption">Pour chaque aide cochée, indiquez l’effet constaté : aucun effet, effet partiel ou effet positif.</div>
                     <div id="q4-effect-sliders" class="q4-effect-sliders" aria-live="polite"></div>
                 </div>
                 <div class="v11-grid" style="margin-top:12px;">
@@ -363,7 +414,7 @@
 
             <!-- Q5 -->
             <div class="card">
-                <div class="card-title">5. Réinvestissement / transfert</div>
+                <div class="card-title">5. Transfert (facultatif)</div>
                 <p class="form-section-intro">Distinguer ce qui est observé pendant cette séance d’un transfert ou d’une généralisation dans une autre situation.</p>
                 <div class="v11-grid">
                     <div class="v11-field q5-choice-panel"><label>Situation de transfert</label><select id="q5-transfer-value" class="choice-select ux-hidden-select"><option value="">-- Sélectionner --</option><option value="observed">Observé</option><option value="not_observed">Non observé</option><option value="no_opportunity">Pas d’occasion</option><option value="later">À observer plus tard</option><option value="not_relevant">Non pertinent</option></select><div class="ux-select-bubbles" data-select-bubbles="q5-transfer-value">
@@ -380,7 +431,7 @@
 
             <!-- Q6 -->
             <div class="card">
-                <div class="card-title">6. Suite de l’accompagnement</div>
+                <div class="card-title">6. Suite (facultatif)</div>
                 <p class="form-section-intro">
                     Qu’est-ce que cette séance implique pour la suite de l’accompagnement ?
                 </p>
@@ -463,9 +514,16 @@
         </div>
 
         <div class="card">
-            <div class="student-toolbar">
-                <div class="ux-search"><span class="ux-search-icon">⌕</span><input id="student-search" class="focus-ring" type="search" placeholder="Rechercher un élève, une classe ou une école…" data-jr-handlers="h52" aria-label="Rechercher un élève"></div>
-                <span class="student-count" id="student-count"></span>
+            <div class="student-toolbar" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+                <div class="ux-search" style="flex:1 1 280px;"><span class="ux-search-icon">⌕</span><input id="student-search" class="focus-ring" type="search" placeholder="Rechercher un élève, une classe ou une école…" data-jr-handlers="h52" aria-label="Rechercher un élève"></div>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <div class="view-switcher student-group-switcher" role="tablist" aria-label="Regroupement des élèves">
+                        <button type="button" class="view-btn focus-ring active" data-student-group-mode="all" role="tab" aria-selected="true">Tous</button>
+                        <button type="button" class="view-btn focus-ring" data-student-group-mode="school" role="tab" aria-selected="false">Par école</button>
+                        <button type="button" class="view-btn focus-ring" data-student-group-mode="class" role="tab" aria-selected="false">Par classe</button>
+                    </div>
+                    <span class="student-count" id="student-count"></span>
+                </div>
             </div>
         </div>
 
@@ -488,6 +546,8 @@
                 <div class="reports-context">
                     <label for="r-periode">Période des séances</label>
                     <select id="r-periode">
+                        <option value="ANNEE" selected>Année scolaire</option>
+                        <option value="ADATE">État à ce jour</option>
                         <option value="LIBRE">Dates personnalisées</option>
                         <option value="HEBDO">Semaine</option>
                         <option value="MENSUEL">Mois</option>
@@ -511,12 +571,11 @@
                             <label for="reports-export-kind">Contenu
                                 <select id="reports-export-kind">
                                         <optgroup label="Rapports et séances">
-                                    <option value="sessions">Séances de la période</option>
-                                    <option value="synthesis">Synthèse générée</option>
-                                    <option value="meeting">Préparation de réunion</option>
+                                    <option value="sessions">Journalier de la période</option>
+                                    <option value="synthesis">Propositions générées</option>
                                         </optgroup>
                                         <optgroup label="PIA annuel">
-                                            <option value="pia-professional">PIA professionnel</option>
+                                            <option value="pia-professional">Dossier de travail détaillé (usage interne)</option>
                                             <option value="pia-deidentified">Modèle PIA dé-identifié</option>
                                             <option value="pia-json">JSON professionnel</option>
                                             <option value="pia-deidentified-json">JSON dé-identifié</option>
@@ -530,6 +589,7 @@
                                 </select>
                             </label>
                             <button type="button" class="btn-secondary" id="reports-export-btn">Exporter</button>
+                            <a href="/journalier-electronique-v75.zip" download="journalier-electronique-v75.zip" class="btn-secondary" id="reports-download-zip-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:5px;" title="Télécharger l’archive ZIP complète du projet V74">📦 Télécharger ZIP</a>
                         </div>
                     </div>
                 </details>
@@ -537,25 +597,26 @@
         </header>
 
         <nav class="reports-subnav" id="reports-navigation" role="tablist" aria-label="Rapports et PIA" aria-orientation="horizontal">
-            <button type="button" role="tab" id="reports-tab-synthesis" aria-controls="reports-panel-synthesis" aria-selected="true" tabindex="0" data-reports-tab="synthesis">Synthèse</button>
-            <button type="button" role="tab" id="reports-tab-history" aria-controls="reports-panel-history" aria-selected="false" tabindex="-1" data-reports-tab="history">Historique</button>
+            <button type="button" role="tab" id="reports-tab-history" aria-controls="reports-panel-history" aria-selected="true" tabindex="0" data-reports-tab="history">Journalier</button>
             <button type="button" role="tab" id="reports-tab-meeting" aria-controls="reports-panel-meeting" aria-selected="false" tabindex="-1" data-reports-tab="meeting">Réunion</button>
+            <button type="button" role="tab" id="reports-tab-synthesis" aria-controls="reports-panel-synthesis" aria-selected="false" tabindex="-1" data-reports-tab="synthesis">Propositions</button>
             <button type="button" role="tab" id="reports-tab-pia" aria-controls="reports-panel-pia" aria-selected="false" tabindex="-1" data-reports-tab="pia">PIA annuel</button>
         </nav>
 
-        <section class="reports-panel" id="reports-panel-synthesis" data-reports-panel="synthesis" role="tabpanel" aria-labelledby="reports-tab-synthesis" tabindex="0">
+        <section class="reports-panel" id="reports-panel-synthesis" data-reports-panel="synthesis" role="tabpanel" aria-labelledby="reports-tab-synthesis" tabindex="0" hidden>
             <div class="reports-synthesis-tool">
                 <div class="reports-synthesis-copy">
-                <div class="page-kicker">Analyse des séances</div>
-                <h2 class="reports-section-title" id="reports-synthesis">Synthèse pédagogique</h2>
+                <div class="page-kicker">Propositions automatiques</div>
+                <h2 class="reports-section-title" id="reports-synthesis">Propositions pour le PIA</h2>
                 <p class="reports-section-description">La période sélectionnée dans l’en-tête s’applique aux synthèses et aux exports de séances. Elle est indépendante de l’année scolaire du PIA. Les constats restent descriptifs et les pistes sont à relire.</p>
                 </div>
-                <div class="reports-synthesis-actions">
-                    <button class="btn-primary" data-jr-handlers="h55">Générer la synthèse</button>
+                <div class="reports-synthesis-actions" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <button class="btn-primary" data-jr-handlers="h55">Générer les propositions</button>
                     <div class="reports-view-actions" role="group" aria-label="Niveau de détail de la synthèse">
-                        <button type="button" class="btn-secondary" id="r-preview-btn">Aperçu</button>
+                        <button type="button" class="btn-secondary is-active" id="r-preview-btn">Aperçu</button>
                         <button type="button" class="btn-secondary" id="r-full-btn">Synthèse complète</button>
                     </div>
+                    <button type="button" class="btn-secondary" id="r-reset-synthesis-btn" title="Réinitialiser l’affichage ou rouvrir les décisions PIA de l’élève">🔄 Réinitialiser / Modifier</button>
                 </div>
             </div>
             <div id="report-output-box" class="report-box reports-result-surface hidden">
@@ -564,18 +625,34 @@
             </div>
         </section>
 
-        <section class="reports-panel" id="reports-panel-history" data-reports-panel="history" role="tabpanel" aria-labelledby="reports-tab-history" tabindex="0" hidden>
+        <section class="reports-panel" id="reports-panel-history" data-reports-panel="history" role="tabpanel" aria-labelledby="reports-tab-history" tabindex="0">
             <header class="reports-section-head">
                 <div class="page-kicker">Séances enregistrées</div>
-                <h2 class="reports-section-title" id="reports-history">Historique</h2>
-                <p class="reports-section-description">Le résumé reste visible pour consulter rapidement chaque séance; ouvrez-la seulement pour la modifier ou en voir le détail.</p>
+                <h2 class="reports-section-title" id="reports-history">Journalier</h2>
+                <p class="reports-section-description">Vos séances comme dans le Journalier papier, pour la période choisie en haut de page : l’année scolaire par défaut, ou l’état à ce jour pour la direction.</p>
             </header>
+            <div class="journalier-export-bar" id="journalier-export-bar">
+                <button type="button" class="btn-primary" id="journalier-export-btn">Exporter le Journalier (Word)</button>
+                <label class="journalier-export-anon"><input type="checkbox" id="journalier-export-anon"> Sans le nom de l’élève</label>
+                <span class="journalier-export-hint" id="journalier-export-hint"></span>
+            </div>
+            <div id="history-attendance-kpi-bar" class="history-attendance-kpi-bar hidden" aria-label="Bilan de présence sur la période"></div>
             <div class="history-controls">
                 <label for="history-search">Rechercher une séance
                     <input id="history-search" type="search" placeholder="Date, objectif ou observation" autocomplete="off">
                 </label>
                 <label for="history-subject-filter">Matière
                     <select id="history-subject-filter"><option value="">Toutes les matières</option></select>
+                </label>
+                <label for="history-presence-filter">Statut de présence
+                    <select id="history-presence-filter">
+                        <option value="">Toutes les séances &amp; absences</option>
+                        <option value="present">Présence élève uniquement</option>
+                        <option value="absent_eleve_coteach">Co-enseignement / Notes (élève absent)</option>
+                        <option value="absent_eleve">Élève absent (sans séance)</option>
+                        <option value="absent_prof">Professeur absent / Cours annulé</option>
+                        <option value="absent_agent">Agent du pôle absent</option>
+                    </select>
                 </label>
             </div>
             <div class="history-workspace" id="history-workspace">
@@ -593,18 +670,27 @@
             <header class="reports-meeting-head">
                 <div class="reports-section-head">
                     <div class="page-kicker">À partir des séances</div>
-                    <h2 class="reports-section-title" id="reports-meeting-prep">Préparer une réunion</h2>
-                    <p class="reports-section-description">La trame reprend les éléments de l’élève et de la période actifs. Elle ne constitue pas le compte rendu de la rencontre.</p>
+                    <h2 class="reports-section-title" id="reports-meeting-prep">Préparer la réunion</h2>
+                    <p class="reports-section-description">Ce qui ressort des séances de la période choisie en haut de page, matière par matière, avec les mêmes mots que dans le Journalier.</p>
                 </div>
-                <div class="reports-meeting-actions">
-                    <button type="button" class="btn-secondary" id="meeting-open-pia">Saisir les éléments de la rencontre</button>
-                    <button type="button" class="btn-primary" data-jr-handlers="h55">Générer la préparation</button>
+                <div class="reports-meeting-actions" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <button type="button" class="btn-secondary" id="reunion-open-proposals">Propositions pour le PIA</button>
+                    <button type="button" class="btn-primary" id="reunion-open-pia">Ouvrir le PIA</button>
                 </div>
             </header>
-            <div id="meeting-prep-output" class="meeting-prep-output"><p class="reports-empty-state">Générez la préparation pour organiser les éléments réellement renseignés dans les séances.</p></div>
+            <div id="reunion-plain" class="reunion-plain" aria-live="polite"></div>
+            <div id="meeting-prep-output" class="meeting-prep-output" hidden></div>
         </section>
 
         <section class="reports-panel" id="reports-panel-pia" data-reports-panel="pia" role="tabpanel" aria-labelledby="reports-tab-pia" tabindex="0" hidden>
+            <div class="pia-export-bar" id="pia-export-bar">
+                <select id="pia-export-moment" aria-label="Réunion concernée">
+                    <option value="DECEMBRE">Réunion de décembre</option>
+                    <option value="FIN_ANNEE">Fin d’année</option>
+                </select>
+                <button type="button" class="btn-primary" id="pia-export-word">Exporter le PIA officiel (Word)</button>
+                <label class="journalier-export-anon"><input type="checkbox" id="pia-export-anon"> Sans le nom de l’élève</label>
+            </div>
             <div id="reports-pia-mount"></div>
         </section>
     </div>
@@ -792,6 +878,58 @@
     </div>
 </div>
 
+<!-- MODAL QUALIFICATION ANNULATION / ABSENCE AGENDA -->
+<div id="eventCancelModal" class="modal-overlay hidden">
+    <div class="modal-card" style="max-width:560px;">
+        <div class="page-kicker">Suivi de présence &amp; Continuité</div>
+        <h3 style="margin:0 0 6px;">Qualifier l’annulation ou l’absence</h3>
+        <p style="font-size:0.84rem;color:#64748b;margin:0 0 12px;">Précisez le motif pour conserver une trace fidèle dans l’historique de l’élève et dans les statistiques de présence.</p>
+        <div id="event-cancel-summary" class="event-summary-box"></div>
+        <div class="event-cancel-choices" id="event-cancel-choices">
+            <button type="button" class="event-cancel-choice-btn is-absent-eleve" data-cancel-reason="absent_eleve">
+                <span class="event-cancel-choice-icon">🟠</span>
+                <span class="event-cancel-choice-body">
+                    <strong>Élève absent — Séance non tenue</strong>
+                    <span>Enregistre l’absence de l’élève dans l’historique du dossier sans ouvrir de fiche d’observation.</span>
+                </span>
+            </button>
+            <button type="button" class="event-cancel-choice-btn is-coteach" data-cancel-reason="absent_eleve_coteach">
+                <span class="event-cancel-choice-icon">🟣</span>
+                <span class="event-cancel-choice-body">
+                    <strong>Élève absent — Maintien en classe (Co-enseignement / Prise de notes)</strong>
+                    <span>Ouvre la fiche séance adaptée (chapitre vu, notes pour l’élève, suites à donner) sans fausser les statistiques d’observation.</span>
+                </span>
+            </button>
+            <button type="button" class="event-cancel-choice-btn is-absent-prof" data-cancel-reason="absent_prof">
+                <span class="event-cancel-choice-icon">🔵</span>
+                <span class="event-cancel-choice-body">
+                    <strong>Professeur absent / Cours annulé</strong>
+                    <span>Trace l’annulation du cours dans l’historique sans l’imputer au taux de présence de l’élève.</span>
+                </span>
+            </button>
+            <button type="button" class="event-cancel-choice-btn is-absent-agent" data-cancel-reason="absent_agent">
+                <span class="event-cancel-choice-icon">🟤</span>
+                <span class="event-cancel-choice-body">
+                    <strong>Agent du pôle absent</strong>
+                    <span>Garde la trace de votre absence dans le Journalier (formation, maladie, concertation…), sans l’imputer à l’élève.</span>
+                </span>
+            </button>
+            <button type="button" class="event-cancel-choice-btn is-other-cancel" data-cancel-reason="cancelled_other">
+                <span class="event-cancel-choice-icon">⚪</span>
+                <span class="event-cancel-choice-body">
+                    <strong>Autre motif (sortie scolaire, examen, créneau déplacé)</strong>
+                    <span>Marque simplement le créneau comme annulé dans l’agenda.</span>
+                </span>
+            </button>
+        </div>
+        <div style="margin-top:12px;">
+            <label for="event-cancel-note" style="font-size:0.78rem;font-weight:600;color:#475569;">Note rapide ou chapitre du jour (facultatif) :</label>
+            <input type="text" id="event-cancel-note" placeholder="Ex : Absence justifiée, sortie théâtre, professeur en formation…">
+        </div>
+        <button type="button" class="btn-secondary focus-ring" id="event-cancel-close-btn" style="width:100%;margin-top:12px;">Fermer</button>
+    </div>
+</div>
+
 <!-- MODAL SUPPRESSION ÉVÉNEMENT -->
 <div id="eventDeleteModal" class="modal-overlay hidden">
     <div class="modal-card" style="max-width:520px;">
@@ -860,6 +998,56 @@
         <label style="margin-top:12px;">Repère / objectifs du PIA</label>
         <textarea id="student-modal-pia" rows="3" placeholder="Repères du PIA — sans remplacer le document original…"></textarea>
 
+        <!-- SECTION 9 : INFORMATIONS POUR LE PIA (TABLEAU T1 OFFICIEL) -->
+        <details id="student-modal-pia-info-details" style="margin-top:14px;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;background:#f8fafc;">
+            <summary style="font-weight:600;font-size:0.88rem;color:#1e293b;cursor:pointer;user-select:none;">
+                📋 Informations pour le PIA officiel (Tableau T1) <span id="student-modal-pia-info-badge" style="font-size:0.75rem;font-weight:normal;color:#64748b;margin-left:6px;"></span>
+            </summary>
+            <div style="margin-top:10px;display:flex;flex-direction:column;gap:10px;">
+                <div style="background:#fffbeb;border:1px solid #fef3c7;border-radius:6px;padding:8px 10px;font-size:0.78rem;color:#92400e;line-height:1.4;">
+                    <strong>🔒 Coordonnées & RGPD</strong> : Les coordonnées d’intervenants, d’établissements ou de responsables constituent des données personnelles supplémentaires. Assurez-vous d’obtenir l’accord préalable de votre direction (et du DPO) avant encodage. Ces champs sont strictement exclus des exports dé-identifiés.
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div>
+                        <label style="font-size:0.8rem;margin-bottom:2px;display:block;">Date de naissance</label>
+                        <input type="date" id="student-modal-date-naissance" style="width:100%;font-size:0.85rem;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.8rem;margin-bottom:2px;display:block;">Option / Filière</label>
+                        <input type="text" id="student-modal-option" placeholder="Ex: Général / Technique / Transition" style="width:100%;font-size:0.85rem;">
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div>
+                        <label style="font-size:0.8rem;margin-bottom:2px;display:block;">Titulaire de classe</label>
+                        <input type="text" id="student-modal-titulaire" placeholder="Ex: M. Dubois" style="width:100%;font-size:0.85rem;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.8rem;margin-bottom:2px;display:block;">Représentant Pôle Territorial</label>
+                        <input type="text" id="student-modal-representant-pole" placeholder="Pôle Territorial WBE BXL" style="width:100%;font-size:0.85rem;">
+                    </div>
+                </div>
+                <div>
+                    <label style="font-size:0.8rem;margin-bottom:2px;display:block;">Coordonnées de l’école</label>
+                    <input type="text" id="student-modal-coordonnees-ecole" placeholder="Adresse, téléphone ou courriel de l’établissement" style="width:100%;font-size:0.85rem;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem;margin-bottom:2px;display:block;">Coordonnées du CPMS coopérant</label>
+                    <input type="text" id="student-modal-coordonnees-cpms" placeholder="Ex: CPMS WBE BXL 1 — contact / tél" style="width:100%;font-size:0.85rem;">
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div>
+                        <label style="font-size:0.8rem;margin-bottom:2px;display:block;">Responsable de l’élève</label>
+                        <input type="text" id="student-modal-responsable" placeholder="Ex: M. et Mme Dupont" style="width:100%;font-size:0.85rem;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.8rem;margin-bottom:2px;display:block;">Coordonnées du responsable</label>
+                        <input type="text" id="student-modal-coordonnees-responsable" placeholder="Tél, adresse ou courriel" style="width:100%;font-size:0.85rem;">
+                    </div>
+                </div>
+            </div>
+        </details>
+
         <div style="display:flex; gap:10px; margin-top:15px;">
             <button type="button" class="btn-primary" style="background:#64748b;" data-jr-handlers="h68">Annuler</button>
             <button type="button" class="btn-primary" style="flex:1;" data-jr-handlers="h69">💾 Enregistrer l'Élève</button>
@@ -867,8 +1055,21 @@
     </div>
 </div>
 
+<script src="./src/app/html-escape.js"></script>
 <script src="./src/app/indicators.js"></script>
+<script src="./src/app/storage-vault.js"></script>
+<script src="./src/v74/v74-docx-pia-pv.js"></script>
+<script src="./src/v74/v74-docx-export.js"></script>
+<script src="./src/v74/v74-pdf-export.js"></script>
+<script src="./src/app/students-core.js"></script>
+<script src="./src/app/agenda-core.js"></script>
+<script src="./src/app/redaction-engine.js"></script>
+<script src="./src/app/journalier-seances-docx.js"></script>
+<script src="./src/app/session-levels.js"></script>
+<script src="./src/app/sessions-core.js"></script>
+<script src="./src/app/reports-core.js"></script>
 <script src="./src/app/journalier-core.js"></script>
+<script src="./src/app/reunion-view.js"></script>
 
 <div id="ms-connection-modal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="ms-modal-title">
   <div class="modal-card" style="max-width:620px;width:calc(100% - 32px);padding:24px">
@@ -878,23 +1079,29 @@
     </div>
     <div class="ms-setup-banner" style="margin-top:18px"><div class="ms-setup-icon">M</div><div><div class="ms-setup-title">Connexion sécurisée</div><div class="ms-setup-text">Journalier ne demande jamais votre mot de passe Microsoft. L'authentification sera effectuée directement par Microsoft Entra ID.</div></div></div>
     <div id="ms-config-status" class="ms-status-box">Configuration Microsoft à effectuer avant la première connexion.</div>
-    <div style="margin-top:14px;font-size:.78rem;color:#6e6e73;line-height:1.5">V74 relie le DataStore de Journalier à Microsoft Graph. Les données restent d'abord enregistrées localement ; la synchronisation cloud est contrôlée par le SyncManager.</div>
+    <div style="margin-top:14px;font-size:.78rem;color:#6e6e73;line-height:1.5">V75 relie le DataStore de Journalier à Microsoft Graph. Les données restent d'abord enregistrées localement ; la synchronisation cloud est contrôlée par le SyncManager.</div>
     <div id="ms-cloud-status" class="ms-status-box" style="margin-top:12px">Aucune opération cloud lancée.</div>
     <div class="ms-modal-actions" style="flex-wrap:wrap">
       <button class="btn-secondary" type="button" data-jr-handlers="h71">Fermer</button>
       <button id="ms-login-action" class="btn-primary" type="button" data-jr-handlers="h72">Se connecter avec Microsoft</button>
       <button id="ms-logout-action" class="btn-secondary" type="button" data-jr-handlers="h73" disabled>Se déconnecter de Microsoft</button>
-      <button id="ms-prepare-cloud-action" class="btn-secondary" type="button" data-jr-handlers="h74" disabled>Préparer l'espace Journalier</button>
-      <button id="ms-verify-cloud-action" class="btn-secondary" type="button" data-jr-handlers="h75" disabled>Vérifier la structure OneDrive</button>
-      <button id="ms-appfolder-test-action" class="btn-secondary" type="button" data-jr-handlers="h76" disabled>Tester réellement l’AppFolder</button>
-      <button id="ms-sync-diagnose-action" class="btn-secondary" type="button" data-jr-handlers="h77" disabled>Analyser la synchronisation</button>
       <button id="ms-sync-action" class="btn-primary" type="button" data-jr-handlers="h78" disabled>Synchroniser maintenant</button>
-      <button id="ms-resolve-conflict-action" class="btn-secondary" type="button" data-jr-handlers="h79" disabled>Résoudre un conflit</button>
       <button id="ms-reset-onedrive-action" class="btn-secondary" type="button" style="border-color:#fca5a5;color:#b91c1c;" disabled>Repartir de OneDrive</button>
     </div>
     <div id="ms-reset-onedrive-help" style="margin-top:8px;font-size:.75rem;color:#64748b;line-height:1.45;">
       <strong>Repartir de OneDrive :</strong> Remplace les données actuellement présentes sur cet appareil par les données enregistrées dans votre espace Journalier OneDrive.
     </div>
+    <details style="margin-top:14px;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;background:#f8fafc">
+      <summary style="cursor:pointer;font-weight:600;font-size:0.82rem;color:#475569;user-select:none">⚙️ Outils de diagnostic technique (avancé)</summary>
+      <div style="font-size:0.75rem;color:#64748b;margin:8px 0 10px;line-height:1.4">Outils de contrôle technique et d'analyse réseau à utiliser uniquement en cas de besoin spécifique.</div>
+      <div class="ms-modal-actions" style="flex-wrap:wrap;gap:8px">
+        <button id="ms-prepare-cloud-action" class="btn-secondary" type="button" data-jr-handlers="h74" disabled>Préparer l'espace Journalier</button>
+        <button id="ms-verify-cloud-action" class="btn-secondary" type="button" data-jr-handlers="h75" disabled>Vérifier la structure OneDrive</button>
+        <button id="ms-appfolder-test-action" class="btn-secondary" type="button" data-jr-handlers="h76" disabled>Tester réellement l’AppFolder</button>
+        <button id="ms-sync-diagnose-action" class="btn-secondary" type="button" data-jr-handlers="h77" disabled>Analyser la synchronisation</button>
+        <button id="ms-resolve-conflict-action" class="btn-secondary" type="button" data-jr-handlers="h79" disabled>Résoudre un conflit</button>
+      </div>
+    </details>
     <div id="ms-conflict-resolution-panel" class="ms-status-box" style="display:none;margin-top:12px">
       <div style="font-weight:700;margin-bottom:8px">Résolution contrôlée des conflits</div>
       <div id="ms-conflict-resolution-summary" style="line-height:1.5"></div>
@@ -939,9 +1146,10 @@
 
 <script type="module" src="./src/msal-bridge.js"></script>
 <script type="module" src="./src/app/microsoft-core.js"></script>
-<script type="module" src="./src/v74/v74-migration.js"></script>
 <script type="module" src="./src/v74/v74-runtime.js"></script>
 <script type="module" src="./src/app/apple-ux-enhancements.js"></script>
+<script type="module" src="./src/app/referentiel-amenagements.js"></script>
+<script type="module" src="./src/app/local-ai-assistant.js"></script>
 
 </body>
 </html>

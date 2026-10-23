@@ -1,3 +1,5 @@
+> Mise à jour V75 : les matières proposées pour un élève viennent de son dossier (qui accepte de nouvelles matières).
+
 # Agenda V74 — modèle fonctionnel
 
 ## Objectif
@@ -35,7 +37,7 @@ Les événements non pédagogiques (`COLLAB`, `FORMATION`, `ADMIN`, `LIBRE`) pos
 
 Une nouvelle activité est créée comme `proposed` (**Planifié**). Plusieurs propositions peuvent coexister sur un même créneau : elles sont affichées côte à côte et ne sont pas supprimées lorsqu'une autre activité est choisie.
 
-Pour une séance `ELEVE`, le passage à **Réalisé** provient de l'encodage de la séance dans l'Historique. Une séance historique est projetée dans les vues Agenda, même lorsqu'aucun événement planifié correspondant n'existait.
+Pour une séance `ELEVE`, le passage à **Réalisé** provient de l'encodage de la séance (le créneau planifié passe seul à **Réalisé** ; affiché « Séance enregistrée »). Depuis V75, les motifs d'annulation incluent l'absence de l'élève, le co-enseignement (créneau **Réalisé** avec mention d'absence), l'absence du professeur et l'absence de l'agent du pôle. Une séance historique est projetée dans les vues Agenda, même lorsqu'aucun événement planifié correspondant n'existait.
 
 Les événements non pédagogiques (`COLLAB`, `FORMATION`, `ADMIN`, `LIBRE`) peuvent être marqués **Réalisé** directement depuis leur fiche d'action. Toute activité peut être **Annulée** sans être supprimée.
 
