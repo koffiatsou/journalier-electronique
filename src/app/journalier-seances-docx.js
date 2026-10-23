@@ -45,7 +45,15 @@
   }
   const lignes = (tbl) => tbl.match(/<w:tr[ >][\s\S]*?<\/w:tr>/g) || [];
   const cellules = (tr) => tr.match(/<w:tc>[\s\S]*?<\/w:tc>/g) || [];
-  const texteDe = (x) => x.replace(/<[^>]+>/g, '');
+  const texteDe = (x) => {
+    let out = String(x == null ? '' : x);
+    let previous;
+    do {
+      previous = out;
+      out = out.replace(/<[^>]+>/g, '');
+    } while (out !== previous);
+    return out;
+  };
   // remplace le contenu d'une cellule en gardant ses propriétés (largeur, fusion)
   function remplirCellule(tc, paragraphes) {
     const pr = (tc.match(/^<w:tc>(<w:tcPr>[\s\S]*?<\/w:tcPr>)/) || [, ''])[1];
