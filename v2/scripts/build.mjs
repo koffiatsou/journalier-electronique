@@ -15,6 +15,8 @@ export async function compiler({ minify = true, surveiller = false } = {}) {
   const options = {
     entryPoints: [path.join(racine, 'src/main.tsx')],
     bundle: true,
+    splitting: true,
+    chunkNames: 'chunks/[name]-[hash]',
     format: 'esm',
     target: 'es2022',
     jsx: 'automatic',
@@ -30,9 +32,10 @@ export async function compiler({ minify = true, surveiller = false } = {}) {
   };
 
   const resultat = await build(options);
-  const sorties = Object.keys(resultat.metafile.outputs).map((f) => path.basename(f));
-  const js = sorties.find((f) => f.endsWith('.js'));
-  const css = sorties.find((f) => f.endsWith('.css'));
+  const sorties = Object.entries(resultat.metafile.outputs);
+  const principal = (ext) => sorties.find(([f, o]) => f.endsWith(ext) && o.entryPoint)?.[0];
+  const js = principal('.js') && path.basename(principal('.js'));
+  const css = principal('.css') ? path.basename(principal('.css')) : sorties.map(([f]) => path.basename(f)).find((f) => f.endsWith('.css'));
   const balises = [
     css ? `<link rel="stylesheet" href="./assets/${css}" />` : '',
     js ? `<script type="module" src="./assets/${js}"></script>` : ''

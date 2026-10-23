@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ACTIONS_SUITE_SUGGEREES, AIDES_SUGGEREES, COLLABORATIONS_SUGGEREES, EFFETS_LIBELLES, INTERVENTIONS_SUGGEREES,
   MODALITES_SUITE, NIVEAUX_LIBELLES, OBSERVATIONS_SUGGEREES, PERIODES_DEFAUT, PRESENCE_LIBELLES, SITUATION_AIDE_LIBELLES,
@@ -8,6 +8,9 @@ import type { Aide, Eleve, Effet, Niveau, Observation, Presence, Seance, Situati
 import { Button } from '../../ui/Button.tsx';
 import { Chips } from '../../ui/Chip.tsx';
 import { Field, Input, Select, Textarea } from '../../ui/Field.tsx';
+import { anneeDeNiveau, cibleDeMatiere, formeDeTexte } from '../../domain/referentiel/index.ts';
+import type { Piste } from '../../domain/referentiel/index.ts';
+import { indexDe } from '../../domain/referentiel/charger.ts';
 import { Point, TEINTES_EFFET, TEINTES_NIVEAU } from '../../ui/Point.tsx';
 
 export interface PropsFormulaire {
@@ -145,8 +148,30 @@ export function FormulaireFonctionnement({ s, maj }: PropsFormulaire) {
 }
 
 /* ───────── 3. Compétence travaillée ───────── */
+/** Pistes tirées du référentiel officiel à partir de l'objectif, de la matière et du niveau. */
+function usePistes(s: Seance, nombre: number): Piste[] {
+  const [pistes, setPistes] = useState<Piste[]>([]);
+  const objectif = `${s.objectifLecon} ${s.monObjectif}`.trim();
+  useEffect(() => {
+    const cible = cibleDeMatiere(s.matiere);
+    if (!cible || !objectif) { setPistes([]); return; }
+    let actif = true;
+    const t = setTimeout(() => {
+      void indexDe(cible.jeu).then((index) => {
+        if (actif) setPistes(index.suggerer({ objectif, annee: anneeDeNiveau(s.niveauScolaire), forme: formeDeTexte(s.forme), langue: cible.langue }, nombre));
+      }).catch(() => { if (actif) setPistes([]); });
+    }, 300);
+    return () => { actif = false; clearTimeout(t); };
+  }, [s.matiere, s.niveauScolaire, s.forme, objectif, nombre]);
+  return pistes;
+}
+
 export function FormulaireCompetence({ s, maj }: PropsFormulaire) {
   const [texte, setTexte] = useState('');
+  const [plus, setPlus] = useState(false);
+  const pistes = usePistes(s, plus ? 8 : 4).filter((p) => !s.competences.some((c) => c.texte === p.entree.a));
+  const prendre = (p: Piste, n: number) =>
+    maj({ competences: [...s.competences, { texte: p.entree.a, niveau: niveau(n) }] });
   const ajouter = () => {
     const t = texte.trim();
     if (!t || s.competences.some((c) => c.texte === t)) return;
@@ -155,6 +180,20 @@ export function FormulaireCompetence({ s, maj }: PropsFormulaire) {
   };
   return (
     <>
+      {pistes.length ? (
+        <div className="rubrique">
+          <h3>Pistes d’après l’objectif de la leçon</h3>
+          <p className="etape-aide">Choisissez le niveau pour garder une piste, ou ignorez-les et saisissez la vôtre.</p>
+          <ul className="points">
+            {pistes.map((p) => (
+              <Point key={`${p.entree.n ?? ''}${p.entree.a}`}
+                nom={p.ecartAnnee ? `${p.entree.a} (programme de ${p.ecartAnnee})` : p.entree.a}
+                libelles={NIVEAUX_LIBELLES} teintes={TEINTES_NIVEAU} valeur={null} onChoisir={(n) => prendre(p, n)} />
+            ))}
+          </ul>
+          {!plus ? <Button type="button" variante="secondaire" onClick={() => setPlus(true)}>Voir d’autres pistes</Button> : null}
+        </div>
+      ) : null}
       <form className="ajout" onSubmit={(e) => { e.preventDefault(); ajouter(); }}>
         <Field label="Compétence travaillée" className="ajout-champ">
           {(id) => <Input id={id} value={texte} placeholder="Ex. : résoudre un problème à une opération" onChange={(e) => setTexte(e.target.value)} />}
