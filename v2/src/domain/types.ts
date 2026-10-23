@@ -202,7 +202,7 @@ export const NATURE_AIDES: Readonly<Record<string, NatureAide>> = {
   'Environnement': 'adaptation',
   'Reformulation': 'mediation',
   'Explicitation / verbalisation': 'mediation',
-  'Décomposition': 'mediation',
+  'Décomposition': 'adaptation',
   'Modélisation': 'mediation',
   'Guidage verbal': 'mediation'
 };
