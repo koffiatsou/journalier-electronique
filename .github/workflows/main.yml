@@ -35,6 +35,15 @@ jobs:
       - name: Build Vite
         run: npm run build
 
+      - name: Vérifier et compiler la V2 (React + TypeScript)
+        working-directory: v2
+        run: |
+          npm install --no-audit --no-fund
+          npm run check
+
+      - name: Publier la V2 dans /v2/
+        run: cp -r v2/dist dist/v2
+
       - name: Setup GitHub Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b
 

@@ -1,0 +1,15 @@
+import type { Eleve, Seance } from '../domain/types.ts';
+import type { Depot } from './repository.ts';
+
+/** Dépôt en mémoire : tests et démonstration, rien n'est conservé. */
+export function creerDepotMemoire(eleves: Eleve[] = [], seances: Seance[] = []): Depot {
+  const e = new Map(eleves.map((x) => [x.id, x]));
+  const s = new Map(seances.map((x) => [x.id, x]));
+  return {
+    chargerEleves: async () => [...e.values()],
+    chargerSeances: async () => [...s.values()],
+    enregistrerEleve: async (x) => { e.set(x.id, x); },
+    enregistrerSeance: async (x) => { s.set(x.id, x); },
+    supprimerSeance: async (id) => { s.delete(id); }
+  };
+}

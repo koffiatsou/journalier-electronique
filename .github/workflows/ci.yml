@@ -27,3 +27,9 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: V2 — typecheck, tests et build
+        working-directory: v2
+        run: |
+          npm install --no-audit --no-fund
+          npm run check
