@@ -1,3 +1,4 @@
+import { natureAide } from '../types.ts';
 import type { Seance } from '../types.ts';
 import { nettoyer } from './langue.ts';
 import type { Faits } from './types.ts';
@@ -27,7 +28,7 @@ export function versFaits(s: Seance, titulaire = ''): Faits {
     remarque: nettoyer(s.remarque),
     competences: s.competences.map((c) => ({ texte: nettoyer(c.texte), niveau: c.niveau })).filter((c) => c.texte),
     precisionCompetence: nettoyer(s.precisionCompetence),
-    aides: s.aides.map((a) => ({ texte: nettoyer(a.nom), effet: a.effet })).filter((a) => a.texte),
+    aides: s.aides.map((a) => ({ texte: nettoyer(a.nom), effet: a.effet, nature: natureAide(a.nom) })).filter((a) => a.texte),
     precisionAide: nettoyer(s.precisionAide),
     transfert: s.transfert,
     precisionTransfert: nettoyer(s.precisionTransfert),

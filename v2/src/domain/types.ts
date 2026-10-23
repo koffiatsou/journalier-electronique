@@ -162,13 +162,12 @@ export const OBSERVATIONS_SUGGEREES: ReadonlyArray<{ rubrique: string; items: re
   }
 ];
 
-export type SituationAide = 'none' | 'existing_adaptation' | 'existing_mediation' | 'new' | 'later';
+export type SituationAide = 'none' | 'existing' | 'new' | 'later';
 
 export const SITUATION_AIDE_LIBELLES: Record<SituationAide, string> = {
   none: 'Aucune',
-  existing_adaptation: 'Adaptation déjà en place',
-  existing_mediation: 'Médiation déjà en place',
-  new: 'Nouvelle adaptation / médiation',
+  existing: 'Déjà en place',
+  new: 'Nouvelles',
   later: 'Piste pour plus tard'
 };
 
@@ -187,6 +186,29 @@ export const AIDES_SUGGEREES = [
   'Autre'
 ] as const;
 
+/**
+ * Nature d'une aide, déduite de son nom : l'agent n'a jamais à la choisir.
+ * Adaptation = ce qu'on change pour l'élève (tâche, support, matériel, environnement).
+ * Médiation = ce que l'adulte fait pendant la tâche pour l'aider à comprendre.
+ */
+export type NatureAide = 'adaptation' | 'mediation';
+
+export const NATURE_AIDES: Readonly<Record<string, NatureAide>> = {
+  'Support visuel': 'adaptation',
+  'Gabarit / fiche outil': 'adaptation',
+  'Aide organisation': 'adaptation',
+  'Outil numérique': 'adaptation',
+  'Matériel': 'adaptation',
+  'Environnement': 'adaptation',
+  'Reformulation': 'mediation',
+  'Explicitation / verbalisation': 'mediation',
+  'Décomposition': 'mediation',
+  'Modélisation': 'mediation',
+  'Guidage verbal': 'mediation'
+};
+
+export const natureAide = (nom: string): NatureAide | null => NATURE_AIDES[nom.trim()] ?? null;
+
 export const INTERVENTIONS_SUGGEREES = [
   'Accompagnement individuel',
   'Accompagnement groupe classe',
@@ -197,8 +219,8 @@ export const INTERVENTIONS_SUGGEREES = [
 
 export const ACTIONS_SUITE_SUGGEREES = [
   'Maintenir l’accompagnement',
-  'Adapter la stratégie / médiation',
-  'Tester une nouvelle stratégie / médiation',
+  'Adapter la stratégie',
+  'Tester une nouvelle stratégie',
   'Préparer un support',
   'Favoriser l’autonomie',
   'Réduire ponctuellement l’étayage'

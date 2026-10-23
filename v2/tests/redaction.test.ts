@@ -126,3 +126,16 @@ test('champs vides : un tiret, jamais d’espace pendant', () => {
   assert.ok(t.includes(`Objectif de la leçon${N}: —`) && t.includes(`Titulaire${N}: —`));
   assert.deepEqual(controler(construireBloc(seance({ objectifLecon: '' }))), []);
 });
+
+test('aides : adaptations et médiations présentées séparément, chacune groupée par effet', () => {
+  const t = texte(seance({ aides: [{ nom: 'Support visuel', effet: 2 }, { nom: 'Guidage verbal', effet: 1 }, { nom: 'Matériel', effet: 2 }] }));
+  assert.ok(t.includes('Adaptations mises en place'));
+  assert.ok(t.includes('Médiations mises en place'));
+  assert.ok(t.includes(`• Effet positif${N}: support visuel`) && t.includes(`• Effet partiel${N}: guidage verbal`));
+  assert.ok(!t.includes('Autres aides'));
+});
+
+test('aide saisie à la main : rangée à part, sans inventer de nature', () => {
+  const t = texte(seance({ aides: [{ nom: 'Pause active', effet: 2 }, { nom: 'Reformulation', effet: 2 }] }));
+  assert.ok(t.includes('Médiations mises en place') && t.includes('Autres aides mises en place'));
+});

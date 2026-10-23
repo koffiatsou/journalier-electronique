@@ -83,11 +83,25 @@ function ligneCompetence(f: Faits): string | null {
   return `${Maj(enumeration(parts))}.`;
 }
 
-/** Aides regroupées par effet : « • Effet positif : support visuel ; guidage verbal. » */
-function ligneAides(f: Faits): string[] | null {
-  if (!f.aides.length) return null;
-  const items = f.aides.map((a) => ({ texte: a.texte, niveau: a.effet as number | null }));
+/** Aides d'une même nature, regroupées par effet : « • Effet positif : support visuel ; guidage verbal. » */
+function lignesAidesDe(aides: Faits['aides']): string[] {
+  const items = aides.map((a) => ({ texte: a.texte, niveau: a.effet as number | null }));
   return puces(grouperParNiveau(items), (n) => (n === null ? 'Effet non précisé' : EFFETS[n] ?? 'Effet non précisé'));
+}
+
+/** Adaptations et médiations sont présentées séparément ; les aides sans nature connue restent à part. */
+function blocsAides(f: Faits): { label: string; lignes: string[] }[] {
+  const parNature = (n: Faits['aides'][number]['nature']) => f.aides.filter((a) => a.nature === n);
+  const adaptations = parNature('adaptation');
+  const mediations = parNature('mediation');
+  const autres = parNature(null);
+  const seulType = [adaptations, mediations, autres].filter((x) => x.length).length === 1;
+  const bloc = (label: string, liste: Faits['aides']) => (liste.length ? [{ label, lignes: lignesAidesDe(liste) }] : []);
+  return [
+    ...bloc('Adaptations mises en place', adaptations),
+    ...bloc('Médiations mises en place', mediations),
+    ...bloc(seulType && !adaptations.length && !mediations.length ? 'Aides mises en place' : 'Autres aides mises en place', autres)
+  ];
 }
 
 function ligneTransfert(f: Faits): string | null {
@@ -160,8 +174,7 @@ export function construireBloc(seance: Seance, contexte: ContexteBloc = {}): Blo
   const comp = ligneCompetence(faits);
   if (comp) l.push({ label: 'Compétence travaillée', texte: comp });
   if (faits.precisionCompetence) l.push({ label: comp ? 'Précision' : 'Compétence travaillée', texte: finPhrase(faits.precisionCompetence) });
-  const aides = ligneAides(faits);
-  if (aides) l.push({ label: 'Aides mises en place', lignes: aides });
+  for (const b of blocsAides(faits)) l.push(b);
   if (faits.precisionAide) l.push({ label: 'Précision sur les aides', texte: finPhrase(faits.precisionAide) });
   const tr = ligneTransfert(faits);
   if (tr) l.push({ label: 'Transfert', texte: tr });

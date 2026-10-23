@@ -5,6 +5,18 @@ import { IconeFeuille } from '../../ui/icons.tsx';
 
 const dateFr = (iso: string): string => iso.split('-').reverse().join('/');
 
+/** Points notés au moins deux fois lors des séances précédentes (les plus fréquents d'abord, trois au plus). */
+function frequents(seance: Seance, precedentes: readonly Seance[]): string[] {
+  const compte = new Map<string, number>();
+  for (const x of precedentes) {
+    if (x.id === seance.id) continue;
+    for (const nom of new Set([...x.observations.map((o) => o.texte), ...x.aides.map((a) => a.nom)])) {
+      compte.set(nom, (compte.get(nom) ?? 0) + 1);
+    }
+  }
+  return [...compte].filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fr')).slice(0, 3).map(([nom]) => nom);
+}
+
 /** Dernière séance déjà enregistrée avec cet élève, avant celle en cours. */
 function rappel(seance: Seance, precedentes: readonly Seance[]) {
   const derniere = [...precedentes]
@@ -33,6 +45,7 @@ export function Apercu({ seance, eleve, precedentes, tiroirOuvert, onFermer }: P
     [seance, eleve, precedentes]
   );
   const dernier = useMemo(() => rappel(seance, precedentes), [seance, precedentes]);
+  const souvent = useMemo(() => frequents(seance, precedentes), [seance, precedentes]);
   const vide = (v: string) => v || '—';
 
   return (
@@ -75,6 +88,12 @@ export function Apercu({ seance, eleve, precedentes, tiroirOuvert, onFermer }: P
           ))}
         </section>
       </div>
+      {souvent.length ? (
+        <section className="rappel" aria-label="Souvent noté pour cet élève">
+          <h3>Souvent noté pour cet élève</h3>
+          <ul>{souvent.map((n) => <li key={n}>{n}</li>)}</ul>
+        </section>
+      ) : null}
       {dernier ? (
         <section className="rappel" aria-label="Rappel de la dernière séance">
           <h3>Dernière séance, le {dernier.date}{dernier.matiere ? ` · ${dernier.matiere}` : ''}</h3>

@@ -1,4 +1,4 @@
-import type { Effet, Niveau, Presence, Transfert } from '../types.ts';
+import type { Effet, NatureAide, Niveau, Presence, Transfert } from '../types.ts';
 
 /** Séance nettoyée (textes rognés, valeurs vides retirées) : la seule entrée des règles de rédaction. */
 export interface Faits {
@@ -16,7 +16,7 @@ export interface Faits {
   remarque: string;
   competences: { texte: string; niveau: Niveau | null }[];
   precisionCompetence: string;
-  aides: { texte: string; effet: Effet | null }[];
+  aides: { texte: string; effet: Effet | null; nature: NatureAide | null }[];
   precisionAide: string;
   transfert: Transfert | null;
   precisionTransfert: string;

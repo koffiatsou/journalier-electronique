@@ -189,8 +189,8 @@ export function FormulaireAides({ s, maj }: PropsFormulaire) {
   return (
     <>
       <div className="field">
-        <span className="field-label">Situation</span>
-        <div className="chips" role="radiogroup" aria-label="Situation">
+        <span className="field-label">Ces aides sont…</span>
+        <div className="chips" role="radiogroup" aria-label="Statut des aides">
           {(Object.keys(SITUATION_AIDE_LIBELLES) as SituationAide[]).map((k) => (
             <button key={k} type="button" role="radio" aria-checked={s.situationAide === k} className="chip"
               onClick={() => maj({ situationAide: k })}>{SITUATION_AIDE_LIBELLES[k]}</button>
@@ -198,7 +198,7 @@ export function FormulaireAides({ s, maj }: PropsFormulaire) {
         </div>
       </div>
       <div className="rubrique">
-        <h3>Adaptations et médiations utilisées</h3>
+        <h3>Aides utilisées</h3>
         <p className="etape-aide">Pour chaque aide utilisée, choisissez son effet. Laissez de côté ce qui n’a pas servi.</p>
         <ul className="points">
           {[...AIDES_SUGGEREES, ...autres.map((a) => a.nom)].map((nom) => (
