@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Seance } from '../../domain/types.ts';
 import type { Magasin } from '../../state/store.ts';
 import { useMagasin } from '../../state/store.ts';
@@ -25,7 +25,8 @@ export function SeancePage({ magasin }: { magasin: Magasin }) {
   const eleves = useMagasin(magasin, (e) => e.eleves);
   const seances = useMagasin(magasin, (e) => e.seances);
   const { annoncer } = useToast();
-  const [s, setS] = useState<Seance>(() => seanceVide());
+  const [s, setS] = useState<Seance>(() => ({ ...seanceVide(), ...(magasin.lire().preparation ?? {}) }));
+  useEffect(() => { magasin.viderPreparation(); }, [magasin]);
   const [ouvert, setOuvert] = useState(0);
   const [raisons, setRaisons] = useState<string[]>([]);
   const [tiroir, setTiroir] = useState(false);

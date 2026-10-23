@@ -118,6 +118,8 @@ export interface Eleve {
   filiere?: Filiere;
   /** Langue moderne suivie (Néerlandais, Anglais…). */
   langue?: string;
+  /** Couleur dans l'agenda (0–9) ; sinon déduite de l'identifiant. */
+  couleur?: number;
 }
 
 export type Filiere = 'primaire' | 'secondaire' | 'technique_transition' | 'technique_qualification' | 'professionnel' | 'cefa';

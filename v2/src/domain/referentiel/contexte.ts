@@ -84,3 +84,12 @@ export function formeDeTexte(texte: string): FormeEnseignement | undefined {
   if (/^(p$|prof)/.test(t)) return 'P';
   return undefined;
 }
+
+/** Niveau et niveau d'étude proposés à l'ouverture d'une séance pour cet élève (modifiables). */
+export function defautsSeance(eleve: { niveau?: string | undefined; classe: string; filiere?: Filiere | undefined } | undefined): { niveauScolaire: string; forme: string } {
+  if (!eleve) return { niveauScolaire: '', forme: '' };
+  return {
+    niveauScolaire: eleve.niveau ?? anneeDeNiveau(eleve.classe) ?? eleve.classe,
+    forme: eleve.filiere ?? analyserClasse(eleve.classe)?.filiere ?? ''
+  };
+}

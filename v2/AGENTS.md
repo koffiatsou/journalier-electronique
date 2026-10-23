@@ -40,3 +40,9 @@ PRODUCT.md (qui, pourquoi) · DESIGN.md (look & mouvement) · ARCHITECTURE.md ·
 - Moteur : `src/domain/referentiel/` (normalisation, alias de terrain, poids IDF, facteur d'année, forme G/TTR/TQ/P, langue du dossier, anti-doublon avec Q2). 4 pistes max, « Voir d'autres pistes » = 8, rien si objectif vague, saisie libre toujours possible.
 - Limites connues : langues du secondaire supérieur = niveaux du CECRL (pas d'année), grammaire par langue extraite des annexes (heuristique) ; sciences/éco du secondaire supérieur = compétences d'unité (peu fines) ; histoire-géographie, technique, droit détaillé non faits. Anglais/allemand du tronc commun absents.
 - Niveau, niveau d’étude (primaire, secondaire général, technique transition/qualification, professionnel, CEFA ; CEFA → forme P) et langue : champs optionnels de `Eleve` (préremplissent la séance, modifiables) ; la vue Élèves (fiche + historique, features/eleves) les saisit.
+
+## Agenda V2
+- Domaine pur dans `src/domain/agenda/` (dates, couleurs, planning : occurrences, disposer, déplacer/redimensionner/dupliquer/annuler/éditer/supprimer renvoient un `Changement`). Stockage : IndexedDB version 2, magasin `activites` ; `magasin.changerAgenda(changement)`.
+- Une activité = date + périodes (index 0–7) + répétition hebdomadaire ; modifier « cette date » détache une occurrence (exceptions de la série). Réalisé = séance du même élève sur le créneau (calculé), sinon état manuel.
+- Couleurs : `Eleve.couleur` (0–9) sinon déduite de l'identifiant ; classes CSS `.c-0…c-9` et `.t-<type>` (agenda.css, clair/sombre via color-mix).
+- « Encoder » : `magasin.preparerSeance(partiel)` puis hash `/seance` (consommé à l'ouverture).

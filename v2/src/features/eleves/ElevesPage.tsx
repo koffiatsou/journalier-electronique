@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { NB_COULEURS, NOMS_COULEURS, couleurLibre, couleursEleves } from '../../domain/agenda/index.ts';
 import { analyserClasse } from '../../domain/referentiel/index.ts';
 import { dateFR } from '../../domain/redaction/langue.ts';
 import { FILIERES_LIBELLES } from '../../domain/types.ts';
@@ -14,7 +15,7 @@ import { useToast } from '../../ui/Toast.tsx';
 const MATIERES = ['Mathématiques', 'Français', 'Néerlandais', 'Anglais', 'Sciences', 'Sciences économiques', 'Histoire', 'Géographie', 'Langues modernes'];
 const LANGUES = ['Néerlandais', 'Anglais', 'Allemand', 'Espagnol', 'Italien'];
 
-const vide = (): Eleve => ({ id: crypto.randomUUID(), nom: '', prenom: '', classe: '', ecole: '', titulaire: '', dateNaissance: '', matieres: [] });
+const vide = (autres: readonly Eleve[]): Eleve => ({ id: crypto.randomUUID(), nom: '', prenom: '', classe: '', ecole: '', titulaire: '', dateNaissance: '', matieres: [], couleur: couleurLibre(autres) });
 
 /** Ce que l'application déduit de la classe saisie (3CB, 4TQ…), montré pour que l'agent vérifie. */
 function deduction(classe: string): string {
@@ -57,6 +58,14 @@ function FicheEleve({ eleve, onEnregistrer, onAnnuler }: { eleve: Eleve; onEnreg
         <span className="field-label">Matières suivies</span>
         <Chips options={[...MATIERES, ...e.matieres.filter((m) => !MATIERES.includes(m))]} valeurs={e.matieres} onChange={(matieres) => maj({ matieres })} />
       </div>
+      <div className="field">
+        <span className="field-label">Couleur dans l’agenda</span>
+        <div className="pastilles-couleur" role="group" aria-label="Couleur dans l’agenda">
+          {Array.from({ length: NB_COULEURS }, (_, i) => (
+            <button key={i} type="button" className={`c-${i}`} aria-pressed={e.couleur === i} aria-label={NOMS_COULEURS[i]} onClick={() => maj({ couleur: i })} />
+          ))}
+        </div>
+      </div>
       <Field label="Langue moderne" optionnel aide="Sert aux pistes de compétences quand la matière est « Langues modernes ».">
         {(id) => (
           <Select id={id} value={e.langue ?? ''} onChange={(ev) => { const { langue: _l, ...reste } = e; setE(ev.target.value ? { ...reste, langue: ev.target.value } : reste); }}>
@@ -96,6 +105,7 @@ export function ElevesPage({ magasin }: { magasin: Magasin }) {
     setEdition(null);
     annoncer(`${e.prenom} ${e.nom} enregistré`);
   };
+  const couleurs = couleursEleves(eleves);
   const triees = [...eleves].sort((a, b) => `${a.nom} ${a.prenom}`.localeCompare(`${b.nom} ${b.prenom}`, 'fr'));
   const deEleve = (id: string): Seance[] => seances.filter((s) => s.eleveId === id).sort((a, b) => (a.date < b.date ? 1 : -1));
 
@@ -115,7 +125,7 @@ export function ElevesPage({ magasin }: { magasin: Magasin }) {
         <section className="liste-carte">
           <div className="liste-entete">
             <h2>{triees.length ? `${triees.length} élève${triees.length > 1 ? 's' : ''}` : 'Aucun élève'}</h2>
-            <Button variante="primaire" onClick={() => setEdition(vide())}>Nouvel élève</Button>
+            <Button variante="primaire" onClick={() => setEdition(vide(eleves))}>Nouvel élève</Button>
           </div>
           {triees.length ? (
             <ul className="liste liste-eleves">
@@ -125,7 +135,7 @@ export function ElevesPage({ magasin }: { magasin: Magasin }) {
                 return (
                   <li key={e.id}>
                     <button type="button" className="eleve-ligne" aria-expanded={est} onClick={() => setOuvert(est ? null : e.id)}>
-                      <span className="liste-titre">{e.nom} {e.prenom}</span>
+                      <span className="liste-titre"><i className={`pastille-eleve c-${couleurs.get(e.id) ?? 0}`} aria-hidden="true" />{e.nom} {e.prenom}</span>
                       <span className="liste-detail">{resume(e) || 'Dossier à compléter'} — {s.length} séance{s.length > 1 ? 's' : ''}</span>
                     </button>
                     {est ? (

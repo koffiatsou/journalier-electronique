@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import type { Magasin } from '../state/store.ts';
 import { useMagasin } from '../state/store.ts';
 import { FournisseurToast } from '../ui/Toast.tsx';
+import { AgendaPage } from '../features/agenda/AgendaPage.tsx';
 import { ElevesPage } from '../features/eleves/ElevesPage.tsx';
 import { SeancePage } from '../features/seance/SeancePage.tsx';
 import { Accueil, PageAVenir } from './PagesSimples.tsx';
@@ -21,8 +22,9 @@ export function App({ magasin }: { magasin: Magasin }) {
         {pret && erreur ? <p className="erreur" role="alert">Les données locales n’ont pas pu être lues : {erreur}</p> : null}
         {pret && page === 'accueil' ? <Accueil magasin={magasin} onAller={aller} /> : null}
         {pret && page === 'seance' ? <SeancePage magasin={magasin} /> : null}
+        {pret && page === 'agenda' ? <AgendaPage magasin={magasin} /> : null}
         {pret && page === 'eleves' ? <ElevesPage magasin={magasin} /> : null}
-        {pret && (page === 'agenda' || page === 'rapports') ? <PageAVenir page={page} /> : null}
+        {pret && page === 'rapports' ? <PageAVenir page={page} /> : null}
       </Shell>
     </FournisseurToast>
   );

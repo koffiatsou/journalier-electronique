@@ -6,6 +6,7 @@ Mis à jour le 23 octobre 2026. Branche `v2/react-ts`, PR #37 (brouillon, jamais
 - Séance en 5 étapes, panneau « Feuille » avec rappel de la dernière séance et des aides fréquentes.
 - Texte du Journalier produit automatiquement (zones pédagogique / orthopédagogique, aides classées par effet).
 - Pistes de compétences issues des référentiels officiels (voir ci-dessous).
+- Agenda (semainier) : semaine et jour (jour seul sur téléphone), périodes en lignes avec récré/midi, couleur par élève (palette de 10, modifiable dans la fiche) et couleur par type, glisser-déplacer, étirer, Alt+glisser pour dupliquer, appui long sur tablette, panneau d'édition (champs libres : titre, lieu, note, nom libre), répétition hebdomadaire (cette date / toute la série), annuler, réalisé automatique via la séance, bouton « Encoder la séance » (séance préremplie), filtre par élève. Pas d'année scolaire figée.
 - Export Word du Journalier (écran Élèves) : remplit le modèle papier officiel, un tableau par séance, option « sans nom » ; testé (conversion en PDF relue).
 - Écran Élèves : fiche (classe lue — 3CB, 1DB, 4TQ, 5P —, niveau d'étude, matières, langue), historique, modification vérifiée (toutes les options, enregistrement, persistance après rechargement).
 
@@ -32,7 +33,7 @@ Points restants :
 
 ## À venir (hors référentiel)
 - Export Word : PIA, réunion, par période ; export PDF.
-- Agenda (créneaux, récurrence, planifié → réalisé).
+- Agenda : vue mois, jours fériés et vacances scolaires, horaires des périodes réglables, « semaine type », impression, liaison Outlook, glisser pour créer une activité sur plusieurs périodes.
 - Réunion / PIA.
 - Coffre chiffré et OneDrive.
 - Suppression d'un élève.
