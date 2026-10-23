@@ -26,11 +26,12 @@ console.log('Moteur de rédaction');
 
 test('séance complète : niveaux groupés et points nommés', () => {
   const t = R.blocEnTexte(R.construireBloc(base()));
-  assert(t.includes(`– Totalement${N}: entre dans la tâche${N}; maintient son attention.`));
-  assert(t.includes(`– Suffisamment${N}: repère les informations pertinentes.`));
-  assert(t.includes(`– Partiellement${N}: contrôle sa production.`));
+  assert(t.includes(`• Totalement${N}: entre dans la tâche${N}; maintient son attention.`));
+  assert(t.includes(`• Suffisamment${N}: repère les informations pertinentes.`));
+  assert(t.includes(`• Partiellement${N}: contrôle sa production.`));
   assert(t.includes(`Remarque${N}: Se fatigue en fin de période.`));
-  assert(t.includes(`Support visuel (effet positif)${N}; guidage verbal (effet partiel).`));
+  assert(t.includes(`• Effet positif${N}: support visuel.`));
+  assert(t.includes(`• Effet partiel${N}: guidage verbal.`));
   assert(t.includes(`Maintenir l’accompagnement${N}; favoriser l’autonomie.`));
 });
 test('contrôles : aucun défaut sur la séance complète', () => assert.deepStrictEqual(R.controler(R.construireBloc(base())), []));
@@ -47,11 +48,11 @@ test('transfert « non pertinent » absent de l’export', () => {
 });
 test('aide sans effet renseigné : pas de parenthèse vide', () => {
   const t = R.blocEnTexte(R.construireBloc(base({ q4: { types: ['Matériel'], effets: {}, precision: '' } })));
-  assert(t.includes('Matériel.') && !t.includes('()'));
+  assert(t.includes('Effet non précisé') && t.includes('matériel.') && !t.includes('()'));
 });
 test('séance ancienne (observation en simple texte, niveau absent)', () => {
   const t = R.blocEnTexte(R.construireBloc(base({ q2: { observations: ['Comprend la consigne'], precision: '' } })));
-  assert(t.includes(`– Observé${N}: comprend la consigne.`));
+  assert(t.includes(`• Observé${N}: comprend la consigne.`));
 });
 test('évolution : même point, même matière, niveau différent', () => {
   const avant = base({ id: 0, identification: { eleve: 'Élève Alpha', date: '2026-09-15' },

@@ -139,7 +139,7 @@
     if (!faits.observations.length) return null;
     return grouperParNiveau(faits.observations).map((g) => {
       const label = g.niveau === null ? 'Observé' : NIVEAUX_OBS[g.niveau];
-      return `– ${label}${NBSP}: ${g.items.map((i) => lowerFirst(i.texte)).join(`${NBSP}; `)}.`;
+      return `• ${label}${NBSP}: ${g.items.map((i) => lowerFirst(i.texte)).join(`${NBSP}; `)}.`;
     });
   }
 
@@ -150,13 +150,14 @@
     return `${upperFirst(parts.join(`${NBSP}; `))}.`;
   }
 
+  /* Aides regroupées par effet, comme les observations par niveau :
+     « • Effet positif : support visuel ; guidage verbal. » */
   function ligneAides(faits) {
     if (!faits.aides.length) return null;
-    const parts = faits.aides.map((a) => {
-      const nom = lowerFirst(a.texte);
-      return a.effet === null ? nom : `${nom} (${EFFETS[a.effet]})`;
+    return grouperParNiveau(faits.aides.map((a) => ({ texte: a.texte, niveau: a.effet }))).map((g) => {
+      const label = g.niveau === null ? 'Effet non précisé' : upperFirst(EFFETS[g.niveau]);
+      return `• ${label}${NBSP}: ${g.items.map((i) => lowerFirst(i.texte)).join(`${NBSP}; `)}.`;
     });
-    return `${upperFirst(parts.join(`${NBSP}; `))}.`;
   }
 
   function ligneTransfert(faits) {
@@ -227,7 +228,7 @@
     if (comp) l.push({ label: 'Compétence travaillée', texte: comp });
     if (faits.precisionCompetence) l.push({ label: comp ? 'Précision' : 'Compétence travaillée', texte: finPhrase(faits.precisionCompetence) });
     const aides = ligneAides(faits);
-    if (aides) l.push({ label: 'Aides mises en place', texte: aides });
+    if (aides) l.push({ label: 'Aides mises en place', lignes: aides });
     if (faits.precisionAide) l.push({ label: 'Précision sur les aides', texte: finPhrase(faits.precisionAide) });
     const tr = ligneTransfert(faits);
     if (tr) l.push({ label: 'Transfert', texte: tr });

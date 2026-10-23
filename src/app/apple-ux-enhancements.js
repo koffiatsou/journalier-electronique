@@ -714,12 +714,12 @@ function initSessionStepperAndStickyBar() {
 
   const cards = titleElements.map(el => el.closest('.card'));
   const stepTitles = [
-    '1. Créneau et pédagogie',
-    '2. Fonctionnement observé',
-    '3. Compétence travaillée',
-    '4. Ce qui a aidé',
-    '5. Transfert',
-    '6. Suite'
+    'Créneau et pédagogie',
+    'Fonctionnement observé',
+    'Compétence travaillée',
+    'Ce qui a aidé',
+    'Transfert',
+    'Suite'
   ];
 
   let stepper = document.getElementById('apple-session-stepper');
@@ -829,8 +829,16 @@ function initSessionStepperAndStickyBar() {
     card.classList.toggle('is-step-collapsed', Boolean(collapsed));
     const head = card.querySelector('.card-title');
     if (head) head.setAttribute('aria-expanded', String(!collapsed));
-    const chevron = card.querySelector('.apple-step-card-chevron');
-    if (chevron) chevron.textContent = collapsed ? '▸' : '⌄';
+    if (!collapsed && stepper) {
+      const i = cards.indexOf(card);
+      stepper.querySelectorAll('.apple-step-item').forEach((b, k) => b.classList.toggle('is-active', k === i));
+    }
+  };
+
+  /* Une seule étape ouverte à la fois : ouvrir une étape referme les autres. */
+  const openStep = (idx, options = {}) => {
+    cards.forEach((c, i) => setCardCollapsed(c, i !== idx));
+    if (options.scroll !== false) scrollToCard(cards[idx]);
   };
 
   cards.forEach((card, idx) => {
@@ -848,7 +856,7 @@ function initSessionStepperAndStickyBar() {
       const rawTitle = titleEl.textContent.trim();
       titleEl.innerHTML = `
         <div class="apple-step-head-left">
-          <span class="apple-step-card-chevron" aria-hidden="true">${idx === 0 ? '⌄' : '▸'}</span>
+          <span class="apple-step-card-chevron" aria-hidden="true"></span>
           <span class="apple-step-head-title">${rawTitle}</span>
         </div>
         <div class="apple-step-head-right">
@@ -868,24 +876,19 @@ function initSessionStepperAndStickyBar() {
       if (idx < 5 && !bodyWrap.querySelector('.apple-step-next-bar')) {
         const nextBar = document.createElement('div');
         nextBar.className = 'apple-step-next-bar';
-        nextBar.innerHTML = `<button type="button" class="btn-secondary apple-step-next-btn focus-ring" data-step-next="${idx + 1}">Étape suivante : ${stepTitles[idx + 1]} ↓</button>`;
+        nextBar.innerHTML = `<button type="button" class="btn-secondary apple-step-next-btn focus-ring" data-step-next="${idx + 1}">Étape suivante : ${idx + 2}. ${stepTitles[idx + 1]}</button>`;
         nextBar.querySelector('button')?.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          const nextCard = cards[idx + 1];
-          if (nextCard) {
-            setCardCollapsed(card, true);
-            setCardCollapsed(nextCard, false);
-            scrollToCard(nextCard);
-          }
+          if (cards[idx + 1]) openStep(idx + 1);
         });
         bodyWrap.appendChild(nextBar);
       }
 
       const toggleStep = (e) => {
         if (e.target.closest('button, input, select, textarea, a')) return;
-        const isCollapsed = card.classList.contains('is-step-collapsed');
-        setCardCollapsed(card, !isCollapsed);
+        if (card.classList.contains('is-step-collapsed')) openStep(idx, { scroll: false });
+        else setCardCollapsed(card, true);
       };
 
       titleEl.addEventListener('click', toggleStep);
@@ -896,18 +899,10 @@ function initSessionStepperAndStickyBar() {
         }
       });
 
-      // Par défaut : Étape 1 et 2 ouvertes, 3 à 6 repliées pour alléger la page
-      setCardCollapsed(card, idx >= 2);
+      // Par défaut : seule l'étape 1 est ouverte
+      setCardCollapsed(card, idx >= 1);
     }
   });
-
-  // Barre d'actions rapides Tout déplier / Tout replier dans le ruban stepper
-  const stepperTools = document.createElement('div');
-  stepperTools.className = 'apple-stepper-tools';
-  stepperTools.innerHTML = `
-    <button type="button" class="apple-stepper-tool-btn" data-session-expand-all="true" title="Déplier les 6 étapes">Tout déplier</button>
-    <button type="button" class="apple-stepper-tool-btn" data-session-collapse-all="true" title="Replier les étapes secondaires">Mode compact</button>
-  `;
 
   cards.forEach((card, idx) => {
     const btn = document.createElement('button');
@@ -920,20 +915,9 @@ function initSessionStepperAndStickyBar() {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      setCardCollapsed(card, false);
-      scrollToCard(card);
-      stepper.querySelectorAll('.apple-step-item').forEach(b => b.classList.remove('is-active'));
-      btn.classList.add('is-active');
+      openStep(idx);
     });
     stepper.appendChild(btn);
-  });
-
-  stepper.appendChild(stepperTools);
-  stepperTools.querySelector('[data-session-expand-all]')?.addEventListener('click', () => {
-    cards.forEach(c => setCardCollapsed(c, false));
-  });
-  stepperTools.querySelector('[data-session-collapse-all]')?.addEventListener('click', () => {
-    cards.forEach((c, i) => setCardCollapsed(c, i >= 1));
   });
 
   const refreshStepSummaries = () => {
@@ -985,10 +969,10 @@ function initSessionStepperAndStickyBar() {
 
     if (!options.preserveCollapse) {
       if (normalized === 'present') {
-        cards.forEach((c, i) => setCardCollapsed(c, i >= 2));
+        cards.forEach((c, i) => setCardCollapsed(c, i >= 1));
       } else if (normalized === 'absent_eleve_coteach') {
-        // Co-enseignement : seule la partie pédagogique (0) et la suite (5) restent utiles
-        cards.forEach((c, i) => setCardCollapsed(c, i >= 1 && i <= 4));
+        // Co-enseignement : seule la partie pédagogique (0) reste ouverte, la suite (5) est un clic
+        cards.forEach((c, i) => setCardCollapsed(c, i >= 1));
         // Cocher automatiquement Coenseignement si aucune modalité n'est cochée
         const anyModality = obsForm.querySelectorAll('input[name="f-type-interv"]:checked');
         if (anyModality.length === 0) {

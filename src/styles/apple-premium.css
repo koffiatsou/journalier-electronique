@@ -267,9 +267,16 @@ textarea:focus {
 }
 
 .q2-level,
-.q4-inline-slider-wrap,
-.q4-effect-panel,
-.q4-effect-note {
+.q4-inline-slider-wrap {
+  display: none !important;
+}
+
+/* V75 : le niveau d'effet de chaque aide cochée est visible (panneau sous les types).
+   Le panneau n'apparaît que lorsqu'au moins une aide est cochée. */
+.q4-effect-panel:not(:has(.q4-effect-item)) {
+  display: none !important;
+}
+#q4-types-select .apple-item-liquid-badge {
   display: none !important;
 }
 
@@ -719,7 +726,7 @@ textarea:focus {
   border: 0;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.18s var(--apple-ease);
+  transition: background-color 0.16s ease-out, color 0.16s ease-out, transform 0.16s ease-out, box-shadow 0.16s ease-out;
   min-height: 36px !important;
 }
 
@@ -4451,30 +4458,6 @@ details[open] > summary .synth-apple-chevron {
   border-radius: 9px !important;
 }
 
-.apple-stepper-tools {
-  display: inline-flex;
-  gap: 6px;
-  margin-left: auto;
-  padding-left: 8px;
-}
-
-.apple-stepper-tool-btn {
-  border: 1px solid #dbe3ef;
-  background: #ffffff;
-  color: #475569;
-  border-radius: 8px;
-  padding: 5px 9px;
-  font-size: 0.7rem;
-  font-weight: 650;
-  cursor: pointer;
-}
-
-.apple-stepper-tool-btn:hover {
-  background: #eff6ff;
-  color: #0071e3;
-  border-color: #bfdbfe;
-}
-
 /* Accordéons de la préparation de réunion */
 details.meeting-prep-accordion {
   padding: 0 !important;
@@ -4877,3 +4860,110 @@ details.meeting-prep-accordion:not([open]) .meeting-prep-chevron {
 .session-presence-pill.is-absent-agent .session-presence-dot { background: #92400e; }
 .session-presence-pill.is-active.is-absent-agent { border-color: #92400e; background: #fef6ee; color: #5b2a0a; box-shadow: 0 0 0 2px rgba(146, 64, 14, 0.15); }
 .session-presence-badge.is-absent-agent { background: #fdebd9; color: #7c2d12; border: 1px solid #e6b88f; }
+
+
+/* ==========================================================================
+   V75 — FINITIONS DE LA PAGE SÉANCE
+   Principes : transitions courtes sur propriétés précises (jamais « all »),
+   courbe ease-out, retour tactile à la pression, mouvement réduit respecté.
+   ========================================================================== */
+:root {
+  --jr-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Chevron dessiné en CSS : tourne quand l'étape s'ouvre ou se referme */
+.apple-step-card-chevron {
+  position: relative;
+  flex: 0 0 auto;
+  transition: background-color 0.16s ease-out;
+}
+.apple-step-card-chevron::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.2s var(--jr-ease-out);
+}
+.apple-session-step-card.is-step-collapsed .apple-step-card-chevron::before {
+  transform: translateX(-1px) rotate(-45deg);
+}
+.apple-session-step-head:hover .apple-step-card-chevron {
+  background: #e2ebf8;
+}
+
+/* Ouverture d'une étape : apparition douce du contenu */
+@keyframes jr-step-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.apple-session-step-card:not(.is-step-collapsed) > .apple-session-step-body {
+  animation: jr-step-in 0.22s var(--jr-ease-out) both;
+}
+
+/* Étapes du ruban : pastille numérotée alignée, sans doublon de chiffre */
+.apple-step-item {
+  padding-right: 14px;
+}
+.apple-step-num {
+  flex: 0 0 auto;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Retour tactile à la pression sur les éléments cliquables */
+.apple-step-item,
+.apple-step-next-btn,
+.btn-primary,
+.btn-secondary,
+.ux-bubble,
+.ux-select-bubble,
+.lvl-opt {
+  transition-property: transform, background-color, border-color, color, box-shadow;
+  transition-duration: 0.16s;
+  transition-timing-function: ease-out;
+}
+.apple-step-item:active,
+.apple-step-next-btn:active,
+.btn-primary:active,
+.btn-secondary:active,
+.ux-bubble:active,
+.ux-select-bubble:active,
+.lvl-opt:active {
+  transform: scale(0.97);
+}
+
+/* Niveau d'effet des aides : lisible et aligné sur l'échelle des observations */
+.q4-effect-panel .q4-effect-caption {
+  font-size: 0.8rem;
+  margin-bottom: 10px;
+}
+.q4-effect-item {
+  animation: jr-step-in 0.2s var(--jr-ease-out) both;
+}
+
+/* Focus clavier visible */
+.apple-step-item:focus-visible,
+.apple-session-step-head:focus-visible {
+  outline: 2px solid var(--apple-blue);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apple-session-step-card:not(.is-step-collapsed) > .apple-session-step-body,
+  .q4-effect-item {
+    animation: none;
+  }
+  .apple-step-item,
+  .apple-step-card-chevron::before,
+  .lvl-opt {
+    transition-duration: 0.01ms;
+  }
+}
+
+/* Types d'aide : les cases ne réservent plus la place de l'ancienne pastille de niveau */
+#q4-types-select .ux-bubble {
+  min-height: 44px;
+  align-items: center;
+}
