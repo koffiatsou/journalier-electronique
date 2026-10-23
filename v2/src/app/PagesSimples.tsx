@@ -55,11 +55,10 @@ export function Accueil({ magasin, onAller }: { magasin: Magasin; onAller: (p: P
 
 const A_VENIR: Record<string, { titre: string; texte: string }> = {
   agenda: { titre: 'Agenda', texte: 'Les créneaux planifiés, la récurrence hebdomadaire et le passage automatique de « Planifié » à « Réalisé » arrivent dans une prochaine étape de la V2.' },
-  eleves: { titre: 'Élèves', texte: 'Les dossiers des élèves et l’historique du Journalier arrivent dans une prochaine étape de la V2.' },
   rapports: { titre: 'Rapports et PIA', texte: 'La préparation de réunion et l’export du PIA officiel arrivent dans une prochaine étape de la V2.' }
 };
 
-export function PageAVenir({ page }: { page: 'agenda' | 'eleves' | 'rapports' }) {
+export function PageAVenir({ page }: { page: 'agenda' | 'rapports' }) {
   const p = A_VENIR[page];
   return (
     <div className="page">
