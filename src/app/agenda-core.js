@@ -8,22 +8,14 @@
    ========================================================= */
 
 (function (global) {
-    function escapeHtmlFallback(value) {
-        return typeof globalThis.escapeHtml === 'function'
-            ? globalThis.escapeHtml(value)
-            : String(value ?? '').replace(/[&<>"']/g, function (ch) {
-                return {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#39;'
-                }[ch];
-            });
+    /* Échappement HTML local et statique (5 caractères) : volontairement indépendant
+       d'un éventuel helper global pour que l'analyse de sécurité puisse le vérifier. */
+    const HTML_ENTITIES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    function escapeHtml(value) {
+        return String(value === null || value === undefined ? '' : value).replace(/[&<>"']/g, function (ch) {
+            return HTML_ENTITIES[ch];
+        });
     }
-    const escapeHtml = typeof global.escapeHtml === 'function'
-        ? global.escapeHtml
-        : (typeof globalThis.escapeHtml === 'function' ? globalThis.escapeHtml : escapeHtmlFallback);
 
 const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
     const DEFAULT_AGENDA_PERIODS = [
