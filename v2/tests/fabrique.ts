@@ -32,7 +32,6 @@ export function seance(surcharge: Partial<Seance> = {}): Seance {
     aides: [{ nom: 'Support visuel', effet: 2 }, { nom: 'Guidage verbal', effet: 1 }],
     precisionAide: '',
     transfert: 'observed',
-    precisionTransfert: 'Réutilisé en classe lors de l’exercice suivant',
     suite: { actions: ['Maintenir l’accompagnement', 'Favoriser l’autonomie'], modalite: '', objectif: '', collaborations: [], precision: '' },
     creeLe: '2026-09-22T10:00:00.000Z',
     modifieLe: '2026-09-22T10:00:00.000Z',
@@ -41,6 +40,6 @@ export function seance(surcharge: Partial<Seance> = {}): Seance {
 }
 
 export const vide: Partial<Seance> = {
-  observations: [], remarque: '', competences: [], aides: [], transfert: null, precisionTransfert: '',
+  observations: [], remarque: '', competences: [], aides: [], transfert: null,
   suite: { actions: [], modalite: '', objectif: '', collaborations: [], precision: '' }
 };

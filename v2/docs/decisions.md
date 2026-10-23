@@ -8,3 +8,4 @@
 | 2026-10 | Étape Fonctionnement : option A + panneau Déjà renseigné / À renseigner | Choix de l'utilisateur après maquettes A–D |
 | 2026-10 | Carte `Point` unique pour observations, compétences et aides | Cohérence : même geste partout (option A) |
 | 2026-10 | Nature des aides déduite automatiquement ; distinction conservée dans les documents seulement | L'agent n'a pas à y réfléchir ; les documents gardent le vocabulaire professionnel |
+| 2026-10 | Transfert ramené à une question facultative dans « Ce qui a aidé » ; séance en 5 étapes | Champ souvent vide, mais indicateur d'autonomie utile au PIA |

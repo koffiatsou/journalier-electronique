@@ -37,8 +37,10 @@ test('séance vide : mention explicite, pas de champ vide', () => {
   assert.equal(b.ortho[0]?.texte, 'Séance sans observation particulière.');
 });
 
-test('transfert « sans objet » absent de l’export', () => {
-  assert.ok(!/Transfert/.test(texte(seance({ transfert: 'not_relevant', precisionTransfert: '' }))));
+test('transfert « pas observé » absent de l’export ; « oui » et « pas encore » présents', () => {
+  assert.ok(!/Transfert/.test(texte(seance({ transfert: 'not_observed' }))));
+  assert.ok(texte(seance({ transfert: 'observed' })).includes('Réutilisé ailleurs que pendant la séance.'));
+  assert.ok(texte(seance({ transfert: 'later' })).includes('Pas encore réutilisé ailleurs.'));
 });
 
 test('aide sans effet renseigné : ligne « Effet non précisé », pas de parenthèse vide', () => {

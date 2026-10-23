@@ -207,20 +207,9 @@ export function FormulaireAides({ s, maj }: PropsFormulaire) {
           ))}
         </ul>
       </div>
-      <Field label="Précision" optionnel>
-        {(id) => <Textarea id={id} value={s.precisionAide} placeholder="Ce qui a été fait et ce qui a été observé ensuite" onChange={(e) => maj({ precisionAide: e.target.value })} />}
-      </Field>
-    </>
-  );
-}
-
-/* ───────── 5. Transfert ───────── */
-export function FormulaireTransfert({ s, maj }: PropsFormulaire) {
-  return (
-    <>
       <div className="field">
-        <span className="field-label">La stratégie a-t-elle été réutilisée ailleurs ?</span>
-        <div className="chips" role="radiogroup" aria-label="Transfert">
+        <span className="field-label">Utilisé ailleurs que pendant la séance ? <span className="opt">facultatif</span></span>
+        <div className="chips" role="radiogroup" aria-label="Utilisé ailleurs">
           {(Object.keys(TRANSFERT_LIBELLES) as Transfert[]).map((k) => (
             <button key={k} type="button" role="radio" aria-checked={s.transfert === k} className="chip"
               onClick={() => maj({ transfert: s.transfert === k ? null : k })}>{TRANSFERT_LIBELLES[k]}</button>
@@ -228,13 +217,13 @@ export function FormulaireTransfert({ s, maj }: PropsFormulaire) {
         </div>
       </div>
       <Field label="Précision" optionnel>
-        {(id) => <Textarea id={id} value={s.precisionTransfert} onChange={(e) => maj({ precisionTransfert: e.target.value })} />}
+        {(id) => <Textarea id={id} value={s.precisionAide} placeholder="Ce qui a été fait et ce qui a été observé ensuite" onChange={(e) => maj({ precisionAide: e.target.value })} />}
       </Field>
     </>
   );
 }
 
-/* ───────── 6. Suite ───────── */
+/* ───────── 5. Suite ───────── */
 export function FormulaireSuite({ s, maj }: PropsFormulaire) {
   const suite = s.suite;
   const set = (patch: Partial<Seance['suite']>) => maj({ suite: { ...suite, ...patch } });

@@ -17,7 +17,7 @@ export function seanceVide(eleveId = '', date = aujourdhuiISO()): Seance {
     objectifLecon: '', contenuClasse: '', monObjectif: '',
     observations: [], remarque: '', competences: [], precisionCompetence: '',
     situationAide: 'none', aides: [], precisionAide: '',
-    transfert: null, precisionTransfert: '',
+    transfert: null,
     suite: { actions: [], modalite: '', objectif: '', collaborations: [], precision: '' },
     creeLe: maintenant, modifieLe: maintenant
   };
@@ -25,7 +25,7 @@ export function seanceVide(eleveId = '', date = aujourdhuiISO()): Seance {
 
 /** Étapes 2 à 5 : sans objet quand l'élève est absent. */
 export const etapesUtiles = (p: Presence): readonly boolean[] =>
-  p === 'present' ? [true, true, true, true, true, true] : [true, false, false, false, false, true];
+  p === 'present' ? [true, true, true, true, true] : [true, false, false, false, true];
 
 export type EtatEtape = 'vide' | 'remplie' | 'sans-objet';
 
@@ -36,8 +36,7 @@ export function etatsEtapes(s: Seance): EtatEtape[] {
     Boolean(s.eleveId && s.matiere),
     s.observations.length > 0 || s.remarque.trim() !== '',
     s.competences.length > 0 || s.precisionCompetence.trim() !== '',
-    s.aides.length > 0 || s.precisionAide.trim() !== '' || s.situationAide !== 'none',
-    s.transfert !== null || s.precisionTransfert.trim() !== '',
+    s.aides.length > 0 || s.precisionAide.trim() !== '' || s.situationAide !== 'none' || s.transfert !== null,
     s.suite.actions.length > 0 || s.suite.collaborations.length > 0 || s.suite.modalite !== ''
       || s.suite.objectif.trim() !== '' || s.suite.precision.trim() !== ''
   ];

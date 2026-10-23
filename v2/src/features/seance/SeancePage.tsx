@@ -8,7 +8,7 @@ import { Apercu } from './Apercu.tsx';
 import { Etape } from './Etape.tsx';
 import { etatsEtapes, seanceVide, verifier } from './brouillon.ts';
 import {
-  FormulaireAides, FormulaireCompetence, FormulaireCreneau, FormulaireFonctionnement, FormulaireSuite, FormulaireTransfert
+  FormulaireAides, FormulaireCompetence, FormulaireCreneau, FormulaireFonctionnement, FormulaireSuite
 } from './formulaires.tsx';
 
 const ETAPES = [
@@ -16,7 +16,6 @@ const ETAPES = [
   { titre: 'Fonctionnement observé', zone: 'ortho' },
   { titre: 'Compétence travaillée', zone: 'ortho' },
   { titre: 'Ce qui a aidé', zone: 'ortho' },
-  { titre: 'Transfert', zone: 'ortho' },
   { titre: 'Suite', zone: 'ortho' }
 ] as const;
 
@@ -63,8 +62,7 @@ export function SeancePage({ magasin }: { magasin: Magasin }) {
     <FormulaireFonctionnement key="2" s={s} maj={maj} />,
     <FormulaireCompetence key="3" s={s} maj={maj} />,
     <FormulaireAides key="4" s={s} maj={maj} />,
-    <FormulaireTransfert key="5" s={s} maj={maj} />,
-    <FormulaireSuite key="6" s={s} maj={maj} />
+    <FormulaireSuite key="5" s={s} maj={maj} />
   ];
 
   return (

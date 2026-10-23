@@ -18,11 +18,9 @@ import type { Bloc, Faits, LigneOrtho } from './types.ts';
 const NIVEAUX = ['Partiellement', 'Suffisamment', 'Totalement'] as const;
 const EFFETS = ['Aucun effet', 'Effet partiel', 'Effet positif'] as const;
 const TRANSFERT_MOT: Record<string, string> = {
-  observed: 'observé',
-  not_observed: 'non observé',
-  no_opportunity: 'pas d’occasion de l’observer',
-  later: 'à observer plus tard'
-  // not_relevant : volontairement omis de l'export
+  observed: 'réutilisé ailleurs que pendant la séance',
+  later: 'pas encore réutilisé ailleurs'
+  // not_observed : volontairement omis du document
 };
 
 export const TEXTE_ABSENCE = {
@@ -106,9 +104,7 @@ function blocsAides(f: Faits): { label: string; lignes: string[] }[] {
 
 function ligneTransfert(f: Faits): string | null {
   const mot = f.transfert ? TRANSFERT_MOT[f.transfert] : undefined;
-  const prec = finPhrase(f.precisionTransfert);
-  if (!mot) return prec || null;
-  return prec ? `${Maj(mot)}. ${prec}` : `${Maj(mot)}.`;
+  return mot ? `${Maj(mot)}.` : null;
 }
 
 function ligneSuite(f: Faits): string | null {

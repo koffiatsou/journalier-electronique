@@ -43,14 +43,12 @@ export const PRESENCE_LIBELLES: Record<Presence, { titre: string; aide: string }
   }
 };
 
-export type Transfert = 'observed' | 'not_observed' | 'no_opportunity' | 'later' | 'not_relevant';
+export type Transfert = 'observed' | 'later' | 'not_observed';
 
 export const TRANSFERT_LIBELLES: Record<Transfert, string> = {
-  observed: 'Observé',
-  not_observed: 'Non observé',
-  no_opportunity: 'Pas d’occasion de l’observer',
-  later: 'À observer plus tard',
-  not_relevant: 'Sans objet'
+  observed: 'Oui',
+  later: 'Pas encore',
+  not_observed: 'Pas observé'
 };
 
 export interface Observation {
@@ -90,8 +88,8 @@ export interface Seance {
   situationAide: SituationAide;
   aides: Aide[];
   precisionAide: string;
+  /** Stratégie réutilisée ailleurs que pendant la séance (question facultative de l'étape « Ce qui a aidé »). */
   transfert: Transfert | null;
-  precisionTransfert: string;
   suite: {
     actions: string[];
     modalite: string;

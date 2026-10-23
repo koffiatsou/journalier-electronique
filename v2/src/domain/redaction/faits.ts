@@ -31,7 +31,6 @@ export function versFaits(s: Seance, titulaire = ''): Faits {
     aides: s.aides.map((a) => ({ texte: nettoyer(a.nom), effet: a.effet, nature: natureAide(a.nom) })).filter((a) => a.texte),
     precisionAide: nettoyer(s.precisionAide),
     transfert: s.transfert,
-    precisionTransfert: nettoyer(s.precisionTransfert),
     actions: sansVide(s.suite.actions),
     modalite: nettoyer(s.suite.modalite),
     objectifSuite: nettoyer(s.suite.objectif),

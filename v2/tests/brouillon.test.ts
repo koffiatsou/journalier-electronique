@@ -6,7 +6,7 @@ test('séance vierge : rien de présélectionné', () => {
   const s = seanceVide('alpha', '2026-10-23');
   assert.equal(s.transfert, null);
   assert.deepEqual(s.observations, []);
-  assert.deepEqual(etatsEtapes(s), ['vide', 'vide', 'vide', 'vide', 'vide', 'vide']);
+  assert.deepEqual(etatsEtapes(s), ['vide', 'vide', 'vide', 'vide', 'vide']);
 });
 
 test('niveaux manquants : observations, compétences et aides sans choix', () => {
@@ -20,9 +20,9 @@ test('enregistrement possible une fois tout renseigné', () => {
   assert.deepEqual(verifier(s), { ok: true, raisons: [] });
 });
 
-test('élève absent : étapes 2 à 5 sans objet, aucun niveau exigé', () => {
+test('élève absent : étapes 2 à 4 sans objet, aucun niveau exigé', () => {
   const s = { ...seanceVide('alpha'), presence: 'absent_eleve' as const, matiere: 'Français', observations: [{ texte: 'x', niveau: null }] };
-  assert.deepEqual(etatsEtapes(s), ['remplie', 'sans-objet', 'sans-objet', 'sans-objet', 'sans-objet', 'vide']);
+  assert.deepEqual(etatsEtapes(s), ['remplie', 'sans-objet', 'sans-objet', 'sans-objet', 'vide']);
   assert.equal(verifier(s).ok, true);
 });
 

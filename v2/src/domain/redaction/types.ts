@@ -19,7 +19,6 @@ export interface Faits {
   aides: { texte: string; effet: Effet | null; nature: NatureAide | null }[];
   precisionAide: string;
   transfert: Transfert | null;
-  precisionTransfert: string;
   actions: string[];
   modalite: string;
   objectifSuite: string;
