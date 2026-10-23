@@ -57,6 +57,20 @@ describe('contexte', () => {
   });
 });
 
+describe('nouvelles matières et degrés', () => {
+  it('une compétence de degré vaut pour chaque année du degré', () => {
+    const idx = new IndexReferentiel([e('Expliquer la réaction chimique.', { n: 'S3', nf: 'S4', f: 'HGT', i: 'Réaction chimique' })]);
+    assert.equal(idx.suggerer({ objectif: 'réaction chimique', annee: 'S4' })[0]?.ecartAnnee, null);
+    assert.equal(idx.suggerer({ objectif: 'réaction chimique', annee: 'S6' })[0]?.ecartAnnee, 'S3');
+  });
+  it('reconnaît sciences et économie', () => {
+    assert.equal(cibleDeMatiere('Sciences')?.jeu, 'sciences');
+    assert.equal(cibleDeMatiere('Biologie')?.jeu, 'sciences');
+    assert.equal(cibleDeMatiere('Sciences économiques')?.jeu, 'economie');
+    assert.equal(cibleDeMatiere('Droit')?.jeu, 'economie');
+  });
+});
+
 describe('données réelles', () => {
   const charger = (f: string): EntreeReferentiel[] => JSON.parse(readFileSync(new URL(`../src/data/referentiel/${f}.json`, import.meta.url), 'utf8'));
   it('maths : fractions en S2', () => {
@@ -71,5 +85,17 @@ describe('données réelles', () => {
   it('langues : respecte la langue du dossier', () => {
     const r = new IndexReferentiel(charger('langues')).suggerer({ objectif: 'Conjuguer les verbes au présent', annee: 'S2', langue: 'Néerlandais' });
     assert.ok(r.every((p) => !p.entree.l || p.entree.l === 'Néerlandais'));
+  });
+  it('sciences : photosynthèse en S3', () => {
+    const r = new IndexReferentiel(charger('sciences')).suggerer({ objectif: 'La photosynthèse', annee: 'S3' });
+    assert.ok(r.some((p) => /photosynth|plante|amidon/i.test(p.entree.a + (p.entree.i ?? ''))));
+  });
+  it('langues : grammaire du néerlandais au secondaire supérieur', () => {
+    const r = new IndexReferentiel(charger('langues')).suggerer({ objectif: 'Le plus-que-parfait', annee: 'S4', forme: 'G', langue: 'Néerlandais' });
+    assert.ok(r.length > 0 && r.every((p) => !p.entree.l || p.entree.l === 'Néerlandais'));
+  });
+  it('français : une unité du secondaire supérieur', () => {
+    const r = new IndexReferentiel(charger('francais')).suggerer({ objectif: 'Défendre une opinion par écrit', annee: 'S5', forme: 'G' });
+    assert.ok(r.length > 0);
   });
 });

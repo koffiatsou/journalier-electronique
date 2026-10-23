@@ -51,17 +51,18 @@ export class IndexReferentiel {
         else if (theme.has(t)) { score += w * 0.7; touche = true; }
       }
       if (!touche) continue;
-      score *= facteurAnnee(entree.n, ctx.annee);
+      score *= facteurAnnee(entree.n, entree.nf, ctx.annee);
       const cle = `${entree.i ?? entree.a.slice(0, 40)}|${entree.n ?? ''}`;
       const actuelle = meilleures.get(cle);
       if (!actuelle || score > actuelle.score) {
-        meilleures.set(cle, { entree, score, ecartAnnee: entree.n && ctx.annee && entree.n !== ctx.annee ? entree.n : null });
+        meilleures.set(cle, { entree, score, ecartAnnee: entree.n && ctx.annee && !dans(entree, ctx.annee) ? entree.n : null });
       }
     }
     const triees = [...meilleures.values()].sort((a, b) => b.score - a.score);
     const premier = triees[0];
     if (!premier) return [];
-    return triees.filter((p) => p.score >= premier.score * 0.6).slice(0, k);
+    const vus = new Set<string>();
+    return triees.filter((p) => p.score >= premier.score * 0.6 && !vus.has(p.entree.a) && vus.add(p.entree.a)).slice(0, k);
   }
 }
 
@@ -71,9 +72,17 @@ function formeCompatible(e: EntreeReferentiel, ctx: Contexte): boolean {
 }
 
 /** Même année : plein poids ; année voisine : légèrement moins ; plus loin : nettement moins (mais jamais exclu). */
-function facteurAnnee(a: Annee | undefined, cible: Annee | undefined): number {
+function dans(e: EntreeReferentiel, cible: Annee): boolean {
+  if (!e.n) return true;
+  const i = ANNEES.indexOf(cible);
+  return i >= ANNEES.indexOf(e.n) && i <= ANNEES.indexOf(e.nf ?? e.n);
+}
+
+function facteurAnnee(a: Annee | undefined, fin: Annee | undefined, cible: Annee | undefined): number {
   if (!a || !cible) return 1;
-  const d = ANNEES.indexOf(cible) - ANNEES.indexOf(a);
+  if (dans({ n: a, nf: fin } as EntreeReferentiel, cible)) return 1;
+  const debut = ANNEES.indexOf(a);
+  const d = ANNEES.indexOf(cible) - (ANNEES.indexOf(cible) > debut ? ANNEES.indexOf(fin ?? a) : debut);
   if (d === 0) return 1;
   if (d === 1) return 0.85;
   if (d === -1) return 0.8;

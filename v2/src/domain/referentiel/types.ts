@@ -4,6 +4,8 @@ export interface EntreeReferentiel {
   m: string;
   /** Année : P1…S6 (absente si le référentiel ne la précise pas). */
   n?: Annee;
+  /** Dernière année couverte quand le référentiel vaut pour un degré (ex. S3 → S4). */
+  nf?: Annee;
   /** Cadre : TC = tronc commun, HGT = humanités générales et technologiques, HPT = professionnelles et techniques. */
   f: 'TC' | 'HGT' | 'HPT';
   /** Nature interne : s = savoir, f = savoir-faire, c = compétence. Jamais affichée à l'agent. */

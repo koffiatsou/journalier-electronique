@@ -2,7 +2,7 @@ import { sansAccents } from './texte.ts';
 import { ANNEES } from './types.ts';
 import type { Annee, FormeEnseignement } from './types.ts';
 
-export type Jeu = 'mathematiques' | 'francais' | 'langues';
+export type Jeu = 'mathematiques' | 'francais' | 'langues' | 'sciences' | 'economie';
 
 export interface Cible {
   jeu: Jeu;
@@ -15,9 +15,13 @@ export function cibleDeMatiere(matiere: string): Cible | null {
   const m = sansAccents(matiere);
   if (/\bmath/.test(m)) return { jeu: 'mathematiques' };
   if (/\bfran[cç]/.test(m)) return { jeu: 'francais' };
+  if (/\b(sciences?|biolog|chimie|physique)/.test(m) && !/econom|sociales/.test(m)) return { jeu: 'sciences' };
+  if (/econom|droit|gestion/.test(m)) return { jeu: 'economie' };
   if (/neerland|\bnl\b/.test(m)) return { jeu: 'langues', langue: 'Néerlandais' };
   if (/anglais/.test(m)) return { jeu: 'langues', langue: 'Anglais' };
   if (/allemand/.test(m)) return { jeu: 'langues', langue: 'Allemand' };
+  if (/espagnol/.test(m)) return { jeu: 'langues', langue: 'Espagnol' };
+  if (/italien/.test(m)) return { jeu: 'langues', langue: 'Italien' };
   return null;
 }
 
