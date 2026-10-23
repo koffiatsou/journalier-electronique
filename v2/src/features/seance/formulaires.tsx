@@ -244,7 +244,7 @@ export function FormulaireSuite({ s, maj }: PropsFormulaire) {
         <span className="field-label">Suite de l’accompagnement</span>
         <Chips options={ACTIONS_SUITE_SUGGEREES} valeurs={suite.actions} onChange={(actions) => set({ actions })} />
       </div>
-      <Field label="Modalité" optionnel>
+      <Field label="Format de la prochaine séance" optionnel>
         {(id) => (
           <Select id={id} value={suite.modalite} onChange={(e) => set({ modalite: e.target.value })}>
             <option value="">Sans changement</option>

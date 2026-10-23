@@ -114,7 +114,7 @@ function ligneTransfert(f: Faits): string | null {
 function ligneSuite(f: Faits): string | null {
   const morceaux: string[] = [];
   if (f.actions.length) morceaux.push(`${Maj(enumeration(f.actions.map(min)))}.`);
-  if (f.modalite) morceaux.push(`Modalité${NBSP}: ${min(f.modalite)}.`);
+  if (f.modalite) morceaux.push(`Format de la prochaine séance${NBSP}: ${min(f.modalite)}.`);
   if (f.objectifSuite) morceaux.push(finPhrase(Maj(f.objectifSuite)));
   if (f.collaborations.length) morceaux.push(`À prévoir${NBSP}: ${enumeration(f.collaborations.map(min))}.`);
   if (f.precisionSuite) morceaux.push(finPhrase(f.precisionSuite));

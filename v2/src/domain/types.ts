@@ -223,12 +223,12 @@ export const ACTIONS_SUITE_SUGGEREES = [
   'Tester une nouvelle stratégie',
   'Préparer un support',
   'Favoriser l’autonomie',
-  'Réduire ponctuellement l’étayage'
+  'Laisser plus d’autonomie'
 ] as const;
 
 export const COLLABORATIONS_SUGGEREES = [
   'Échange avec l’enseignant',
-  'Coordination d’une stratégie / d’un outil',
+  'Mettre une stratégie en commun',
   'Adaptation à partager avec l’équipe',
   'Point avec l’équipe pédagogique',
   'Questionner à la prochaine réunion d’intégration'

@@ -22,3 +22,4 @@ PRODUCT.md (qui, pourquoi) · DESIGN.md (look & mouvement) · ARCHITECTURE.md ·
 - Composant unique `Point` (src/ui/Point.tsx) pour toute question à niveau (observations, compétences, aides) ; ne pas recréer de variante.
 - Tout est facultatif : on ne note que ce qui a été observé (pas de liste « à renseigner »). Panneau Feuille = texte en puces + rappel de la dernière séance ; tiroir sur petit écran.
 - Vocabulaire : à l'écran, seul le mot « aide » (plus de « médiation » à la saisie). La nature (adaptation / médiation) est déduite du nom de l'aide (`natureAide`, domain/types.ts) et n'apparaît que dans les documents Word/PIA : blocs « Adaptations mises en place » et « Médiations mises en place », aides inconnues sous « Autres aides ». Statut des aides : Déjà en place / Nouvelles / Piste pour plus tard.
+- Suite : « Laisser plus d'autonomie », « Format de la prochaine séance », « Mettre une stratégie en commun » (validé).
