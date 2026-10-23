@@ -706,7 +706,7 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
         const laneCount=computeEventTimelineLanes(events);
 
         let html=dayIdx>4?'<div class="day-weekend-note" style="padding:4px 0 8px;color:#64748b;font-size:.78rem;">Week-end : seuls les événements uniques sont affichés.</div>':'';
-        html+=`<div class="day-timeline-layout" style="height:${timelineHeight}px;">`;
+        html+=`<div class="day-timeline-layout" style="height:${Number(timelineHeight)}px;">`;
 
         html+=`<div class="timeline-time-col">`;
         let prevEndMin=-1;
@@ -718,17 +718,17 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
                 const pauseMin=pStartMin-prevEndMin;
                 const pauseTop=((prevEndMin-startMin)/totalMin)*100;
                 const pauseHeight=(pauseMin/totalMin)*100;
-                html+=`<div class="timeline-pause-label" style="top:${pauseTop}%;height:${pauseHeight}%;" title="Pause de ${pauseMin} min">☕ Pause ${pauseMin}m<br><small>${prevEndStr}–${p.start}</small></div>`;
+                html+=`<div class="timeline-pause-label" style="top:${Number(pauseTop)}%;height:${Number(pauseHeight)}%;" title="Pause de ${Number(pauseMin)} min">☕ Pause ${Number(pauseMin)}m<br><small>${escapeHtml(prevEndStr)}–${escapeHtml(p.start)}</small></div>`;
             }
             const pTop=((pStartMin-startMin)/totalMin)*100;
             const pHeight=((pEndMin-pStartMin)/totalMin)*100;
-            html+=`<div class="timeline-period-badge" style="top:${pTop}%;height:${pHeight}%;"><strong>${escapeHtml(p.label)}</strong><small>${escapeHtml(`${p.start}–${p.end}`)}</small></div>`;
+            html+=`<div class="timeline-period-badge" style="top:${Number(pTop)}%;height:${Number(pHeight)}%;"><strong>${escapeHtml(p.label)}</strong><small>${escapeHtml(`${escapeHtml(p.start)}–${escapeHtml(p.end)}`)}</small></div>`;
             prevEndMin=pEndMin;
             prevEndStr=p.end;
         });
         html+=`</div>`;
 
-        html+=`<div class="timeline-grid-col js-timeline-column" data-iso="${escapeHtml(selectedDateISO)}" data-day-index="${dayIdx}">`;
+        html+=`<div class="timeline-grid-col js-timeline-column" data-iso="${escapeHtml(selectedDateISO)}" data-day-index="${Number(dayIdx)}">`;
 
         prevEndMin=-1;
         agendaPeriodConfig.forEach((p,index)=>{
@@ -738,15 +738,15 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
                 const pauseMin=pStartMin-prevEndMin;
                 const pauseTop=((prevEndMin-startMin)/totalMin)*100;
                 const pauseHeight=(pauseMin/totalMin)*100;
-                html+=`<div class="day-timeline-pause" style="position:absolute;left:0;right:0;top:${pauseTop}%;height:${pauseHeight}%;">☕ Pause · ${pauseMin} min (${prevEndStr} → ${p.start})</div>`;
+                html+=`<div class="day-timeline-pause" style="position:absolute;left:0;right:0;top:${Number(pauseTop)}%;height:${Number(pauseHeight)}%;">☕ Pause · ${Number(pauseMin)} min (${escapeHtml(prevEndStr)} → ${escapeHtml(p.start)})</div>`;
             }
             const pTop=((pStartMin-startMin)/totalMin)*100;
             const pHeight=((pEndMin-pStartMin)/totalMin)*100;
             const eventsHere=events.filter(ev=>ev._sMin<pEndMin&&ev._eMin>pStartMin);
             if(!eventsHere.length){
-                html+=`<div class="day-free-slot js-open-slot" style="position:absolute;left:0;right:0;top:${pTop}%;height:${pHeight}%;" data-drop-iso="${escapeHtml(selectedDateISO)}" data-drop-period="${escapeHtml(p.label)}" data-iso="${escapeHtml(selectedDateISO)}" data-period="${escapeHtml(p.label)}" data-day-index="${dayIdx}" data-force-create="true"><span>Créneau libre (${escapeHtml(`${p.start}–${p.end}`)})</span><button type="button" class="btn-secondary focus-ring js-open-slot" data-direct-open="true" data-force-create="true" data-iso="${escapeHtml(selectedDateISO)}" data-period="${escapeHtml(p.label)}" data-day-index="${dayIdx}" style="padding:6px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;">＋ Programmer</button></div>`;
+                html+=`<div class="day-free-slot js-open-slot" style="position:absolute;left:0;right:0;top:${Number(pTop)}%;height:${Number(pHeight)}%;" data-drop-iso="${escapeHtml(selectedDateISO)}" data-drop-period="${escapeHtml(p.label)}" data-iso="${escapeHtml(selectedDateISO)}" data-period="${escapeHtml(p.label)}" data-day-index="${Number(dayIdx)}" data-force-create="true"><span>Créneau libre (${escapeHtml(`${escapeHtml(p.start)}–${escapeHtml(p.end)}`)})</span><button type="button" class="btn-secondary focus-ring js-open-slot" data-direct-open="true" data-force-create="true" data-iso="${escapeHtml(selectedDateISO)}" data-period="${escapeHtml(p.label)}" data-day-index="${Number(dayIdx)}" style="padding:6px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;">＋ Programmer</button></div>`;
             }else{
-                html+=`<div class="day-overlap-add js-open-slot" style="position:absolute;left:0;right:0;top:${pTop}%;height:${pHeight}%;" data-drop-iso="${escapeHtml(selectedDateISO)}" data-drop-period="${escapeHtml(p.label)}" data-iso="${escapeHtml(selectedDateISO)}" data-period="${escapeHtml(p.label)}" data-day-index="${dayIdx}" data-force-create="true"><button type="button" class="btn-secondary focus-ring js-open-slot" data-direct-open="true" data-force-create="true" data-iso="${escapeHtml(selectedDateISO)}" data-period="${escapeHtml(p.label)}" data-day-index="${dayIdx}">＋ Ajouter sur ce créneau</button></div>`;
+                html+=`<div class="day-overlap-add js-open-slot" style="position:absolute;left:0;right:0;top:${Number(pTop)}%;height:${Number(pHeight)}%;" data-drop-iso="${escapeHtml(selectedDateISO)}" data-drop-period="${escapeHtml(p.label)}" data-iso="${escapeHtml(selectedDateISO)}" data-period="${escapeHtml(p.label)}" data-day-index="${Number(dayIdx)}" data-force-create="true"><button type="button" class="btn-secondary focus-ring js-open-slot" data-direct-open="true" data-force-create="true" data-iso="${escapeHtml(selectedDateISO)}" data-period="${escapeHtml(p.label)}" data-day-index="${Number(dayIdx)}">＋ Ajouter sur ce créneau</button></div>`;
             }
             prevEndMin=pEndMin;
             prevEndStr=p.end;
