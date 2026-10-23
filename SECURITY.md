@@ -1,6 +1,6 @@
 # Security
 
-> Référence de sécurité du Journalier électronique — état documentaire au 27 septembre 2026.
+> Référence de sécurité du Journalier électronique — état documentaire à jour (octobre 2026).
 
 Les contrôles décrits ici portent sur le code et la configuration versionnés. Les paramètres du tenant Entra, les règles actives du dépôt GitHub et les résultats courants des alertes GitHub ne sont pas vérifiables à partir du seul dépôt; toute mention de ces paramètres externes doit être lue avec la date de leur dernier contrôle effectif.
 
@@ -19,13 +19,9 @@ La migration des anciennes données est conçue comme une opération **non destr
 - Une ancienne valeur PIA n'est pas convertie automatiquement en PIA annuel validé.
 - Aucune opération de suppression distante n'est exposée par le module de migration.
 
-### Isolation du module de migration
+### Retrait du module transitoire de migration
 
-`src/v74/v74-migration.js` est un module ES. Il n'accède pas directement aux variables privées du script principal. Un `window.JournalierMigrationBridge` explicite expose uniquement les fonctions nécessaires.
-
-Le pont comprend notamment les fonctions Graph, les validateurs/normaliseurs, le DataStore et les fonctions de synchronisation historiques nécessaires à l'import.
-
-Cette limitation réduit la surface exposée au module et évite de contourner la séparation de portée JavaScript.
+Le module transitoire `src/v74/v74-migration.js` a été retiré après accomplissement des migrations initiales des dossiers legacy, réduisant ainsi la surface de code exposée. Le pont `window.JournalierMigrationBridge` demeure pour assurer la continuité des fonctions utilitaires partagées (`v72MarkPiaPending`, `v72MarkPiaSynced`, `validateStrictPIA`).
 
 ## V74 — rapports, PIA et exports
 
@@ -39,7 +35,7 @@ L'état actuel de `index.html` ne contient pas de script inline : les scripts ap
 
 `style-src 'unsafe-inline'` reste présent car le dépôt utilise encore des attributs `style` et des styles dynamiquement injectés par le runtime. Cette permission n'est pas introduite par la passe UX responsive.
 
-La directive `frame-ancestors` est conservée dans la CSP déclarée par méta pour documentation de l'intention, mais les navigateurs indiquent qu'elle n'est pas appliquée depuis une balise `<meta>`. Une protection effective contre l'encadrement doit être délivrée par un en-tête HTTP lorsque l'hébergement le permet.
+La directive `frame-ancestors` n'est pas applicable depuis une balise `<meta>` (les navigateurs l'ignorent et génèrent un avertissement dans la console). Elle a donc été retirée des balises `<meta>` de l'application. Une protection effective contre l'encadrement doit être délivrée par un en-tête HTTP serveur (`Content-Security-Policy: frame-ancestors 'none'`) lorsque l'hébergement le permet.
 
 ## 1. Objet
 
@@ -527,7 +523,7 @@ Le PIA généré conserve les identifiants de séances et les états de converge
 
 ## 22.8 Règle pour les prochaines évolutions
 
-Toute nouvelle fonction V74/V74 doit vérifier au minimum :
+Toute nouvelle fonction V74/V75 doit vérifier au minimum :
 
 - authentification Entra ;
 - périmètre Graph/AppFolder ;
@@ -559,3 +555,51 @@ Toute nouvelle fonction V74/V74 doit vérifier au minimum :
 ## V74 — Agenda et CSP
 
 La refonte Agenda n'ajoute aucune origine réseau ni script inline. Les nouvelles actions utilisent les mécanismes existants de délégation d'événements et les contrôleurs locaux. La CSP de `index.html` conserve `script-src 'self'` et les mêmes domaines Microsoft Graph/Entra. Les métadonnées Outlook sont stockées comme données métier locales et ne déclenchent aucune synchronisation Outlook dans cette version.
+
+---
+
+# 23. Contrôles de sécurité & RGPD — Référentiel WBE et Assistant IA Local
+
+## 23.1 Référentiel des Aménagements Raisonnables WBE (`src/app/referentiel-amenagements.js`)
+
+Le référentiel compile 544 fiches d'aménagements et d'outils concrets (Fondamental Wapi A et Kit Secondaire WBE).
+
+- **Hébergement et distribution statique :**
+  - La base de connaissances est stockée sous forme de ressource statique dans `public/referentiel_amenagements_wbe.json`.
+  - Elle est chargée localement via `fetch('./referentiel_amenagements_wbe.json')`, strictement couverte par la directive CSP `connect-src 'self'`.
+  - Aucune dépendance externe, aucun CDN tiers, aucune télémétrie distante.
+- **Intégrité et sécurité des données :**
+  - Le fichier JSON est en lecture seule (`Read-Only`). L'application n'effectue aucune écriture distante ou locale modifiant cette base.
+  - Toutes les données insérées dynamiquement dans le DOM (titres, puces, descriptions) sont systématiquement assainies via la fonction d'échappement HTML `esc()` ou injectées par les API textuelles sécurisées (`textContent`, `createElement`).
+  - Aucun vecteur d'injection XSS n'est introduit lors de la manipulation des fiches d'aménagements.
+
+## 23.1 Retrait du prototype de modèle génératif local
+
+L'essai d'intégration d'un modèle génératif local (Gemma 3 270M avec Transformers.js) a été retiré de l'application :
+- Les fichiers sources (`src/app/local-ai-model-manager.js`, `src/app/local-ai-pipeline.js`, `src/app/local-ai-worker.js`), les tests associés et la dépendance `@huggingface/transformers` ont été supprimés.
+- Les domaines externes Hugging Face et la directive `'wasm-unsafe-eval'` ont été retirés de la politique de sécurité du contenu (CSP).
+- Une purge transparente des caches éventuels (`journalier-ai-model-gemma-270m-v1`, `transformers-cache`) et des marqueurs locaux est effectuée au démarrage.
+
+## 23.2 Assistant de rédaction local (`src/app/local-ai-assistant.js`)
+
+L'application intègre un assistant de rédaction déterministe pour faciliter la formalisation des observations d'élèves :
+
+- **Traitement local dans le navigateur :**
+  - Les reformulations, corrections orthographiques et suggestions d'aménagements reposent exclusivement sur un dictionnaire interne et sur les fiches du référentiel WBE.
+  - Aucun appel vers un service d'IA distant n'est effectué.
+- **Principe de validation humaine obligatoire :**
+  - L'assistant ne modifie jamais directement ni automatiquement le contenu des fiches d'élèves, des séances ou des PIA.
+  - Toute action ouvre une modale comparative dédiée présentant le texte original en regard du texte proposé.
+  - L'utilisateur professionnel conserve la décision finale par un clic volontaire : `✓ Remplacer le texte`, `+ Ajouter à la suite`, ou `Annuler`.
+- **Protection des données sensibles :**
+  - Le fonctionnement hors-ligne préserve la confidentialité des dossiers même en déplacement ou sur réseau public.
+
+# 24. V75 — moteur de rédaction et export du Journalier
+
+- Le moteur de rédaction (`redaction-engine.js`) est **déterministe et local** : aucun appel réseau, aucune IA générative.
+- L'export Word du Journalier lit le modèle `./modeles/Journalier_modele_papier.docx` (même origine) ; le texte inséré est échappé en XML 1.0 et les métadonnées du document (auteur, dernier auteur) sont neutralisées.
+- L'export « sans le nom de l'élève » remplace le nom et le prénom dans **tout** le texte (accents et casse ignorés, mots entiers) ; l'identité du tableau d'en-tête est vidée. Il ne remplace pas une relecture avant diffusion.
+- Aucun script ni gestionnaire inline n'a été ajouté (CSP inchangée : `script-src 'self'`).
+- Les nouveaux modules sont des scripts classiques servis depuis `src/app/` ; ils sont déclarés dans `vite.config.js` (`copyClassicAppScripts`) pour figurer dans le build.
+- Un nom de fichier exporté est assaini (caractères interdits retirés) comme pour les autres exports.
+

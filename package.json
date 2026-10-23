@@ -1,16 +1,26 @@
 {
   "name": "journalier-electronique",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.75.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:zip": "vite build && python3 scripts/build-zip.py",
     "preview": "vite preview",
-    "test": "node tests/storage-v74-contract.test.mjs && node tests/agenda-v74-contract.test.mjs && node tests/session-edit-contract.test.mjs && node tests/sync-deletion-contract.test.mjs && node tests/pia-sync-contract.test.mjs"
+    "lint": "eslint . && node --check src/app/*.js src/v74/*.js tests/*.mjs tests/*.cjs",
+    "format:check": "prettier --check .",
+    "format": "prettier --write .",
+    "test": "node tests/redaction-engine.test.cjs && node tests/journalier-seances-docx.test.cjs && node tests/storage-v74-contract.test.mjs && node tests/agenda-v74-contract.test.mjs && node tests/session-edit-contract.test.mjs && node tests/sync-deletion-contract.test.mjs && node tests/pia-sync-contract.test.mjs && node --test tests/docx-export-contract.test.mjs && node --test tests/pdf-export-contract.test.mjs && node --test tests/students-core-contract.test.mjs && node --test tests/agenda-core-contract.test.mjs && node --test tests/sessions-core-contract.test.mjs && node --test tests/reports-core-contract.test.mjs && node --test tests/pia-subject-context-ai.test.mjs && node --test tests/pia-lot1-data-chain.test.mjs && node --test tests/pia-lot2-lifecycle.test.mjs && node --test tests/pia-lot3-reevaluation-exports.test.mjs && node --test tests/pia-lot4-premium-document.test.mjs && node --test tests/referentiel-ai-contract.test.mjs && node --test tests/q3-option-b-contract.test.mjs && node --test tests/synthesis-apple-ux-contract.test.mjs && node --test tests/chapter-narratives-storage.test.mjs && node --test tests/behavioral-safety-net.test.mjs && node --test tests/html-escape-contract.test.mjs && node --test tests/xml-escape-contract.test.mjs && node --test tests/attr-filename-contract.test.mjs && node --test tests/pia-reset-contract.test.mjs && node --test tests/classic-scripts-escape-contract.test.mjs && node --test tests/pdf-inflate-size-contract.test.mjs && node --test tests/local-ai-dictionary-integration.test.mjs && node --test tests/text-adjuster-modal-contract.test.mjs && node --test tests/synthesis-subject-aggregation-lot-c.test.mjs && node --test tests/acceptance-lots-d-e.test.mjs && node --test tests/pia-data-model-lot2.test.mjs && node --test tests/pia-lot3-modele-moteur-word.test.mjs && node --test tests/pia-lot4a-pv-amenagements.test.mjs && node --test tests/pia-lot4b-export-interface.test.mjs && node --test tests/pia-amenagements-structured.test.mjs"
   },
   "dependencies": {
     "@azure/msal-browser": "5.22.0",
     "vite": "8.3.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.12.0",
+    "globals": "17.13.0",
+    "prettier": "3.9.10"
   }
 }

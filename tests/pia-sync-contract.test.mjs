@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 
 const core = fs.readFileSync(new URL('../src/app/journalier-core.js', import.meta.url), 'utf8');
+const vault = fs.readFileSync(new URL('../src/app/storage-vault.js', import.meta.url), 'utf8');
+const storageCode = core + '\n' + vault;
 const ms = fs.readFileSync(new URL('../src/app/microsoft-core.js', import.meta.url), 'utf8');
 const runtime = fs.readFileSync(new URL('../src/v74/v74-runtime.js', import.meta.url), 'utf8');
 
@@ -9,11 +11,11 @@ function assert(condition, message) {
 }
 
 // 1. Persistance granulaire locale de piaImports & piaRecords
-assert(core.includes("state.meta.piaRecords[row.id]"), 'Le chargement granulaire doit reconstruire state.meta.piaRecords.');
-assert(core.includes("state.meta.piaImports[row.id]"), 'Le chargement granulaire doit reconstruire state.meta.piaImports.');
-assert(core.includes("value:{record:value||null,imported:imported||null}"), 'La préparation de persistance doit sauvegarder simultanément record et imported.');
-assert(core.includes("window.v72MarkPiaPending=v72MarkPiaPending;"), 'v72MarkPiaPending doit être disponible globalement.');
-assert(core.includes("window.v72MarkPiaSynced=v72MarkPiaSynced;"), 'v72MarkPiaSynced doit être disponible globalement.');
+assert(storageCode.includes("state.meta.piaRecords[row.id]"), 'Le chargement granulaire doit reconstruire state.meta.piaRecords.');
+assert(storageCode.includes("state.meta.piaImports[row.id]"), 'Le chargement granulaire doit reconstruire state.meta.piaImports.');
+assert(storageCode.includes("value:{record:value||null,imported:imported||null}"), 'La préparation de persistance doit sauvegarder simultanément record et imported.');
+assert(storageCode.includes("window.v72MarkPiaPending=v72MarkPiaPending;"), 'v72MarkPiaPending doit être disponible globalement.');
+assert(storageCode.includes("window.v72MarkPiaSynced=v72MarkPiaSynced;"), 'v72MarkPiaSynced doit être disponible globalement.');
 
 // 2. Gestion du Dirty State et Enregistrement lors de l\'import
 assert(runtime.includes("persistImportedPIA(studentId,imported)"), 'persistImportedPIA doit être défini.');

@@ -99,7 +99,7 @@ async function graphRequest(path,options={}){
   const requestUrl=String(path||'').startsWith(GRAPH_BASE+'/')?String(path):GRAPH_BASE+path;
   const response=await fetch(requestUrl,{...options,headers});
   if(!response.ok){
-    let data=null,message='';
+    let data=null,message;
     try{data=await response.json();message=data?.error?.message||JSON.stringify(data);}catch(_){message=await response.text();}
     const code=data?.error?.code||'unknown';
     const requestId=response.headers.get('request-id')||response.headers.get('client-request-id')||'';
@@ -107,7 +107,7 @@ async function graphRequest(path,options={}){
   }
   const text=await response.text();
   if(!text)return null;
-  try{return JSON.parse(text);}catch(_){return text;}
+  try{return JSON.parse(text);}catch(_){/* repli si la réponse d'erreur de Microsoft Graph n'est pas du JSON */return text;}
 }
 function graphEncodePath(path){return path.split('/').filter(Boolean).map(encodeURIComponent).join('/');}
 let graphAppRootCache=null;
@@ -231,14 +231,14 @@ async function graphDownloadJsonByItemId(itemId){
   const downloadUrl=downloadMeta?.['@microsoft.graph.downloadUrl'];
   if(!downloadUrl)throw new Error('Microsoft Graph n’a pas fourni d’URL de téléchargement pré-authentifiée pour ce fichier.');
   let parsedUrl;
-  try{parsedUrl=new URL(downloadUrl);}catch(_){throw new Error('URL de téléchargement Microsoft Graph invalide.');}
+  try{parsedUrl=new URL(downloadUrl);}catch(err){throw new Error('URL de téléchargement Microsoft Graph invalide.',{cause:err});}
   const host=parsedUrl.hostname.toLowerCase();
   const allowed=host==='files.1drv.com'||host.endsWith('.files.1drv.com')||host==='1drv.com'||host.endsWith('.1drv.com')||host.endsWith('.sharepoint.com');
   if(parsedUrl.protocol!=='https:'||!allowed)throw new Error('URL de téléchargement Microsoft Graph refusée : domaine inattendu.');
   const response=await fetch(parsedUrl.toString(),{method:'GET',redirect:'follow',cache:'no-store'});
   if(!response.ok)throw new Error(`Téléchargement Graph ${response.status} : ${response.statusText||'échec du téléchargement'}.`);
   const text=await response.text();
-  try{return{item:meta,json:JSON.parse(text)};}catch(_){throw new Error('Le contenu distant n’est pas un JSON valide.');}
+  try{return{item:meta,json:JSON.parse(text)};}catch(err){throw new Error('Le contenu distant n’est pas un JSON valide.',{cause:err});}
 }
 async function graphReadItemWithJson(path){const item=await graphGetByPath(path);return graphDownloadJsonByItemId(item.id);}
 async function graphReadItemByIdWithJson(itemId){return graphDownloadJsonByItemId(itemId);}
@@ -295,7 +295,7 @@ function validateJsonValue(value,label='JSON',depth=0,seen=new WeakSet()){
 function validateStrictJsonPayload(value,label='JSON',maxBytes=JOURNALIER_JSON_LIMITS.maxBytes){
   validateJsonValue(value,label);
   let serialized;
-  try{serialized=JSON.stringify(value);}catch(_){throw new Error(`${label} non sérialisable.`);}
+  try{serialized=JSON.stringify(value);}catch(err){throw new Error(`${label} non sérialisable.`,{cause:err});}
   if(serialized.length>maxBytes)throw new Error(`${label} trop volumineux : import/écriture refusé.`);
   return true;
 }
@@ -721,7 +721,7 @@ async function v72ProcessPendingDeletions(state,r,details=[]){
       details.push(`• séance ${sessionId} : supprimée de OneDrive`);
     }catch(e){
       if(String(e.message||e).includes('Graph 404')){delete r.sessions[sessionId];continue;}
-      if(String(e.message||e).includes('Graph 412')){r.sessions[sessionId]={...reg,status:'conflict',lastCheckedAt:new Date().toISOString()};throw new Error(`Conflit détecté lors de la suppression de la séance ${sessionId}.`);}
+      if(String(e.message||e).includes('Graph 412')){r.sessions[sessionId]={...reg,status:'conflict',lastCheckedAt:new Date().toISOString()};throw new Error(`Conflit détecté lors de la suppression de la séance ${sessionId}.`,{cause:e});}
       throw e;
     }
   }
@@ -760,7 +760,7 @@ async function v72ProcessPendingDeletions(state,r,details=[]){
       }
       if(String(e.message||e).includes('Graph 412')){
         r.students[studentId]={...reg,status:'conflict',lastCheckedAt:new Date().toISOString()};
-        throw new Error(`Conflit détecté lors de la suppression de l’élève ${studentId}.`);
+        throw new Error(`Conflit détecté lors de la suppression de l’élève ${studentId}.`,{cause:e});
       }
       throw e;
     }
@@ -911,7 +911,7 @@ async function v72SyncSession(session,reg,students){
       await graphDeleteItemWithETag(reg.previousRemoteId,reg.previousETag||null);
     }catch(e){
       if(!String(e.message||e).includes('Graph 404')){
-        if(String(e.message||e).includes('Graph 412'))throw new Error(`Conflit détecté lors du déplacement de la séance ${session.id} : l’ancienne copie distante a changé.`);
+        if(String(e.message||e).includes('Graph 412'))throw new Error(`Conflit détecté lors du déplacement de la séance ${session.id} : l’ancienne copie distante a changé.`,{cause:e});
         throw e;
       }
     }
@@ -919,7 +919,7 @@ async function v72SyncSession(session,reg,students){
   return await graphReadItemWithJson(path);
 }
 async function v72SyncAgenda(agenda,reg){const structure=await graphEnsureJournalierStructure();const existing=await graphGetByPath(`${GRAPH_ROOT_FOLDER}/agenda/agenda.json`).catch(()=>null);await graphWriteJsonWithETag(structure.agenda.id,'agenda.json',agenda,existing?.eTag||reg?.eTag||null);return await graphReadItemWithJson(`${GRAPH_ROOT_FOLDER}/agenda/agenda.json`);}
-async function v72PullRemoteChanges(){
+async function v72PullRemoteChanges(details=[]){
   const state=DataStore.state,r=v72EnsureSyncRegistry(state);let pulled=0;
   for(const [studentId,reg] of Object.entries(r.students||{})){
     if(reg?.status!=='remote-changed')continue;
@@ -930,7 +930,10 @@ async function v72PullRemoteChanges(){
       if(idx>=0)state.students[idx]=student;else state.students.push(student);
       const fp=syncFingerprint(syncWithoutVolatileMeta(student));
       r.students[studentId]={...reg,remoteId:item.id,eTag:item.eTag||null,fingerprint:fp,remoteFingerprint:fp,lastCheckedAt:new Date().toISOString(),status:'synced'};pulled++;
-    }catch(e){console.warn('Journalier — pull élève impossible',studentId,e);}
+    }catch(e){
+      console.warn('Journalier — pull élève impossible',studentId,e);
+      if(Array.isArray(details))details.push(`• élève ${studentId} : échec de récupération (${e?.message||e})`);
+    }
   }
   for(const [sessionId,reg] of Object.entries(r.sessions||{})){
     if(reg?.status!=='remote-changed')continue;
@@ -943,7 +946,10 @@ async function v72PullRemoteChanges(){
       if(idx>=0)state.sessions[idx]=session;else state.sessions.push(session);
       const fp=syncFingerprint(syncWithoutVolatileMeta(session));
       r.sessions[sessionId]={...reg,remoteId:item.id,eTag:item.eTag||null,fingerprint:fp,remoteFingerprint:fp,lastCheckedAt:new Date().toISOString(),status:'synced'};pulled++;
-    }catch(e){console.warn('Journalier — pull séance impossible',sessionId,e);}
+    }catch(e){
+      console.warn('Journalier — pull séance impossible',sessionId,e);
+      if(Array.isArray(details))details.push(`• séance ${sessionId} : échec de récupération (${e?.message||e})`);
+    }
   }
   if(r.agenda?.status==='remote-changed'){
     try{
@@ -951,7 +957,10 @@ async function v72PullRemoteChanges(){
       validateRemoteAgenda(json||{});state.agenda=secureNormalizeAgenda(json||{});window.JournalierAgendaConfig?.refreshSessionPeriodSelectors?.();
       const fp=syncFingerprint(syncWithoutVolatileMeta(state.agenda));
       r.agenda={...r.agenda,remoteId:item.id,eTag:item.eTag||null,fingerprint:fp,remoteFingerprint:fp,lastCheckedAt:new Date().toISOString(),status:'synced'};pulled++;
-    }catch(e){console.warn('Journalier — pull agenda impossible',e);}
+    }catch(e){
+      console.warn('Journalier — pull agenda impossible',e);
+      if(Array.isArray(details))details.push(`• agenda : échec de récupération (${e?.message||e})`);
+    }
   }
   for(const [studentId,reg] of Object.entries(r.pia||{})){
     if(reg?.status!=='remote-changed')continue;
@@ -961,7 +970,10 @@ async function v72PullRemoteChanges(){
       applyRemotePiaPayload(json,studentId,state.meta.piaRecords,state.meta.piaImports);
       const fp=syncFingerprint(syncWithoutVolatileMeta(json));
       r.pia[studentId]={...reg,remoteId:item.id,eTag:item.eTag||null,fingerprint:fp,remoteFingerprint:fp,lastCheckedAt:new Date().toISOString(),status:'synced'};pulled++;
-    }catch(e){console.warn('Journalier — pull PIA impossible',studentId,e);}
+    }catch(e){
+      console.warn('Journalier — pull PIA impossible',studentId,e);
+      if(Array.isArray(details))details.push(`• PIA ${studentId} : échec de récupération (${e?.message||e})`);
+    }
   }
   if(pulled>0){
     state.syncRegistry=r;v72RecountPending(state);
@@ -981,7 +993,7 @@ async function syncPendingLocalChangesV72(opts={}){if(!msAccount)throw new Error
   if(v72ConflictEntries().length){if(!opts.silent)throw new Error('Conflit détecté : aucune écriture automatique n’a été effectuée. Résolvez d’abord les conflits.');return;}
 
   // Étape 3 : Récupérer les modifications distantes
-  const pulled=await v72PullRemoteChanges();
+  const pulled=await v72PullRemoteChanges(details);
 
   for(const student of students){const reg=r.students[student.studentId];if(!reg||!['local-changed','local-pending'].includes(reg.status))continue;const remote=await v72SyncStudent(student,reg);const fp=syncFingerprint(syncWithoutVolatileMeta(student)),rf=syncFingerprint(syncWithoutVolatileMeta(remote.json));r.students[student.studentId]={...reg,remoteId:remote.item.id,eTag:remote.item.eTag||null,fingerprint:fp,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:fp===rf?'synced':'local-changed'};sent++;details.push(`• élève ${student.nom||student.studentId} : ${r.students[student.studentId].status}`);}
   for(const session of sessions){const reg=r.sessions[session.id];if(!reg||!['local-changed','local-pending'].includes(reg.status))continue;const remote=await v72SyncSession(session,reg,students);const fp=syncFingerprint(syncWithoutVolatileMeta(session)),rf=syncFingerprint(syncWithoutVolatileMeta(remote.json));const nextReg={...reg,remoteId:remote.item.id,eTag:remote.item.eTag||null,fingerprint:fp,remoteFingerprint:rf,lastCheckedAt:new Date().toISOString(),status:fp===rf?'synced':'local-changed'};if(nextReg.status==='synced'){delete nextReg.remoteMovePending;delete nextReg.previousStudentId;delete nextReg.previousRemoteId;delete nextReg.previousETag;}r.sessions[session.id]=nextReg;sent++;details.push(`• séance ${session.id} / ${session.identification?.eleve||reg.studentId} : ${r.sessions[session.id].status}`);}
@@ -1133,8 +1145,11 @@ function animateClick(el,state='validating'){
    Les actions passent par délégation d'événements et data-*.
    ========================================================= */
 document.addEventListener('click',function(e){
-  if(window._jrSuppressNextClick && Date.now()-window._jrSuppressNextClick<350){
+  if(window._jrSuppressNextClick && Date.now()-window._jrSuppressNextClick<400){
     window._jrSuppressNextClick=0;
+    return;
+  }
+  if(window._jrLastTouchScrollTime && Date.now()-window._jrLastTouchScrollTime<350){
     return;
   }
   if(e.target.closest?.('.event-resize-handle')) return;
@@ -1144,9 +1159,13 @@ document.addEventListener('click',function(e){
     '.js-student-subject,.js-session-subject,'+
     '[data-action="student-profile"],[data-action="student-edit"],[data-action="student-delete"]'
   );
-  if(!target) return;
+  if(!target){
+    document.querySelectorAll('.is-slot-armed').forEach(el=>el.classList.remove('is-slot-armed'));
+    return;
+  }
 
   if(target.classList.contains('js-home-event') || target.classList.contains('js-day-event') || target.classList.contains('js-week-event')){
+    document.querySelectorAll('.is-slot-armed').forEach(el=>el.classList.remove('is-slot-armed'));
     const dayIndex=Number(target.dataset.dayIndex);
     if(!Number.isInteger(dayIndex)) return;
     e.stopPropagation();
@@ -1155,6 +1174,7 @@ document.addEventListener('click',function(e){
   }
 
   if(target.classList.contains('js-quick-form')){
+    document.querySelectorAll('.is-slot-armed').forEach(el=>el.classList.remove('is-slot-armed'));
     e.stopPropagation();
     quickFormForSlot(target.dataset.iso||'',target.dataset.startPeriod||'',target.dataset.eleve||'',target.dataset.matiere||'');
     return;
@@ -1163,7 +1183,14 @@ document.addEventListener('click',function(e){
   if(target.classList.contains('js-open-slot') || target.classList.contains('js-week-slot')){
     const dayIndex=Number(target.dataset.dayIndex);
     if(!Number.isInteger(dayIndex)) return;
-    openSlotModal(target.dataset.iso||'',target.dataset.period||'',dayIndex,null,target.dataset.forceCreate==='true');
+    const isDirectButton=target.tagName==='BUTTON' || target.dataset.directOpen==='true' || Boolean(e.target.closest?.('.week-slot-free, button[data-direct-open="true"]'));
+    if(isDirectButton || target.classList.contains('is-slot-armed')){
+      document.querySelectorAll('.is-slot-armed').forEach(el=>el.classList.remove('is-slot-armed'));
+      openSlotModal(target.dataset.iso||'',target.dataset.period||'',dayIndex,null,target.dataset.forceCreate==='true');
+    }else{
+      document.querySelectorAll('.is-slot-armed').forEach(el=>el.classList.remove('is-slot-armed'));
+      target.classList.add('is-slot-armed');
+    }
     return;
   }
 

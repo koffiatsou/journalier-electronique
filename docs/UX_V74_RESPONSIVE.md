@@ -1,3 +1,5 @@
+> Mise à jour V75 : la séance est en deux zones ; l'échelle de niveau est faite de boutons de 40 px minimum (cibles tactiles) qui se replient après le choix ; la sous-navigation est Journalier / Réunion / Propositions / PIA annuel.
+
 # Audit et refonte UX/UI responsive — Journalier électronique
 
 **Date : 29 septembre 2026**  
@@ -101,7 +103,7 @@ Corrections :
 - sous-navigation conservée comme bande de tabs horizontale interne ;
 - synthèse et préparation de réunion passent en colonne sur petit écran.
 
-### 3.7 Historique
+### 3.7 Journalier (anciennement Historique)
 
 Le modèle maître-détail existant est conservé :
 

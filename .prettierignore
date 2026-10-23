@@ -1,0 +1,9 @@
+node_modules/
+dist/
+public/*.json
+docs/
+package-lock.json
+*.zip
+public/*.zip
+# Provisoirement exclu pendant les étapes 5A à 5C, réintroduit progressivement en 5D
+src/**
