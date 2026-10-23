@@ -112,7 +112,15 @@ export interface Eleve {
   dateNaissance: string;
   /** Matières suivies, proposées en priorité dans le formulaire de séance. */
   matieres: string[];
+  /** Année (S1…S6), si elle diffère de ce que dit la classe. */
+  niveau?: string;
+  /** Forme d'enseignement : G, TTR, TQ ou P. */
+  forme?: 'G' | 'TTR' | 'TQ' | 'P';
+  /** Langue moderne suivie (Néerlandais, Anglais…). */
+  langue?: string;
 }
+
+export const FORMES_LIBELLES = { G: 'Général', TTR: 'Technique de transition', TQ: 'Technique de qualification', P: 'Professionnel' } as const;
 
 export const PERIODES_DEFAUT = ['1e H', '2e H', '3e H', '4e H', '5e H', '6e H', '7e H', '8e H'] as const;
 

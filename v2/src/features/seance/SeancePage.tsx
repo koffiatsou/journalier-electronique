@@ -60,7 +60,7 @@ export function SeancePage({ magasin }: { magasin: Magasin }) {
   const formulaires = [
     <FormulaireCreneau key="1" s={s} maj={maj} eleves={eleves} />,
     <FormulaireFonctionnement key="2" s={s} maj={maj} />,
-    <FormulaireCompetence key="3" s={s} maj={maj} />,
+    <FormulaireCompetence key="3" s={s} maj={maj} eleve={eleve} />,
     <FormulaireAides key="4" s={s} maj={maj} />,
     <FormulaireSuite key="5" s={s} maj={maj} />
   ];

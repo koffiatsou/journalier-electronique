@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ACTIONS_SUITE_SUGGEREES, AIDES_SUGGEREES, COLLABORATIONS_SUGGEREES, EFFETS_LIBELLES, INTERVENTIONS_SUGGEREES,
-  MODALITES_SUITE, NIVEAUX_LIBELLES, OBSERVATIONS_SUGGEREES, PERIODES_DEFAUT, PRESENCE_LIBELLES, SITUATION_AIDE_LIBELLES,
+  FORMES_LIBELLES, MODALITES_SUITE, NIVEAUX_LIBELLES, OBSERVATIONS_SUGGEREES, PERIODES_DEFAUT, PRESENCE_LIBELLES, SITUATION_AIDE_LIBELLES,
   TRANSFERT_LIBELLES
 } from '../../domain/types.ts';
 import type { Aide, Eleve, Effet, Niveau, Observation, Presence, Seance, SituationAide, Transfert } from '../../domain/types.ts';
@@ -44,7 +44,10 @@ export function FormulaireCreneau({ s, maj, eleves }: PropsFormulaire & { eleves
       <div className="grille grille-3">
         <Field label="Élève accompagné">
           {(id) => (
-            <Select id={id} value={s.eleveId} onChange={(e) => maj({ eleveId: e.target.value, matiere: '' })}>
+            <Select id={id} value={s.eleveId} onChange={(e) => {
+              const el = eleves.find((x) => x.id === e.target.value);
+              maj({ eleveId: e.target.value, matiere: '', niveauScolaire: el?.niveau ?? anneeDeNiveau(el?.classe ?? '') ?? '', forme: el?.forme ?? '' });
+            }}>
               <option value="">Choisir un élève</option>
               {eleves.map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
             </Select>
@@ -68,7 +71,7 @@ export function FormulaireCreneau({ s, maj, eleves }: PropsFormulaire & { eleves
         </Field>
       </div>
 
-      <div className="grille grille-2">
+      <div className="grille grille-3">
         <Field label="Matière" aide={matieres.length ? 'Les matières du dossier de l’élève sont proposées en priorité.' : undefined}>
           {(id) => (
             <>
@@ -79,6 +82,14 @@ export function FormulaireCreneau({ s, maj, eleves }: PropsFormulaire & { eleves
         </Field>
         <Field label="Niveau" optionnel>
           {(id) => <Input id={id} value={s.niveauScolaire} placeholder="S1, S2…" onChange={(e) => maj({ niveauScolaire: e.target.value })} />}
+        </Field>
+        <Field label="Forme" optionnel>
+          {(id) => (
+            <Select id={id} value={formeDeTexte(s.forme) ?? ''} onChange={(e) => maj({ forme: e.target.value })}>
+              <option value="">Non précisée</option>
+              {Object.entries(FORMES_LIBELLES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </Select>
+          )}
         </Field>
       </div>
 
@@ -149,27 +160,28 @@ export function FormulaireFonctionnement({ s, maj }: PropsFormulaire) {
 
 /* ───────── 3. Compétence travaillée ───────── */
 /** Pistes tirées du référentiel officiel à partir de l'objectif, de la matière et du niveau. */
-function usePistes(s: Seance, nombre: number): Piste[] {
+function usePistes(s: Seance, eleve: Eleve | undefined, nombre: number): Piste[] {
   const [pistes, setPistes] = useState<Piste[]>([]);
   const objectif = `${s.objectifLecon} ${s.monObjectif}`.trim();
   useEffect(() => {
-    const cible = cibleDeMatiere(s.matiere);
+    const brute = cibleDeMatiere(s.matiere);
+    const cible = brute ?? (/langue/i.test(s.matiere) && eleve?.langue ? cibleDeMatiere(eleve.langue) : null);
     if (!cible || !objectif) { setPistes([]); return; }
     let actif = true;
     const t = setTimeout(() => {
       void indexDe(cible.jeu).then((index) => {
-        if (actif) setPistes(index.suggerer({ objectif, annee: anneeDeNiveau(s.niveauScolaire), forme: formeDeTexte(s.forme), langue: cible.langue }, nombre));
+        if (actif) setPistes(index.suggerer({ objectif, annee: anneeDeNiveau(s.niveauScolaire), forme: formeDeTexte(s.forme), langue: cible.langue ?? eleve?.langue }, nombre));
       }).catch(() => { if (actif) setPistes([]); });
     }, 300);
     return () => { actif = false; clearTimeout(t); };
-  }, [s.matiere, s.niveauScolaire, s.forme, objectif, nombre]);
+  }, [s.matiere, s.niveauScolaire, s.forme, objectif, nombre, eleve?.langue]);
   return pistes;
 }
 
-export function FormulaireCompetence({ s, maj }: PropsFormulaire) {
+export function FormulaireCompetence({ s, maj, eleve }: PropsFormulaire & { eleve?: Eleve | undefined }) {
   const [texte, setTexte] = useState('');
   const [plus, setPlus] = useState(false);
-  const pistes = usePistes(s, plus ? 8 : 4).filter((p) => !s.competences.some((c) => c.texte === p.entree.a));
+  const pistes = usePistes(s, eleve, plus ? 8 : 4).filter((p) => !s.competences.some((c) => c.texte === p.entree.a));
   const prendre = (p: Piste, n: number) =>
     maj({ competences: [...s.competences, { texte: p.entree.a, niveau: niveau(n) }] });
   const ajouter = () => {
