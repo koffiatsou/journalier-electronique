@@ -29,6 +29,7 @@ export function SeancePage({ magasin }: { magasin: Magasin }) {
   const [s, setS] = useState<Seance>(() => seanceVide());
   const [ouvert, setOuvert] = useState(0);
   const [raisons, setRaisons] = useState<string[]>([]);
+  const [tiroir, setTiroir] = useState(false);
 
   const maj = useCallback((patch: Partial<Seance>) => {
     setS((cur) => ({ ...cur, ...patch, modifieLe: new Date().toISOString() }));
@@ -38,8 +39,7 @@ export function SeancePage({ magasin }: { magasin: Magasin }) {
   const eleve = eleves.find((e) => e.id === s.eleveId);
   const precedentes = useMemo(() => seances.filter((x) => x.eleveId === s.eleveId), [seances, s.eleveId]);
   const etats = etatsEtapes(s);
-  const renseignees = etats.filter((e) => e === 'remplie').length;
-  const utiles = etats.filter((e) => e !== 'sans-objet').length;
+  const notes = s.observations.length + s.competences.length + s.aides.length;
 
   const aller = (i: number) => {
     setOuvert(i);
@@ -88,7 +88,7 @@ export function SeancePage({ magasin }: { magasin: Magasin }) {
             </Etape>
           ))}
         </div>
-        <Apercu seance={s} eleve={eleve} precedentes={precedentes} />
+        <Apercu seance={s} eleve={eleve} precedentes={precedentes} tiroirOuvert={tiroir} onFermer={() => setTiroir(false)} />
       </div>
 
       <div className="barre-action">
@@ -96,12 +96,10 @@ export function SeancePage({ magasin }: { magasin: Magasin }) {
           {raisons.length ? (
             <p className="barre-erreur">{raisons[0]}{raisons.length > 1 ? ` (+${raisons.length - 1})` : ''}</p>
           ) : (
-            <p className="num">{renseignees} étape{renseignees > 1 ? 's' : ''} sur {utiles} renseignée{renseignees > 1 ? 's' : ''}</p>
+            <p className="num">{notes ? `${notes} point${notes > 1 ? 's' : ''} noté${notes > 1 ? 's' : ''}` : 'Aucun point noté'}</p>
           )}
-          <div className="progres" role="progressbar" aria-valuemin={0} aria-valuemax={utiles} aria-valuenow={renseignees} aria-label="Avancement">
-            <span style={{ width: `${utiles ? (renseignees / utiles) * 100 : 0}%` }} />
-          </div>
         </div>
+        <Button className="btn-feuille" aria-expanded={tiroir} aria-controls="feuille-apercu" onClick={() => setTiroir((v) => !v)}>Feuille</Button>
         <Button variante="primaire" onClick={() => { void enregistrer(); }}>Enregistrer la séance</Button>
       </div>
     </div>

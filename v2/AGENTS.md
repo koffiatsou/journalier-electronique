@@ -20,3 +20,4 @@ Application web pour les agents des Pôles territoriaux (WBE) qui accompagnent d
 ## Où trouver quoi
 PRODUCT.md (qui, pourquoi) · DESIGN.md (look & mouvement) · ARCHITECTURE.md · SECURITY.md · CONTRIBUTING.md · docs/decisions.md (journal) · README.md (commandes, avancement).
 - Composant unique `Point` (src/ui/Point.tsx) pour toute question à niveau (observations, compétences, aides) ; ne pas recréer de variante.
+- Tout est facultatif : on ne note que ce qui a été observé (pas de liste « à renseigner »). Panneau Feuille = texte en puces + rappel de la dernière séance ; tiroir sur petit écran.
