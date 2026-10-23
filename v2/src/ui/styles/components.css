@@ -46,24 +46,33 @@
 .chip .tick { width: 0; height: 14px; margin-right: -8px; opacity: 0; transform: scale(0.6); transition: width var(--t-ui) var(--ease-out), margin var(--t-ui) var(--ease-out), opacity var(--t-ui) ease-out, transform var(--t-ui) var(--ease-out); }
 .chip[aria-pressed="true"] .tick { width: 14px; margin-right: 0; opacity: 1; transform: none; }
 
-/* ---------- choix du niveau : seul le niveau choisi reste affiché ---------- */
-.level { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.level-opt {
-  min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line-strong);
-  background: var(--surface); font-size: 0.85rem; font-weight: 550; color: var(--ink-2);
+/* ---------- point à évaluer : même carte pour observations, compétences et aides ---------- */
+.points { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--sp-3); align-items: start; }
+.point {
+  display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-m); background: var(--surface);
+  transition: border-color var(--t-ui) var(--ease-out), box-shadow var(--t-ui) var(--ease-out), background-color var(--t-ui) ease-out;
+}
+.point[data-etat="choisi"] { background: var(--surface-2); }
+.point[data-etat="ouvert"] { border-color: var(--accent); box-shadow: 0 0 0 3px var(--peda-soft); }
+.point-nom { font-weight: 550; line-height: 1.35; }
+.point-choix { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pastille {
+  display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; min-height: 36px; padding: 0 14px; border-radius: 999px;
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-2); font-size: 0.85rem; font-weight: 600;
   transition: transform var(--t-press) var(--ease-out), background-color var(--t-ui) ease-out, border-color var(--t-ui) ease-out;
   animation: level-in var(--t-ui) var(--ease-out) both;
 }
-.level-opt:active { transform: scale(0.96); }
-@media (hover: hover) and (pointer: fine) { .level-opt:hover { border-color: var(--zone, var(--ortho)); } }
-.level-chosen {
-  display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px 0 14px; border-radius: 999px;
-  border: 1px solid var(--zone, var(--ortho)); background: var(--zone-soft, var(--ortho-soft)); color: var(--zone-ink, var(--ortho-ink));
-  font-weight: 650; font-size: 0.85rem;
-  transition: transform var(--t-press) var(--ease-out);
-  animation: level-in var(--t-ui) var(--ease-out) both;
-}
-.level-chosen:active { transform: scale(0.97); }
+.pastille:active { transform: scale(0.97); }
+.pastille.aucune { border-style: dashed; border-color: var(--ink-3); background: transparent; }
+@media (hover: hover) and (pointer: fine) { .pastille:hover { border-color: var(--ink-2); } }
+.pastille[data-teinte="faible"] { --t-bg: var(--attention-soft); --t-ink: var(--attention); --t-line: var(--attention); }
+.pastille[data-teinte="moyen"] { --t-bg: var(--peda-soft); --t-ink: var(--peda-ink); --t-line: var(--peda); }
+.pastille[data-teinte="fort"] { --t-bg: var(--ortho-soft); --t-ink: var(--ortho-ink); --t-line: var(--ortho); }
+.pastille[data-teinte="neutre"] { --t-bg: var(--surface-2); --t-ink: var(--ink-2); --t-line: var(--line-strong); }
+.pastille.choisie { background: var(--t-bg); color: var(--t-ink); border-color: var(--t-line); }
+@media (hover: hover) and (pointer: fine) { .point-choix .pastille[data-teinte]:hover { background: var(--t-bg); color: var(--t-ink); border-color: var(--t-line); } }
+.pastille[aria-checked="true"] { background: var(--t-bg); color: var(--t-ink); border-color: var(--t-line); }
+.point-retirer { min-height: 36px; padding: 0 8px; font-size: 0.85rem; color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; }
 .level-missing { font-size: 0.78rem; font-weight: 650; color: var(--attention); background: var(--attention-soft); padding: 3px 10px; border-radius: 999px; }
 @keyframes level-in { from { opacity: 0; transform: translateY(3px) scale(0.98); } to { opacity: 1; transform: none; } }
 

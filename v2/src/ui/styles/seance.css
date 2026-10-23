@@ -48,11 +48,6 @@
 /* observations */
 .rubrique { display: grid; gap: var(--sp-2); }
 .rubrique h3 { font-size: 0.92rem; color: var(--zone-ink); }
-.obs-liste { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: var(--sp-2); }
-.obs[data-actif="true"] { grid-column: 1 / -1; }
-.obs { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); padding: 2px 0; }
-.obs[data-actif="true"] { padding: var(--sp-2) var(--sp-3); margin-inline: calc(-1 * var(--sp-3)); background: var(--zone-soft); border-radius: var(--r-m); }
-.obs-texte { font-weight: 600; flex: 1 1 200px; }
 .ajout { display: flex; gap: var(--sp-2); align-items: end; }
 .ajout > :first-child { flex: 1; }
 .ajout-champ { flex: 1; }

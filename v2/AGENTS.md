@@ -19,3 +19,4 @@ Application web pour les agents des Pôles territoriaux (WBE) qui accompagnent d
 
 ## Où trouver quoi
 PRODUCT.md (qui, pourquoi) · DESIGN.md (look & mouvement) · ARCHITECTURE.md · SECURITY.md · CONTRIBUTING.md · docs/decisions.md (journal) · README.md (commandes, avancement).
+- Composant unique `Point` (src/ui/Point.tsx) pour toute question à niveau (observations, compétences, aides) ; ne pas recréer de variante.

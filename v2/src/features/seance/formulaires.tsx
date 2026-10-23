@@ -6,9 +6,9 @@ import {
 } from '../../domain/types.ts';
 import type { Aide, Eleve, Effet, Niveau, Observation, Presence, Seance, SituationAide, Transfert } from '../../domain/types.ts';
 import { Button } from '../../ui/Button.tsx';
-import { Chip, Chips } from '../../ui/Chip.tsx';
+import { Chips } from '../../ui/Chip.tsx';
 import { Field, Input, Select, Textarea } from '../../ui/Field.tsx';
-import { LevelPicker } from '../../ui/LevelPicker.tsx';
+import { Point, TEINTES_EFFET, TEINTES_NIVEAU } from '../../ui/Point.tsx';
 
 export interface PropsFormulaire {
   s: Seance;
@@ -107,37 +107,32 @@ export function FormulaireCreneau({ s, maj, eleves }: PropsFormulaire & { eleves
 export function FormulaireFonctionnement({ s, maj }: PropsFormulaire) {
   const [libre, setLibre] = useState('');
   const trouve = (texte: string) => s.observations.find((o) => o.texte === texte);
-  const bascule = (texte: string) => {
-    maj({ observations: trouve(texte) ? s.observations.filter((o) => o.texte !== texte) : [...s.observations, { texte, niveau: null }] });
-  };
+  const retire = (texte: string) => maj({ observations: s.observations.filter((o) => o.texte !== texte) });
   const fixe = (texte: string, n: number) =>
-    maj({ observations: s.observations.map((o): Observation => (o.texte === texte ? { ...o, niveau: niveau(n) } : o)) });
+    maj({ observations: trouve(texte)
+      ? s.observations.map((o): Observation => (o.texte === texte ? { ...o, niveau: niveau(n) } : o))
+      : [...s.observations, { texte, niveau: niveau(n) }] });
   const connus = new Set(OBSERVATIONS_SUGGEREES.flatMap((g) => g.items));
   const perso = s.observations.filter((o) => !connus.has(o.texte));
 
-  const ligne = (texte: string) => {
-    const o = trouve(texte);
-    return (
-      <li key={texte} className="obs" data-actif={Boolean(o)}>
-        <Chip libelle={texte} actif={Boolean(o)} onBascule={() => bascule(texte)} />
-        {o ? <LevelPicker nom={texte} libelles={NIVEAUX_LIBELLES} valeur={o.niveau} onChange={(n) => fixe(texte, n)} /> : null}
-      </li>
-    );
-  };
+  const carte = (texte: string, personnalise = false) => (
+    <Point key={texte} nom={texte} libelles={NIVEAUX_LIBELLES} teintes={TEINTES_NIVEAU} valeur={trouve(texte)?.niveau}
+      onChoisir={(n) => fixe(texte, n)} onRetirer={retire.bind(null, texte)} libelleRetirer={personnalise ? 'Retirer' : 'Pas observé'} />
+  );
 
   return (
     <>
-      <p className="etape-aide">Cochez ce que vous avez observé, puis choisissez le niveau : partiellement, suffisamment ou totalement.</p>
+      <p className="etape-aide">Pour chaque point observé, choisissez le niveau. Laissez de côté ce qui n’a pas été observé.</p>
       {OBSERVATIONS_SUGGEREES.map((g) => (
         <div key={g.rubrique} className="rubrique">
           <h3>{g.rubrique}</h3>
-          <ul className="obs-liste">{g.items.map(ligne)}</ul>
+          <ul className="points">{g.items.map((i) => carte(i))}</ul>
         </div>
       ))}
       <div className="rubrique">
         <h3>Autre observation</h3>
-        {perso.length ? <ul className="obs-liste">{perso.map((o) => ligne(o.texte))}</ul> : null}
-        <form className="ajout" onSubmit={(e) => { e.preventDefault(); const t = libre.trim(); if (t && !trouve(t)) { bascule(t); setLibre(''); } }}>
+        {perso.length ? <ul className="points">{perso.map((o) => carte(o.texte, true))}</ul> : null}
+        <form className="ajout" onSubmit={(e) => { e.preventDefault(); const t = libre.trim(); if (t && !trouve(t)) { maj({ observations: [...s.observations, { texte: t, niveau: null }] }); setLibre(''); } }}>
           <Input value={libre} placeholder="Une observation qui n’est pas dans la liste" aria-label="Autre observation" onChange={(e) => setLibre(e.target.value)} />
           <Button type="submit">Ajouter</Button>
         </form>
@@ -167,14 +162,11 @@ export function FormulaireCompetence({ s, maj }: PropsFormulaire) {
         <Button type="submit">Ajouter</Button>
       </form>
       {s.competences.length ? (
-        <ul className="obs-liste">
+        <ul className="points">
           {s.competences.map((c) => (
-            <li key={c.texte} className="obs" data-actif="true">
-              <span className="obs-texte">{c.texte}</span>
-              <LevelPicker nom={c.texte} libelles={NIVEAUX_LIBELLES} valeur={c.niveau}
-                onChange={(n) => maj({ competences: s.competences.map((x) => (x.texte === c.texte ? { ...x, niveau: niveau(n) } : x)) })} />
-              <Button variante="discret" aria-label={`Retirer ${c.texte}`} onClick={() => maj({ competences: s.competences.filter((x) => x.texte !== c.texte) })}>Retirer</Button>
-            </li>
+            <Point key={c.texte} nom={c.texte} libelles={NIVEAUX_LIBELLES} teintes={TEINTES_NIVEAU} valeur={c.niveau}
+              onChoisir={(n) => maj({ competences: s.competences.map((x) => (x.texte === c.texte ? { ...x, niveau: niveau(n) } : x)) })}
+              onRetirer={() => maj({ competences: s.competences.filter((x) => x.texte !== c.texte) })} />
           ))}
         </ul>
       ) : null}
@@ -188,10 +180,11 @@ export function FormulaireCompetence({ s, maj }: PropsFormulaire) {
 /* ───────── 4. Ce qui a aidé ───────── */
 export function FormulaireAides({ s, maj }: PropsFormulaire) {
   const trouve = (nom: string) => s.aides.find((a) => a.nom === nom);
-  const bascule = (nom: string) =>
-    maj({ aides: trouve(nom) ? s.aides.filter((a) => a.nom !== nom) : [...s.aides, { nom, effet: null }] });
+  const retire = (nom: string) => maj({ aides: s.aides.filter((a) => a.nom !== nom) });
   const fixe = (nom: string, n: number) =>
-    maj({ aides: s.aides.map((a): Aide => (a.nom === nom ? { ...a, effet: effet(n) } : a)) });
+    maj({ aides: trouve(nom) ? s.aides.map((a): Aide => (a.nom === nom ? { ...a, effet: effet(n) } : a)) : [...s.aides, { nom, effet: effet(n) }] });
+  const connues = new Set<string>(AIDES_SUGGEREES);
+  const autres = s.aides.filter((a) => !connues.has(a.nom));
 
   return (
     <>
@@ -204,25 +197,16 @@ export function FormulaireAides({ s, maj }: PropsFormulaire) {
           ))}
         </div>
       </div>
-      <div className="field">
-        <span className="field-label">Adaptations et médiations utilisées</span>
-        <div className="chips" role="group">
-          {AIDES_SUGGEREES.map((nom) => <Chip key={nom} libelle={nom} actif={Boolean(trouve(nom))} onBascule={() => bascule(nom)} />)}
-        </div>
+      <div className="rubrique">
+        <h3>Adaptations et médiations utilisées</h3>
+        <p className="etape-aide">Pour chaque aide utilisée, choisissez son effet. Laissez de côté ce qui n’a pas servi.</p>
+        <ul className="points">
+          {[...AIDES_SUGGEREES, ...autres.map((a) => a.nom)].map((nom) => (
+            <Point key={nom} nom={nom} libelles={EFFETS_LIBELLES} teintes={TEINTES_EFFET} valeur={trouve(nom)?.effet}
+              onChoisir={(n) => fixe(nom, n)} onRetirer={() => retire(nom)} libelleRetirer="Pas utilisée" />
+          ))}
+        </ul>
       </div>
-      {s.aides.length ? (
-        <div className="rubrique">
-          <h3>Effet de chaque aide</h3>
-          <ul className="obs-liste">
-            {s.aides.map((a) => (
-              <li key={a.nom} className="obs" data-actif="true">
-                <span className="obs-texte">{a.nom}</span>
-                <LevelPicker nom={a.nom} libelles={EFFETS_LIBELLES} valeur={a.effet} onChange={(n) => fixe(a.nom, n)} />
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
       <Field label="Précision" optionnel>
         {(id) => <Textarea id={id} value={s.precisionAide} placeholder="Ce qui a été fait et ce qui a été observé ensuite" onChange={(e) => maj({ precisionAide: e.target.value })} />}
       </Field>
