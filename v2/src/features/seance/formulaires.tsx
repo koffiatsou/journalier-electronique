@@ -46,7 +46,7 @@ export function FormulaireCreneau({ s, maj, eleves }: PropsFormulaire & { eleves
           {(id) => (
             <Select id={id} value={s.eleveId} onChange={(e) => {
               const el = eleves.find((x) => x.id === e.target.value);
-              maj({ eleveId: e.target.value, matiere: '', niveauScolaire: el?.niveau ?? anneeDeNiveau(el?.classe ?? '') ?? '', forme: el?.filiere ?? '' });
+              maj({ eleveId: e.target.value, matiere: '', niveauScolaire: el?.niveau ?? anneeDeNiveau(el?.classe ?? '') ?? el?.classe ?? '', forme: el?.filiere ?? '' });
             }}>
               <option value="">Choisir un élève</option>
               {eleves.map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
@@ -80,7 +80,7 @@ export function FormulaireCreneau({ s, maj, eleves }: PropsFormulaire & { eleves
             </>
           )}
         </Field>
-        <Field label="Niveau" optionnel>
+        <Field label="Classe ou niveau" optionnel>
           {(id) => <Input id={id} value={s.niveauScolaire} placeholder="S1, S2…" onChange={(e) => maj({ niveauScolaire: e.target.value })} />}
         </Field>
         <Field label="Niveau d’étude" optionnel>
