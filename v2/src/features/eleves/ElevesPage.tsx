@@ -8,6 +8,7 @@ import { useMagasin } from '../../state/store.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Chips } from '../../ui/Chip.tsx';
 import { Field, Input, Select } from '../../ui/Field.tsx';
+import { telechargerJournalier } from '../../domain/export/telecharger.ts';
 import { useToast } from '../../ui/Toast.tsx';
 
 const MATIERES = ['Mathématiques', 'Français', 'Néerlandais', 'Anglais', 'Sciences', 'Sciences économiques', 'Histoire', 'Géographie', 'Langues modernes'];
@@ -84,6 +85,11 @@ export function ElevesPage({ magasin }: { magasin: Magasin }) {
   const { annoncer } = useToast();
   const [edition, setEdition] = useState<Eleve | null>(null);
   const [ouvert, setOuvert] = useState<string | null>(null);
+  const [anonyme, setAnonyme] = useState(false);
+  const exporter = async (e: Eleve, s: Seance[]) => {
+    try { annoncer(`${await telechargerJournalier(e, s, anonyme)} téléchargé`); }
+    catch (err) { annoncer(err instanceof Error ? err.message : 'Export impossible'); }
+  };
 
   const enregistrer = async (e: Eleve) => {
     await magasin.ajouterEleves([e]);
@@ -130,7 +136,11 @@ export function ElevesPage({ magasin }: { magasin: Magasin }) {
                             {s.slice(0, 5).map((x) => <li key={x.id}><span className="num">{dateFR(x.date)}</span> {x.matiere || 'Matière non précisée'}</li>)}
                           </ul>
                         ) : <p className="liste-detail">Aucune séance enregistrée.</p>}
-                        <Button onClick={() => setEdition(e)}>Modifier le dossier</Button>
+                        <div className="fiche-actions">
+                          <Button variante="primaire" disabled={!s.length} onClick={() => { void exporter(e, s); }}>Exporter le Journalier (Word)</Button>
+                          <Button onClick={() => setEdition(e)}>Modifier le dossier</Button>
+                        </div>
+                        <label className="case-anonyme"><input type="checkbox" checked={anonyme} onChange={(ev) => setAnonyme(ev.target.checked)} /> Sans nom ni titulaire (pour partager)</label>
                       </div>
                     ) : null}
                   </li>
