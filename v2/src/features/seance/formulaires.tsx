@@ -41,7 +41,7 @@ export function FormulaireCreneau({ s, maj, eleves }: PropsFormulaire & { eleves
         <p className="field-hint presence-aide">{PRESENCE_LIBELLES[s.presence].aide}</p>
       </fieldset>
 
-      <div className="grille grille-3">
+      <div className="champs champs-3">
         <Field label="Élève accompagné">
           {(id) => (
             <Select id={id} value={s.eleveId} onChange={(e) => {
@@ -71,7 +71,7 @@ export function FormulaireCreneau({ s, maj, eleves }: PropsFormulaire & { eleves
         </Field>
       </div>
 
-      <div className="grille grille-3">
+      <div className="champs champs-3">
         <Field label="Matière" aide={matieres.length ? 'Les matières du dossier de l’élève sont proposées en priorité.' : undefined}>
           {(id) => (
             <>

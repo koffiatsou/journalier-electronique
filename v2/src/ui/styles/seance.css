@@ -30,9 +30,9 @@
 .etape-pied { display: flex; justify-content: flex-end; padding-top: var(--sp-3); border-top: 1px solid var(--line); }
 .etape .chip { --zone-soft: var(--zone-soft); }
 
-/* grilles de champs */
-.grille { display: grid; gap: var(--sp-4); align-items: start; }
-@media (min-width: 640px) { .grille-2 { grid-template-columns: 1fr 1fr; } .grille-3 { grid-template-columns: 1.1fr 1fr 1.3fr; } }
+/* rangées de champs de formulaire (ne pas confondre avec .grille, la grille de l'agenda) */
+.champs { display: grid; gap: var(--sp-4); align-items: start; }
+@media (min-width: 640px) { .champs-2 { grid-template-columns: 1fr 1fr; } .champs-3 { grid-template-columns: 1.1fr 1fr 1.3fr; } }
 .periodes { display: grid; grid-template-columns: 1fr auto 1fr; gap: 6px; align-items: center; color: var(--ink-3); }
 
 /* statut de présence */

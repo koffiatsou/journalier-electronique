@@ -53,6 +53,8 @@ PRODUCT.md (qui, pourquoi) · DESIGN.md (look & mouvement) · ARCHITECTURE.md ·
 - Routes : `useRoute` renvoie `[page, aller, parametres]` ; `aller(page, { clé: valeur })`.
 - Vérification navigateur : `tools/navigateur/*.mjs` (Playwright hors dépendances, `LANG=C.UTF-8` pour les noms de fichiers accentués).
 
+- CSS : `.grille` = grille de l'agenda uniquement (cadre arrondi qui coupe le débordement). Les rangées de champs de formulaire s'appellent `.champs .champs-2/-3`. Éviter les noms de classe génériques partagés entre écrans.
+
 ## Agenda V2
 - Domaine pur dans `src/domain/agenda/` (dates, couleurs, planning : occurrences, disposer, déplacer/redimensionner/dupliquer/annuler/éditer/supprimer renvoient un `Changement`). Stockage : IndexedDB version 2, magasin `activites` ; `magasin.changerAgenda(changement)`.
 - Une activité = date + périodes (index 0–7) + répétition hebdomadaire ; modifier « cette date » détache une occurrence (exceptions de la série). Réalisé = séance du même élève sur le créneau (calculé), sinon état manuel.

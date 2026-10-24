@@ -33,11 +33,11 @@ function FicheEleve({ eleve, onEnregistrer, onAnnuler }: { eleve: Eleve; onEnreg
 
   return (
     <form className="fiche-eleve" onSubmit={soumettre}>
-      <div className="grille grille-2">
+      <div className="champs champs-2">
         <Field label="Nom">{(id) => <Input id={id} value={e.nom} onChange={(ev) => maj({ nom: ev.target.value })} autoFocus />}</Field>
         <Field label="Prénom">{(id) => <Input id={id} value={e.prenom} onChange={(ev) => maj({ prenom: ev.target.value })} />}</Field>
       </div>
-      <div className="grille grille-2">
+      <div className="champs champs-2">
         <Field label="Classe" aide={deduction(e.classe) || 'Ex. : 3CB, 1DB, 4TQ, 5P'}>
           {(id) => <Input id={id} value={e.classe} placeholder="3CB" onChange={(ev) => maj({ classe: ev.target.value })} />}
         </Field>
@@ -50,7 +50,7 @@ function FicheEleve({ eleve, onEnregistrer, onAnnuler }: { eleve: Eleve; onEnreg
           )}
         </Field>
       </div>
-      <div className="grille grille-2">
+      <div className="champs champs-2">
         <Field label="École" optionnel>{(id) => <Input id={id} value={e.ecole} onChange={(ev) => maj({ ecole: ev.target.value })} />}</Field>
         <Field label="Titulaire" optionnel>{(id) => <Input id={id} value={e.titulaire} onChange={(ev) => maj({ titulaire: ev.target.value })} />}</Field>
       </div>
