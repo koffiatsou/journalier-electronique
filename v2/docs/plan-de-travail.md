@@ -55,8 +55,13 @@ Mis à jour le 24 octobre 2026 (lot 1 terminé). Ce fichier est la **liste des l
 |---|---|---|
 | Q — Finitions | Schémas zod, `package-lock.json` (quand le registre est accessible), accessibilité (lecteur d'écran, clavier), performance, tests navigateur dans la CI | ⏳ |
 
+### Habillage
+| Lot | Contenu | Statut |
+|---|---|---|
+| F — Finition visuelle (dernier lot) | Habillage de l'application : couleurs, logo, vocabulaire du menu, icônes, espacements, tablette ; relecture écran par écran avec l'utilisateur. Le style « Bleu encre » reste la base (décision validée) sauf demande contraire. | ⏳ (à faire en tout dernier) |
+
 ## Ordre conseillé
-1 → 2 → 3 → 4 (le fil séance → Journalier → réunion → PIA est complet) → 7 → 8 → 9 (mise en service) ; les lots 5, 6, R et Q s'intercalent selon les retours de l'équipe. L'utilisateur peut changer l'ordre à tout moment : on met alors ce fichier à jour.
+1 → 2 → 3 → 4 (le fil séance → Journalier → réunion → PIA est complet) → 7 → 8 → 9 (mise en service) ; les lots 5, 6, R et Q s'intercalent selon les retours de l'équipe. Le lot F (finition visuelle) vient en tout dernier. L'utilisateur peut changer l'ordre à tout moment : on met alors ce fichier à jour.
 
 ## Idées en attente (non planifiées)
 - Journalier : en-tête du document Word avec la période choisie (aujourd'hui elle n'est que dans le nom du fichier) — à valider avec l'équipe (le modèle papier n'a pas de case prévue).

@@ -14,4 +14,5 @@
 | 2026-10-24 | Export « tous les élèves » = un .docx par élève dans un .zip | Le modèle Journalier a une seule identité par fichier |
 | 2026-10-24 | Modifier une séance = rouvrir l'écran Séance (5 étapes) puis revenir au Journalier | Pas de second formulaire à maintenir |
 | 2026-10-24 | Fiche élève : plusieurs langues modernes et matières libres (à faire au lot 2) | Retour utilisateur : un élève en option langues peut suivre anglais, néerlandais et espagnol |
+| 2026-10-24 | Lot F « Finition visuelle » ajouté en dernier | Demande de l'utilisateur : l'habillage se règle une fois les fonctions terminées |
 | 2026-10-24 | Un lot de travail par conversation ; plan dans `docs/plan-de-travail.md`, fin de lot obligatoire (docs à jour) | Économiser les tokens, pouvoir reprendre à froid dans une nouvelle conversation |
