@@ -1,0 +1,30 @@
+{
+  "name": "journalier-v2",
+  "private": true,
+  "version": "2.0.0-alpha.1",
+  "description": "Journalier électronique — réécriture React + TypeScript (en parallèle de la V75)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test \"tests/**/*.test.ts\"",
+    "check": "npm run typecheck && npm test && npm run build"
+  },
+  "dependencies": {
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "esbuild": "0.28.2",
+    "tsx": "^4.20.0",
+    "typescript": "6.0.3"
+  }
+}
