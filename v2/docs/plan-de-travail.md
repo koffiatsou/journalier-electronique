@@ -26,7 +26,7 @@ Mis à jour le 24 octobre 2026 (lot 1 terminé). Ce fichier est la **liste des l
 | Lot | Contenu | Critères de fin | Statut |
 |---|---|---|---|
 | 1 — Journalier (écran) | Écran « Journalier » : séances d'un élève ou de tous, période (année scolaire, état à ce jour, dates libres), modification/suppression d'une séance, export Word par période (identifié / dé‑identifié) depuis cet écran | Parcours séance → Journalier → Word sans passer par Élèves ; période respectée dans le fichier | ✅ (24/10/2026) |
-| 2 — Élèves complets | Suppression/archivage d'un élève (avec ses séances, confirmation), année scolaire (passage d'année), recherche | Suppression testée ; aucune séance orpheline | 🔜 |
+| 2 — Élèves complets | Suppression/archivage d'un élève (avec ses séances, confirmation), année scolaire (passage d'année), recherche ; **retour utilisateur du 24/10** : ajouter une matière libre dans la fiche, plusieurs langues modernes par élève (anglais, néerlandais, espagnol… toutes reliées au référentiel « Langues modernes ») | Suppression testée ; aucune séance orpheline | 🔜 |
 | 3 — Réunion | Vue réunion en langage simple par matière (points d'appui, à travailler, compétence, aides), choix de la période, propositions d'objectifs à valider | Synthèse correcte sur des séances réelles ; textes relus par l'utilisateur | ⏳ |
 | 4 — PIA | Cases du modèle officiel (voir `docs/PIA_MODELE_STRUCTURE.md` à la racine du dépôt), procès‑verbaux, export Word officiel + dé‑identifié, option PDF | Fichier comparé au modèle officiel (conversion PDF relue) | ⏳ |
 
@@ -60,5 +60,6 @@ Mis à jour le 24 octobre 2026 (lot 1 terminé). Ce fichier est la **liste des l
 
 ## Idées en attente (non planifiées)
 - Journalier : en-tête du document Word avec la période choisie (aujourd'hui elle n'est que dans le nom du fichier) — à valider avec l'équipe (le modèle papier n'a pas de case prévue).
+- Journalier : champ de recherche pour retrouver une séance (nom, matière, objectif, mot du texte) — demandé le 24/10, petit ajout à placer avec le lot 2.
 - Accueil : rendre les « Dernières séances » cliquables vers le Journalier.
 - Séances d'un élève supprimé : l'écran Journalier les affiche « Élève supprimé » ; à traiter avec le lot 2 (suppression/archivage).

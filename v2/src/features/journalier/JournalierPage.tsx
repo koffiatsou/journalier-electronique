@@ -58,7 +58,7 @@ function ApercuSeance({ seance, eleve, precedentes }: { seance: Seance; eleve: E
           o.lignes ? (
             <div key={i}>
               {o.label ? <p><strong>{o.label}</strong></p> : null}
-              <ul>{o.lignes.map((l) => <li key={l}>{l}</li>)}</ul>
+              {o.lignes.map((l) => <p key={l} className="apercu-ligne">{l}</p>)}
             </div>
           ) : <p key={i}>{o.label ? <strong>{o.label} : </strong> : null}{o.texte}</p>
         ))}

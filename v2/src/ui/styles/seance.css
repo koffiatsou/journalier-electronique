@@ -132,7 +132,7 @@
 .journalier-apercu .zone-peda { border-color: var(--peda); background: var(--peda-soft); }
 .journalier-apercu .zone-ortho { border-color: var(--ortho); background: var(--ortho-soft); }
 .journalier-apercu h4 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-2); margin: 0; }
-.journalier-apercu ul { margin: 0; padding-left: 1.2em; }
+.journalier-apercu .apercu-ligne { padding-left: 1.2em; text-indent: -0.9em; }
 .journalier-vide { padding: var(--sp-4) var(--sp-5); }
 @keyframes apercu-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .journalier-apercu { animation: none; } }
