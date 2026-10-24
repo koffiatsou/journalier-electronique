@@ -9,4 +9,8 @@
 | 2026-10 | Carte `Point` unique pour observations, compétences et aides | Cohérence : même geste partout (option A) |
 | 2026-10 | Nature des aides déduite automatiquement ; distinction conservée dans les documents seulement | L'agent n'a pas à y réfléchir ; les documents gardent le vocabulaire professionnel |
 | 2026-10 | Transfert ramené à une question facultative dans « Ce qui a aidé » ; séance en 5 étapes | Champ souvent vide, mais indicateur d'autonomie utile au PIA |
+| 2026-10-24 | Export Word uniquement depuis l'écran Journalier (Élèves → « Voir le Journalier ») | Un seul bouton d'export ; la période se choisit au même endroit |
+| 2026-10-24 | Période : état à ce jour (défaut), année scolaire (1er août → 31 juillet), dates libres ; période dans le nom du fichier | Le modèle papier n'a pas de case période ; découpage identique aux noms de fichiers existants |
+| 2026-10-24 | Export « tous les élèves » = un .docx par élève dans un .zip | Le modèle Journalier a une seule identité par fichier |
+| 2026-10-24 | Modifier une séance = rouvrir l'écran Séance (5 étapes) puis revenir au Journalier | Pas de second formulaire à maintenir |
 | 2026-10-24 | Un lot de travail par conversation ; plan dans `docs/plan-de-travail.md`, fin de lot obligatoire (docs à jour) | Économiser les tokens, pouvoir reprendre à froid dans une nouvelle conversation |

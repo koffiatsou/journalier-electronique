@@ -19,3 +19,4 @@ export const IconeSeance = (p: IconeProps) => trace(<><path d="M5 4h11l3 3v13H5z
 export const IconeEleves = (p: IconeProps) => trace(<><circle cx="9" cy="8" r="3" /><path d="M3.5 19c.6-3 2.8-4.5 5.5-4.5S13.9 16 14.5 19" /><circle cx="17" cy="9" r="2.3" /><path d="M16.5 14.6c2.2.1 3.6 1.4 4 3.9" /></>, p);
 export const IconeRapports = (p: IconeProps) => trace(<><path d="M5 20V10M12 20V4M19 20v-7" /></>, p);
 export const IconeFeuille = (p: IconeProps) => trace(<><path d="M6 3h9l4 4v14H6z" /><path d="M15 3v4h4M9 12h7M9 16h7" /></>, p);
+export const IconeJournalier = (p: IconeProps) => trace(<><path d="M6 3h11a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6z" /><path d="M6 3v18M10 8h5M10 12h5" /></>, p);

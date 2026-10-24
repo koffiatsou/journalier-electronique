@@ -1,17 +1,18 @@
 import type { ReactNode } from 'react';
-import { IconeAccueil, IconeAgenda, IconeEleves, IconeRapports, IconeSeance } from '../ui/icons.tsx';
-import type { Page } from './useRoute.ts';
+import { IconeAccueil, IconeAgenda, IconeEleves, IconeJournalier, IconeRapports, IconeSeance } from '../ui/icons.tsx';
+import type { Aller, Page } from './useRoute.ts';
 
 const NAV: { page: Page; libelle: string; icone: (p: { taille?: number }) => ReactNode }[] = [
   { page: 'accueil', libelle: 'Accueil', icone: IconeAccueil },
   { page: 'agenda', libelle: 'Agenda', icone: IconeAgenda },
   { page: 'seance', libelle: 'Séance', icone: IconeSeance },
+  { page: 'journalier', libelle: 'Journalier', icone: IconeJournalier },
   { page: 'eleves', libelle: 'Élèves', icone: IconeEleves },
   { page: 'rapports', libelle: 'Rapports', icone: IconeRapports }
 ];
 
 /** Cadre de l'application : rail latéral sur grand écran, barre d'onglets en bas sur mobile. */
-export function Shell({ page, onAller, children }: { page: Page; onAller: (p: Page) => void; children: ReactNode }) {
+export function Shell({ page, onAller, children }: { page: Page; onAller: Aller; children: ReactNode }) {
   return (
     <div className="shell">
       <nav className="nav" aria-label="Navigation principale">

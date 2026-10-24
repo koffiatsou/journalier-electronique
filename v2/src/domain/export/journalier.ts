@@ -157,11 +157,15 @@ export function preparerBlocs(seances: readonly Seance[], eleve: Eleve, deidenti
   return blocs;
 }
 
-export function nomFichier(eleve: Eleve, seances: readonly Seance[], deidentifie: boolean): string {
+/**
+ * Nom du fichier Word. `periode` (déjà sans « / ») remplace l'année scolaire déduite de la première séance.
+ * `precision` distingue plusieurs fichiers dé-identifiés d'un même export (ex. la classe).
+ */
+export function nomFichier(eleve: Eleve, seances: readonly Seance[], deidentifie: boolean, periode = '', precision = ''): string {
   const premiere = [...seances].sort(chronologie)[0];
-  const an = premiere ? anneeScolaire(premiere.date) : '';
-  const base = deidentifie ? 'Journalier - dé-identifié' : `Journalier - ${eleve.nom || 'élève'}`;
-  return `${base}${an ? ` - ${an}` : ''}.docx`.replace(/[\\/:*?"<>|]/g, '');
+  const quand = periode || (premiere ? anneeScolaire(premiere.date) : '');
+  const base = deidentifie ? `Journalier - dé-identifié${precision ? ` - ${precision}` : ''}` : `Journalier - ${eleve.nom || 'élève'}`;
+  return `${base}${quand ? ` - ${quand}` : ''}.docx`.replace(/[\\/:*?"<>|]/g, '');
 }
 
 export function identiteDe(eleve: Eleve, deidentifie: boolean): Identite {

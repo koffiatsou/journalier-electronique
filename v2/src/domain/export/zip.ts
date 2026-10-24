@@ -75,9 +75,11 @@ export function ecrireZip(entrees: Entrees): Uint8Array {
   for (const [titre, donnees] of Object.entries(entrees)) {
     const nom = enc.encode(titre);
     const crc = crc32(donnees);
-    const entete = Uint8Array.from([...u32(0x04034b50), 20, 0, 0, 0, 0, 0, ...u16(0), ...u16(0), ...u32(crc), ...u32(donnees.length), ...u32(donnees.length), ...u16(nom.length), ...u16(0)]);
+    // Bit 11 : nom en UTF-8 (accents des noms de fichiers lisibles sous Windows).
+    const drapeaux = /[^\x00-\x7f]/.test(titre) ? u16(0x0800) : u16(0);
+    const entete = Uint8Array.from([...u32(0x04034b50), 20, 0, ...drapeaux, 0, 0, ...u16(0), ...u16(0), ...u32(crc), ...u32(donnees.length), ...u32(donnees.length), ...u16(nom.length), ...u16(0)]);
     locaux.push(entete, nom, donnees);
-    centraux.push(Uint8Array.from([...u32(0x02014b50), 20, 0, 20, 0, 0, 0, 0, 0, ...u16(0), ...u16(0), ...u32(crc), ...u32(donnees.length), ...u32(donnees.length), ...u16(nom.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(decalage), ...nom]));
+    centraux.push(Uint8Array.from([...u32(0x02014b50), 20, 0, 20, 0, ...drapeaux, 0, 0, ...u16(0), ...u16(0), ...u32(crc), ...u32(donnees.length), ...u32(donnees.length), ...u16(nom.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(decalage), ...nom]));
     decalage += entete.length + nom.length + donnees.length;
   }
   const repertoire = coller(centraux);

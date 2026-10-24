@@ -4,6 +4,8 @@ import type { Magasin } from '../../state/store.ts';
 import { useMagasin } from '../../state/store.ts';
 import { Button } from '../../ui/Button.tsx';
 import { useToast } from '../../ui/Toast.tsx';
+import type { Aller } from '../../app/useRoute.ts';
+import { dateFR } from '../../domain/redaction/langue.ts';
 import { Apercu } from './Apercu.tsx';
 import { Etape } from './Etape.tsx';
 import { etatsEtapes, seanceVide, verifier } from './brouillon.ts';
@@ -21,11 +23,13 @@ const ETAPES = [
 
 const reduireMouvement = (): boolean => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
-export function SeancePage({ magasin }: { magasin: Magasin }) {
+export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Aller }) {
   const eleves = useMagasin(magasin, (e) => e.eleves);
   const seances = useMagasin(magasin, (e) => e.seances);
   const { annoncer } = useToast();
   const [s, setS] = useState<Seance>(() => ({ ...seanceVide(), ...(magasin.lire().preparation ?? {}) }));
+  /** Séance déjà enregistrée (ouverte depuis le Journalier) : on la modifie au lieu d'en créer une. */
+  const [edition] = useState(() => magasin.lire().seances.some((x) => x.id === s.id));
   useEffect(() => { magasin.viderPreparation(); }, [magasin]);
   const [ouvert, setOuvert] = useState(0);
   const [raisons, setRaisons] = useState<string[]>([]);
@@ -52,6 +56,11 @@ export function SeancePage({ magasin }: { magasin: Magasin }) {
     const v = verifier(s);
     if (!v.ok) { setRaisons(v.raisons); return; }
     await magasin.enregistrerSeance(s);
+    if (edition) {
+      annoncer('Séance modifiée');
+      onAller('journalier', { eleve: s.eleveId });
+      return;
+    }
     annoncer('Séance enregistrée');
     setS(seanceVide(s.eleveId, s.date));
     setOuvert(0);
@@ -69,8 +78,10 @@ export function SeancePage({ magasin }: { magasin: Magasin }) {
   return (
     <div className="page seance">
       <header className="page-entete">
-        <h1>Nouvelle séance</h1>
-        <p className="page-sous-titre">Remplissez la feuille comme sur le Journalier papier : la partie pédagogique, puis la partie orthopédagogique.</p>
+        <h1>{edition ? `Modifier la séance du ${dateFR(s.date)}` : 'Nouvelle séance'}</h1>
+        <p className="page-sous-titre">{edition
+          ? 'Corrigez ce qui doit l’être, puis enregistrez : vous reviendrez au Journalier.'
+          : 'Remplissez la feuille comme sur le Journalier papier : la partie pédagogique, puis la partie orthopédagogique.'}</p>
       </header>
 
       <div className="seance-colonnes">
@@ -99,7 +110,8 @@ export function SeancePage({ magasin }: { magasin: Magasin }) {
           )}
         </div>
         <Button className="btn-feuille" aria-expanded={tiroir} aria-controls="feuille-apercu" onClick={() => setTiroir((v) => !v)}>Feuille</Button>
-        <Button variante="primaire" onClick={() => { void enregistrer(); }}>Enregistrer la séance</Button>
+        {edition ? <Button onClick={() => onAller('journalier', { eleve: s.eleveId })}>Annuler</Button> : null}
+        <Button variante="primaire" onClick={() => { void enregistrer(); }}>{edition ? 'Enregistrer les modifications' : 'Enregistrer la séance'}</Button>
       </div>
     </div>
   );

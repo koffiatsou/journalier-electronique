@@ -46,6 +46,13 @@ PRODUCT.md (qui, pourquoi) · DESIGN.md (look & mouvement) · ARCHITECTURE.md ·
 - Limites connues : langues du secondaire supérieur = niveaux du CECRL (pas d'année), grammaire par langue extraite des annexes (heuristique) ; sciences/éco du secondaire supérieur = compétences d'unité (peu fines) ; histoire-géographie, technique, droit détaillé non faits. Anglais/allemand du tronc commun absents.
 - Niveau, niveau d’étude (primaire, secondaire général, technique transition/qualification, professionnel, CEFA ; CEFA → forme P) et langue : champs optionnels de `Eleve` (préremplissent la séance, modifiables) ; la vue Élèves (fiche + historique, features/eleves) les saisit.
 
+## Journalier (écran, lot 1)
+- `src/domain/journalier/` (pur, testé) : `Periode` = année scolaire (1er août → 31 juillet, même découpage que `anneeScolaire`) / état à ce jour / dates libres ; `bornes`, `seancesDuJournalier` (élève ou tous, plus récentes d'abord), `libellePeriode` (version fichier sans « / »).
+- `src/features/journalier/JournalierPage.tsx` : seul endroit avec le bouton d'export Word (l'écran Élèves renvoie vers lui : `#/journalier?eleve=<id>`). Tous les élèves → un .docx par élève dans un .zip (`construireJournaliers`) ; dé-identifié → noms distincts par classe. Noms d'entrées zip en UTF-8 (bit 11).
+- Modifier une séance : `magasin.preparerSeance(seance complète)` puis `#/seance` ; l'écran Séance reconnaît une séance existante (même id), titre « Modifier la séance du … », retour au Journalier après enregistrement.
+- Routes : `useRoute` renvoie `[page, aller, parametres]` ; `aller(page, { clé: valeur })`.
+- Vérification navigateur : `tools/navigateur/*.mjs` (Playwright hors dépendances, `LANG=C.UTF-8` pour les noms de fichiers accentués).
+
 ## Agenda V2
 - Domaine pur dans `src/domain/agenda/` (dates, couleurs, planning : occurrences, disposer, déplacer/redimensionner/dupliquer/annuler/éditer/supprimer renvoient un `Changement`). Stockage : IndexedDB version 2, magasin `activites` ; `magasin.changerAgenda(changement)`.
 - Une activité = date + périodes (index 0–7) + répétition hebdomadaire ; modifier « cette date » détache une occurrence (exceptions de la série). Réalisé = séance du même élève sur le créneau (calculé), sinon état manuel.

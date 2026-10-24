@@ -1,6 +1,6 @@
 # Plan de travail de la V2 (un lot = une conversation)
 
-Mis à jour le 24 octobre 2026. Ce fichier est la **liste des lots**. Pour démarrer : ouvrir une nouvelle conversation, écrire « Lot N » (ou « le lot suivant ») ; Claude lit `AGENTS.md`, ce plan et `docs/etat-des-lieux.md`, puis travaille uniquement sur ce lot.
+Mis à jour le 24 octobre 2026 (lot 1 terminé). Ce fichier est la **liste des lots**. Pour démarrer : ouvrir une nouvelle conversation, écrire « Lot N » (ou « le lot suivant ») ; Claude lit `AGENTS.md`, ce plan et `docs/etat-des-lieux.md`, puis travaille uniquement sur ce lot.
 
 ## Principe
 - Une conversation = un lot. Pas de dérive vers un autre lot : toute idée en plus va dans « Idées en attente » ci‑dessous.
@@ -8,8 +8,8 @@ Mis à jour le 24 octobre 2026. Ce fichier est la **liste des lots**. Pour déma
 - Si un lot est trop gros pour une conversation, on le coupe (ex. 5a / 5b) et on met le plan à jour.
 
 ## Fin de lot (obligatoire, dans cet ordre)
-1. `cd v2 && npx tsc --noEmit -p tsconfig.local.json && npm test && npm run build` verts (CI : `npm run check`).
-2. Vérification dans un vrai navigateur (scripts Playwright dans `/home/claude/harness/` s'ils existent encore, sinon en écrire un court) : aucune erreur console.
+1. `cd v2 && npm run check` vert (typecheck + tests + build). Si le registre npm est bloqué, relier les paquets déjà présents sur la machine dans `v2/node_modules` (voir README, « Sans accès au registre »).
+2. Vérification dans un vrai navigateur : scripts Playwright dans `v2/tools/navigateur/` (en ajouter un par lot) ; aucune erreur console.
 3. Mettre à jour : `docs/etat-des-lieux.md` (Fait / Reste), ce plan (statut du lot, lot suivant conseillé), `AGENTS.md` (décisions durables, nouveaux dossiers), `docs/decisions.md` (une ligne par décision), `README.md` (tableau d'avancement).
 4. Commit + push sur `v2/react-ts` (jamais `main`), PR #37 mise à jour.
 5. Dire à l'utilisateur en français simple : ce qui marche, ce qui reste, **quel lot lancer ensuite**.
@@ -25,8 +25,8 @@ Mis à jour le 24 octobre 2026. Ce fichier est la **liste des lots**. Pour déma
 ### Cœur du produit (priorité)
 | Lot | Contenu | Critères de fin | Statut |
 |---|---|---|---|
-| 1 — Journalier (écran) | Écran « Journalier » : séances d'un élève ou de tous, période (année scolaire, état à ce jour, dates libres), modification/suppression d'une séance, export Word par période (identifié / dé‑identifié) depuis cet écran | Parcours séance → Journalier → Word sans passer par Élèves ; période respectée dans le fichier | 🔜 |
-| 2 — Élèves complets | Suppression/archivage d'un élève (avec ses séances, confirmation), année scolaire (passage d'année), recherche | Suppression testée ; aucune séance orpheline | ⏳ |
+| 1 — Journalier (écran) | Écran « Journalier » : séances d'un élève ou de tous, période (année scolaire, état à ce jour, dates libres), modification/suppression d'une séance, export Word par période (identifié / dé‑identifié) depuis cet écran | Parcours séance → Journalier → Word sans passer par Élèves ; période respectée dans le fichier | ✅ (24/10/2026) |
+| 2 — Élèves complets | Suppression/archivage d'un élève (avec ses séances, confirmation), année scolaire (passage d'année), recherche | Suppression testée ; aucune séance orpheline | 🔜 |
 | 3 — Réunion | Vue réunion en langage simple par matière (points d'appui, à travailler, compétence, aides), choix de la période, propositions d'objectifs à valider | Synthèse correcte sur des séances réelles ; textes relus par l'utilisateur | ⏳ |
 | 4 — PIA | Cases du modèle officiel (voir `docs/PIA_MODELE_STRUCTURE.md` à la racine du dépôt), procès‑verbaux, export Word officiel + dé‑identifié, option PDF | Fichier comparé au modèle officiel (conversion PDF relue) | ⏳ |
 
@@ -59,4 +59,6 @@ Mis à jour le 24 octobre 2026. Ce fichier est la **liste des lots**. Pour déma
 1 → 2 → 3 → 4 (le fil séance → Journalier → réunion → PIA est complet) → 7 → 8 → 9 (mise en service) ; les lots 5, 6, R et Q s'intercalent selon les retours de l'équipe. L'utilisateur peut changer l'ordre à tout moment : on met alors ce fichier à jour.
 
 ## Idées en attente (non planifiées)
-_(vide — y noter toute demande qui n'appartient pas au lot en cours)_
+- Journalier : en-tête du document Word avec la période choisie (aujourd'hui elle n'est que dans le nom du fichier) — à valider avec l'équipe (le modèle papier n'a pas de case prévue).
+- Accueil : rendre les « Dernières séances » cliquables vers le Journalier.
+- Séances d'un élève supprimé : l'écran Journalier les affiche « Élève supprimé » ; à traiter avec le lot 2 (suppression/archivage).

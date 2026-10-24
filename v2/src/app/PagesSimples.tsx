@@ -4,9 +4,9 @@ import type { Magasin } from '../state/store.ts';
 import { useMagasin } from '../state/store.ts';
 import { Button } from '../ui/Button.tsx';
 import { dateFR } from '../domain/redaction/langue.ts';
-import type { Page } from './useRoute.ts';
+import type { Aller } from './useRoute.ts';
 
-export function Accueil({ magasin, onAller }: { magasin: Magasin; onAller: (p: Page) => void }) {
+export function Accueil({ magasin, onAller }: { magasin: Magasin; onAller: Aller }) {
   const eleves = useMagasin(magasin, (e) => e.eleves);
   const seances = useMagasin(magasin, (e) => e.seances);
   const recentes = [...seances].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 5);

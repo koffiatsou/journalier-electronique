@@ -18,7 +18,10 @@ cd v2
 npm install
 npm run dev        # compile puis sert http://localhost:5173
 npm run check      # typecheck + tests + build (utilisé par la CI)
+LANG=C.UTF-8 node tools/navigateur/journalier.mjs   # parcours dans un vrai navigateur (Playwright, serveur sur le port 5199)
 ```
+
+**Sans accès au registre npm** (environnement de travail de Claude) : les paquets aux bonnes versions (esbuild, zod, React, TypeScript, tsx) sont souvent déjà installés sur la machine ; on les relie dans `v2/node_modules` (liens symboliques, dossier ignoré par Git) et on ajoute `@types/react`, `@types/react-dom` (DefinitelyTyped) et `csstype` récupérés depuis GitHub.
 
 ## Organisation du travail
 Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des lots, fin de lot) et `docs/etat-des-lieux.md`.
@@ -30,7 +33,7 @@ Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des l
 | Écran Séance (5 étapes, feuille vivante) | disponible |
 | Référentiel de compétences (pistes) | partiel (lots R1–R3) |
 | Élèves (fiche, historique) | disponible (suppression : lot 2) |
-| Export Word du Journalier | disponible (depuis Élèves ; écran Journalier : lot 1) |
+| Écran Journalier (période, modifier/supprimer, export Word élève ou tous) | disponible (lot 1) |
 | Agenda (semaine/jour, couleurs, glisser‑déplacer) | disponible (lots 5–6 : mois, vacances, semaine type) |
 | Réunion, PIA | lots 3–4 |
 | Coffre chiffré, OneDrive/Outlook, reprise V75 | lots 7–9 |

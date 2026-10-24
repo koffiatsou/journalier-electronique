@@ -8,11 +8,11 @@
   background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(14px);
   border-top: 1px solid var(--line);
 }
-.nav ul { list-style: none; margin: 0; padding: 0; height: var(--tabbar); display: grid; grid-template-columns: repeat(5, 1fr); }
+.nav ul { list-style: none; margin: 0; padding: 0; height: var(--tabbar); display: grid; grid-template-columns: repeat(6, 1fr); }
 .nav .marque { display: none; }
 .nav-lien {
   height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  font-size: 0.7rem; font-weight: 600; color: var(--ink-3); text-decoration: none;
+  font-size: 0.66rem; font-weight: 600; color: var(--ink-3); text-decoration: none; min-width: 0;
   transition: color var(--t-ui) ease-out;
 }
 .nav-lien:active { transform: scale(0.96); }
@@ -45,6 +45,7 @@
 
 .liste-carte { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--shadow-1); overflow: hidden; }
 .liste-entete { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--line); }
+.liste-entete .btn { white-space: nowrap; flex-shrink: 0; }
 .liste { list-style: none; margin: 0; padding: 0; }
 .liste li { display: grid; grid-template-columns: 96px 1fr; gap: 2px var(--sp-4); padding: var(--sp-3) var(--sp-5); border-bottom: 1px solid var(--line); }
 .liste li:last-child { border-bottom: 0; }

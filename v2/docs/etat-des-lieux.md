@@ -7,8 +7,9 @@ Mis à jour le 24 octobre 2026. Le travail est organisé en lots : voir `docs/pl
 - Texte du Journalier produit automatiquement (zones pédagogique / orthopédagogique, aides classées par effet).
 - Pistes de compétences issues des référentiels officiels (voir ci-dessous).
 - Agenda (semainier) : semaine et jour (jour seul sur téléphone), périodes en lignes avec récré/midi, couleur par élève (palette de 10, modifiable dans la fiche) et couleur par type, glisser-déplacer, étirer, Alt+glisser pour dupliquer, appui long sur tablette, panneau d'édition (champs libres : titre, lieu, note, nom libre), répétition hebdomadaire (cette date / toute la série), annuler, réalisé automatique via la séance, bouton « Encoder la séance » (séance préremplie), filtre par élève. Pas d'année scolaire figée.
-- Export Word du Journalier (écran Élèves) : remplit le modèle papier officiel, un tableau par séance, option « sans nom » ; testé (conversion en PDF relue).
-- Écran Élèves : fiche (classe lue — 3CB, 1DB, 4TQ, 5P —, niveau d'étude, matières, langue), historique, modification vérifiée (toutes les options, enregistrement, persistance après rechargement).
+- Écran **Journalier** (lot 1) : séances d'un élève ou de tous, période au choix (état à ce jour = début de l'année scolaire jusqu'à aujourd'hui, année scolaire du 1er août au 31 juillet, dates libres), aperçu du texte de chaque séance, modification (rouvre l'écran Séance puis revient au Journalier), suppression avec confirmation.
+- Export Word du Journalier, **depuis l'écran Journalier uniquement** : remplit le modèle papier officiel, un tableau par séance, seulement les séances de la période choisie (période dans le nom du fichier), option « sans nom ni titulaire ». Tous les élèves : un fichier Word par élève dans un .zip. Testé (tests + parcours dans un navigateur, `tools/navigateur/journalier.mjs`).
+- Écran Élèves : fiche (classe lue — 3CB, 1DB, 4TQ, 5P —, niveau d'étude, matières, langue), historique, modification vérifiée (toutes les options, enregistrement, persistance après rechargement) ; bouton « Voir le Journalier » (ouvre le Journalier filtré sur l'élève).
 
 ## Référentiel : NON FINALISÉ
 À reprendre plus tard. Voir aussi `AGENTS.md` et `tools/referentiel/README.md`.
