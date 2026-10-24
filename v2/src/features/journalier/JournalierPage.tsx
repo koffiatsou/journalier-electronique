@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Aller } from '../../app/useRoute.ts';
 import { couleursEleves } from '../../domain/agenda/index.ts';
 import { telechargerJournalier, telechargerJournaliers } from '../../domain/export/telecharger.ts';
-import { anneesDisponibles, bornes, libellePeriode, seancesDuJournalier } from '../../domain/journalier/index.ts';
+import { anneesDisponibles, bornes, libellePeriode, rechercherSeances, seancesDuJournalier } from '../../domain/journalier/index.ts';
 import type { Periode } from '../../domain/journalier/index.ts';
 import { construireBloc } from '../../domain/redaction/index.ts';
 import { dateFR } from '../../domain/redaction/langue.ts';
@@ -24,12 +24,13 @@ const GENRES: { genre: Genre; libelle: string }[] = [
   { genre: 'dates', libelle: 'Dates libres' }
 ];
 
-interface Filtre { eleveId: string; genre: Genre; annee: string; du: string; au: string; anonyme: boolean }
+interface Filtre { eleveId: string; genre: Genre; annee: string; du: string; au: string; anonyme: boolean; requete: string }
 
 /** Le choix est gardé le temps de la visite (retour après une modification de séance). */
 let dernier: Filtre | null = null;
 
 const nomEleve = (e: Eleve | undefined): string => (e ? `${e.nom} ${e.prenom}`.trim() : 'Élève supprimé');
+const pluriel = (n: number, mot: string): string => `${n} ${mot}${n > 1 ? 's' : ''}`;
 const creneau = (s: Seance): string => (s.periodeFin && s.periodeFin !== s.periodeDebut ? `${s.periodeDebut} → ${s.periodeFin}` : s.periodeDebut);
 
 function periodeDe(f: Filtre): Periode {
@@ -75,7 +76,7 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
   const annees = useMemo(() => anneesDisponibles(seances, aujourdhui), [seances, aujourdhui]);
 
   const [f, setF] = useState<Filtre>(() => {
-    const base: Filtre = dernier ?? { eleveId: '', genre: 'a-ce-jour', annee: annees[0] ?? '', du: '', au: aujourdhui, anonyme: false };
+    const base: Filtre = dernier ?? { eleveId: '', genre: 'a-ce-jour', annee: annees[0] ?? '', du: '', au: aujourdhui, anonyme: false, requete: '' };
     return eleveInitial !== null ? { ...base, eleveId: eleveInitial } : base;
   });
   const maj = (p: Partial<Filtre>) => setF((x) => { const n = { ...x, ...p }; dernier = n; return n; });
@@ -87,6 +88,9 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
   const resultat = bornes(periode, aujourdhui);
   const liste = resultat.ok ? seancesDuJournalier(seances, f.eleveId, resultat.bornes) : [];
   const parEleve = new Map(eleves.map((e) => [e.id, e]));
+  // La recherche sert à retrouver une séance à l'écran ; l'export garde toujours toute la période.
+  const recherche = f.requete.trim() !== '';
+  const affichees = recherche ? rechercherSeances(liste, f.requete, parEleve) : liste;
   const couleurs = couleursEleves(eleves);
   const triees = [...eleves].sort((a, b) => nomEleve(a).localeCompare(nomEleve(b), 'fr'));
   const eleve = f.eleveId ? parEleve.get(f.eleveId) : undefined;
@@ -132,7 +136,7 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
             {(id) => (
               <Select id={id} value={f.eleveId} onChange={(ev) => maj({ eleveId: ev.target.value })}>
                 <option value="">Tous les élèves</option>
-                {triees.map((e) => <option key={e.id} value={e.id}>{nomEleve(e)}{e.classe ? ` (${e.classe})` : ''}</option>)}
+                {triees.map((e) => <option key={e.id} value={e.id}>{nomEleve(e)}{e.classe ? ` (${e.classe})` : ''}{e.archiveLe ? ' — archivé' : ''}</option>)}
               </Select>
             )}
           </Field>
@@ -187,9 +191,19 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
           <h2>{eleve ? nomEleve(eleve) : 'Toutes les séances'}</h2>
           <Button onClick={() => { if (f.eleveId) magasin.preparerSeance({ eleveId: f.eleveId }); onAller('seance'); }}>Nouvelle séance</Button>
         </div>
-        {liste.length ? (
+        {seances.length ? (
+          <div className="journalier-recherche">
+            <Input type="search" value={f.requete} placeholder="Élève, matière, objectif, mot du texte…" aria-label="Rechercher une séance" onChange={(ev) => maj({ requete: ev.target.value })} />
+            {recherche ? (
+              <p className="field-hint" aria-live="polite">
+                {pluriel(affichees.length, 'séance')} sur {liste.length} dans la période. L’export Word contient toute la période, pas seulement la recherche.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        {affichees.length ? (
           <ul className="liste journalier-liste">
-            {liste.map((s) => {
+            {affichees.map((s) => {
               const e = parEleve.get(s.eleveId);
               const ouvert = ouverte === s.id;
               const absent = s.presence !== 'present';
@@ -216,7 +230,7 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
           </ul>
         ) : (
           <p className="vide-texte journalier-vide">
-            {!seances.length ? 'Aucune séance enregistrée pour l’instant.' : resultat.ok ? 'Aucune séance dans cette période.' : 'Corrigez la période pour voir les séances.'}
+            {!seances.length ? 'Aucune séance enregistrée pour l’instant.' : !resultat.ok ? 'Corrigez la période pour voir les séances.' : !liste.length ? 'Aucune séance dans cette période.' : 'Aucune séance de cette période ne correspond à la recherche.'}
           </p>
         )}
       </section>

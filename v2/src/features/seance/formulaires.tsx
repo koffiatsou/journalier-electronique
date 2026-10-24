@@ -8,7 +8,8 @@ import type { Aide, Eleve, Effet, Niveau, Observation, Presence, Seance, Situati
 import { Button } from '../../ui/Button.tsx';
 import { Chips } from '../../ui/Chip.tsx';
 import { Field, Input, Select, Textarea } from '../../ui/Field.tsx';
-import { anneeDeNiveau, cibleDeMatiere, defautsSeance, formeDeFiliere } from '../../domain/referentiel/index.ts';
+import { anneeDeNiveau, cibleDeSeance, defautsSeance, formeDeFiliere } from '../../domain/referentiel/index.ts';
+import { elevesProposes, languesDe } from '../../domain/eleves/index.ts';
 import type { Piste } from '../../domain/referentiel/index.ts';
 import { indexDe } from '../../domain/referentiel/charger.ts';
 import { Point, TEINTES_EFFET, TEINTES_NIVEAU } from '../../ui/Point.tsx';
@@ -24,7 +25,8 @@ const effet = (n: number): Effet => n as Effet;
 /* ───────── 1. Créneau et partie pédagogique ───────── */
 export function FormulaireCreneau({ s, maj, eleves }: PropsFormulaire & { eleves: Eleve[] }) {
   const eleve = eleves.find((e) => e.id === s.eleveId);
-  const matieres = eleve?.matieres ?? [];
+  // Les langues du dossier sont proposées comme matières (Anglais, Néerlandais…), après les matières suivies.
+  const matieres = eleve ? [...eleve.matieres, ...languesDe(eleve).filter((l) => !eleve.matieres.includes(l))] : [];
   const absent = s.presence !== 'present';
   const coteach = s.presence === 'absent_eleve_coteach';
   const classeSeule = absent && !coteach;
@@ -49,7 +51,7 @@ export function FormulaireCreneau({ s, maj, eleves }: PropsFormulaire & { eleves
               maj({ eleveId: e.target.value, matiere: '', ...defautsSeance(el) });
             }}>
               <option value="">Choisir un élève</option>
-              {eleves.map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
+              {elevesProposes(eleves, s.eleveId).map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
             </Select>
           )}
         </Field>
@@ -160,28 +162,31 @@ export function FormulaireFonctionnement({ s, maj }: PropsFormulaire) {
 
 /* ───────── 3. Compétence travaillée ───────── */
 /** Pistes tirées du référentiel officiel à partir de l'objectif, de la matière et du niveau. */
-function usePistes(s: Seance, eleve: Eleve | undefined, nombre: number): Piste[] {
+function usePistes(s: Seance, eleve: Eleve | undefined, nombre: number): { pistes: Piste[]; langueAmbigue: boolean } {
   const [pistes, setPistes] = useState<Piste[]>([]);
   const objectif = `${s.objectifLecon} ${s.monObjectif}`.trim();
+  const clefLangues = eleve ? languesDe(eleve).join('|') : '';
+  const { cible, ambigu } = cibleDeSeance(s.matiere, clefLangues ? clefLangues.split('|') : []);
+  const jeu = cible?.jeu;
+  const langue = cible?.langue;
   useEffect(() => {
-    const brute = cibleDeMatiere(s.matiere);
-    const cible = brute ?? (/langue/i.test(s.matiere) && eleve?.langue ? cibleDeMatiere(eleve.langue) : null);
-    if (!cible || !objectif) { setPistes([]); return; }
+    if (!jeu || !objectif) { setPistes([]); return; }
     let actif = true;
     const t = setTimeout(() => {
-      void indexDe(cible.jeu).then((index) => {
-        if (actif) setPistes(index.suggerer({ objectif, annee: anneeDeNiveau(s.niveauScolaire), forme: formeDeFiliere(s.forme), langue: cible.langue ?? eleve?.langue }, nombre));
+      void indexDe(jeu).then((index) => {
+        if (actif) setPistes(index.suggerer({ objectif, annee: anneeDeNiveau(s.niveauScolaire), forme: formeDeFiliere(s.forme), langue }, nombre));
       }).catch(() => { if (actif) setPistes([]); });
     }, 300);
     return () => { actif = false; clearTimeout(t); };
-  }, [s.matiere, s.niveauScolaire, s.forme, objectif, nombre, eleve?.langue]);
-  return pistes;
+  }, [jeu, langue, s.niveauScolaire, s.forme, objectif, nombre]);
+  return { pistes: jeu && objectif ? pistes : [], langueAmbigue: ambigu };
 }
 
 export function FormulaireCompetence({ s, maj, eleve }: PropsFormulaire & { eleve?: Eleve | undefined }) {
   const [texte, setTexte] = useState('');
   const [plus, setPlus] = useState(false);
-  const pistes = usePistes(s, eleve, plus ? 8 : 4).filter((p) => !s.competences.some((c) => c.texte === p.entree.a));
+  const { pistes: brutes, langueAmbigue } = usePistes(s, eleve, plus ? 8 : 4);
+  const pistes = brutes.filter((p) => !s.competences.some((c) => c.texte === p.entree.a));
   const prendre = (p: Piste, n: number) =>
     maj({ competences: [...s.competences, { texte: p.entree.a, niveau: niveau(n) }] });
   const ajouter = () => {
@@ -192,6 +197,9 @@ export function FormulaireCompetence({ s, maj, eleve }: PropsFormulaire & { elev
   };
   return (
     <>
+      {langueAmbigue && !pistes.length ? (
+        <p className="field-hint">Cet élève suit plusieurs langues : choisissez la langue précise (Anglais, Néerlandais…) comme matière à l’étape 1 pour voir des pistes.</p>
+      ) : null}
       {pistes.length ? (
         <div className="rubrique">
           <h3>Pistes d’après l’objectif de la leçon</h3>

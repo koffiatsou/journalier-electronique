@@ -68,7 +68,7 @@ await page.getByRole('button', { name: 'Voir' }).first().click();
 ok(await page.locator('.journalier-apercu').count() === 1, 'aperçu du texte affiché');
 
 // Export Word pour un élève, période septembre → octobre
-await page.getByLabel('Élève').selectOption({ label: 'Alpha Élève (1CB)' });
+await page.getByLabel('Élève', { exact: true }).selectOption({ label: 'Alpha Élève (1CB)' });
 let [t] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Exporter le Journalier (Word)' }).click()]);
 ok(t.suggestedFilename() === 'Journalier - Alpha - du 01-09-2026 au 31-10-2026.docx', `nom du fichier : ${t.suggestedFilename()}`);
 let xml = xmlDuDocx(await docx(t, 'alpha.docx'));
@@ -76,7 +76,7 @@ ok(xml.includes('14/09/2026') && xml.includes('20/10/2026') && !xml.includes('15
 ok(xml.indexOf('14/09/2026') < xml.indexOf('20/10/2026'), 'ordre chronologique dans le Word');
 
 // Tous les élèves, dé-identifié → zip
-await page.getByLabel('Élève').selectOption({ label: 'Tous les élèves' });
+await page.getByLabel('Élève', { exact: true }).selectOption({ label: 'Tous les élèves' });
 await page.getByRole('radio', { name: 'Année scolaire' }).click();
 await page.getByLabel('Année scolaire').selectOption('2025-2026');
 await page.getByLabel('Sans nom ni titulaire (pour partager)').check();
@@ -117,12 +117,12 @@ ok(await lignes().count() === 1, 'suppression et modification conservées après
 await page.getByRole('link', { name: 'Élèves' }).click();
 await page.getByRole('button', { name: /Bêta Élève/ }).click();
 await page.getByRole('button', { name: 'Voir le Journalier' }).click();
-ok(await page.getByLabel('Élève').inputValue() === 'demo-beta', 'Élèves → Journalier filtré sur l’élève');
+ok(await page.getByLabel('Élève', { exact: true }).inputValue() === 'demo-beta', 'Élèves → Journalier filtré sur l’élève');
 ok(await page.getByText('Aucune séance dans cette période.').count() === 1, 'message quand il n’y a rien');
 
 // Téléphone
 await page.setViewportSize({ width: 390, height: 844 });
-await page.getByLabel('Élève').selectOption('');
+await page.getByLabel('Élève', { exact: true }).selectOption('');
 await page.screenshot({ path: `${SORTIE}/journalier-telephone.png`, fullPage: true });
 const deborde = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
 ok(!deborde, 'téléphone : pas de défilement horizontal');

@@ -6,6 +6,8 @@ export interface Depot {
   chargerEleves(): Promise<Eleve[]>;
   chargerSeances(): Promise<Seance[]>;
   enregistrerEleve(eleve: Eleve): Promise<void>;
+  /** Supprime l'élève, ses séances et ses activités d'agenda en une seule opération : aucune séance ne reste sans élève. */
+  supprimerEleve(id: string): Promise<void>;
   enregistrerSeance(seance: Seance): Promise<void>;
   supprimerSeance(id: string): Promise<void>;
   chargerActivites(): Promise<Activite[]>;

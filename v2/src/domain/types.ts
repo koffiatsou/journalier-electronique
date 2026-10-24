@@ -116,10 +116,16 @@ export interface Eleve {
   niveau?: string;
   /** Niveau d'étude : primaire, secondaire général, technique, professionnel, CEFA. */
   filiere?: Filiere;
-  /** Langue moderne suivie (Néerlandais, Anglais…). */
+  /** Langues modernes suivies (Néerlandais, Anglais, Espagnol…), toutes reliées au référentiel « Langues modernes ». */
+  langues?: string[];
+  /** Ancien champ (une seule langue) : converti en `langues` au chargement, voir `normaliserEleve`. */
   langue?: string;
   /** Couleur dans l'agenda (0–9) ; sinon déduite de l'identifiant. */
   couleur?: number;
+  /** Année scolaire (« 2026-2027 ») pour laquelle le dossier (classe, titulaire) est à jour ; posée par le passage d'année. */
+  anneeDossier?: string;
+  /** Date d'archivage (AAAA-MM-JJ) : l'élève n'est plus suivi, son historique reste au Journalier. */
+  archiveLe?: string;
 }
 
 export type Filiere = 'primaire' | 'secondaire' | 'technique_transition' | 'technique_qualification' | 'professionnel' | 'cefa';

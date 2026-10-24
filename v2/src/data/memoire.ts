@@ -11,6 +11,11 @@ export function creerDepotMemoire(eleves: Eleve[] = [], seances: Seance[] = [], 
     chargerEleves: async () => [...e.values()],
     chargerSeances: async () => [...s.values()],
     enregistrerEleve: async (x) => { e.set(x.id, x); },
+    supprimerEleve: async (id) => {
+      e.delete(id);
+      for (const [k, v] of [...s]) if (v.eleveId === id) s.delete(k);
+      for (const [k, v] of [...a]) if (v.eleveId === id) a.delete(k);
+    },
     enregistrerSeance: async (x) => { s.set(x.id, x); },
     supprimerSeance: async (id) => { s.delete(id); },
     chargerActivites: async () => [...a.values()],

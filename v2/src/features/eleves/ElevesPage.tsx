@@ -1,159 +1,292 @@
 import { useState } from 'react';
-import { NB_COULEURS, NOMS_COULEURS, couleurLibre, couleursEleves } from '../../domain/agenda/index.ts';
+import type { Aller } from '../../app/useRoute.ts';
+import { couleurLibre, couleursEleves } from '../../domain/agenda/index.ts';
+import { anneeScolaire } from '../../domain/export/journalier.ts';
+import {
+  archiver, bilanSeances, effetSuppression, elevesActifs, elevesArchives, languesDe, reactiver, rechercherEleves
+} from '../../domain/eleves/index.ts';
+import type { BilanSeances } from '../../domain/eleves/index.ts';
 import { analyserClasse } from '../../domain/referentiel/index.ts';
 import { dateFR } from '../../domain/redaction/langue.ts';
 import { FILIERES_LIBELLES } from '../../domain/types.ts';
-import type { Eleve, Filiere, Seance } from '../../domain/types.ts';
+import type { Eleve, Seance } from '../../domain/types.ts';
+import { telechargerJournalier } from '../../domain/export/telecharger.ts';
 import type { Magasin } from '../../state/store.ts';
 import { useMagasin } from '../../state/store.ts';
+import { Avatar } from '../../ui/Avatar.tsx';
+import { Badge } from '../../ui/Badge.tsx';
 import { Button } from '../../ui/Button.tsx';
-import { Chips } from '../../ui/Chip.tsx';
-import { Field, Input, Select } from '../../ui/Field.tsx';
-import type { Aller } from '../../app/useRoute.ts';
+import { Dialog } from '../../ui/Dialog.tsx';
+import { Input } from '../../ui/Field.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-
-const MATIERES = ['Mathématiques', 'Français', 'Néerlandais', 'Anglais', 'Sciences', 'Sciences économiques', 'Histoire', 'Géographie', 'Langues modernes'];
-const LANGUES = ['Néerlandais', 'Anglais', 'Allemand', 'Espagnol', 'Italien'];
+import { aujourdhuiISO } from '../seance/brouillon.ts';
+import { FicheEleve } from './FicheEleve.tsx';
+import { PassageAnnee } from './PassageAnnee.tsx';
 
 const vide = (autres: readonly Eleve[]): Eleve => ({ id: crypto.randomUUID(), nom: '', prenom: '', classe: '', ecole: '', titulaire: '', dateNaissance: '', matieres: [], couleur: couleurLibre(autres) });
 
-/** Ce que l'application déduit de la classe saisie (3CB, 4TQ…), montré pour que l'agent vérifie. */
-function deduction(classe: string): string {
-  const c = analyserClasse(classe);
-  if (!c) return classe.trim() ? 'Classe non reconnue : choisissez le niveau d’étude ci-dessous.' : '';
-  return `Lu : ${c.annee}${c.filiere ? ` — ${FILIERES_LIBELLES[c.filiere]}` : ''}`;
-}
+const nomComplet = (e: Pick<Eleve, 'nom' | 'prenom'>): string => `${e.nom} ${e.prenom}`.trim();
+const pluriel = (n: number, mot: string): string => `${n} ${mot}${n > 1 ? 's' : ''}`;
 
-function FicheEleve({ eleve, onEnregistrer, onAnnuler }: { eleve: Eleve; onEnregistrer: (e: Eleve) => void; onAnnuler: () => void }) {
-  const [e, setE] = useState(eleve);
-  const maj = (p: Partial<Eleve>) => setE((x) => ({ ...x, ...p }));
-  const valide = e.nom.trim() !== '' && e.prenom.trim() !== '';
-  const soumettre = (ev: { preventDefault(): void }) => { ev.preventDefault(); if (valide) onEnregistrer({ ...e, nom: e.nom.trim(), prenom: e.prenom.trim() }); };
-  const filiereDeduite = analyserClasse(e.classe)?.filiere;
-
-  return (
-    <form className="fiche-eleve" onSubmit={soumettre}>
-      <div className="champs champs-2">
-        <Field label="Nom">{(id) => <Input id={id} value={e.nom} onChange={(ev) => maj({ nom: ev.target.value })} autoFocus />}</Field>
-        <Field label="Prénom">{(id) => <Input id={id} value={e.prenom} onChange={(ev) => maj({ prenom: ev.target.value })} />}</Field>
-      </div>
-      <div className="champs champs-2">
-        <Field label="Classe" aide={deduction(e.classe) || 'Ex. : 3CB, 1DB, 4TQ, 5P'}>
-          {(id) => <Input id={id} value={e.classe} placeholder="3CB" onChange={(ev) => maj({ classe: ev.target.value })} />}
-        </Field>
-        <Field label="Niveau d’étude" optionnel aide={filiereDeduite && !e.filiere ? 'Déduit de la classe.' : undefined}>
-          {(id) => (
-            <Select id={id} value={e.filiere ?? ''} onChange={(ev) => { const { filiere: _f, ...reste } = e; setE(ev.target.value ? { ...reste, filiere: ev.target.value as Filiere } : reste); }}>
-              <option value="">{filiereDeduite ? `Selon la classe (${FILIERES_LIBELLES[filiereDeduite]})` : 'Non précisé'}</option>
-              {Object.entries(FILIERES_LIBELLES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </Select>
-          )}
-        </Field>
-      </div>
-      <div className="champs champs-2">
-        <Field label="École" optionnel>{(id) => <Input id={id} value={e.ecole} onChange={(ev) => maj({ ecole: ev.target.value })} />}</Field>
-        <Field label="Titulaire" optionnel>{(id) => <Input id={id} value={e.titulaire} onChange={(ev) => maj({ titulaire: ev.target.value })} />}</Field>
-      </div>
-      <div className="field">
-        <span className="field-label">Matières suivies</span>
-        <Chips options={[...MATIERES, ...e.matieres.filter((m) => !MATIERES.includes(m))]} valeurs={e.matieres} onChange={(matieres) => maj({ matieres })} />
-      </div>
-      <div className="field">
-        <span className="field-label">Couleur dans l’agenda</span>
-        <div className="pastilles-couleur" role="group" aria-label="Couleur dans l’agenda">
-          {Array.from({ length: NB_COULEURS }, (_, i) => (
-            <button key={i} type="button" className={`c-${i}`} aria-pressed={e.couleur === i} aria-label={NOMS_COULEURS[i]} onClick={() => maj({ couleur: i })} />
-          ))}
-        </div>
-      </div>
-      <Field label="Langue moderne" optionnel aide="Sert aux pistes de compétences quand la matière est « Langues modernes ».">
-        {(id) => (
-          <Select id={id} value={e.langue ?? ''} onChange={(ev) => { const { langue: _l, ...reste } = e; setE(ev.target.value ? { ...reste, langue: ev.target.value } : reste); }}>
-            <option value="">Non précisée</option>
-            {LANGUES.map((l) => <option key={l}>{l}</option>)}
-          </Select>
-        )}
-      </Field>
-      <div className="fiche-actions">
-        <Button type="submit" variante="primaire" disabled={!valide}>Enregistrer</Button>
-        <Button type="button" onClick={onAnnuler}>Annuler</Button>
-      </div>
-    </form>
-  );
-}
-
+/** Classe et niveau d'étude, tels que l'application les lit (ex. « 3CB · Secondaire général »). */
 function resume(e: Eleve): string {
-  const c = analyserClasse(e.classe);
-  const fil = e.filiere ?? c?.filiere;
-  return [e.classe, fil ? FILIERES_LIBELLES[fil] : '', e.langue ?? ''].filter(Boolean).join(' · ');
+  const fil = e.filiere ?? analyserClasse(e.classe)?.filiere;
+  return [e.classe, fil ? FILIERES_LIBELLES[fil] : ''].filter(Boolean).join(' · ');
+}
+
+type Vue =
+  | { genre: 'liste' }
+  | { genre: 'dossier'; id: string }
+  | { genre: 'fiche'; eleve: Eleve; retour: Vue }
+  | { genre: 'passage' };
+
+function Carte({ eleve, couleur, bilan, aJour, onOuvrir }: { eleve: Eleve; couleur: number; bilan: BilanSeances | undefined; aJour: boolean; onOuvrir: () => void }) {
+  const langues = languesDe(eleve);
+  return (
+    <li>
+      <button type="button" className="carte-eleve" data-archive={Boolean(eleve.archiveLe)} onClick={onOuvrir}>
+        <Avatar eleve={eleve} couleur={couleur} />
+        <span className="carte-corps">
+          <strong className="carte-nom">{nomComplet(eleve) || 'Sans nom'}</strong>
+          <span className="carte-detail">{resume(eleve) || 'Dossier à compléter'}</span>
+          {eleve.matieres.length ? <span className="carte-detail">{eleve.matieres.join(', ')}</span> : null}
+          {langues.length ? <span className="carte-detail">Langues : {langues.join(', ')}</span> : null}
+          <span className="carte-pied">
+            <span className="num">{bilan ? `${pluriel(bilan.nombre, 'séance')} · dernière le ${dateFR(bilan.derniere)}` : 'Aucune séance'}</span>
+            {eleve.archiveLe ? <Badge>Archivé</Badge> : !aJour ? <Badge ton="attention">À mettre à jour</Badge> : null}
+          </span>
+        </span>
+      </button>
+    </li>
+  );
 }
 
 export function ElevesPage({ magasin, onAller }: { magasin: Magasin; onAller: Aller }) {
   const eleves = useMagasin(magasin, (s) => s.eleves);
   const seances = useMagasin(magasin, (s) => s.seances);
+  const activites = useMagasin(magasin, (s) => s.activites);
   const { annoncer } = useToast();
-  const [edition, setEdition] = useState<Eleve | null>(null);
-  const [ouvert, setOuvert] = useState<string | null>(null);
+  const aujourdhui = aujourdhuiISO();
+  const anneeCourante = anneeScolaire(aujourdhui);
 
-  const enregistrer = async (e: Eleve) => {
-    await magasin.ajouterEleves([e]);
-    setEdition(null);
-    annoncer(`${e.prenom} ${e.nom} enregistré`);
-  };
+  const [vue, setVue] = useState<Vue>({ genre: 'liste' });
+  const [requete, setRequete] = useState('');
+  const [archivesOuvertes, setArchivesOuvertes] = useState(false);
+  const [aSupprimer, setASupprimer] = useState<Eleve | null>(null);
+  const [compris, setCompris] = useState(false);
+  const [enCours, setEnCours] = useState(false);
+
   const couleurs = couleursEleves(eleves);
-  const triees = [...eleves].sort((a, b) => `${a.nom} ${a.prenom}`.localeCompare(`${b.nom} ${b.prenom}`, 'fr'));
-  const deEleve = (id: string): Seance[] => seances.filter((s) => s.eleveId === id).sort((a, b) => (a.date < b.date ? 1 : -1));
+  const bilans = bilanSeances(seances);
+  const parNom = (a: Eleve, b: Eleve) => nomComplet(a).localeCompare(nomComplet(b), 'fr');
+  const trouves = rechercherEleves(eleves, requete);
+  const actifs = elevesActifs(trouves).sort(parNom);
+  const archives = elevesArchives(trouves).sort(parNom);
+  const nbActifs = elevesActifs(eleves).length;
+  const recherche = requete.trim() !== '';
+  /** Un dossier est « à mettre à jour » quand il date d'une année scolaire passée. */
+  const aJour = (e: Eleve): boolean => !e.anneeDossier || e.anneeDossier >= anneeCourante;
+
+  const seancesDe = (id: string): Seance[] => seances.filter((s) => s.eleveId === id).sort((a, b) => (a.date < b.date ? 1 : -1));
+
+  const enregistrer = async (e: Eleve, retour: Vue) => {
+    await magasin.ajouterEleves([e]);
+    setVue(retour.genre === 'dossier' ? { genre: 'dossier', id: e.id } : { genre: 'liste' });
+    annoncer(`${nomComplet(e)} enregistré`);
+  };
+
+  const basculerArchive = async (e: Eleve) => {
+    if (e.archiveLe) {
+      await magasin.ajouterEleves([reactiver(e)]);
+      annoncer(`${nomComplet(e)} est de nouveau suivi`);
+    } else {
+      await magasin.ajouterEleves([archiver(e, aujourdhui)]);
+      annoncer(`${nomComplet(e)} archivé : son historique reste au Journalier`);
+    }
+  };
+
+  const fermerSuppression = () => { setASupprimer(null); setCompris(false); };
+  const supprimer = async () => {
+    if (!aSupprimer || !compris) return;
+    setEnCours(true);
+    try {
+      const e = aSupprimer;
+      const effet = await magasin.supprimerEleve(e.id);
+      fermerSuppression();
+      setVue({ genre: 'liste' });
+      annoncer(`${nomComplet(e)} supprimé (${pluriel(effet.seances.length, 'séance')})`);
+    } catch (err) {
+      annoncer(err instanceof Error ? err.message : 'Suppression impossible');
+    } finally {
+      setEnCours(false);
+    }
+  };
+
+  const telechargerAvant = async (e: Eleve) => {
+    try {
+      annoncer(`${await telechargerJournalier(e, seancesDe(e.id), { periode: 'complet' })} téléchargé`);
+    } catch (err) {
+      annoncer(err instanceof Error ? err.message : 'Export impossible');
+    }
+  };
+
+  /* ───────── vues ───────── */
+
+  const entete = (
+    <header className="page-entete">
+      <h1>Élèves</h1>
+      <p className="page-sous-titre">Le dossier sert à préremplir les séances : classe, niveau d’étude, matières, langues.</p>
+    </header>
+  );
+
+  if (vue.genre === 'fiche') {
+    const { eleve, retour } = vue;
+    return (
+      <div className="page">
+        {entete}
+        <section className="liste-carte fiche-carte">
+          <div className="liste-entete"><h2>{eleves.some((x) => x.id === eleve.id) ? 'Modifier le dossier' : 'Nouvel élève'}</h2></div>
+          <FicheEleve eleve={eleve} onEnregistrer={(e) => { void enregistrer(e, retour); }} onAnnuler={() => setVue(retour)} />
+        </section>
+      </div>
+    );
+  }
+
+  if (vue.genre === 'passage') {
+    return (
+      <div className="page">
+        {entete}
+        <PassageAnnee
+          eleves={eleves} couleurs={couleurs} aujourdhui={aujourdhui}
+          onAnnuler={() => setVue({ genre: 'liste' })}
+          onAppliquer={(modifies, cible) => {
+            void magasin.ajouterEleves(modifies).then(() => {
+              setVue({ genre: 'liste' });
+              annoncer(`Passage à ${cible} appliqué (${pluriel(modifies.length, 'dossier')} modifié${modifies.length > 1 ? 's' : ''})`);
+            });
+          }}
+        />
+      </div>
+    );
+  }
+
+  const ouvert = vue.genre === 'dossier' ? eleves.find((x) => x.id === vue.id) : undefined;
+  if (ouvert) {
+    const s = seancesDe(ouvert.id);
+    const langues = languesDe(ouvert);
+    const fil = ouvert.filiere ?? analyserClasse(ouvert.classe)?.filiere;
+    const effet = effetSuppression(ouvert.id, seances, activites);
+    return (
+      <div className="page">
+        {entete}
+        <section className="liste-carte dossier">
+          <div className="dossier-entete">
+            <Button variante="discret" onClick={() => setVue({ genre: 'liste' })}>← Tous les élèves</Button>
+          </div>
+          <div className="dossier-identite">
+            <Avatar eleve={ouvert} couleur={couleurs.get(ouvert.id) ?? 0} taille="l" />
+            <div>
+              <h2>{nomComplet(ouvert)}</h2>
+              <p className="liste-detail">{resume(ouvert) || 'Dossier à compléter'}</p>
+              {ouvert.archiveLe ? <p><Badge>Archivé le {dateFR(ouvert.archiveLe)}</Badge></p> : !aJour(ouvert) ? <p><Badge ton="attention">Dossier de {ouvert.anneeDossier} : à mettre à jour</Badge></p> : null}
+            </div>
+          </div>
+
+          <dl className="dossier-infos">
+            {ouvert.ecole ? <><dt>École</dt><dd>{ouvert.ecole}</dd></> : null}
+            {ouvert.titulaire ? <><dt>Titulaire</dt><dd>{ouvert.titulaire}</dd></> : null}
+            {ouvert.niveau ? <><dt>Année</dt><dd>{ouvert.niveau}</dd></> : null}
+            {fil && ouvert.filiere ? <><dt>Niveau d’étude</dt><dd>{FILIERES_LIBELLES[fil]}</dd></> : null}
+            <dt>Matières</dt><dd>{ouvert.matieres.length ? ouvert.matieres.join(', ') : 'Aucune précisée'}</dd>
+            <dt>Langues</dt><dd>{langues.length ? langues.join(', ') : 'Aucune précisée'}</dd>
+          </dl>
+
+          {ouvert.archiveLe ? (
+            <p className="dossier-note">Cet élève n’apparaît plus dans les choix de séance et d’agenda. Son historique reste au Journalier.</p>
+          ) : null}
+
+          <div className="dossier-seances">
+            <h3>{s.length ? `${pluriel(s.length, 'séance')} — les plus récentes` : 'Séances'}</h3>
+            {s.length ? (
+              <ul className="eleve-seances">
+                {s.slice(0, 5).map((x) => <li key={x.id}><span className="num">{dateFR(x.date)}</span> {x.matiere || 'Matière non précisée'}</li>)}
+              </ul>
+            ) : <p className="liste-detail">Aucune séance enregistrée.</p>}
+          </div>
+
+          <div className="fiche-actions dossier-actions">
+            <Button variante="primaire" onClick={() => onAller('journalier', { eleve: ouvert.id })}>Voir le Journalier</Button>
+            <Button onClick={() => setVue({ genre: 'fiche', eleve: ouvert, retour: vue })}>Modifier le dossier</Button>
+            <Button onClick={() => { void basculerArchive(ouvert); }}>{ouvert.archiveLe ? 'Suivre à nouveau' : 'Archiver'}</Button>
+            <Button className="btn-danger" onClick={() => setASupprimer(ouvert)}>Supprimer…</Button>
+          </div>
+        </section>
+
+        <Dialog ouvert={aSupprimer !== null} titre="Supprimer définitivement cet élève ?" onFermer={fermerSuppression}>
+          {aSupprimer ? (
+            <>
+              <p>
+                Le dossier de <strong>{nomComplet(aSupprimer)}</strong> sera supprimé
+                {effet.seances.length || effet.activites.length ? (
+                  <>, avec <strong>{pluriel(effet.seances.length, 'séance')}</strong> du Journalier et <strong>{pluriel(effet.activites.length, 'activité')}</strong> de l’agenda</>
+                ) : ' (aucune séance ni activité n’y est liée)'}.
+                {' '}Cette action est définitive.
+              </p>
+              <p className="field-hint">Pour ne plus voir l’élève sans rien perdre, choisissez plutôt « Archiver ».</p>
+              {effet.seances.length ? (
+                <div><Button onClick={() => { void telechargerAvant(aSupprimer); }}>Télécharger son Journalier (Word) avant</Button></div>
+              ) : null}
+              <label className="case-anonyme">
+                <input type="checkbox" checked={compris} onChange={(ev) => setCompris(ev.target.checked)} />
+                Je comprends que cette suppression est définitive.
+              </label>
+              <div className="fiche-actions">
+                <Button variante="primaire" className="btn-danger-plein" disabled={!compris || enCours} onClick={() => { void supprimer(); }}>Supprimer définitivement</Button>
+                <Button onClick={fermerSuppression}>Annuler</Button>
+              </div>
+            </>
+          ) : null}
+        </Dialog>
+      </div>
+    );
+  }
+
+  const carte = (e: Eleve) => (
+    <Carte key={e.id} eleve={e} couleur={couleurs.get(e.id) ?? 0} bilan={bilans.get(e.id)} aJour={aJour(e)} onOuvrir={() => setVue({ genre: 'dossier', id: e.id })} />
+  );
+  const archivesVisibles = archivesOuvertes || (recherche && archives.length > 0);
 
   return (
     <div className="page">
-      <header className="page-entete">
-        <h1>Élèves</h1>
-        <p className="page-sous-titre">Le dossier sert à préremplir les séances : classe, niveau d’étude, matières, langue.</p>
-      </header>
-
-      {edition ? (
-        <section className="liste-carte fiche-carte">
-          <div className="liste-entete"><h2>{eleves.some((x) => x.id === edition.id) ? 'Modifier le dossier' : 'Nouvel élève'}</h2></div>
-          <FicheEleve eleve={edition} onEnregistrer={(e) => { void enregistrer(e); }} onAnnuler={() => setEdition(null)} />
-        </section>
-      ) : (
-        <section className="liste-carte">
-          <div className="liste-entete">
-            <h2>{triees.length ? `${triees.length} élève${triees.length > 1 ? 's' : ''}` : 'Aucun élève'}</h2>
-            <Button variante="primaire" onClick={() => setEdition(vide(eleves))}>Nouvel élève</Button>
+      {entete}
+      <section className="liste-carte">
+        <div className="liste-entete">
+          <h2 className="liste-entete-titre">{nbActifs ? pluriel(nbActifs, 'élève') : 'Aucun élève'}</h2>
+          <div className="liste-entete-actions">
+            {nbActifs ? <Button onClick={() => setVue({ genre: 'passage' })}>Passage d’année</Button> : null}
+            <Button variante="primaire" onClick={() => setVue({ genre: 'fiche', eleve: vide(eleves), retour: { genre: 'liste' } })}>Nouvel élève</Button>
           </div>
-          {triees.length ? (
-            <ul className="liste liste-eleves">
-              {triees.map((e) => {
-                const s = deEleve(e.id);
-                const est = ouvert === e.id;
-                return (
-                  <li key={e.id}>
-                    <button type="button" className="eleve-ligne" aria-expanded={est} onClick={() => setOuvert(est ? null : e.id)}>
-                      <span className="liste-titre"><i className={`pastille-eleve c-${couleurs.get(e.id) ?? 0}`} aria-hidden="true" />{e.nom} {e.prenom}</span>
-                      <span className="liste-detail">{resume(e) || 'Dossier à compléter'} — {s.length} séance{s.length > 1 ? 's' : ''}</span>
-                    </button>
-                    {est ? (
-                      <div className="eleve-detail">
-                        {e.matieres.length ? <p className="liste-detail">Matières : {e.matieres.join(', ')}</p> : null}
-                        {s.length ? (
-                          <ul className="eleve-seances">
-                            {s.slice(0, 5).map((x) => <li key={x.id}><span className="num">{dateFR(x.date)}</span> {x.matiere || 'Matière non précisée'}</li>)}
-                          </ul>
-                        ) : <p className="liste-detail">Aucune séance enregistrée.</p>}
-                        <div className="fiche-actions">
-                          <Button variante="primaire" onClick={() => onAller('journalier', { eleve: e.id })}>Voir le Journalier</Button>
-                          <Button onClick={() => setEdition(e)}>Modifier le dossier</Button>
-                        </div>
-                      </div>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-          ) : <p className="vide-texte">Ajoutez un premier élève pour préparer une séance.</p>}
-        </section>
-      )}
+        </div>
+
+        {eleves.length ? (
+          <div className="eleves-recherche">
+            <Input type="search" value={requete} placeholder="Nom, classe, matière, langue…" aria-label="Rechercher un élève" onChange={(ev) => setRequete(ev.target.value)} />
+            {recherche ? <p className="field-hint" aria-live="polite">{trouves.length ? `${pluriel(trouves.length, 'dossier')} trouvé${trouves.length > 1 ? 's' : ''}` : 'Aucun dossier ne correspond.'}</p> : null}
+          </div>
+        ) : null}
+
+        {actifs.length ? <ul className="cartes-eleves">{actifs.map(carte)}</ul> : (
+          !eleves.length ? <p className="vide-texte vide-pad">Ajoutez un premier élève pour préparer une séance.</p>
+            : !recherche ? <p className="vide-texte vide-pad">Tous les élèves sont archivés.</p> : null
+        )}
+      </section>
+
+      {eleves.some((e) => e.archiveLe) ? (
+        <details className="liste-carte archives" open={archivesVisibles} onToggle={(ev) => setArchivesOuvertes(ev.currentTarget.open)}>
+          <summary>Élèves archivés ({archives.length}{recherche ? ` trouvé${archives.length > 1 ? 's' : ''}` : ''})</summary>
+          {archives.length ? <ul className="cartes-eleves">{archives.map(carte)}</ul> : <p className="vide-texte vide-pad">Aucun élève archivé ne correspond.</p>}
+        </details>
+      ) : null}
     </div>
   );
 }

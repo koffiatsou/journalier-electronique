@@ -2,6 +2,8 @@ import { useSyncExternalStore } from 'react';
 import type { Depot } from '../data/repository.ts';
 import type { Activite } from '../domain/agenda/types.ts';
 import type { Changement } from '../domain/agenda/planning.ts';
+import { effetSuppression, normaliserEleve } from '../domain/eleves/index.ts';
+import type { EffetSuppression } from '../domain/eleves/index.ts';
 import type { Eleve, Seance } from '../domain/types.ts';
 
 export interface Etat {
@@ -29,15 +31,26 @@ export function creerMagasin(depot: Depot) {
     async charger() {
       try {
         const [eleves, seances, activites] = await Promise.all([depot.chargerEleves(), depot.chargerSeances(), depot.chargerActivites()]);
-        maj({ pret: true, erreur: null, eleves, seances, activites });
+        maj({ pret: true, erreur: null, eleves: eleves.map(normaliserEleve), seances, activites });
       } catch (e) {
         maj({ pret: true, erreur: e instanceof Error ? e.message : 'Chargement impossible' });
       }
     },
 
-    async ajouterEleves(liste: Eleve[]) {
+    async ajouterEleves(brutes: Eleve[]) {
+      const liste = brutes.map(normaliserEleve);
       for (const e of liste) await depot.enregistrerEleve(e);
       maj({ eleves: [...etat.eleves.filter((x) => !liste.some((n) => n.id === x.id)), ...liste] });
+    },
+
+    /** Supprime l'élève avec ses séances et ses activités d'agenda (définitif). Renvoie ce qui a disparu. */
+    async supprimerEleve(id: string): Promise<EffetSuppression> {
+      const effet = effetSuppression(id, etat.seances, etat.activites);
+      await depot.supprimerEleve(id);
+      const s = new Set(effet.seances);
+      const a = new Set(effet.activites);
+      maj({ eleves: etat.eleves.filter((x) => x.id !== id), seances: etat.seances.filter((x) => !s.has(x.id)), activites: etat.activites.filter((x) => !a.has(x.id)) });
+      return effet;
     },
 
     async enregistrerSeance(s: Seance) {

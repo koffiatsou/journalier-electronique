@@ -26,6 +26,24 @@ export function cibleDeMatiere(matiere: string): Cible | null {
   return null;
 }
 
+export interface CibleSeance {
+  cible: Cible | null;
+  /** « Langues modernes » alors que l'élève suit plusieurs langues : impossible de deviner laquelle. */
+  ambigu: boolean;
+}
+
+/**
+ * Jeu de données à interroger pour une séance : la matière d'abord (« Anglais » suffit),
+ * sinon la langue du dossier quand la matière est « Langues modernes » et que l'élève n'en suit qu'une.
+ */
+export function cibleDeSeance(matiere: string, langues: readonly string[]): CibleSeance {
+  const directe = cibleDeMatiere(matiere);
+  if (directe) return { cible: directe, ambigu: false };
+  if (!/langue/i.test(matiere) || !langues.length) return { cible: null, ambigu: false };
+  if (langues.length > 1) return { cible: null, ambigu: true };
+  return { cible: cibleDeMatiere(langues[0]!), ambigu: false };
+}
+
 export interface ClasseAnalysee {
   annee: Annee;
   filiere: Filiere | undefined;

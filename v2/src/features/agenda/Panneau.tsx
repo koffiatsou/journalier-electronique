@@ -3,6 +3,7 @@ import {
   NB_COULEURS, NOMS_COULEURS, PERIODES_AGENDA, TYPES_LIBELLES, creer, editer, jourComplet, libelle
 } from '../../domain/agenda/index.ts';
 import type { Activite, Changement, Edition, Occurrence, Portee, TypeActivite } from '../../domain/agenda/index.ts';
+import { elevesProposes, languesDe } from '../../domain/eleves/index.ts';
 import type { Eleve } from '../../domain/types.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Field, Input, Select, Textarea } from '../../ui/Field.tsx';
@@ -45,7 +46,7 @@ export function Panneau({ occurrence, nouveau, eleves, onChanger, onFermer, onEn
   const [portee, setPortee] = useState<Portee>('occurrence');
   const serie = a?.repetition === 'hebdomadaire';
   const eleve = eleves.find((e) => e.id === eleveId);
-  const matieres = eleve?.matieres ?? [];
+  const matieres = eleve ? [...eleve.matieres, ...languesDe(eleve).filter((l) => !eleve.matieres.includes(l))] : [];
   const valide = type === 'eleve' ? Boolean(eleveId || nomLibre.trim()) : Boolean(titre.trim()) && date !== '';
 
   const enregistrer = () => {
@@ -97,7 +98,7 @@ export function Panneau({ occurrence, nouveau, eleves, onChanger, onFermer, onEn
             {(id) => (
               <Select id={id} value={eleveId} onChange={(e) => setEleveId(e.target.value)}>
                 <option value="">Autre (nom libre)</option>
-                {eleves.map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
+                {elevesProposes(eleves, eleveId).map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
               </Select>
             )}
           </Field>

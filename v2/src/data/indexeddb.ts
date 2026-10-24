@@ -28,6 +28,17 @@ function requete<T>(db: IDBDatabase, magasin: string, mode: IDBTransactionMode, 
   });
 }
 
+/** Supprime, dans la transaction en cours, tous les enregistrements d'un magasin dont `eleveId` correspond. */
+function supprimerLies(tx: IDBTransaction, magasin: string, eleveId: string): void {
+  const req = tx.objectStore(magasin).openCursor();
+  req.onsuccess = () => {
+    const curseur = req.result;
+    if (!curseur) return;
+    if ((curseur.value as { eleveId?: string }).eleveId === eleveId) curseur.delete();
+    curseur.continue();
+  };
+}
+
 /**
  * Dépôt IndexedDB local. Les données restent sur l'appareil.
  * Le chiffrement du coffre (AES-GCM, comme en V75) viendra s'intercaler ici sans changer l'interface.
@@ -38,6 +49,16 @@ export async function creerDepotIndexedDb(): Promise<Depot> {
     chargerEleves: () => requete<Eleve[]>(db, 'eleves', 'readonly', (s) => s.getAll()),
     chargerSeances: () => requete<Seance[]>(db, 'seances', 'readonly', (s) => s.getAll()),
     enregistrerEleve: async (e) => { await requete(db, 'eleves', 'readwrite', (s) => s.put(e)); },
+    supprimerEleve: (id) => new Promise<void>((resolve, reject) => {
+      // Une seule transaction sur les trois magasins : tout est supprimé, ou rien.
+      const tx = db.transaction(['eleves', 'seances', 'activites'], 'readwrite');
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error ?? new Error('Suppression impossible'));
+      tx.onabort = () => reject(tx.error ?? new Error('Suppression annulée'));
+      tx.objectStore('eleves').delete(id);
+      supprimerLies(tx, 'seances', id);
+      supprimerLies(tx, 'activites', id);
+    }),
     enregistrerSeance: async (x) => { await requete(db, 'seances', 'readwrite', (s) => s.put(x)); },
     supprimerSeance: async (id) => { await requete(db, 'seances', 'readwrite', (s) => s.delete(id)); },
     chargerActivites: () => requete<Activite[]>(db, 'activites', 'readonly', (s) => s.getAll()),
