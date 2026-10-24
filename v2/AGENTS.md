@@ -1,6 +1,11 @@
 # Journalier V2 — mémoire du projet (à lire en premier)
 
-> État d’avancement et points restants : `docs/etat-des-lieux.md` (référentiel non finalisé).
+> État d’avancement : `docs/etat-des-lieux.md` · **Liste des lots : `docs/plan-de-travail.md`**.
+
+## Méthode : un lot = une conversation
+- Au démarrage d'une conversation : lire ce fichier, `docs/plan-de-travail.md` et `docs/etat-des-lieux.md`, puis ne traiter QUE le lot demandé (ou le lot « 🔜 conseillé » si l'utilisateur dit « lot suivant »). Ne pas relire tout le dépôt : ouvrir seulement les fichiers du lot.
+- Toute idée hors lot va dans « Idées en attente » du plan, pas dans le code.
+- Fin de lot obligatoire (liste dans le plan) : vérifs vertes, docs à jour (état des lieux, plan, AGENTS, decisions, README), commit + push sur `v2/react-ts`, message final en français simple avec le lot suivant conseillé.
 
 Application web pour les agents des Pôles territoriaux (WBE) qui accompagnent des élèves intégrés. Propriétaire : non-développeur, francophone. V75 (`/`) reste intacte ; V2 vit dans `v2/`.
 

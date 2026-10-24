@@ -1,6 +1,6 @@
 # État des lieux de la V2
 
-Mis à jour le 23 octobre 2026. Branche `v2/react-ts`, PR #37 (brouillon, jamais fusionnée sans validation).
+Mis à jour le 24 octobre 2026. Le travail est organisé en lots : voir `docs/plan-de-travail.md`. Branche `v2/react-ts`, PR #37 (brouillon, jamais fusionnée sans validation).
 
 ## Fait
 - Séance en 5 étapes, panneau « Feuille » avec rappel de la dernière séance et des aides fréquentes.
@@ -31,10 +31,5 @@ Points restants :
 8. Vérifier les pistes sur de vrais objectifs de leçon (journaux réels) et enrichir la table d'alias du langage de terrain.
 9. Regrouper les compétences proches (l'agent voit parfois plusieurs formulations voisines).
 
-## À venir (hors référentiel)
-- Export Word : PIA, réunion, par période ; export PDF.
-- Agenda : vue mois, jours fériés et vacances scolaires, horaires des périodes réglables, « semaine type », impression, liaison Outlook, glisser pour créer une activité sur plusieurs périodes.
-- Réunion / PIA.
-- Coffre chiffré et OneDrive.
-- Suppression d'un élève.
-- Schémas zod, `package-lock.json` (registre npm inaccessible depuis l'environnement de travail).
+## À venir
+Tout est réparti en lots dans `docs/plan-de-travail.md` (Journalier, Élèves, Réunion, PIA, Agenda 5–6, coffre, OneDrive/Outlook, reprise V75, référentiel R1–R3, finitions). Le référentiel ci‑dessus correspond aux lots R1–R3.

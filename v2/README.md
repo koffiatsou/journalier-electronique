@@ -20,14 +20,20 @@ npm run dev        # compile puis sert http://localhost:5173
 npm run check      # typecheck + tests + build (utilisé par la CI)
 ```
 
+## Organisation du travail
+Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des lots, fin de lot) et `docs/etat-des-lieux.md`.
+
 ## État d'avancement
 | Domaine | État |
 | --- | --- |
 | Moteur de rédaction (blocs, synthèse, absences, dé-identification) | porté et testé |
-| Écran Séance (6 étapes, aperçu vivant de la feuille) | disponible |
-| Export Word du Journalier | à porter |
-| Agenda, Élèves, Historique, Réunion, PIA | à construire |
-| Coffre chiffré, Microsoft/OneDrive | à porter |
+| Écran Séance (5 étapes, feuille vivante) | disponible |
+| Référentiel de compétences (pistes) | partiel (lots R1–R3) |
+| Élèves (fiche, historique) | disponible (suppression : lot 2) |
+| Export Word du Journalier | disponible (depuis Élèves ; écran Journalier : lot 1) |
+| Agenda (semaine/jour, couleurs, glisser‑déplacer) | disponible (lots 5–6 : mois, vacances, semaine type) |
+| Réunion, PIA | lots 3–4 |
+| Coffre chiffré, OneDrive/Outlook, reprise V75 | lots 7–9 |
 
 ## Outils de build
 `esbuild` compile le TypeScript et React (script `scripts/build.mjs`). Pas de Vite : l'environnement de développement initial n'avait pas accès au registre npm, et `esbuild` suffit à ce stade.
