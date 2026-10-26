@@ -1,4 +1,4 @@
-import { ajouterJours } from './dates.ts';
+import { ajouterJours, indexJour } from './dates.ts';
 
 /**
  * Calendrier scolaire de la Fédération Wallonie-Bruxelles (enseignement obligatoire) et jours fériés belges.
@@ -147,11 +147,25 @@ function table(cache: Map<number, Map<string, string>>, annee: number, liste: (a
   return t;
 }
 
+/** Dernier jour de classe d'une année civile : le premier vendredi de juillet (règle constante, vérifiée sur toutes les années du tableau). */
+export function dernierJourDeClasseParRegle(annee: number): string {
+  const premier = iso(annee, 7, 1);
+  return ajouterJours(premier, (4 - indexJour(premier) + 7) % 7);
+}
+/** Rentrée d'une année civile : le dernier lundi d'août (sauf 2026, où la Fédération a fixé le 24 ; le tableau prime). */
+export function rentreeParRegle(annee: number): string {
+  const dernier = iso(annee, 8, 31);
+  return ajouterJours(dernier, -indexJour(dernier));
+}
+
 function vacancesDu(date: string): string | undefined {
   for (const a of ANNEES_SCOLAIRES_FWB) {
     for (const v of a.vacances) if (date >= v.du && date <= v.au) return v.libelle;
     if (date > a.dernierJour && date < a.rentreeSuivante) return 'Vacances d’été';
   }
+  // Hors du tableau : seules les grandes vacances sont sûres (règle ci-dessus).
+  const annee = Number(date.slice(0, 4));
+  if (!calendrierConnu(date) && date > dernierJourDeClasseParRegle(annee) && date < rentreeParRegle(annee)) return 'Vacances d’été';
   return undefined;
 }
 

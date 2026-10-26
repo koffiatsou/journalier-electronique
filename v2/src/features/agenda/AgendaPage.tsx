@@ -116,7 +116,7 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
       </div>
 
       {vacancesInconnues ? (
-        <p className="agenda-note" role="note">Les vacances scolaires de cette période ne sont pas encore dans l’application : seuls les jours fériés sont indiqués.</p>
+        <p className="agenda-note" role="note">Les vacances scolaires de cette période ne sont pas encore dans l’application : seuls les jours fériés et les vacances d’été sont indiqués.</p>
       ) : null}
 
       {etroit && vueEffective === 'jour' ? (

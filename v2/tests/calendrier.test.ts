@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  ANNEES_SCOLAIRES_FWB, CALENDRIER_CONNU_AU, CALENDRIER_CONNU_DU, NB_PERIODES, PERIODES_AGENDA, ajouterMois, anneeScolaireFWB, calendrierConnu, congesFWB,
+  ANNEES_SCOLAIRES_FWB, CALENDRIER_CONNU_AU, dernierJourDeClasseParRegle, rentreeParRegle, CALENDRIER_CONNU_DU, NB_PERIODES, PERIODES_AGENDA, ajouterMois, anneeScolaireFWB, calendrierConnu, congesFWB,
   debutDuMois, enMinutes, finDuMois, horairesModifies, horairesParDefaut, indexJour, infosJour, joursFeries, libellePause, natureJour,
   normaliserHoraires, paques, pauseAvant, semainesDuMois, titreMois, verifierHoraires
 } from '../src/domain/agenda/index.ts';
@@ -110,6 +110,27 @@ describe('vacances scolaires de la Fédération Wallonie-Bruxelles', () => {
     assert.equal(anneeScolaireFWB('2026-10-26')?.libelle, '2026-2027');
     assert.equal(anneeScolaireFWB('2027-07-10')?.libelle, '2026-2027');
     assert.equal(anneeScolaireFWB('2030-01-01'), undefined);
+  });
+});
+
+describe('grandes vacances par règle (hors du tableau)', () => {
+  it('la règle « premier vendredi de juillet / dernier lundi d’août » redonne toutes les années du tableau sauf la rentrée 2026', () => {
+    for (const a of ANNEES_SCOLAIRES_FWB) {
+      assert.equal(dernierJourDeClasseParRegle(Number(a.dernierJour.slice(0, 4))), a.dernierJour, `fin ${a.libelle}`);
+      if (a.rentreeSuivante !== '2026-08-24') assert.equal(rentreeParRegle(Number(a.rentreeSuivante.slice(0, 4))), a.rentreeSuivante, `rentrée après ${a.libelle}`);
+    }
+    assert.equal(rentreeParRegle(2026), '2026-08-31');
+  });
+  it('2031 : vacances d’été connues, le reste non', () => {
+    assert.equal(infosJour('2031-07-04').sansClasse, false);
+    assert.equal(infosJour('2031-07-07').vacances, 'Vacances d’été');
+    assert.equal(infosJour('2031-08-22').vacances, 'Vacances d’été');
+    assert.equal(infosJour('2031-08-25').sansClasse, false);
+    assert.equal(infosJour('2031-10-20').sansClasse, false);
+  });
+  it('dans le tableau, le tableau prime sur la règle (rentrée 2026 = 24 août)', () => {
+    assert.equal(infosJour('2026-08-24').sansClasse, false);
+    assert.equal(infosJour('2026-08-21').vacances, 'Vacances d’été');
   });
 });
 
