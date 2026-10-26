@@ -170,7 +170,7 @@ ok(await page.getByLabel('Retour de l’élève').inputValue() === 'Dit que les 
 // Clavier sur les onglets
 await page.getByRole('tab', { name: 'Procès-verbal 1' }).focus();
 await page.keyboard.press('ArrowRight');
-await page.getByRole('tab', { name: 'Aménagements', selected: true }).waitFor();
+await page.getByRole('tab', { name: 'Procès-verbal 2', selected: true }).waitFor();
 ok(true, 'onglets : flèche droite → onglet suivant');
 
 // Autre année : autre PIA

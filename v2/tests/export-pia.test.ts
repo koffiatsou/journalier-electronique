@@ -62,13 +62,13 @@ describe('Export Word du PIA', () => {
     assertBalisesEquilibrees(xml);
   });
 
-  it('le PV 2 et ses aménagements ne sont jamais modifiés (lot 4b)', async () => {
+  it('un PV 2 vide laisse les tableaux du PV 2 tels que dans le modèle', async () => {
     const modele = decouperTables(dec.decode((await lireZip(MODELE))['word/document.xml']));
     let p = modifierPv1(base(), 'axe', 'Cognitif');
     p = ajouterAmenagement(p, { types: ['P'], description: 'Fiche outil' });
     const { xml } = await document_(p);
     const t = decouperTables(xml);
-    for (const i of [5, 6, 7]) assert.equal(t[i]?.xml, modele[i]?.xml, `tableau ${i + 1}`);
+    for (const i of [5, 6, 7]) assert.equal(texteDe(t[i]?.xml ?? ''), texteDe(modele[i]?.xml ?? ''), `tableau ${i + 1}`);
   });
 
   it('écrit l’identité de l’élève et les champs propres au PIA', async () => {

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { Aller } from '../../app/useRoute.ts';
+import { deIdentifierPia, PARTIES_PIA } from '../../domain/export/index.ts';
+import type { PartiePia } from '../../domain/export/index.ts';
 import { telechargerPia } from '../../domain/export/telecharger.ts';
 import { anneeScolaire } from '../../domain/export/journalier.ts';
 import { anneesDisponibles, bornesAnnee, seancesDuJournalier } from '../../domain/journalier/index.ts';
@@ -8,6 +10,7 @@ import { idPia, piaVierge } from '../../domain/pia/index.ts';
 import type { Pia } from '../../domain/pia/index.ts';
 import type { Magasin } from '../../state/store.ts';
 import { useMagasin } from '../../state/store.ts';
+import { exempleDemo } from '../../data/demo.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Field, Select } from '../../ui/Field.tsx';
 import { useToast } from '../../ui/Toast.tsx';
@@ -17,6 +20,8 @@ import { OngletAmenagements } from './OngletAmenagements.tsx';
 import { OngletIdentite } from './OngletIdentite.tsx';
 import { OngletProfil } from './OngletProfil.tsx';
 import { OngletPv1 } from './OngletPv1.tsx';
+import { OngletPv2 } from './OngletPv2.tsx';
+import { ImpressionPia } from './ImpressionPia.tsx';
 import { filtreInitial, Preparer } from './Preparer.tsx';
 import type { FiltrePreparer } from './Preparer.tsx';
 
@@ -25,6 +30,7 @@ const ONGLETS = [
   { id: 'identite', libelle: 'Identité' },
   { id: 'profil', libelle: 'Profil' },
   { id: 'pv1', libelle: 'Procès-verbal 1' },
+  { id: 'pv2', libelle: 'Procès-verbal 2' },
   { id: 'amenagements', libelle: 'Aménagements' }
 ] as const;
 type IdOnglet = (typeof ONGLETS)[number]['id'];
@@ -55,6 +61,18 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
 
   const [filtre, setFiltre] = useState<FiltrePreparer>(() => filtreInitial(annee, aujourdhui));
   const [export_, setExport] = useState(false);
+  const [parties, setParties] = useState<ReadonlySet<PartiePia>>(() => new Set(PARTIES_PIA.map((p) => p.id)));
+  const [deidentifie, setDeidentifie] = useState(false);
+  const [enImpression, setEnImpression] = useState(false);
+  const bascule = (id: PartiePia) => setParties((x) => { const n = new Set(x); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const choisies = PARTIES_PIA.map((p) => p.id).filter((id) => parties.has(id));
+
+  // L'impression se lance une fois la version imprimable affichée ; le navigateur propose « Enregistrer en PDF ».
+  useEffect(() => {
+    if (!enImpression) return;
+    globalThis.print();
+    setEnImpression(false);
+  }, [enImpression]);
   const refsOnglets = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const triees = useMemo(() => [...eleves].sort((a, b) => nomEleve(a).localeCompare(nomEleve(b), 'fr')), [eleves]);
@@ -84,12 +102,18 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
     return eleve && b ? seancesDuJournalier(seances, eleve.id, b) : [];
   }, [seances, eleve, annee]);
 
+  const chargerExemple = async () => {
+    await magasin.chargerExemple(exempleDemo(aujourdhui));
+    annoncer('Exemple fictif chargé : élèves Alpha et Bêta, leurs séances et un PIA');
+    onAller('pia', { eleve: 'demo-alpha', annee: anneeScolaire(aujourdhui), onglet: 'preparer' });
+  };
+
   const exporter = async () => {
     if (!eleve || !pia) return;
     setExport(true);
     try {
       await magasin.viderEnregistrements();
-      const nom = await telechargerPia(pia, eleve);
+      const nom = await telechargerPia(pia, eleve, { parties: choisies, deidentifie });
       annoncer(`PIA Word créé : ${nom}`);
     } catch (e) {
       annoncer(e instanceof Error ? e.message : 'Export impossible');
@@ -142,13 +166,36 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
       </section>
 
       {!eleve || !pia ? (
-        <section className="liste-carte"><p className="vide-texte reunion-vide">Choisissez un élève pour ouvrir ou commencer son PIA.</p></section>
+        <section className="liste-carte pia-demo">
+          <p className="vide-texte reunion-vide">Choisissez un élève pour ouvrir ou commencer son PIA.</p>
+          <div className="pia-demo-corps">
+            <p className="field-hint">Pour essayer sans données réelles : deux élèves fictifs (Alpha et Bêta), leurs séances et un PIA d’Alpha à moitié rempli. Vous pourrez les supprimer ensuite depuis l’écran Élèves.</p>
+            <div><Button onClick={() => { void chargerExemple(); }}>Charger un exemple fictif</Button></div>
+          </div>
+        </section>
       ) : (
         <>
           <div className="pia-barre">
             <p className={`pia-statut${statut.etat === 'erreur' ? ' pia-statut-erreur' : ''}`} role="status" aria-live="polite">{messageStatut}</p>
-            <Button variante="primaire" disabled={export_} onClick={() => { void exporter(); }}>{export_ ? 'Création du fichier…' : 'Exporter en Word'}</Button>
+            <div className="pia-actions">
+              <Button variante="primaire" disabled={export_ || !choisies.length} onClick={() => { void exporter(); }}>{export_ ? 'Création du fichier…' : 'Exporter en Word'}</Button>
+              <Button disabled={!choisies.length} onClick={() => setEnImpression(true)}>Imprimer / PDF</Button>
+            </div>
           </div>
+          <details className="liste-carte pia-export">
+            <summary>Choisir les parties à exporter</summary>
+            <div className="pia-export-corps">
+              <p className="field-hint">L’identité (première page) est toujours incluse. Les parties décochées sont retirées du fichier.</p>
+              {PARTIES_PIA.map((p) => (
+                <label key={p.id} className="reunion-choix"><input type="checkbox" checked={parties.has(p.id)} onChange={() => bascule(p.id)} /><span>{p.libelle}</span></label>
+              ))}
+              <label className="reunion-choix">
+                <input type="checkbox" checked={deidentifie} onChange={(ev) => setDeidentifie(ev.target.checked)} />
+                <span>Version dé-identifiée (sans nom ni coordonnées : pour partager hors de l’équipe)<small className="reunion-raison">Le nom de l’élève est remplacé par « l’élève » dans les textes ; des personnes présentes, seule la fonction est gardée.</small></span>
+              </label>
+              <p className="field-hint">« Imprimer / PDF » imprime les mêmes parties dans une mise en page simple (ce n’est pas le modèle officiel). Pour le PDF du modèle officiel, exportez en Word puis enregistrez en PDF depuis Word.</p>
+            </div>
+          </details>
 
           <div className="pia-onglets" role="tablist" aria-label="Parties du PIA">
             {ONGLETS.map((o, i) => (
@@ -175,10 +222,12 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
             {onglet === 'identite' ? <OngletIdentite eleve={eleve} pia={pia} seances={seancesAnnee} changer={changer} /> : null}
             {onglet === 'profil' ? <OngletProfil eleve={eleve} pia={pia} seances={seancesAnnee} changer={changer} /> : null}
             {onglet === 'pv1' ? <OngletPv1 eleve={eleve} pia={pia} seances={seancesAnnee} changer={changer} /> : null}
+            {onglet === 'pv2' ? <OngletPv2 eleve={eleve} pia={pia} seances={seancesAnnee} changer={changer} /> : null}
             {onglet === 'amenagements' ? <OngletAmenagements eleve={eleve} pia={pia} seances={seancesAnnee} changer={changer} /> : null}
           </div>
         </>
       )}
+      {enImpression && eleve && pia ? <ImpressionPia pia={deidentifie ? deIdentifierPia(pia, eleve) : pia} eleve={eleve} parties={parties} deidentifie={deidentifie} /> : null}
     </div>
   );
 }

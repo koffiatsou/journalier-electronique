@@ -22,6 +22,7 @@ LANG=C.UTF-8 node tools/navigateur/journalier.mjs   # parcours dans un vrai navi
 LANG=C.UTF-8 node tools/navigateur/eleves.mjs       # idem pour l'écran Élèves (cartes, archivage, passage d'année, suppression)
 LANG=C.UTF-8 node tools/navigateur/avatars.mjs      # idem pour les avatars dessinés
 LANG=C.UTF-8 node tools/navigateur/pia.mjs          # idem pour l'écran PIA (onglets, enregistrement, export Word)
+LANG=C.UTF-8 node tools/navigateur/pia-4b.mjs       # idem pour le PV 2, l'export par partie, dé-identifié, impression
 ```
 
 **Sans accès au registre npm** (environnement de travail de Claude) : les paquets aux bonnes versions (esbuild, zod, React, TypeScript, tsx) sont souvent déjà installés sur la machine ; on les relie dans `v2/node_modules` (liens symboliques, dossier ignoré par Git) et on ajoute `@types/react`, `@types/react-dom` (DefinitelyTyped) et `csstype` récupérés depuis GitHub.
@@ -39,7 +40,7 @@ Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des l
 | Écran Journalier (période, modifier/supprimer, export Word élève ou tous) | disponible (lot 1) |
 | Agenda (semaine/jour, couleurs, glisser‑déplacer) | disponible (lots 5–6 : mois, vacances, semaine type) |
 | Réunion (résumé par matière, objectifs à valider, texte à copier) | disponible (lot 3), maintenant onglet « Préparer » du PIA |
-| PIA (profil, procès-verbal 1, aménagements, export Word du PIA entier ; onglet Préparer = ex-Réunion) | disponible (lot 4a) ; PV 2 et exports par partie : lot 4b |
+| PIA (profil, procès-verbaux 1 et 2, aménagements, export Word entier ou par partie ; onglet Préparer = ex-Réunion) | disponible (lots 4a et 4b : PV 2, export par partie, version dé-identifiée, impression / PDF) |
 | Coffre chiffré, OneDrive/Outlook, reprise V75 | lots 7–9 |
 
 ## Outils de build

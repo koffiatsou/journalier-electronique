@@ -86,6 +86,34 @@ export interface Amenagement {
   source?: string;
 }
 
+/** Résultat d'un objectif du PV 1, constaté au PV 2. */
+export type Resultat = 'atteint' | 'partiel' | 'non';
+export const RESULTATS: ReadonlyArray<{ id: Resultat; libelle: string }> = [
+  { id: 'atteint', libelle: 'Atteint' },
+  { id: 'partiel', libelle: 'Atteint en partie' },
+  { id: 'non', libelle: 'Pas atteint' }
+];
+
+/** Évaluation d'un objectif du PV 1 (lié par son identifiant). */
+export interface Evaluation {
+  objectifId: string;
+  /** Vide tant que l'agent n'a pas choisi : rien n'est présélectionné. */
+  resultat: Resultat | '';
+  commentaire: string;
+}
+
+/** Procès-verbal 2 (fin d'année) : évaluation des objectifs du PV 1, retours, aménagements pour la rentrée. */
+export interface ProcesVerbal2 {
+  date: string;
+  presents: string[];
+  evaluations: Evaluation[];
+  retours: Retours;
+  /** Aménagements proposés pour la rentrée scolaire suivante. */
+  amenagements: Amenagement[];
+  /** Vrai une fois les aménagements de l'année repris comme point de départ (évite de les reprendre deux fois). */
+  amenagementsRepris: boolean;
+}
+
 export interface Pia {
   /** « identifiant de l'élève|année scolaire » : un seul PIA par élève et par année. */
   id: string;
@@ -98,6 +126,7 @@ export interface Pia {
   retenus: ObjectifRetenu[];
   pv1: ProcesVerbal1;
   amenagements: Amenagement[];
+  pv2: ProcesVerbal2;
   creeLe: string;
   modifieLe: string;
 }

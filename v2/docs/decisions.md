@@ -57,3 +57,9 @@
 | 2026-10-26 | Aménagements proposés : aides à effet positif dont le dernier effet n'est pas « aucun » (6 au plus) ; type P / O / M proposé, à corriger ; aide inconnue = à classer | L'agent reste maître |
 | 2026-10-26 | Export Word du PIA : on remplit le modèle officiel sans le reconstruire ; lignes ajoutées au-delà de 9 présents / 10 aménagements ; PV 2 laissé vide | Fidélité au document officiel ; PV 2 = lot 4b |
 | 2026-10-26 | Informations de santé : uniquement sur l'appareil, aucun envoi | Données sensibles d'élèves |
+| 2026-10-26 | Procès-verbal 2 : l'agent choisit le résultat de chaque objectif du PV 1 (Atteint / Atteint en partie / Pas atteint), rien n'est présélectionné ; le rappel des séances depuis le PV 1 aide mais ne décide pas | Même principe que le profil : l'agent reste maître |
+| 2026-10-26 | Aménagements de la rentrée : copie de ceux de l'année (une seule fois), puis modifiables sans toucher à l'année | Le PV 2 met à jour, il ne réécrit pas le PV 1 |
+| 2026-10-26 | Export par partie : on retire du fichier Word les parties non choisies (profil, PV 1, PV 2) ; l'identité reste toujours | Un fichier propre à envoyer, sans pages vides |
+| 2026-10-26 | Version dé-identifiée du PIA : nom remplacé par « l'élève » dans les textes, dossier et coordonnées non écrits, seule la fonction des présents gardée | Partage hors de l'équipe, comme pour le Journalier |
+| 2026-10-26 | PDF : « Imprimer / PDF » du navigateur sur une mise en page simple (pas de PDF fidèle au modèle officiel, qui demanderait un convertisseur) ; PDF officiel = Word puis « Enregistrer en PDF » | Reste hors ligne, sans service externe |
+| 2026-10-26 | Exemple fictif (élèves Alpha et Bêta, séances, PIA) chargeable depuis l'écran PIA | Essayer le PIA sans données réelles (demande de l'utilisateur) |

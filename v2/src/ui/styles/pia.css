@@ -35,3 +35,31 @@
 @media (max-width: 640px) {
   .pia-amenagement, .pia-proposition { grid-template-columns: 1fr; }
 }
+
+.pia-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.pia-demo { display: grid; }
+.pia-demo-corps { display: grid; gap: var(--sp-3); padding: 0 var(--sp-5) var(--sp-5); }
+.pia-objectif-texte { margin: 0; }
+.pia-export { padding: var(--sp-2) var(--sp-5); overflow: visible; }
+.pia-export summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; color: var(--ortho-ink); }
+.pia-export-corps { display: grid; gap: var(--sp-2); padding-bottom: var(--sp-3); }
+
+/* Version imprimable : cachée à l'écran ; à l'impression, elle remplace toute la page. */
+.pia-impression { display: none; }
+@media print {
+  body > #root { display: none !important; }
+  .pia-impression { display: block; color: #000; background: #fff; font-size: 11pt; line-height: 1.35; }
+  .pia-impression h1 { font-size: 16pt; margin: 0 0 8pt; }
+  .pia-impression h2 { font-size: 13pt; margin: 14pt 0 6pt; break-after: avoid; }
+  .pia-impression h3 { font-size: 11.5pt; margin: 10pt 0 4pt; break-after: avoid; }
+  .pia-impression h4 { font-size: 10.5pt; margin: 8pt 0 2pt; break-after: avoid; }
+  .pia-impression section { break-inside: auto; }
+  .pia-impression section + section { break-before: page; }
+  .pia-impression p { margin: 0 0 3pt; }
+  .pia-impression dl { display: grid; grid-template-columns: max-content 1fr; gap: 2pt 12pt; margin: 0; }
+  .pia-impression dt { font-weight: 700; }
+  .pia-impression dd { margin: 0; }
+  .pia-impression table { width: 100%; border-collapse: collapse; }
+  .pia-impression th, .pia-impression td { border: 1px solid #000; padding: 3pt 5pt; text-align: left; vertical-align: top; break-inside: avoid; }
+  .pia-impression .pia-legende { margin-top: 4pt; font-size: 9.5pt; }
+}

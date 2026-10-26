@@ -1,5 +1,5 @@
 import { construireJournalier, construireJournaliers, construirePia, TYPE_DOCX, TYPE_ZIP } from './index.ts';
-import type { OptionsExport } from './index.ts';
+import type { OptionsConstruirePia, OptionsExport } from './index.ts';
 import type { Pia } from '../pia/types.ts';
 import type { Eleve, Seance } from '../types.ts';
 
@@ -37,8 +37,8 @@ export async function telechargerJournaliers(groupes: readonly { eleve: Eleve; s
 }
 
 /** Génère le PIA Word (modèle officiel) d'un élève et le télécharge. Rien ne quitte l'appareil. */
-export async function telechargerPia(pia: Pia, eleve: Eleve): Promise<string> {
-  const { octets, nom } = await construirePia(await chargerModelePia(), pia, eleve);
+export async function telechargerPia(pia: Pia, eleve: Eleve, options: OptionsConstruirePia = {}): Promise<string> {
+  const { octets, nom } = await construirePia(await chargerModelePia(), pia, eleve, options);
   telecharger(octets, nom, TYPE_DOCX);
   return nom;
 }

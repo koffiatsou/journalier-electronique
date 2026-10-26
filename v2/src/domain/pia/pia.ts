@@ -5,7 +5,7 @@
 import type { ObjectifRetenu } from '../reunion/objectifs.ts';
 import { ASPECTS, COLONNES } from './types.ts';
 import type {
-  Amenagement, Aspect, CleRetour, Colonne, IdentitePia, ObjectifPeriode, Pia, Profil, Retours, TypeAmenagement
+  Amenagement, Aspect, CleRetour, Colonne, Evaluation, IdentitePia, ObjectifPeriode, Pia, Profil, ProcesVerbal2, Resultat, Retours, TypeAmenagement
 } from './types.ts';
 
 export const idPia = (eleveId: string, annee: string): string => `${eleveId}|${annee}`;
@@ -14,6 +14,7 @@ const profilVide = (): Profil =>
   Object.fromEntries(ASPECTS.map((a) => [a.id, { ressources: '', difficultes: '', objectifs: '' }])) as Profil;
 
 const retoursVides = (): Retours => ({ parents: '', direction: '', eleve: '', pms: '', agent: '', autres: '' });
+const pv2Vide = (): ProcesVerbal2 => ({ date: '', presents: [], evaluations: [], retours: retoursVides(), amenagements: [], amenagementsRepris: false });
 const identiteVide = (): IdentitePia => ({ option: '', cpms: '', representantPole: '', responsable: '' });
 
 /** Un PIA vierge : rien n'est rempli automatiquement (le profil se rédige à la main, avec des idées proposées). */
@@ -27,6 +28,7 @@ export function piaVierge(eleveId: string, annee: string, maintenant: string): P
     retenus: [],
     pv1: { date: '', presents: [], axe: '', objectifs: [], ressources: '', retours: retoursVides() },
     amenagements: [],
+    pv2: pv2Vide(),
     creeLe: maintenant,
     modifieLe: maintenant
   };
@@ -62,6 +64,16 @@ function amenagement(v: unknown): Amenagement | null {
   return { id, types, description: texte(o.description), ...(source ? { source } : {}) };
 }
 
+const RESULTATS_VALIDES: readonly Resultat[] = ['atteint', 'partiel', 'non'];
+
+function evaluation(v: unknown): Evaluation | null {
+  const o = objet(v);
+  const objectifId = texte(o.objectifId);
+  if (!objectifId) return null;
+  const r = RESULTATS_VALIDES.find((x) => x === o.resultat);
+  return { objectifId, resultat: r ?? '', commentaire: texte(o.commentaire) };
+}
+
 const sansNull = <T,>(l: (T | null)[]): T[] => l.filter((x): x is T => x !== null);
 
 /**
@@ -78,6 +90,8 @@ export function normaliserPia(brut: unknown): Pia | null {
   const profil = objet(o.profil);
   const pv1 = objet(o.pv1);
   const retours = objet(pv1.retours);
+  const pv2 = objet(o.pv2);
+  const retours2 = objet(pv2.retours);
   for (const a of ASPECTS) {
     const cellule = objet(profil[a.id]);
     for (const c of COLONNES) base.profil[a.id][c.id] = texte(cellule[c.id]);
@@ -101,7 +115,18 @@ export function normaliserPia(brut: unknown): Pia | null {
         pms: texte(retours.pms), agent: texte(retours.agent), autres: texte(retours.autres)
       }
     },
-    amenagements: sansNull(liste(o.amenagements).map(amenagement))
+    amenagements: sansNull(liste(o.amenagements).map(amenagement)),
+    pv2: {
+      date: texte(pv2.date),
+      presents: liste(pv2.presents).filter((x): x is string => typeof x === 'string'),
+      evaluations: sansNull(liste(pv2.evaluations).map(evaluation)),
+      retours: {
+        parents: texte(retours2.parents), direction: texte(retours2.direction), eleve: texte(retours2.eleve),
+        pms: texte(retours2.pms), agent: texte(retours2.agent), autres: texte(retours2.autres)
+      },
+      amenagements: sansNull(liste(pv2.amenagements).map(amenagement)),
+      amenagementsRepris: pv2.amenagementsRepris === true
+    }
   };
 }
 
@@ -215,3 +240,70 @@ export const retirerAmenagement = (p: Pia, id: string): Pia => avecAmenagements(
 /* ───────── Objectifs retenus à la réunion ───────── */
 
 export const definirRetenus = (p: Pia, retenus: readonly ObjectifRetenu[]): Pia => ({ ...p, retenus: [...retenus] });
+
+/* ───────── Procès-verbal 2 (fin d'année) ───────── */
+
+const avecPv2 = (p: Pia, suite: Partial<ProcesVerbal2>): Pia => ({ ...p, pv2: { ...p.pv2, ...suite } });
+
+export const modifierDatePv2 = (p: Pia, date: string): Pia => avecPv2(p, { date });
+export const modifierRetourPv2 = (p: Pia, cle: CleRetour, valeur: string): Pia => avecPv2(p, { retours: { ...p.pv2.retours, [cle]: valeur } });
+export const ajouterPresentPv2 = (p: Pia, valeur = ''): Pia => avecPv2(p, { presents: [...p.pv2.presents, valeur] });
+export const changerPresentPv2 = (p: Pia, i: number, valeur: string): Pia => avecPv2(p, { presents: p.pv2.presents.map((x, j) => (j === i ? valeur : x)) });
+export const retirerPresentPv2 = (p: Pia, i: number): Pia => avecPv2(p, { presents: p.pv2.presents.filter((_, j) => j !== i) });
+/** Reprend les personnes présentes au PV 1 comme point de départ (souvent les mêmes), sans doublon. */
+export function reprendrePresentsPv1(p: Pia): Pia {
+  const deja = new Set(p.pv2.presents.map((x) => x.trim().toLowerCase()));
+  const ajout = p.pv1.presents.filter((x) => x.trim() && !deja.has(x.trim().toLowerCase()));
+  return avecPv2(p, { presents: [...p.pv2.presents, ...ajout] });
+}
+
+/** L'évaluation d'un objectif du PV 1 (vide si l'agent n'en a pas encore écrit). */
+export const evaluationDe = (p: Pia, objectifId: string): Evaluation =>
+  p.pv2.evaluations.find((e) => e.objectifId === objectifId) ?? { objectifId, resultat: '', commentaire: '' };
+
+function evaluer(p: Pia, objectifId: string, suite: Partial<Pick<Evaluation, 'resultat' | 'commentaire'>>): Pia {
+  const courante = evaluationDe(p, objectifId);
+  const nouvelle = { ...courante, ...suite };
+  const autres = p.pv2.evaluations.filter((e) => e.objectifId !== objectifId);
+  return avecPv2(p, { evaluations: [...autres, nouvelle] });
+}
+/** Choisit le résultat ; choisir le même résultat une seconde fois l'enlève (rien n'est imposé). */
+export const choisirResultat = (p: Pia, objectifId: string, resultat: Resultat): Pia =>
+  evaluer(p, objectifId, { resultat: evaluationDe(p, objectifId).resultat === resultat ? '' : resultat });
+export const commenterObjectif = (p: Pia, objectifId: string, commentaire: string): Pia => evaluer(p, objectifId, { commentaire });
+
+/** Objectifs du PV 1 qui ont un texte : ce sont eux que le PV 2 évalue. */
+export const objectifsAEvaluer = (p: Pia): ObjectifPeriode[] => p.pv1.objectifs.filter((o) => o.texte.trim());
+
+const avecAmenagementsPv2 = (p: Pia, amenagements: Amenagement[]): Pia => avecPv2(p, { amenagements });
+
+export function ajouterAmenagementPv2(p: Pia, partiel: Partial<Pick<Amenagement, 'types' | 'description' | 'source'>> = {}): Pia {
+  const a: Amenagement = {
+    id: prochainId(p.pv2.amenagements.map((x) => x.id), 'amenagement'),
+    types: TYPES.filter((t) => partiel.types?.includes(t)),
+    description: partiel.description ?? '',
+    ...(partiel.source ? { source: partiel.source } : {})
+  };
+  return avecAmenagementsPv2(p, [...p.pv2.amenagements, a]);
+}
+export const modifierAmenagementPv2 = (p: Pia, id: string, description: string): Pia =>
+  avecAmenagementsPv2(p, p.pv2.amenagements.map((a) => (a.id === id ? { ...a, description } : a)));
+export function basculerTypePv2(p: Pia, id: string, type: TypeAmenagement): Pia {
+  return avecAmenagementsPv2(p, p.pv2.amenagements.map((a) => {
+    if (a.id !== id) return a;
+    const types = a.types.includes(type) ? a.types.filter((t) => t !== type) : [...a.types, type];
+    return { ...a, types: TYPES.filter((t) => types.includes(t)) };
+  }));
+}
+export const retirerAmenagementPv2 = (p: Pia, id: string): Pia => avecAmenagementsPv2(p, p.pv2.amenagements.filter((a) => a.id !== id));
+
+/** Point de départ de la rentrée : les aménagements de l'année, à garder, modifier ou retirer. Une seule fois. */
+export function reprendreAmenagementsPourRentree(p: Pia): Pia {
+  if (p.pv2.amenagementsRepris) return p;
+  let suite = avecPv2(p, { amenagementsRepris: true });
+  for (const a of p.amenagements) {
+    if (!a.description.trim() && !a.types.length) continue;
+    suite = ajouterAmenagementPv2(suite, { types: a.types, description: a.description, source: a.id });
+  }
+  return suite;
+}

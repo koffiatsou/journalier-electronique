@@ -30,7 +30,7 @@ Mis à jour le 26 octobre 2026 (lots 1, 2, 2b et 3 terminés). Ce fichier est la
 | 2b — Avatars dessinés | **Pas de photo** : avatar dessiné au choix, personnalisable (teint, coiffure, couleur des cheveux, visage, accessoire) en cinq styles génériques (manga, bande dessinée, dessin animé, pixel, minimaliste), dessins originaux, sans personnage ni marque existants ; sans avatar, les initiales | Dessins relus sur écran par l'utilisateur ; choix conservé après rechargement ; initiales si aucun avatar | ✅ (26/10/2026, dans la même conversation que le lot 2) — **à relire par l'utilisateur** |
 | 3 — Réunion | Vue réunion en langage simple par matière (points d'appui, à travailler, compétence, aides), choix de la période, propositions d'objectifs à valider | Synthèse correcte sur des séances réelles ; textes relus par l'utilisateur | ✅ (26/10/2026) — **textes à relire par l'utilisateur** |
 | 4a — PIA : écran, profil, PV 1 | Écran **PIA** par élève et par année scolaire, parties dans l'ordre du modèle officiel : identité (préremplie), **profil** (tableau Aspect / Ressources / Difficultés / Objectifs), **PV 1** (présents, axe, objectifs et critères, ressources, retours) et **aménagements** (une ligne = un aménagement, cases P / O / M). La page Réunion du lot 3 devient l'onglet « Préparer » de cet écran (ses objectifs retenus alimentent le profil et le PV 1). Brouillon enregistré. Propositions d'aménagements tirées des aides. Export Word du PIA entier (modèle `public/modeles/PIA_modele_officiel_2025-09-11.docx`, structure : `docs/PIA_MODELE_STRUCTURE.md` à la racine du dépôt) | PIA complet rempli, fichier comparé au modèle officiel (conversion PDF relue) ; objectifs retenus enregistrés | ✅ 26/10/2026 |
-| 4b — PIA : PV 2 et exports | PV 2 de fin d'année : évaluation des objectifs du PV 1 (atteint / en partie / pas atteint) avec rappel des séances depuis le PV 1, mise à jour des aménagements pour la rentrée ; export de chaque partie à part ; version dé-identifiée ; option PDF | PIA de fin d'année complet ; chaque partie exportable | 🔜 |
+| 4b — PIA : PV 2 et exports | PV 2 de fin d'année : évaluation des objectifs du PV 1 (atteint / en partie / pas atteint) avec rappel des séances depuis le PV 1, mise à jour des aménagements pour la rentrée ; export de chaque partie à part ; version dé-identifiée ; option PDF | PIA de fin d'année complet ; chaque partie exportable | ✅ 26/10/2026 |
 
 ### Agenda
 | Lot | Contenu | Statut |
@@ -41,7 +41,7 @@ Mis à jour le 26 octobre 2026 (lots 1, 2, 2b et 3 terminés). Ce fichier est la
 ### Données et sécurité
 | Lot | Contenu | Statut |
 |---|---|---|
-| 7 — Coffre chiffré | Chiffrement AES‑GCM local (voir `docs/STOCKAGE_LOCAL_V74.md`), mot de passe, verrouillage, export/import de secours | ⏳ |
+| 7 — Coffre chiffré | Chiffrement AES‑GCM local (voir `docs/STOCKAGE_LOCAL_V74.md`), mot de passe, verrouillage, export/import de secours | 🔜 |
 | 8 — OneDrive / Outlook | Synchronisation Microsoft (Entra ID, Graph), conflits, repli manuel ; liaison Outlook (agenda) | ⏳ |
 | 9 — Reprise V75 | Import des données de la V75 vers la V2, vérification élève par élève, plan de bascule et d'information de l'équipe | ⏳ |
 
@@ -63,7 +63,7 @@ Mis à jour le 26 octobre 2026 (lots 1, 2, 2b et 3 terminés). Ce fichier est la
 | F — Finition visuelle (dernier lot) | Habillage de l'application : couleurs, logo, vocabulaire du menu, icônes, espacements, tablette ; relecture écran par écran avec l'utilisateur. Le style « Bleu encre » reste la base (décision validée) sauf demande contraire. | ⏳ (à faire en tout dernier) |
 
 ## Ordre conseillé
-1 → 2 → 2b → 3 → 4a → 4b (le fil séance → Journalier → réunion → PIA est complet) → 7 → 8 → 9 (mise en service) ; les lots 5, 6, R et Q s'intercalent selon les retours de l'équipe. Le lot F (finition visuelle) vient en tout dernier. L'utilisateur peut changer l'ordre à tout moment : on met alors ce fichier à jour.
+1 → 2 → 2b → 3 → 4a → 4b ✅ (le fil séance → Journalier → réunion → PIA est complet) → 7 → 8 → 9 (mise en service) ; les lots 5, 6, R et Q s'intercalent selon les retours de l'équipe. Le lot F (finition visuelle) vient en tout dernier. L'utilisateur peut changer l'ordre à tout moment : on met alors ce fichier à jour.
 
 ## Cadrage du PIA (validé avec l'utilisateur le 26/10/2026)
 - Le PIA = le document entier ; il doit être disponible à la fin de la réunion. Deux réunions par an = deux procès-verbaux (PV 1 en cours d'année, PV 2 en fin d'année qui évalue les objectifs du PV 1).
@@ -76,6 +76,7 @@ Mis à jour le 26 octobre 2026 (lots 1, 2, 2b et 3 terminés). Ce fichier est la
 - Le code PIA de la V75 (`src/v74/pia-*.js`, `v74-docx-pia-pv.js`, tests `tests/pia-*.mjs`) peut servir de référence, pas de copie.
 
 ## Idées en attente (non planifiées)
+- PIA (lot 4b) : PDF fidèle au modèle officiel (aujourd'hui : Word puis « Enregistrer en PDF » ; l'impression du navigateur est une mise en page simple) ; exporter aussi la version dé-identifiée de plusieurs élèves d'un coup (.zip) ; effacer les données de l'exemple fictif d'un seul bouton.
 - PIA (lot 4a) : choisir la matière d'un objectif ajouté à la main au PV 1 ; ajouter des rapprochements pour les autres aspects si l'équipe en demande ; importer un PIA existant (lot 9) ; rappel dans l'agenda de la date du PV 2.
 - Journalier : en-tête du document Word avec la période choisie (aujourd'hui elle n'est que dans le nom du fichier) — à valider avec l'équipe (le modèle papier n'a pas de case prévue).
 - Accueil : rendre les « Dernières séances » cliquables vers le Journalier.

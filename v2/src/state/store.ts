@@ -87,6 +87,14 @@ export function creerMagasin(depot: Depot) {
       maj({ eleves: [...etat.eleves.filter((x) => !liste.some((n) => n.id === x.id)), ...liste] });
     },
 
+    /** Charge d'un coup un jeu de données fictives (élèves, séances, PIA) ; ce qui existe déjà sous le même identifiant est remplacé. */
+    async chargerExemple(exemple: { eleves: Eleve[]; seances: Seance[]; pias: Pia[] }) {
+      await this.ajouterEleves(exemple.eleves);
+      for (const s of exemple.seances) await this.enregistrerSeance(s);
+      for (const p of exemple.pias) this.enregistrerPia(p);
+      await this.viderEnregistrements();
+    },
+
     /** Supprime l'élève avec ses séances, ses activités d'agenda et ses PIA (définitif). Renvoie ce qui a disparu. */
     async supprimerEleve(id: string): Promise<EffetSuppression> {
       const effet = effetSuppression(id, etat.seances, etat.activites, etat.pias);
