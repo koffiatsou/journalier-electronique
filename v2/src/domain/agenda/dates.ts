@@ -30,3 +30,32 @@ export function titreSemaine(iso: string): string {
   const fin = `${b.getDate()} ${MOIS[b.getMonth()]} ${b.getFullYear()}`;
   return a.getMonth() === b.getMonth() ? `${a.getDate()} – ${fin}` : `${a.getDate()} ${MOIS[a.getMonth()]} – ${fin}`;
 }
+
+/* ───────── mois ───────── */
+export const debutDuMois = (d: string): string => `${d.slice(0, 7)}-01`;
+export const finDuMois = (d: string): string => { const x = depuisISO(d); return versISO(new Date(x.getFullYear(), x.getMonth() + 1, 0)); };
+/** Même jour du mois dans n mois (le dernier jour du mois si le jour n'existe pas : 31 janvier + 1 mois = 28 février). */
+export function ajouterMois(d: string, n: number): string {
+  const x = depuisISO(d);
+  const cible = new Date(x.getFullYear(), x.getMonth() + n, 1);
+  const dernier = new Date(cible.getFullYear(), cible.getMonth() + 1, 0).getDate();
+  return versISO(new Date(cible.getFullYear(), cible.getMonth(), Math.min(x.getDate(), dernier)));
+}
+export const titreMois = (d: string): string => `${MOIS[depuisISO(d).getMonth()]} ${depuisISO(d).getFullYear()}`;
+export const memeMois = (a: string, b: string): boolean => a.slice(0, 7) === b.slice(0, 7);
+
+/**
+ * Les semaines (lundi → vendredi) à afficher pour le mois de cette date.
+ * Les jours des mois voisins qui complètent la première et la dernière semaine sont inclus (à griser) ;
+ * une semaine qui ne contient que des week-ends du mois n'est pas affichée.
+ */
+export function semainesDuMois(d: string): string[][] {
+  const premier = debutDuMois(d);
+  const dernier = finDuMois(d);
+  const depart = indexJour(premier) > 4 ? lundiDe(ajouterJours(premier, 7)) : lundiDe(premier);
+  const semaines: string[][] = [];
+  for (let lundi = depart; lundi <= dernier && indexJour(lundi) === 0; lundi = ajouterJours(lundi, 7)) {
+    semaines.push(Array.from({ length: 5 }, (_, i) => ajouterJours(lundi, i)));
+  }
+  return semaines;
+}

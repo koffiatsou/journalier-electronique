@@ -1,6 +1,6 @@
 # Plan de travail de la V2 (un lot = une conversation)
 
-Mis à jour le 26 octobre 2026 (lots 1, 2, 2b et 3 terminés). Ce fichier est la **liste des lots**. Pour démarrer : ouvrir une nouvelle conversation, écrire « Lot N » (ou « le lot suivant ») ; Claude lit `AGENTS.md`, ce plan et `docs/etat-des-lieux.md`, puis travaille uniquement sur ce lot.
+Mis à jour le 26 octobre 2026 (lots 1, 2, 2b, 3, 4a, 4b et 5 terminés). Ce fichier est la **liste des lots**. Pour démarrer : ouvrir une nouvelle conversation, écrire « Lot N » (ou « le lot suivant ») ; Claude lit `AGENTS.md`, ce plan et `docs/etat-des-lieux.md`, puis travaille uniquement sur ce lot.
 
 ## Principe
 - Une conversation = un lot. Pas de dérive vers un autre lot : toute idée en plus va dans « Idées en attente » ci‑dessous.
@@ -35,8 +35,8 @@ Mis à jour le 26 octobre 2026 (lots 1, 2, 2b et 3 terminés). Ce fichier est la
 ### Agenda
 | Lot | Contenu | Statut |
 |---|---|---|
-| 5 — Agenda : calendrier | Vue mois, jours fériés et vacances scolaires FWB, horaires des périodes réglables | 🔜 |
-| 6 — Agenda : confort | « Semaine type », glisser pour créer sur plusieurs périodes, impression | ⏳ |
+| 5 — Agenda : calendrier | Vue mois, jours fériés et vacances scolaires FWB, horaires des périodes réglables | ✅ 26/10/2026 — **dates de vacances à relire par l'utilisateur** |
+| 6 — Agenda : confort | « Semaine type », glisser pour créer sur plusieurs périodes, impression | 🔜 |
 
 ### Données et sécurité
 | Lot | Contenu | Statut |
@@ -63,7 +63,7 @@ Mis à jour le 26 octobre 2026 (lots 1, 2, 2b et 3 terminés). Ce fichier est la
 | F — Finition visuelle (dernier lot) | Habillage de l'application : couleurs, logo, vocabulaire du menu, icônes, espacements, tablette ; relecture écran par écran avec l'utilisateur. Le style « Bleu encre » reste la base (décision validée) sauf demande contraire. | ⏳ (à faire en tout dernier) |
 
 ## Ordre conseillé
-1 → 2 → 2b → 3 → 4a → 4b ✅ (le fil séance → Journalier → réunion → PIA est complet) → 5 → 6 (agenda finalisé) → 8 → 7 → 9 (mise en service ; jamais avant 8 et 7) ; les lots 5, 6, R et Q s'intercalent selon les retours de l'équipe. Le lot F (finition visuelle) vient en tout dernier. L'utilisateur peut changer l'ordre à tout moment : on met alors ce fichier à jour.
+1 → 2 → 2b → 3 → 4a → 4b → 5 ✅ (le fil séance → Journalier → réunion → PIA est complet, l'agenda a son calendrier) → 6 (agenda finalisé) → 8 → 7 → 9 (mise en service ; jamais avant 8 et 7) ; les lots 5, 6, R et Q s'intercalent selon les retours de l'équipe. Le lot F (finition visuelle) vient en tout dernier. L'utilisateur peut changer l'ordre à tout moment : on met alors ce fichier à jour.
 
 ## Cadrage du PIA (validé avec l'utilisateur le 26/10/2026)
 - Le PIA = le document entier ; il doit être disponible à la fin de la réunion. Deux réunions par an = deux procès-verbaux (PV 1 en cours d'année, PV 2 en fin d'année qui évalue les objectifs du PV 1).
@@ -76,6 +76,7 @@ Mis à jour le 26 octobre 2026 (lots 1, 2, 2b et 3 terminés). Ce fichier est la
 - Le code PIA de la V75 (`src/v74/pia-*.js`, `v74-docx-pia-pv.js`, tests `tests/pia-*.mjs`) peut servir de référence, pas de copie.
 
 ## Idées en attente (non planifiées)
+- Agenda (lot 5) : jours de congé propres à l'école (journées pédagogiques, congés de l'établissement), à saisir par l'agent ; revérifier les vacances de 2027-2028 et 2028-2029 (une seule source) et ajouter chaque année la suivante dans `ANNEES_SCOLAIRES_FWB` ; en vue Mois, créer une activité en touchant un jour vide et déplacer par glisser-déposer entre les jours ; prévenir (sans bloquer) quand on place une séance un jour de congé ; afficher les fériés des week-ends (1er mai 2027 un samedi) si l'équipe le demande ; mémoriser la vue choisie (semaine / jour / mois).
 - PIA (lot 4b) : PDF fidèle au modèle officiel (aujourd'hui : Word puis « Enregistrer en PDF » ; l'impression du navigateur est une mise en page simple) ; exporter aussi la version dé-identifiée de plusieurs élèves d'un coup (.zip) ; effacer les données de l'exemple fictif d'un seul bouton.
 - PIA (lot 4a) : choisir la matière d'un objectif ajouté à la main au PV 1 ; ajouter des rapprochements pour les autres aspects si l'équipe en demande ; importer un PIA existant (lot 9) ; rappel dans l'agenda de la date du PV 2.
 - Journalier : en-tête du document Word avec la période choisie (aujourd'hui elle n'est que dans le nom du fichier) — à valider avec l'équipe (le modèle papier n'a pas de case prévue).

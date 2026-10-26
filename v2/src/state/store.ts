@@ -2,6 +2,9 @@ import { useSyncExternalStore } from 'react';
 import type { Depot } from '../data/repository.ts';
 import type { Activite } from '../domain/agenda/types.ts';
 import type { Changement } from '../domain/agenda/planning.ts';
+import { horairesParDefaut, normaliserHoraires, verifierHoraires } from '../domain/agenda/horaires.ts';
+import type { ErreurHoraire } from '../domain/agenda/horaires.ts';
+import type { Periode } from '../domain/agenda/types.ts';
 import { effetSuppression, normaliserEleve } from '../domain/eleves/index.ts';
 import type { EffetSuppression } from '../domain/eleves/index.ts';
 import { normaliserPia } from '../domain/pia/index.ts';
@@ -27,14 +30,19 @@ export interface Etat {
   seances: Seance[];
   activites: Activite[];
   pias: Pia[];
+  /** Horaires des périodes de l'agenda (réglables ; les noms 1e H… ne changent pas). */
+  horaires: Periode[];
   statutPia: StatutPia;
   /** Séance à ouvrir préremplie (depuis l'agenda) ; consommée une fois. */
   preparation: Partial<Seance> | null;
 }
 
 const initial: Etat = {
-  pret: false, erreur: null, eleves: [], seances: [], activites: [], pias: [], statutPia: { etat: 'repos', le: '', message: '' }, preparation: null
+  pret: false, erreur: null, eleves: [], seances: [], activites: [], pias: [], horaires: horairesParDefaut(), statutPia: { etat: 'repos', le: '', message: '' }, preparation: null
 };
+
+/** Nom du réglage « horaires des périodes » dans la base. */
+export const REGLAGE_HORAIRES = 'agenda-horaires';
 
 /** Petit magasin d'état : une source de vérité en mémoire, écrite dans le dépôt à chaque action. */
 export function creerMagasin(depot: Depot) {
@@ -71,10 +79,11 @@ export function creerMagasin(depot: Depot) {
 
     async charger() {
       try {
-        const [eleves, seances, activites, pias] = await Promise.all([depot.chargerEleves(), depot.chargerSeances(), depot.chargerActivites(), depot.chargerPias()]);
+        const [eleves, seances, activites, pias, reglages] = await Promise.all([depot.chargerEleves(), depot.chargerSeances(), depot.chargerActivites(), depot.chargerPias(), depot.chargerReglages()]);
         maj({
           pret: true, erreur: null, eleves: eleves.map(normaliserEleve), seances, activites,
-          pias: pias.map(normaliserPia).filter((p): p is Pia => p !== null)
+          pias: pias.map(normaliserPia).filter((p): p is Pia => p !== null),
+          horaires: normaliserHoraires(reglages.find((r) => r.id === REGLAGE_HORAIRES)?.valeur)
         });
       } catch (e) {
         maj({ pret: true, erreur: e instanceof Error ? e.message : 'Chargement impossible' });
@@ -142,6 +151,16 @@ export function creerMagasin(depot: Depot) {
       for (const id of c.supprimer) await depot.supprimerActivite(id);
       const ids = new Set([...c.enregistrer.map((a) => a.id), ...c.supprimer]);
       maj({ activites: [...etat.activites.filter((a) => !ids.has(a.id)), ...c.enregistrer] });
+    },
+
+    /** Enregistre de nouveaux horaires. S'ils sont incohérents, rien n'est écrit et les erreurs sont renvoyées. */
+    async changerHoraires(periodes: readonly Periode[]): Promise<ErreurHoraire[]> {
+      const erreurs = verifierHoraires(periodes);
+      if (erreurs.length) return erreurs;
+      const horaires = normaliserHoraires(periodes);
+      await depot.enregistrerReglage({ id: REGLAGE_HORAIRES, valeur: horaires });
+      maj({ horaires });
+      return [];
     },
 
     async supprimerSeance(id: string) {

@@ -1,10 +1,10 @@
 import type { Activite } from '../domain/agenda/types.ts';
 import type { Pia } from '../domain/pia/types.ts';
 import type { Eleve, Seance } from '../domain/types.ts';
-import type { Depot } from './repository.ts';
+import type { Depot, Reglage } from './repository.ts';
 
 const NOM_BASE = 'journalier-v2';
-const VERSION = 3;
+const VERSION = 4;
 
 function ouvrir(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -15,6 +15,7 @@ function ouvrir(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains('seances')) db.createObjectStore('seances', { keyPath: 'id' });
       if (!db.objectStoreNames.contains('activites')) db.createObjectStore('activites', { keyPath: 'id' });
       if (!db.objectStoreNames.contains('pia')) db.createObjectStore('pia', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('reglages')) db.createObjectStore('reglages', { keyPath: 'id' });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error ?? new Error('Ouverture de la base impossible'));
@@ -68,6 +69,8 @@ export async function creerDepotIndexedDb(): Promise<Depot> {
     enregistrerActivite: async (a) => { await requete(db, 'activites', 'readwrite', (s) => s.put(a)); },
     supprimerActivite: async (id) => { await requete(db, 'activites', 'readwrite', (s) => s.delete(id)); },
     chargerPias: () => requete<Pia[]>(db, 'pia', 'readonly', (s) => s.getAll()),
-    enregistrerPia: async (x) => { await requete(db, 'pia', 'readwrite', (s) => s.put(x)); }
+    enregistrerPia: async (x) => { await requete(db, 'pia', 'readwrite', (s) => s.put(x)); },
+    chargerReglages: () => requete<Reglage[]>(db, 'reglages', 'readonly', (s) => s.getAll()),
+    enregistrerReglage: async (x) => { await requete(db, 'reglages', 'readwrite', (s) => s.put(x)); }
   };
 }

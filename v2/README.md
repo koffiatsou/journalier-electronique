@@ -23,6 +23,7 @@ LANG=C.UTF-8 node tools/navigateur/eleves.mjs       # idem pour l'écran Élève
 LANG=C.UTF-8 node tools/navigateur/avatars.mjs      # idem pour les avatars dessinés
 LANG=C.UTF-8 node tools/navigateur/pia.mjs          # idem pour l'écran PIA (onglets, enregistrement, export Word)
 LANG=C.UTF-8 node tools/navigateur/pia-4b.mjs       # idem pour le PV 2, l'export par partie, dé-identifié, impression
+LANG=C.UTF-8 node tools/navigateur/agenda-5.mjs     # idem pour l'agenda : mois, jours fériés, vacances scolaires, horaires réglables
 ```
 
 **Sans accès au registre npm** (environnement de travail de Claude) : les paquets aux bonnes versions (esbuild, zod, React, TypeScript, tsx) sont souvent déjà installés sur la machine ; on les relie dans `v2/node_modules` (liens symboliques, dossier ignoré par Git) et on ajoute `@types/react`, `@types/react-dom` (DefinitelyTyped) et `csstype` récupérés depuis GitHub.
@@ -38,7 +39,7 @@ Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des l
 | Référentiel de compétences (pistes) | partiel (lots R1–R3) |
 | Élèves (cartes, recherche, fiche, archivage, suppression, passage d'année, plusieurs langues) | disponible (lots 2 et 2b, avatars dessinés compris) |
 | Écran Journalier (période, modifier/supprimer, export Word élève ou tous) | disponible (lot 1) |
-| Agenda (semaine/jour, couleurs, glisser‑déplacer) | disponible (lots 5–6 : mois, vacances, semaine type) |
+| Agenda (semaine / jour / mois, couleurs, glisser‑déplacer, jours fériés et vacances scolaires FWB, horaires des périodes réglables) | disponible (lot 5) ; lot 6 : semaine type, création sur plusieurs périodes, impression |
 | Réunion (résumé par matière, objectifs à valider, texte à copier) | disponible (lot 3), maintenant onglet « Préparer » du PIA |
 | PIA (profil, procès-verbaux 1 et 2, aménagements, export Word entier ou par partie ; onglet Préparer = ex-Réunion) | disponible (lots 4a et 4b : PV 2, export par partie, version dé-identifiée, impression / PDF) |
 | Coffre chiffré, OneDrive/Outlook, reprise V75 | lots 7–9 |

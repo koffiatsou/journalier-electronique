@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import {
-  NB_COULEURS, NOMS_COULEURS, PERIODES_AGENDA, TYPES_LIBELLES, creer, editer, jourComplet, libelle
+  NB_COULEURS, NOMS_COULEURS, TYPES_LIBELLES, creer, editer, jourComplet, libelle
 } from '../../domain/agenda/index.ts';
-import type { Activite, Changement, Edition, Occurrence, Portee, TypeActivite } from '../../domain/agenda/index.ts';
+import type { Activite, Changement, Edition, Occurrence, Periode, Portee, TypeActivite } from '../../domain/agenda/index.ts';
 import { elevesProposes, languesDe } from '../../domain/eleves/index.ts';
 import type { Eleve } from '../../domain/types.ts';
 import { Button } from '../../ui/Button.tsx';
@@ -12,6 +12,7 @@ export interface Brouillon { date: string; debut: number; fin: number }
 
 interface Props {
   occurrence: Occurrence | null;
+  periodes: readonly Periode[];
   nouveau: Brouillon | null;
   eleves: Eleve[];
   onChanger: (c: Changement) => void;
@@ -24,10 +25,9 @@ interface Props {
 }
 
 const TYPES = Object.keys(TYPES_LIBELLES) as TypeActivite[];
-const OPTIONS_PERIODES = PERIODES_AGENDA.map((p, i) => ({ i, texte: `${p.label} (${p.debut})` }));
 
 /** Panneau d'une activité : création et modification, sans fenêtre modale. */
-export function Panneau({ occurrence, nouveau, eleves, onChanger, onFermer, onEncoder, onDupliquer, onAnnuler, onRealiser, onSupprimer }: Props) {
+export function Panneau({ occurrence, periodes, nouveau, eleves, onChanger, onFermer, onEncoder, onDupliquer, onAnnuler, onRealiser, onSupprimer }: Props) {
   const a: Activite | null = occurrence?.activite ?? null;
   const base = useMemo<Activite>(() => a ?? creer({ type: 'eleve', date: nouveau?.date ?? '', debut: nouveau?.debut ?? 0, fin: nouveau?.fin ?? 0 }), [a, nouveau]);
   const [type, setType] = useState<TypeActivite>(base.type);
@@ -44,6 +44,7 @@ export function Panneau({ occurrence, nouveau, eleves, onChanger, onFermer, onEn
   const [jusquau, setJusquau] = useState(base.jusquau ?? '');
   const [couleur, setCouleur] = useState<number | undefined>(base.couleur);
   const [portee, setPortee] = useState<Portee>('occurrence');
+  const OPTIONS_PERIODES = useMemo(() => periodes.map((p, i) => ({ i, texte: `${p.label} (${p.debut} – ${p.fin})` })), [periodes]);
   const serie = a?.repetition === 'hebdomadaire';
   const eleve = eleves.find((e) => e.id === eleveId);
   const matieres = eleve ? [...eleve.matieres, ...languesDe(eleve).filter((l) => !eleve.matieres.includes(l))] : [];

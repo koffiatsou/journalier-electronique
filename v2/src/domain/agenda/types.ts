@@ -16,7 +16,7 @@ export interface Periode {
   fin: string;
 }
 
-/** Horaires par défaut ; les pauses sont l'espace entre deux périodes. */
+/** Horaires habituels ; l'utilisateur peut les régler (voir `horaires.ts`). Les pauses sont l'espace entre deux périodes. */
 export const PERIODES_AGENDA: readonly Periode[] = [
   { label: '1e H', debut: '08:00', fin: '08:50' },
   { label: '2e H', debut: '08:50', fin: '09:40' },

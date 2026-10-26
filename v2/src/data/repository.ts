@@ -2,6 +2,9 @@ import type { Activite } from '../domain/agenda/types.ts';
 import type { Pia } from '../domain/pia/types.ts';
 import type { Eleve, Seance } from '../domain/types.ts';
 
+/** Un réglage de l'utilisateur (horaires des périodes…), rangé sous un nom. Le magasin d'état relit et vérifie la valeur. */
+export interface Reglage { id: string; valeur: unknown }
+
 /** Contrat de stockage : l'application ne connaît que cette interface (IndexedDB, mémoire pour les tests, plus tard coffre chiffré). */
 export interface Depot {
   chargerEleves(): Promise<Eleve[]>;
@@ -17,4 +20,6 @@ export interface Depot {
   /** Les PIA sont relus avec `normaliserPia` par le magasin d'état : le dépôt ne fait que les ranger. */
   chargerPias(): Promise<Pia[]>;
   enregistrerPia(pia: Pia): Promise<void>;
+  chargerReglages(): Promise<Reglage[]>;
+  enregistrerReglage(reglage: Reglage): Promise<void>;
 }

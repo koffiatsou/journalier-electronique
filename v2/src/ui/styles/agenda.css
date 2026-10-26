@@ -89,3 +89,65 @@
 }
 .pastille-eleve { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--c-bord); margin-right: 6px; }
 .lecteur-seul { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ───────── Jours fériés et vacances (semaine, jour, mois) ───────── */
+.marque-jour { display: block; font-size: .6875rem; line-height: 1.25; font-weight: 500; color: var(--ink-3); margin-top: 2px; pointer-events: none; }
+.grille-entete .marque-jour { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grille-entete .jour-ferie, .mois-case.jour-ferie { background: color-mix(in srgb, var(--line-strong) 26%, var(--surface-2)); }
+.grille-entete .jour-vacances, .mois-case.jour-vacances { background: repeating-linear-gradient(135deg, transparent 0 8px, color-mix(in srgb, var(--line-strong) 40%, transparent) 8px 9px), var(--surface-2); }
+.colonne.jour-ferie { background: color-mix(in srgb, var(--line-strong) 14%, transparent); }
+.colonne.jour-vacances { background: repeating-linear-gradient(135deg, transparent 0 10px, color-mix(in srgb, var(--line-strong) 24%, transparent) 10px 11px); }
+.agenda-note { margin: 0; padding: var(--sp-2) var(--sp-3); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-s); font-size: .875rem; color: var(--ink-2); }
+
+/* ───────── Vue Mois ───────── */
+.mois { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--shadow-1); overflow: hidden; }
+.mois-entete, .mois-semaine { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.mois-entete { background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.mois-entete > div { padding: 8px 6px; text-align: center; font-size: .875rem; color: var(--ink-2); border-left: 1px solid var(--line); }
+.mois-entete > div:first-child { border-left: 0; }
+.mois-semaine + .mois-semaine { border-top: 1px solid var(--line); }
+.mois-case { position: relative; min-height: 112px; padding: 4px 6px 6px; border-left: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mois-case:first-child { border-left: 0; }
+.mois-case:hover { background-color: color-mix(in srgb, var(--peda) 5%, transparent); }
+.mois-case.hors-mois .mois-jour, .mois-case.hors-mois .marque-jour { color: var(--ink-3); }
+.mois-case.hors-mois .mois-evts { opacity: .6; }
+.mois-jour { align-self: flex-start; display: inline-flex; align-items: baseline; gap: 4px; border: 0; background: transparent; padding: 2px 8px; margin-left: -4px; border-radius: 999px; color: var(--ink); min-height: 28px; }
+.mois-jour::after { content: ''; position: absolute; inset: 0; border-radius: inherit; }
+.mois-jour:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.mois-jour strong { font-size: .9375rem; }
+.mois-jour small { color: var(--ink-3); font-size: .75rem; }
+.mois-case.aujourdhui .mois-jour { background: var(--peda); color: var(--surface); }
+.mois-case.aujourdhui .mois-jour small { color: inherit; }
+.mois-evts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; min-width: 0; pointer-events: none; }
+.mois-evt { pointer-events: auto; position: relative; z-index: 1; display: block; width: 100%; text-align: left; border: 0; border-left: 3px solid var(--c-bord); border-radius: 5px; background: var(--c-fond); color: var(--c-texte); padding: 2px 6px; font-size: .75rem; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.mois-evt:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.mois-evt[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--c-bord); }
+.mois-evt.annule { opacity: .55; text-decoration: line-through; }
+.mois-plus { position: relative; z-index: 1; align-self: flex-start; border: 0; background: transparent; color: var(--ink-2); font-size: .75rem; padding: 2px 4px; text-decoration: underline; }
+.mois-pastille { display: block; width: 10px; height: 10px; border-radius: 50%; background: var(--c-bord); }
+.mois-pastille.annule { opacity: .4; }
+.mois-reste { font-size: .6875rem; line-height: 10px; color: var(--ink-2); font-weight: 600; }
+@media (max-width: 759px) {
+  .mois-case { min-height: 76px; padding: 2px 3px 4px; }
+  .mois-entete > div { padding: 6px 2px; font-size: .75rem; }
+  .mois-evts { flex-direction: row; flex-wrap: wrap; gap: 3px; padding-left: 3px; }
+  .mois-case .marque-jour { display: none; }
+  .agenda-barre .bascule button { padding: 8px 10px; }
+}
+
+/* ───────── Fenêtre des horaires ───────── */
+.horaires-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.horaires-ligne { display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--sp-2); align-items: center; }
+.horaires-ligne b { color: var(--ink-2); }
+.horaires-pause { display: block; font-size: .75rem; color: var(--ink-3); margin: 6px 0 2px calc(3rem + var(--sp-2)); }
+.horaires-ligne .input[aria-invalid='true'] { border-color: var(--danger); }
+.horaires-erreurs { margin: 0; padding: var(--sp-2) var(--sp-3) var(--sp-2) 28px; background: var(--danger-soft); border-left: 4px solid var(--danger); border-radius: var(--r-s); color: var(--ink); font-size: .875rem; }
+.horaires-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
+.horaires-actions .espace { flex: 1; }
+@media (max-width: 759px) {
+  .horaires-ligne { grid-template-columns: 2.6rem minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; }
+  .horaires-pause { margin-left: calc(2.6rem + 6px); }
+  .horaires-ligne .input { padding-inline: 8px; }
+  /* Sur téléphone, on touche le champ lui-même pour choisir l'heure : l'icône d'horloge ne sert qu'à prendre de la place. */
+  .horaires-ligne input[type='time']::-webkit-calendar-picker-indicator { display: none; }
+}
