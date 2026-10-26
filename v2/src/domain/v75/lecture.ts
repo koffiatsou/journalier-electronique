@@ -78,6 +78,15 @@ export async function trouverComptes(st: StockageV75): Promise<CompteV75[]> {
   return comptes;
 }
 
+/** Range un PIA lu (coffre ou OneDrive) dans la forme attendue. Trois formes ont existé dans la V75 (voir `journalierLoadGranularState`). */
+export function piaBrutV75(valeur: unknown): PiaBrutV75 | null {
+  const v = objet(valeur);
+  if (v.record || v.imported) return { record: v.record ?? null, imported: v.imported ?? null };
+  if (v.type === 'PIA_ANNUEL') return { record: v, imported: v.sourceContinuity ?? null };
+  if (v.sourceContinuity) return { record: null, imported: v.sourceContinuity };
+  return Object.keys(v).length ? { record: v, imported: null } : null;
+}
+
 export interface LectureV75 { etat: EtatV75; illisibles: Ecart[] }
 
 /** Lit tout le coffre d'un compte. Un enregistrement illisible est signalé, jamais ignoré en silence. */
@@ -106,12 +115,8 @@ export async function lireCoffreV75(st: StockageV75, compte: string): Promise<Le
 
   const pias: Record<string, PiaBrutV75> = {};
   for (const { id, valeur } of piaLues) {
-    const v = objet(valeur);
-    // Trois formes ont existé dans la V75 (voir `journalierLoadGranularState`).
-    if (v.record || v.imported) pias[id] = { record: v.record ?? null, imported: v.imported ?? null };
-    else if (v.type === 'PIA_ANNUEL') pias[id] = { record: v, imported: v.sourceContinuity ?? null };
-    else if (v.sourceContinuity) pias[id] = { record: null, imported: v.sourceContinuity };
-    else if (Object.keys(v).length) pias[id] = { record: v, imported: null };
+    const p = piaBrutV75(valeur);
+    if (p) pias[id] = p;
   }
   return { etat: { eleves: eleves.map((x) => x.valeur), seances: seances.map((x) => x.valeur), agenda: agendaV75, pias }, illisibles };
 }

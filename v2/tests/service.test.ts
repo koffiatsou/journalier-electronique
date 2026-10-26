@@ -6,9 +6,11 @@ import { creerMagasin } from '../src/state/store.ts';
 import { Connexion } from '../src/synchro/connexion.ts';
 import type { MessageRetour, Stockage } from '../src/synchro/connexion.ts';
 import { NuageSimule } from '../src/synchro/simule.ts';
+import { creerLecteurV75Graph } from '../src/synchro/graph.ts';
 import { creerSynchro, resume } from '../src/synchro/service.ts';
 import type { ResultatSynchro } from '../src/synchro/synchroniser.ts';
 import { FauxMicrosoft } from './fauxMicrosoft.ts';
+import { deposerEtatV75, etatV75 } from './fabrique-v75.ts';
 
 const JOUR = '2026-10-26';
 const memoire = (): Stockage => { const m = new Map<string, string>(); return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => { m.set(k, v); }, removeItem: (k) => { m.delete(k); } }; };
@@ -24,9 +26,9 @@ async function monter(nuageMicrosoft?: () => NuageSimule, faux = new FauxMicroso
     ecouterRetour: (r) => { auditeurs.push(r); return () => { auditeurs = auditeurs.filter((x) => x !== r); }; },
     ouvrirFenetre: (adresse) => { setTimeout(() => { const h = new URL(faux.autoriser(adresse)).hash; auditeurs.forEach((a) => a({ type: 'retour', hash: h, search: '' })); }, 0); return { fermer: () => undefined }; }
   });
-  const synchro = creerSynchro({ magasin, depot, connexion, demo, preferences: memoire(), aujourdhui: () => JOUR, maintenant: () => `${JOUR}T10:00:00.000Z`, delaiAutoMs: 20, nuageMicrosoft, calendrierMicrosoft: nuageMicrosoft });
+  const synchro = creerSynchro({ magasin, depot, connexion, demo, preferences: memoire(), aujourdhui: () => JOUR, maintenant: () => `${JOUR}T10:00:00.000Z`, delaiAutoMs: 20, nuageMicrosoft, calendrierMicrosoft: nuageMicrosoft, lecteurV75: () => creerLecteurV75Graph({ jeton: connexion, fetchFn: (...a) => faux.fetch(...a) }) });
   await synchro.demarrer();
-  return { magasin, synchro, demo, depot };
+  return { magasin, synchro, demo, depot, faux };
 }
 
 describe('résumé en français simple', () => {
@@ -128,5 +130,63 @@ describe('service de synchronisation, compte Microsoft', () => {
     assert.equal(reel.resume().fichiers, 1, 'seul l’élève réel est parti');
     synchro.deconnecter();
     assert.equal(synchro.lire().compte, null);
+  });
+});
+
+describe('service : reprise de la V75 depuis OneDrive et « repartir de OneDrive »', () => {
+  const eleveReel = { id: 'e-vrai', nom: 'Réel', prenom: 'Léo', classe: '2A', ecole: 'X', titulaire: '', dateNaissance: '', matieres: [] };
+
+  it('lire la V75 dans OneDrive : impossible sans compte Microsoft, lecture seule avec', async () => {
+    const reel = new NuageSimule(null, () => JOUR);
+    const { synchro, faux } = await monter(() => reel);
+    deposerEtatV75(faux, etatV75());
+    assert.equal(await synchro.lireV75DansOneDrive(), null, 'pas connecté');
+    await synchro.connecter();
+    const lu = await synchro.lireV75DansOneDrive();
+    assert.equal(lu?.trouve, true);
+    assert.equal(lu?.etat.eleves.length, 2);
+    assert.equal(synchro.lire().enCours, null);
+    assert.ok(faux.journal.filter((l) => l.includes('/Journalier')).every((l) => l.startsWith('GET ')));
+  });
+
+  it('lire la V75 dans OneDrive : une session expirée donne un message clair', async () => {
+    const reel = new NuageSimule(null, () => JOUR);
+    const { synchro, faux } = await monter(() => reel);
+    deposerEtatV75(faux, etatV75());
+    await synchro.connecter();
+    faux.pannes = [401];
+    assert.equal(await synchro.lireV75DansOneDrive(), null);
+    assert.equal(synchro.lire().message?.genre, 'erreur');
+    assert.match(synchro.lire().message?.texte ?? '', /expiré|reconnect/i);
+  });
+
+  it('repartir de OneDrive : aperçu sans effet, puis remplacement confirmé', async () => {
+    const reel = new NuageSimule(null, () => JOUR);
+    const A = await monter(() => reel);
+    await A.magasin.ajouterEleves([eleveReel]);
+    await A.synchro.connecter();
+    assert.equal(reel.resume().fichiers, 1);
+    const B = await monter(() => reel);
+    await B.magasin.ajouterEleves([{ ...eleveReel, id: 'e-vieux', nom: 'Vieux' }]);
+    await B.synchro.connecter();
+    // B a tout reçu et envoyé : on simule des données dépassées en retirant le suivi et en gardant un élève de trop
+    await B.magasin.ajouterEleves([{ ...eleveReel, id: 'e-en-trop', nom: 'EnTrop' }]);
+    const a = await B.synchro.apercuRepartir();
+    assert.equal(a?.nuage.eleves, 2);
+    assert.equal(a?.ici.eleves, 3);
+    assert.equal(B.magasin.lire().eleves.length, 3, 'l’aperçu ne change rien');
+    const r = await B.synchro.repartirDeOneDrive();
+    assert.equal(r?.retires, 1);
+    assert.deepEqual(B.magasin.lire().eleves.map((e) => e.id).sort(), ['e-vieux', 'e-vrai']);
+    assert.match(B.synchro.lire().message?.texte ?? '', /repart de OneDrive/);
+    assert.equal(B.synchro.lire().enCours, null);
+    await B.synchro.synchroniser();
+    assert.equal(B.synchro.lire().derniere?.envoyes, 0);
+  });
+
+  it('repartir de OneDrive : refusé tant qu’on n’est pas connecté', async () => {
+    const { synchro } = await monter();
+    assert.equal(await synchro.apercuRepartir(), null);
+    assert.equal(await synchro.repartirDeOneDrive(), null);
   });
 });

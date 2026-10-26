@@ -11,3 +11,5 @@
 .reprise-tableau th, .reprise-tableau td { text-align: left; padding: .3rem .6rem; border-bottom: 1px solid var(--bordure, #e4e7ec); }
 .reprise-tableau td.num { font-variant-numeric: tabular-nums; }
 .reprise-pia { white-space: pre-wrap; background: var(--fond-doux, #f5f6f8); border-radius: .4rem; padding: .75rem; max-height: 22rem; overflow: auto; font: inherit; }
+.reprise-source { border: 1px solid var(--bordure, #d0d5dd); border-radius: .5rem; padding: .6rem 1rem; margin: .75rem 0; }
+.reprise-source h3 { margin: 0 0 .3rem; font-size: 1rem; }

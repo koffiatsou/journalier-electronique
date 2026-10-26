@@ -1,6 +1,7 @@
 import { descriptionEvenement, repereDans } from '../domain/synchro/outlook.ts';
 import type { EvenementExistant, EvenementSouhaite } from '../domain/synchro/outlook.ts';
 import { ajouterJours } from '../domain/agenda/dates.ts';
+import type { ElementOneDrive, LecteurOneDriveV75 } from '../domain/v75/onedrive.ts';
 import { ErreurAcces, ErreurVersion } from './nuage.ts';
 import type { CalendrierNuage, FichierDistant, Nuage } from './nuage.ts';
 
@@ -79,7 +80,19 @@ function creerClient(o: OptionsGraph) {
     return sortie;
   }
 
-  return { requete, pages, fetchBrut: f };
+  /** Texte d'un fichier OneDrive, par son identifiant (adresse pré-signée : on n'y joint JAMAIS le jeton de connexion). */
+  async function telecharger(id: string): Promise<string> {
+    const meta = (await (await requete('fichiers', `${BASE}/me/drive/items/${encodeURIComponent(id)}?select=id,@microsoft.graph.downloadUrl`)).json()) as Record<string, unknown>;
+    const adresse = meta['@microsoft.graph.downloadUrl'];
+    if (typeof adresse !== 'string' || !adresseTelechargementSure(adresse)) throw new ErreurAcces('inconnue', 'Microsoft n’a pas donné d’adresse de téléchargement sûre.');
+    let reponse: Response;
+    try { reponse = await f(adresse, { method: 'GET', cache: 'no-store', credentials: 'omit' }); } catch { throw new ErreurAcces('reseau', 'Pas de connexion à Microsoft. Vérifiez le réseau, puis réessayez.'); }
+    if (reponse.status === 404) throw new Introuvable();
+    if (!reponse.ok) throw new ErreurAcces('inconnue', `Téléchargement impossible (${reponse.status}).`);
+    return await reponse.text();
+  }
+
+  return { requete, pages, telecharger };
 }
 
 interface ElementDrive { id: string; name: string; eTag?: string; file?: object }
@@ -101,15 +114,7 @@ export function creerNuageGraph(o: OptionsGraph): Nuage {
 
     async lire(fichier) {
       try {
-        const meta = (await (await c.requete('fichiers', `${BASE}/me/drive/items/${encodeURIComponent(fichier.id)}?select=id,@microsoft.graph.downloadUrl`)).json()) as Record<string, unknown>;
-        const adresse = meta['@microsoft.graph.downloadUrl'];
-        if (typeof adresse !== 'string' || !adresseTelechargementSure(adresse)) throw new ErreurAcces('inconnue', 'Microsoft n’a pas donné d’adresse de téléchargement sûre.');
-        // Adresse pré-signée : on n'y joint JAMAIS le jeton de connexion.
-        let reponse: Response;
-        try { reponse = await c.fetchBrut(adresse, { method: 'GET', cache: 'no-store', credentials: 'omit' }); } catch { throw new ErreurAcces('reseau', 'Pas de connexion à Microsoft. Vérifiez le réseau, puis réessayez.'); }
-        if (reponse.status === 404) throw new Introuvable();
-        if (!reponse.ok) throw new ErreurAcces('inconnue', `Téléchargement impossible (${reponse.status}).`);
-        return await reponse.text();
+        return await c.telecharger(fichier.id);
       } catch (e) {
         if (e instanceof Introuvable) throw new ErreurVersion('Le fichier n’existe plus.');
         throw e;
@@ -136,6 +141,28 @@ export function creerNuageGraph(o: OptionsGraph): Nuage {
         if (!(e instanceof Introuvable)) throw e; // déjà supprimé : tant mieux
       }
     }
+  };
+}
+
+/**
+ * Lecture seule du dossier « Journalier » de la V75 (même dossier privé de l'application que la V2, mais à côté de « v2 »).
+ * Seules des requêtes GET sont faites : la V75 n'est jamais modifiée.
+ */
+export function creerLecteurV75Graph(o: OptionsGraph): LecteurOneDriveV75 {
+  const c = creerClient(o);
+  const segments = (chemin: string): string => chemin.split('/').filter(Boolean).map(encodeURIComponent).join('/');
+  return {
+    async lister(chemin) {
+      const complet = segments(`Journalier/${chemin}`);
+      try {
+        const items = await c.pages<ElementDrive & { folder?: object }>('fichiers', `${BASE}/me/drive/special/approot:/${complet}:/children?$select=id,name,eTag,file,folder&$top=200`);
+        return items.map((i): ElementOneDrive => ({ nom: i.name, id: i.id, dossier: !!i.folder }));
+      } catch (e) {
+        if (e instanceof Introuvable) return null;
+        throw e;
+      }
+    },
+    lire: (id) => c.telecharger(id)
   };
 }
 

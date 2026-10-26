@@ -7,14 +7,16 @@ import type { Magasin } from '../state/store.ts';
 import { portLocal, portRegistre } from './adaptateurs.ts';
 import { Connexion } from './connexion.ts';
 import type { Compte, Stockage } from './connexion.ts';
-import { creerCalendrierGraph, creerNuageGraph } from './graph.ts';
+import { lireOneDriveV75 } from '../domain/v75/onedrive.ts';
+import type { LectureOneDriveV75, LecteurOneDriveV75 } from '../domain/v75/onedrive.ts';
+import { creerCalendrierGraph, creerLecteurV75Graph, creerNuageGraph } from './graph.ts';
 import { ErreurAcces, ErreurVersion } from './nuage.ts';
 import type { CalendrierNuage, Nuage } from './nuage.ts';
 import { appliquerRestauration, preparerCopie, preparerRestauration } from './secours.ts';
 import type { LectureRestauration, RestaurationPrevue } from './secours.ts';
 import type { NuageSimule } from './simule.ts';
-import { resoudreConflit, synchroniser } from './synchroniser.ts';
-import type { Choix, ConflitAffiche, ResultatSynchro } from './synchroniser.ts';
+import { apercuRepartir, repartirDeOneDrive, resoudreConflit, synchroniser } from './synchroniser.ts';
+import type { ApercuRepartir, Choix, ConflitAffiche, ResultatRepartir, ResultatSynchro } from './synchroniser.ts';
 
 /*
  * Service de synchronisation : ce que l'écran voit et commande.
@@ -30,7 +32,7 @@ export interface EtatSynchro {
   compte: Compte | null;
   /** Connecté auparavant, mais la session a expiré : il faut ouvrir la fenêtre de connexion. */
   reconnexion: boolean;
-  enCours: 'connexion' | 'synchronisation' | 'outlook' | null;
+  enCours: 'connexion' | 'synchronisation' | 'outlook' | 'lecture' | null;
   derniere: ResultatSynchro | null;
   conflits: ConflitAffiche[];
   message: Message | null;
@@ -59,6 +61,7 @@ export interface DependancesSynchro {
   /** Remplaçables dans les tests. */
   nuageMicrosoft?: () => Nuage;
   calendrierMicrosoft?: () => CalendrierNuage;
+  lecteurV75?: () => LecteurOneDriveV75;
   /** Faux : espace du mode essai, jamais relié à un vrai compte Microsoft (par défaut : vrai). */
   autoriserMicrosoft?: boolean;
 }
@@ -362,6 +365,53 @@ export function creerSynchro(d: DependancesSynchro) {
       const n = await d.magasin.ecarterIllisibles();
       maj({ illisibles: d.depot.illisibles().length, message: { genre: 'ok', texte: n ? `${n} élément${n > 1 ? 's' : ''} illisible${n > 1 ? 's' : ''} écarté${n > 1 ? 's' : ''}. Lancez la synchronisation pour les récupérer depuis OneDrive.` : 'Rien à écarter.' } });
       return n;
+    },
+
+    /* Repartir de OneDrive (remplace les données de cet appareil par celles de OneDrive) */
+
+    /** Compte ce que contient OneDrive et ce qui serait remplacé ici. Ne change rien. `null` si ce n'est pas possible (message affiché). */
+    async apercuRepartir(): Promise<ApercuRepartir | null> {
+      if (!pret() || etat.enCours || enSynchro) return null;
+      enSynchro = true;
+      maj({ enCours: 'lecture', message: null });
+      try {
+        const a = await apercuRepartir(options());
+        maj({ enCours: null });
+        return a;
+      } catch (e) { signaler(e); return null; } finally { enSynchro = false; }
+    },
+
+    /** Remplace les données de cet appareil par celles de OneDrive. À n'appeler qu'après la confirmation de l'utilisateur. */
+    async repartirDeOneDrive(): Promise<ResultatRepartir | null> {
+      if (!pret() || etat.enCours || enSynchro) return null;
+      if (minuteur) { clearTimeout(minuteur); minuteur = null; }
+      enSynchro = true;
+      maj({ enCours: 'synchronisation', message: null });
+      try {
+        const r = await repartirDeOneDrive(options());
+        const p = (n: number, un: string, plusieurs = `${un}s`): string => `${n} ${n > 1 ? plusieurs : un}`;
+        const reprises = [p(r.nuage.eleves, 'élève'), p(r.nuage.seances, 'séance'), p(r.nuage.activites, 'rendez-vous', 'rendez-vous')].join(', ');
+        const reserves = r.erreurs.length + r.ignores.length;
+        maj({
+          enCours: null, conflits: [], derniere: null, nuageDemo: d.demo.resume(),
+          message: { genre: reserves ? 'info' : 'ok', texte: `Cet appareil repart de OneDrive : ${reprises} repris${r.retires ? `, ${p(r.retires, 'élément')} retiré${r.retires > 1 ? 's' : ''} de cet appareil` : ''}.${reserves ? ` ${p(reserves, 'fichier')} de OneDrive ${reserves > 1 ? 'n’ont' : 'n’a'} pas pu être repris${reserves > 1 ? 's' : ''} (voir le détail ci-dessous) ; la version d’ici, s’il y en avait une, est gardée.` : ''}` }
+        });
+        return r;
+      } catch (e) { signaler(e); return null; } finally { enSynchro = false; }
+    },
+
+    /**
+     * Lit en lecture seule le dossier « Journalier » que la V75 a rangé dans OneDrive (reprise des données).
+     * `null` si ce n'est pas possible ici (pas connecté à un vrai compte) ; sinon `trouve` dit si la V75 a laissé des données.
+     */
+    async lireV75DansOneDrive(progres?: (texte: string) => void): Promise<LectureOneDriveV75 | null> {
+      if (etat.mode !== 'microsoft' || !pret() || etat.enCours) return null;
+      maj({ enCours: 'lecture', message: null });
+      try {
+        const r = await lireOneDriveV75(d.lecteurV75?.() ?? creerLecteurV75Graph({ jeton: d.connexion }), progres);
+        maj({ enCours: null });
+        return r;
+      } catch (e) { signaler(e); return null; }
     },
 
     /* Copie de secours (avec un mot de passe, le fichier est chiffré) */

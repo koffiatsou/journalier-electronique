@@ -57,7 +57,7 @@ export function App({ magasin, synchro, adresseRetour, essai, notices, onVerroui
         {pret && page === 'journalier' ? <JournalierPage key={parametres.eleve ?? ''} magasin={magasin} onAller={aller} eleveInitial={parametres.eleve ?? null} /> : null}
         {pret && page === 'eleves' ? <ElevesPage magasin={magasin} onAller={aller} /> : null}
         {pret && page === 'synchro' ? <SynchroPage synchro={synchro} adresseRetour={adresseRetour} /> : null}
-        {pret && page === 'reprise' ? <ReprisePage magasin={magasin} essai={essai} onAller={aller} /> : null}
+        {pret && page === 'reprise' ? <ReprisePage magasin={magasin} synchro={synchro} essai={essai} onAller={aller} /> : null}
         {pret && page === 'pia' ? <PiaPage key={`${parametres.eleve ?? ''}|${parametres.annee ?? ''}`} magasin={magasin} onAller={aller} parametres={parametres} /> : null}
       </Shell>
     </FournisseurToast>

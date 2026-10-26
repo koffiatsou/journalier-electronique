@@ -3,13 +3,13 @@
 Document pour l'utilisateur, à adapter avant de le donner à l'équipe. Rien n'est supprimé dans la V75 : elle reste utilisable tant que l'équipe en a besoin.
 
 ## Ce qui a été vérifié (lot 9)
-- La V2 sait lire les données de la V75 **sur le même ordinateur et dans le même navigateur** (élèves, séances, agenda), les convertir, les contrôler élève par élève, puis les ajouter au coffre chiffré de la V2.
+- La V2 sait lire les données de la V75 **sur le même ordinateur et dans le même navigateur** (élèves, séances, agenda), ou **dans OneDrive** (dossier « Journalier » de la V75, lot 9b), les convertir, les contrôler élève par élève, puis les ajouter au coffre chiffré de la V2.
 - Reprise **sans danger** : la V75 n'est jamais modifiée ; rien n'est supprimé ni remplacé dans la V2 ; on peut recommencer sans créer de doublons.
-- Vérifié par 47 tests automatiques et un essai dans un vrai navigateur.
+- Vérifié par des tests automatiques (47 pour la lecture sur l'appareil, 22 de plus pour OneDrive et « Repartir de OneDrive ») et des essais dans un vrai navigateur (la connexion Microsoft est simulée : **le premier essai avec un vrai compte reste à faire**).
 
 ## Ce qui reste à faire par vous avant la mise en service
 1. Déclarer l'adresse de retour de la V2 chez Microsoft (Entra), puis faire **une première vraie connexion** (lots 7 et 8).
-2. Essayer la reprise **avec vos vraies données** (voir ci-dessous) et comparer quelques séances avec la V75.
+2. Essayer la reprise **avec vos vraies données** (voir ci-dessous), d'abord depuis OneDrive puis, si des séances manquent, depuis l'appareil, et comparer quelques séances avec la V75.
 3. Relire le message à l'équipe et choisir la date de bascule.
 
 ## Connexion Microsoft : quelle adresse déclarer chez Entra
@@ -17,14 +17,14 @@ Document pour l'utilisateur, à adapter avant de le donner à l'équipe. Rien n'
 - Chez Entra (inscription de l'application, « Authentification »), ajouter une adresse de retour de type **Application monopage (SPA)**, sans toucher à celles de la V75.
 - **Essai en local, avant la fusion** (connexion et synchronisation seulement) : télécharger la branche, dans le dossier `v2` lancer `npm install` puis `npm run dev`, ouvrir `http://localhost:5173/` et déclarer `http://localhost:5173/msal-redirect.html`. Même port, `localhost` (pas `127.0.0.1`). À retirer ensuite.
 - **En ligne, après la fusion de la PR** : la V2 est publiée dans `/v2/` du même site que la V75 ; déclarer `<adresse du site>/v2/msal-redirect.html` (l'adresse exacte est affichée dans l'écran Synchro, sous « adresse de retour »).
-- **La reprise V75 ne marche qu'en ligne** (même adresse de site que la V75) : en local, la V2 ne voit pas les données de la V75.
+- **Lire l'appareil ne marche qu'en ligne** (même adresse de site que la V75) : en local, la V2 ne voit pas le stockage de la V75. **Lire OneDrive marche aussi en local** (essai avant la fusion), une fois la connexion Microsoft faite avec le compte utilisé dans la V75.
 - L'aperçu dans Claude ne permet pas la connexion Microsoft (adresse non déclarée).
 
 ## Étapes pour un agent (sur son ordinateur habituel)
 1. Ouvrir la V75 une dernière fois, **dans le même navigateur** que d'habitude, et vérifier que tout s'affiche.
 2. Ouvrir la V2, se connecter avec le compte Microsoft.
 3. Écran « Reprendre mes données de la V75 » (lien sur l'accueil quand il n'y a encore aucun élève, ou dans l'écran Synchro).
-4. Cliquer « Chercher mes données de la V75 », lire le résumé.
+4. Cliquer « Lire le OneDrive de la V75 » (si vos données de la V75 sont anciennes sur l'ordinateur, c'est le plus sûr) ou « Chercher mes données de la V75 sur cet appareil », lire le résumé. Si des séances manquent après un premier import, cliquer « Lire une autre source » et lire l'autre : rien n'est dupliqué.
 5. **Vérifier élève par élève** : ouvrir « Voir les séances » et comparer avec la V75 (dates, matières, présences).
 6. Cocher les élèves à reprendre, cliquer « Importer ».
 7. Lire le tableau de contrôle (« En place » pour chaque élève). Ouvrir deux ou trois séances au Journalier.
@@ -33,7 +33,8 @@ Document pour l'utilisateur, à adapter avant de le donner à l'équipe. Rien n'
 
 ## Points d'attention (à dire à l'équipe)
 - **Même ordinateur, même navigateur** : les données de la V75 ne vivent que là. Autre ordinateur ou navigateur vidé : la reprise ne trouvera rien.
-- **OneDrive de la V75** : d'après la lecture du code, la V75 risque de ne plus envoyer sur OneDrive les séances qui contiennent la présence ou des notes de classe. Ne comptez donc pas sur OneDrive comme source : la reprise lit l'appareil. (Voir « Idées en attente » du plan.)
+- **OneDrive de la V75 peut être incomplet** : d'après la lecture du code, la V75 refuse d'envoyer sur OneDrive les séances qui contiennent la présence ou des notes de classe, et certains profils d'élèves. À vérifier avec votre compte : comparez le nombre de séances par élève avec la V75, puis lisez aussi l'appareil si besoin. (À signaler comme défaut de la V75 une fois confirmé.)
+- **Nouvel ordinateur, ou données de la V2 dépassées** : écran Synchro → « Repartir de OneDrive » : l'ordinateur reprend exactement ce que contient OneDrive (rien n'est fusionné ; OneDrive n'est jamais modifié ; un aperçu et une case à cocher avant tout remplacement). Pensez à enregistrer d'abord une copie de secours si vous hésitez.
 - **Noms** : la V75 n'avait qu'une case ; le nom est repris entier dans « Nom » (prénom vide).
 - **Agenda** : les séries simples restent des séries ; les autres répétitions sont posées jour par jour jusqu'à fin juillet ; les rendez-vous de week-end ne sont pas repris (la liste est affichée).
 - **Mode essai** : la reprise y est refusée (jamais de vraies données en essai).

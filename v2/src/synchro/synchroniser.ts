@@ -278,3 +278,106 @@ export async function resoudreConflit(o: OptionsSynchro, conflit: ConflitAffiche
     await recuperer();
   }
 }
+
+/* ───────── Repartir de OneDrive ───────── */
+
+export interface Decompte { eleves: number; seances: number; activites: number; pias: number; reglages: number }
+
+const decompter = (types: Iterable<TypeObjet>): Decompte => {
+  const n: Decompte = { eleves: 0, seances: 0, activites: 0, pias: 0, reglages: 0 };
+  for (const t of types) {
+    if (t === 'eleve') n.eleves += 1; else if (t === 'seance') n.seances += 1; else if (t === 'activite') n.activites += 1; else if (t === 'pia') n.pias += 1; else n.reglages += 1;
+  }
+  return n;
+};
+
+export interface ApercuRepartir {
+  /** Ce que OneDrive contient et que l'on pourrait reprendre. */
+  nuage: Decompte;
+  /** Ce que cet appareil contient aujourd'hui (et qui serait remplacé). */
+  ici: Decompte;
+  /** Fichiers de OneDrive illisibles (abîmés) : ils ne seraient pas repris. */
+  erreurs: string[];
+  /** Fichiers de OneDrive laissés de côté (par exemple une séance dont l'élève n'est pas dans OneDrive). */
+  ignores: string[];
+}
+
+export interface ResultatRepartir extends ApercuRepartir {
+  /** Objets écrits sur cet appareil. */
+  ecrits: number;
+  /** Objets de cet appareil qui n'étaient pas dans OneDrive et ont été retirés. */
+  retires: number;
+}
+
+interface LuNuage { type: TypeObjet; id: string; donnees: unknown; eleveId: string; empreinte: string; etag: string }
+
+/** Lit tout OneDrive sans rien modifier, ni là-bas ni ici. */
+async function lireToutLeNuage(o: OptionsSynchro): Promise<{ lus: Map<Cle, LuNuage>; erreurs: string[]; ignores: string[]; reserves: Set<Cle> }> {
+  const scelleur = o.scelleur ?? SCELLEUR_NEUTRE;
+  const distants = await listerDistants(o.nuage, o.exclureDemo);
+  const brut = new Map<Cle, LuNuage>();
+  const erreurs: string[] = [];
+  /** Éléments de OneDrive qu'on n'a pas pu reprendre : la version d'ici, s'il y en a une, n'est jamais retirée. */
+  const reserves = new Set<Cle>();
+  for (const c of trierCles(distants.keys())) {
+    const ref = decouperCle(c)!;
+    const f = distants.get(c)!;
+    const r = await telecharger(o.nuage, scelleur, f, ref.type, ref.id);
+    if (!r.ok) { erreurs.push(`${c} : ${r.erreur}`); reserves.add(c); continue; }
+    brut.set(c, { type: ref.type, id: ref.id, donnees: r.donnees, eleveId: ref.type === 'eleve' || ref.type === 'reglage' ? '' : eleveIdDe(r.donnees), empreinte: r.empreinte, etag: f.etag });
+  }
+  // Une séance, une activité ou un PIA dont l'élève n'est pas dans OneDrive ne peut pas entrer ici.
+  const eleves = new Set([...brut.values()].filter((x) => x.type === 'eleve').map((x) => x.id));
+  const ignores: string[] = [];
+  const lus = new Map<Cle, LuNuage>();
+  for (const [c, x] of brut) {
+    if (x.eleveId && !eleves.has(x.eleveId)) { ignores.push(`${c} : l’élève n’est pas dans OneDrive`); reserves.add(c); continue; }
+    lus.set(c, x);
+  }
+  return { lus, erreurs, ignores, reserves };
+}
+
+/** Ce qu'il y a ici et qui compte pour « repartir » (les données de démonstration sont mises à part pour un vrai compte). */
+async function lireIci(o: OptionsSynchro): Promise<{ objets: ObjetsLocaux; locaux: Map<Cle, Local> }> {
+  const objets = await o.local.lire();
+  return { objets, locaux: await preparerLocaux(objets, o.exclureDemo) };
+}
+
+/** Montre ce qui se passerait si cet appareil repartait de OneDrive, sans rien changer. */
+export async function apercuRepartir(o: OptionsSynchro): Promise<ApercuRepartir> {
+  const { lus, erreurs, ignores } = await lireToutLeNuage(o);
+  const { locaux } = await lireIci(o);
+  return { nuage: decompter([...lus.values()].map((x) => x.type)), ici: decompter([...locaux.values()].map((x) => x.type)), erreurs, ignores };
+}
+
+/**
+ * Remplace les données de cet appareil par celles de OneDrive (nouvel ordinateur, ou appareil dont les données sont dépassées).
+ * Rien n'est fusionné : ce qui est ici et pas dans OneDrive est retiré. OneDrive n'est jamais modifié.
+ * Un fichier de OneDrive illisible n'est pas repris, et la version d'ici (s'il y en a une) est gardée.
+ * Tout est relu et vérifié AVANT de toucher à cet appareil ; si OneDrive est vide ou illisible, on s'arrête sans rien changer.
+ */
+export async function repartirDeOneDrive(o: OptionsSynchro): Promise<ResultatRepartir> {
+  const { lus, erreurs, ignores, reserves } = await lireToutLeNuage(o);
+  if (!lus.size) throw new Error(erreurs.length ? 'Aucun fichier de OneDrive n’a pu être lu : rien n’a été changé.' : 'OneDrive ne contient encore aucune donnée du Journalier : rien n’a été changé.');
+  const { locaux } = await lireIci(o);
+
+  const supprimer: RefObjet[] = [];
+  const elevesRetires = new Set<string>();
+  for (const [c, l] of locaux) if (!lus.has(c) && !reserves.has(c) && l.type === 'eleve') { supprimer.push({ type: 'eleve', id: l.id }); elevesRetires.add(l.id); }
+  for (const [c, l] of locaux) {
+    if (lus.has(c) || reserves.has(c) || l.type === 'eleve') continue;
+    if (l.eleveId && elevesRetires.has(l.eleveId)) continue; // supprimé avec son élève
+    supprimer.push({ type: l.type, id: l.id });
+  }
+  const ecrire: ObjetSynchro[] = trierCles(lus.keys()).map((c) => lus.get(c)!)
+    .map((x) => ({ type: x.type, id: x.id, donnees: x.donnees, ...(x.eleveId ? { eleveId: x.eleveId } : {}) }));
+
+  // La mémoire de la dernière synchronisation est vidée AVANT de changer les données, remplie APRÈS : si l'opération est
+  // interrompue, la synchronisation suivante comparera simplement les deux côtés (jamais d'écrasement silencieux).
+  await o.registre.vider();
+  await o.registre.definirCompte(o.compteId);
+  await o.local.appliquer(ecrire, supprimer);
+  await o.registre.enregistrer(new Map([...lus].map(([c, x]) => [c, { empreinte: x.empreinte, etag: x.etag }])));
+
+  return { nuage: decompter([...lus.values()].map((x) => x.type)), ici: decompter([...locaux.values()].map((x) => x.type)), erreurs, ignores, ecrits: ecrire.length, retires: supprimer.length };
+}

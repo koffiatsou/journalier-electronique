@@ -1,6 +1,6 @@
 # Plan de travail de la V2 (un lot = une conversation)
 
-Mis à jour le 26 octobre 2026 (lots 1 à 8 terminés ; lot suivant : 9). Ce fichier est la **liste des lots**. Pour démarrer : ouvrir une nouvelle conversation, écrire « Lot N » (ou « le lot suivant ») ; Claude lit `AGENTS.md`, ce plan et `docs/etat-des-lieux.md`, puis travaille uniquement sur ce lot.
+Mis à jour le 27 octobre 2026 (lots 1 à 9b terminés ; ensuite : vos essais réels, puis lot Q). Ce fichier est la **liste des lots**. Pour démarrer : ouvrir une nouvelle conversation, écrire « Lot N » (ou « le lot suivant ») ; Claude lit `AGENTS.md`, ce plan et `docs/etat-des-lieux.md`, puis travaille uniquement sur ce lot.
 
 ## Principe
 - Une conversation = un lot. Pas de dérive vers un autre lot : toute idée en plus va dans « Idées en attente » ci‑dessous.
@@ -44,7 +44,7 @@ Mis à jour le 26 octobre 2026 (lots 1 à 8 terminés ; lot suivant : 9). Ce fic
 | 7 — Coffre chiffré | Données locales chiffrées (AES‑GCM, comme en V75), ouvertes par la connexion Microsoft ; écran verrouillé, bouton « Verrouiller », mode essai à part, migration de l'ancienne base en clair, copie de secours protégée par un mot de passe | ✅ 26/10/2026 — **reste à l'utilisateur** : première vraie connexion Microsoft (l'adresse de retour doit déjà être déclarée chez Entra, voir lot 8) |
 | 8 — OneDrive / Outlook | Synchronisation Microsoft (Entra ID, Graph), conflits, repli manuel ; liaison Outlook (agenda) ; données de démonstration | ✅ 26/10/2026 — **reste à l'utilisateur** : déclarer l'adresse de retour chez Microsoft, autoriser Outlook, essayer une vraie connexion |
 | 9 — Reprise V75 | Import des données de la V75 vers la V2 (elles arrivent dans le coffre chiffré du compte), vérification élève par élève, plan de bascule et d'information de l'équipe | ✅ 26/10/2026 — **reste à l'utilisateur** : essayer avec ses vraies données, lire `docs/plan-de-bascule.md`, choisir la date de bascule. Prochain lot conseillé : mise en service (après première vraie connexion), puis Q / F |
-| 9b — Reprise depuis OneDrive | (1) Lire en lecture seule le dossier `/Journalier` de la V75 sur OneDrive (même connexion Microsoft), avec la même vérification élève par élève, l'import sans doublon et le contrôle ; (2) option « Repartir de OneDrive » dans l'écran Synchro de la V2 (nouvelle machine : remplacer le local par OneDrive, avec confirmation, sans fusionner de vieux fichiers). Source principale de l'utilisateur : ses données locales de la V75 sont anciennes. Test seul : faux Microsoft ; premier essai réel par l'utilisateur en local. | 🔜 conseillé ensuite |
+| 9b — Reprise depuis OneDrive | (1) Lire en lecture seule le dossier `/Journalier` de la V75 sur OneDrive (même connexion Microsoft), avec la même vérification élève par élève, l'import sans doublon et le contrôle ; (2) option « Repartir de OneDrive » dans l'écran Synchro de la V2 (nouvelle machine : remplacer le local par OneDrive, avec confirmation, sans fusionner de vieux fichiers). Source principale de l'utilisateur : ses données locales de la V75 sont anciennes. Test seul : faux Microsoft ; premier essai réel par l'utilisateur en local. | ✅ 27/10/2026 — **reste à l'utilisateur** : essai avec un vrai compte (lecture du OneDrive de la V75, puis « Repartir de OneDrive » sur un autre appareil) ; confirmer si la V75 envoie bien tout sur OneDrive (voir l'état des lieux) |
 
 ### Référentiel (« R »), à reprendre quand l'utilisateur le décide
 | Lot | Contenu | Statut |
@@ -56,7 +56,7 @@ Mis à jour le 26 octobre 2026 (lots 1 à 8 terminés ; lot suivant : 9). Ce fic
 ### Qualité
 | Lot | Contenu | Statut |
 |---|---|---|
-| Q — Finitions | Schémas zod, `package-lock.json` (quand le registre est accessible), accessibilité (lecteur d'écran, clavier), performance, tests navigateur dans la CI | ⏳ |
+| Q — Finitions | Schémas zod, `package-lock.json` (quand le registre est accessible), accessibilité (lecteur d'écran, clavier), performance, tests navigateur dans la CI | 🔜 conseillé ensuite (après vos essais réels de la connexion et de la reprise) |
 
 ### Habillage
 | Lot | Contenu | Statut |
@@ -77,7 +77,7 @@ Mis à jour le 26 octobre 2026 (lots 1 à 8 terminés ; lot suivant : 9). Ce fic
 - Le code PIA de la V75 (`src/v74/pia-*.js`, `v74-docx-pia-pv.js`, tests `tests/pia-*.mjs`) peut servir de référence, pas de copie.
 
 ## Idées en attente (non planifiées)
-- Reprise V75 (lot 9) : [devenu le lot 9b] **lire aussi OneDrive** comme source (la V75 semble bloquer l'envoi des séances avec présence/notes ; à confirmer avec un vrai compte, et à signaler comme défaut de la V75) ; **convertir automatiquement les PIA** (aujourd'hui texte à recopier) ; **séparer prénom et nom** à la reprise ; relire d'anciennes séances d'une V75 plus ancienne (avant le coffre `journalier-secure-v74`).
+- Reprise V75 (lots 9 et 9b) : [lecture OneDrive faite au lot 9b ; reste à confirmer avec un vrai compte que la V75 refuse d'y envoyer les séances avec présence/notes, et à signaler comme défaut de la V75] **convertir automatiquement les PIA** (aujourd'hui texte à recopier) ; **séparer prénom et nom** à la reprise ; relire d'anciennes séances d'une V75 plus ancienne (avant le coffre `journalier-secure-v74`).
 - Coffre (lot 7) : **usage hors connexion** (aujourd'hui, une session Microsoft perdue = se reconnecter, donc pas d'ouverture sans réseau) — piste : code PIN local qui garde la clé ; **verrouillage automatique** après inactivité ; **mot de passe OneDrive** en plus de la protection Microsoft (le `Scelleur` de `nuage.ts` est neutre et prêt : aucune réécriture à prévoir) ; bouton « Effacer l'espace d'essai » ; protection contre la lecture de la base par quelqu'un qui ouvre le Journalier déjà connecté (hors périmètre du chiffrement) ; plusieurs comptes sur un même appareil (chaque compte a déjà sa base, il manque seulement un sélecteur).
 - Synchronisation (lot 8) : synchroniser aussi la couleur/avatar si l'équipe le demande (déjà dans la fiche élève) ; afficher l'état de synchro (pastille) dans le menu ; choisir ce qui part dans Outlook (types d'activités) ; plusieurs comptes sur un même appareil ; page « Historique des synchronisations » ; synchronisation en arrière-plan (service worker) quand l'application est fermée ; bouton « Effacer la démonstration » aussi sur l'écran Synchro.
 - Agenda (lot 6) : semaines types multiples (semaine A / semaine B) ; appliquer la semaine type à partir d'une autre date que la semaine affichée ; imprimer une seule journée en grand format.

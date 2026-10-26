@@ -5,7 +5,7 @@ import { NOM_COPIE } from '../../synchro/secours.ts';
 import type { RestaurationPrevue } from '../../synchro/secours.ts';
 import { useSynchro } from '../../synchro/service.ts';
 import type { Synchro } from '../../synchro/service.ts';
-import type { ConflitAffiche } from '../../synchro/synchroniser.ts';
+import type { ApercuRepartir, ConflitAffiche, Decompte, ResultatRepartir } from '../../synchro/synchroniser.ts';
 import type { NomDansOutlook } from '../../domain/synchro/outlook.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Field, Input } from '../../ui/Field.tsx';
@@ -148,6 +148,66 @@ function CopieDeSecours({ synchro }: { synchro: Synchro }) {
   );
 }
 
+const pl = (n: number, un: string, plusieurs = `${un}s`): string => `${n} ${n > 1 ? plusieurs : un}`;
+const nbDecompte = (d: Decompte): number => d.eleves + d.seances + d.activites + d.pias + d.reglages;
+const phraseDecompte = (d: Decompte): string => (nbDecompte(d) === 0 ? 'rien' : [pl(d.eleves, 'élève'), pl(d.seances, 'séance'), pl(d.activites, 'rendez-vous', 'rendez-vous'), pl(d.pias, 'PIA', 'PIA')].join(', '));
+
+/** Repartir de OneDrive : remplace ce qu'il y a sur cet appareil par le contenu de OneDrive (nouvel ordinateur, données dépassées). */
+function RepartirDeOneDrive({ synchro, occupe }: { synchro: Synchro; occupe: boolean }) {
+  const [apercu, setApercu] = useState<ApercuRepartir | null>(null);
+  const [compris, setCompris] = useState(false);
+  const [fait, setFait] = useState<ResultatRepartir | null>(null);
+
+  const voir = async () => { setFait(null); setCompris(false); setApercu(await synchro.apercuRepartir()); };
+  const remplacer = async () => {
+    const r = await synchro.repartirDeOneDrive();
+    if (r) { setFait(r); setApercu(null); setCompris(false); }
+  };
+  const vide = apercu ? nbDecompte(apercu.nuage) === 0 : false;
+
+  return (
+    <Section id="synchro-repartir" titre="Repartir de OneDrive">
+      <p>Pour un nouvel ordinateur, ou si les données de cet appareil sont dépassées : cet appareil <strong>reprend exactement ce qui est dans OneDrive</strong>. Rien n’est fusionné, et OneDrive n’est jamais modifié.</p>
+      <p className="synchro-discret">Pour ajouter simplement ce qui manque sans rien remplacer, utilisez plutôt « Synchroniser maintenant ».</p>
+      {!apercu ? <div className="synchro-actions"><Button disabled={occupe} onClick={() => { void voir(); }}>Voir ce que contient OneDrive</Button></div> : null}
+      {fait && (fait.erreurs.length || fait.ignores.length) ? (
+        <details open>
+          <summary>{pl(fait.erreurs.length + fait.ignores.length, 'fichier de OneDrive n’a pas pu être repris', 'fichiers de OneDrive n’ont pas pu être repris')}</summary>
+          <ul>{[...fait.erreurs, ...fait.ignores].map((t) => <li key={t}>{t}</li>)}</ul>
+        </details>
+      ) : null}
+      {apercu ? (
+        <div className="synchro-restauration" role="region" aria-label="Ce qui serait remplacé">
+          <p><strong>Dans OneDrive :</strong> {phraseDecompte(apercu.nuage)}.</p>
+          <p><strong>Sur cet appareil, aujourd’hui :</strong> {phraseDecompte(apercu.ici)}.</p>
+          {vide ? (
+            <p className="synchro-message synchro-message-info" role="status">OneDrive ne contient encore rien du Journalier (ou rien de lisible) : il n’y a rien à reprendre, et cet appareil ne sera pas touché.</p>
+          ) : (
+            <>
+              <p>Tout ce qui est sur cet appareil sera <strong>remplacé</strong> par le contenu de OneDrive. Ce qui n’est que sur cet appareil disparaîtra d’ici (sans être envoyé nulle part). Si vous hésitez, enregistrez d’abord une copie de secours (section ci-dessous).</p>
+              {apercu.erreurs.length || apercu.ignores.length ? (
+                <details open>
+                  <summary>{pl(apercu.erreurs.length + apercu.ignores.length, 'fichier de OneDrive ne sera pas repris', 'fichiers de OneDrive ne seront pas repris')}</summary>
+                  <ul>{[...apercu.erreurs, ...apercu.ignores].map((t) => <li key={t}>{t}</li>)}</ul>
+                  <p className="synchro-discret">La version qui est sur cet appareil, s’il y en a une, est gardée.</p>
+                </details>
+              ) : null}
+              <label className="synchro-case">
+                <input type="checkbox" checked={compris} onChange={(ev) => setCompris(ev.target.checked)} />
+                <span>Je comprends que les données de cet appareil seront remplacées par celles de OneDrive.</span>
+              </label>
+            </>
+          )}
+          <div className="synchro-actions">
+            {!vide ? <Button variante="primaire" disabled={occupe || !compris} onClick={() => { void remplacer(); }}>{occupe ? 'Remplacement…' : 'Remplacer par le contenu de OneDrive'}</Button> : null}
+            <Button variante="discret" disabled={occupe} onClick={() => { setApercu(null); setCompris(false); }}>Annuler</Button>
+          </div>
+        </div>
+      ) : null}
+    </Section>
+  );
+}
+
 export function SynchroPage({ synchro, adresseRetour }: { synchro: Synchro; adresseRetour: string }) {
   const e = useSynchro(synchro, (x) => x);
   const occupe = e.enCours !== null;
@@ -255,6 +315,8 @@ export function SynchroPage({ synchro, adresseRetour }: { synchro: Synchro; adre
           <p className="synchro-discret">Astuce : modifiez la même séance ici avant de synchroniser pour voir apparaître un conflit.</p>
         </Section>
       ) : null}
+
+      {e.mode !== 'aucun' && !e.reconnexion ? <RepartirDeOneDrive synchro={synchro} occupe={occupe} /> : null}
 
       <CopieDeSecours synchro={synchro} />
     </div>

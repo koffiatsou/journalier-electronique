@@ -160,3 +160,23 @@ export function etatV75(): EtatV75 {
     }
   };
 }
+
+/* ───────── OneDrive de la V75 ───────── */
+
+const sansAccent = (s: string): string => s.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+/**
+ * Dépose dans le faux OneDrive ce que la V75 y envoie (src/app/microsoft-core.js : `v72PathForStudent`, `v72PathForSession`,
+ * `v72SyncAgenda`, `v74SavePIACloud`) : eleves/<id>/profil.json, eleves/<id>/seances/<id>.json, agenda/agenda.json, pia/<id>/pia.json.
+ */
+export function deposerEtatV75(faux: { deposerV75(chemin: string, contenu: unknown): void }, etat: EtatV75): void {
+  const eleves = etat.eleves as { studentId: string; nom: string }[];
+  for (const e of eleves) faux.deposerV75(`eleves/${e.studentId}/profil.json`, e);
+  for (const s of etat.seances as { id: string | number; identification?: { eleveId?: string; eleve?: string } }[]) {
+    const par_nom = eleves.find((e) => sansAccent(e.nom) === sansAccent(s.identification?.eleve ?? ''));
+    const eleveId = s.identification?.eleveId || par_nom?.studentId;
+    if (eleveId) faux.deposerV75(`eleves/${eleveId}/seances/${s.id}.json`, s);
+  }
+  faux.deposerV75('agenda/agenda.json', etat.agenda);
+  for (const [id, p] of Object.entries(etat.pias)) faux.deposerV75(`pia/${id}/pia.json`, p.record ?? { sourceContinuity: p.imported });
+}

@@ -4,3 +4,4 @@ export * from './agenda.ts';
 export * from './pia.ts';
 export * from './reprise.ts';
 export * from './lecture.ts';
+export * from './onedrive.ts';
