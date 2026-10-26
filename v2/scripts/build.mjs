@@ -41,6 +41,12 @@ export async function compiler({ minify = true, surveiller = false } = {}) {
     js ? `<script type="module" src="./assets/${js}"></script>` : ''
   ].filter(Boolean).join('\n  ');
 
+  // Page de retour de la connexion Microsoft : un petit script à part, à un nom fixe (pas de signature dans le nom).
+  await build({
+    entryPoints: [path.join(racine, 'src/retour-microsoft.ts')], bundle: true, format: 'esm', target: 'es2022', minify, legalComments: 'none',
+    outfile: path.join(dist, 'retour-microsoft.js'), logLevel: 'warning'
+  });
+
   const modele = await readFile(path.join(racine, 'index.html'), 'utf8');
   await writeFile(path.join(dist, 'index.html'), modele.replace('<!--ASSETS-->', balises));
   if (existsSync(path.join(racine, 'public'))) await cp(path.join(racine, 'public'), dist, { recursive: true });

@@ -11,6 +11,9 @@ import { effetSuppression, normaliserEleve } from '../domain/eleves/index.ts';
 import type { EffetSuppression } from '../domain/eleves/index.ts';
 import { normaliserPia } from '../domain/pia/index.ts';
 import type { Pia } from '../domain/pia/index.ts';
+import { estDemo } from '../domain/synchro/cles.ts';
+import type { ObjetSynchro, ObjetsLocaux } from '../domain/synchro/objets.ts';
+import type { RefObjet } from '../domain/synchro/cles.ts';
 import type { Eleve, Seance } from '../domain/types.ts';
 
 /** Où en est l'enregistrement automatique du brouillon de PIA. */
@@ -101,12 +104,77 @@ export function creerMagasin(depot: Depot) {
       maj({ eleves: [...etat.eleves.filter((x) => !liste.some((n) => n.id === x.id)), ...liste] });
     },
 
-    /** Charge d'un coup un jeu de données fictives (élèves, séances, PIA) ; ce qui existe déjà sous le même identifiant est remplacé. */
-    async chargerExemple(exemple: { eleves: Eleve[]; seances: Seance[]; pias: Pia[] }) {
+    /** Charge d'un coup un jeu de données fictives (élèves, séances, agenda, PIA) ; ce qui existe déjà sous le même identifiant est remplacé. */
+    async chargerExemple(exemple: { eleves: Eleve[]; seances: Seance[]; pias: Pia[]; activites?: Activite[] }) {
       await this.ajouterEleves(exemple.eleves);
       for (const s of exemple.seances) await this.enregistrerSeance(s);
+      if (exemple.activites?.length) await this.changerAgenda({ enregistrer: exemple.activites, supprimer: [] });
       for (const p of exemple.pias) this.enregistrerPia(p);
       await this.viderEnregistrements();
+    },
+
+    /** Efface les données de démonstration (identifiants « demo-… ») et elles seules. Renvoie ce qui a disparu. */
+    async effacerDemo(): Promise<{ eleves: number; seances: number; activites: number; pias: number }> {
+      const bilan = { eleves: 0, seances: 0, activites: 0, pias: 0 };
+      for (const e of etat.eleves.filter((x) => estDemo(x.id))) {
+        const effet = await this.supprimerEleve(e.id);
+        bilan.eleves += 1; bilan.seances += effet.seances.length; bilan.activites += effet.activites.length; bilan.pias += effet.pias.length;
+      }
+      const seules = etat.activites.filter((a) => estDemo(a.id));
+      if (seules.length) { await this.changerAgenda({ enregistrer: [], supprimer: seules.map((a) => a.id) }); bilan.activites += seules.length; }
+      return bilan;
+    },
+
+    /** Tout ce qui peut partir vers OneDrive ou dans une copie de secours, tel qu'enregistré sur cet appareil. */
+    async lireObjets(): Promise<ObjetsLocaux> {
+      await this.viderEnregistrements();
+      const reglages = await depot.chargerReglages();
+      return { eleves: etat.eleves, seances: etat.seances, activites: etat.activites, pias: etat.pias, reglages };
+    },
+
+    /**
+     * Applique ce qui vient d'ailleurs (OneDrive, copie de secours) : suppressions puis écritures, avec mise à jour de l'écran.
+     * Les objets doivent déjà avoir été vérifiés (`normaliserObjet`).
+     */
+    async appliquerSynchro(ecrire: readonly ObjetSynchro[], supprimer: readonly RefObjet[]): Promise<void> {
+      await file;
+      for (const r of supprimer) {
+        if (r.type === 'eleve') await this.supprimerEleve(r.id);
+        else if (r.type === 'seance') await this.supprimerSeance(r.id);
+        else if (r.type === 'activite') await this.changerAgenda({ enregistrer: [], supprimer: [r.id] });
+        else if (r.type === 'pia') {
+          for (const [k, p] of [...enAttente]) if (p.id === r.id) enAttente.delete(k);
+          await depot.supprimerPia(r.id);
+          maj({ pias: etat.pias.filter((x) => x.id !== r.id) });
+        }
+      }
+      const eleves: Eleve[] = [];
+      const seances: Seance[] = [];
+      const activites: Activite[] = [];
+      const pias: Pia[] = [];
+      let horaires = etat.horaires;
+      let semaineType = etat.semaineType;
+      for (const o of ecrire) {
+        if (o.type === 'eleve') { const e = normaliserEleve(o.donnees as Eleve); await depot.enregistrerEleve(e); eleves.push(e); }
+        else if (o.type === 'seance') { const x = o.donnees as Seance; await depot.enregistrerSeance(x); seances.push(x); }
+        else if (o.type === 'activite') { const x = o.donnees as Activite; await depot.enregistrerActivite(x); activites.push(x); }
+        else if (o.type === 'pia') { const x = normaliserPia(o.donnees); if (x) { await depot.enregistrerPia(x); pias.push(x); } }
+        else {
+          const r = o.donnees as { id: string; valeur: unknown };
+          await depot.enregistrerReglage({ id: r.id, valeur: r.valeur });
+          if (r.id === REGLAGE_HORAIRES) horaires = normaliserHoraires(r.valeur);
+          else if (r.id === REGLAGE_SEMAINE_TYPE) semaineType = normaliserSemaineType(r.valeur);
+        }
+      }
+      const ids = (l: readonly { id: string }[]) => new Set(l.map((x) => x.id));
+      const [ie, is, ia, ip] = [ids(eleves), ids(seances), ids(activites), ids(pias)];
+      maj({
+        eleves: [...etat.eleves.filter((x) => !ie.has(x.id)), ...eleves],
+        seances: [...etat.seances.filter((x) => !is.has(x.id)), ...seances],
+        activites: [...etat.activites.filter((x) => !ia.has(x.id)), ...activites],
+        pias: [...etat.pias.filter((x) => !ip.has(x.id)), ...pias],
+        horaires, semaineType
+      });
     },
 
     /** Supprime l'élève avec ses séances, ses activités d'agenda et ses PIA (définitif). Renvoie ce qui a disparu. */

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { appliquerTheme, themeEnregistre, themeSuivant } from '../ui/theme.ts';
 import type { Theme } from '../ui/theme.ts';
-import { IconeAccueil, IconeAgenda, IconeEleves, IconeJournalier, IconeReunion, IconeSeance } from '../ui/icons.tsx';
+import { IconeAccueil, IconeAgenda, IconeEleves, IconeJournalier, IconeReunion, IconeSeance, IconeSynchro } from '../ui/icons.tsx';
 import type { Aller, Page } from './useRoute.ts';
 
 const NAV: { page: Page; libelle: string; icone: (p: { taille?: number }) => ReactNode }[] = [
@@ -11,7 +11,8 @@ const NAV: { page: Page; libelle: string; icone: (p: { taille?: number }) => Rea
   { page: 'seance', libelle: 'Séance', icone: IconeSeance },
   { page: 'journalier', libelle: 'Journalier', icone: IconeJournalier },
   { page: 'eleves', libelle: 'Élèves', icone: IconeEleves },
-  { page: 'pia', libelle: 'PIA', icone: IconeReunion }
+  { page: 'pia', libelle: 'PIA', icone: IconeReunion },
+  { page: 'synchro', libelle: 'Synchro', icone: IconeSynchro }
 ];
 
 /** Cadre de l'application : rail latéral sur grand écran, barre d'onglets en bas sur mobile. */

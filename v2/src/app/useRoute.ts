@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
-export type Page = 'accueil' | 'agenda' | 'seance' | 'journalier' | 'eleves' | 'pia';
-const PAGES: readonly Page[] = ['accueil', 'agenda', 'seance', 'journalier', 'eleves', 'pia'];
+export type Page = 'accueil' | 'agenda' | 'seance' | 'journalier' | 'eleves' | 'pia' | 'synchro';
+const PAGES: readonly Page[] = ['accueil', 'agenda', 'seance', 'journalier', 'eleves', 'pia', 'synchro'];
 
 /** Paramètres facultatifs après la page : #/journalier?eleve=… ou #/pia?eleve=…&onglet=preparer */
 export type Parametres = Record<string, string>;

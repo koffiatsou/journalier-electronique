@@ -8,7 +8,7 @@
   background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(14px);
   border-top: 1px solid var(--line);
 }
-.nav ul { list-style: none; margin: 0; padding: 0; height: var(--tabbar); display: grid; grid-template-columns: repeat(6, 1fr); }
+.nav ul { list-style: none; margin: 0; padding: 0; height: var(--tabbar); display: grid; grid-template-columns: repeat(7, 1fr); }
 .nav .marque { display: none; }
 .nav-lien {
   height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;

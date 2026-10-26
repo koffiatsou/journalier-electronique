@@ -1,6 +1,6 @@
 # Plan de travail de la V2 (un lot = une conversation)
 
-Mis à jour le 26 octobre 2026 (lots 1, 2, 2b, 3, 4a, 4b et 5 terminés). Ce fichier est la **liste des lots**. Pour démarrer : ouvrir une nouvelle conversation, écrire « Lot N » (ou « le lot suivant ») ; Claude lit `AGENTS.md`, ce plan et `docs/etat-des-lieux.md`, puis travaille uniquement sur ce lot.
+Mis à jour le 26 octobre 2026 (lots 1 à 6 et 8 terminés). Ce fichier est la **liste des lots**. Pour démarrer : ouvrir une nouvelle conversation, écrire « Lot N » (ou « le lot suivant ») ; Claude lit `AGENTS.md`, ce plan et `docs/etat-des-lieux.md`, puis travaille uniquement sur ce lot.
 
 ## Principe
 - Une conversation = un lot. Pas de dérive vers un autre lot : toute idée en plus va dans « Idées en attente » ci‑dessous.
@@ -41,8 +41,8 @@ Mis à jour le 26 octobre 2026 (lots 1, 2, 2b, 3, 4a, 4b et 5 terminés). Ce fic
 ### Données et sécurité
 | Lot | Contenu | Statut |
 |---|---|---|
-| 7 — Coffre chiffré | Chiffrement AES‑GCM local (voir `docs/STOCKAGE_LOCAL_V74.md`), mot de passe, verrouillage, export/import de secours | ⏳ (après le lot 8 : la clé sera liée au compte Microsoft, comme en V75 ; avant la mise en service) |
-| 8 — OneDrive / Outlook | Synchronisation Microsoft (Entra ID, Graph), conflits, repli manuel ; liaison Outlook (agenda) | 🔜 |
+| 7 — Coffre chiffré | Chiffrement AES‑GCM local (voir `docs/STOCKAGE_LOCAL_V74.md`), mot de passe, verrouillage, export/import de secours | 🔜 (lot 8 fait : le chiffrement se branche sur le point d'accroche `Scelleur` avant l'envoi ; la clé sera liée au compte Microsoft, comme en V75 ; avant la mise en service) |
+| 8 — OneDrive / Outlook | Synchronisation Microsoft (Entra ID, Graph), conflits, repli manuel ; liaison Outlook (agenda) ; données de démonstration | ✅ 26/10/2026 — **reste à l'utilisateur** : déclarer l'adresse de retour chez Microsoft, autoriser Outlook, essayer une vraie connexion |
 | 9 — Reprise V75 | Import des données de la V75 vers la V2, vérification élève par élève, plan de bascule et d'information de l'équipe | ⏳ |
 
 ### Référentiel (« R »), à reprendre quand l'utilisateur le décide
@@ -76,6 +76,7 @@ Mis à jour le 26 octobre 2026 (lots 1, 2, 2b, 3, 4a, 4b et 5 terminés). Ce fic
 - Le code PIA de la V75 (`src/v74/pia-*.js`, `v74-docx-pia-pv.js`, tests `tests/pia-*.mjs`) peut servir de référence, pas de copie.
 
 ## Idées en attente (non planifiées)
+- Synchronisation (lot 8) : synchroniser aussi la couleur/avatar si l'équipe le demande (déjà dans la fiche élève) ; afficher l'état de synchro (pastille) dans le menu ; choisir ce qui part dans Outlook (types d'activités) ; plusieurs comptes sur un même appareil ; page « Historique des synchronisations » ; synchronisation en arrière-plan (service worker) quand l'application est fermée ; bouton « Effacer la démonstration » aussi sur l'écran Synchro.
 - Agenda (lot 6) : semaines types multiples (semaine A / semaine B) ; appliquer la semaine type à partir d'une autre date que la semaine affichée ; imprimer une seule journée en grand format.
 - Agenda (lot 5) : jours de congé propres à l'école (journées pédagogiques, congés de l'établissement), à saisir par l'agent ; revérifier les vacances de 2027-2028 et 2028-2029 (une seule source) et ajouter chaque année la suivante dans `ANNEES_SCOLAIRES_FWB` ; prévenir (sans bloquer) quand on place une séance un jour de congé ; afficher les fériés des week-ends (1er mai 2027 un samedi) si l'équipe le demande ; mémoriser la vue choisie (semaine / jour / mois).
 - PIA (lot 4b) : PDF fidèle au modèle officiel (aujourd'hui : Word puis « Enregistrer en PDF » ; l'impression du navigateur est une mise en page simple) ; exporter aussi la version dé-identifiée de plusieurs élèves d'un coup (.zip) ; effacer les données de l'exemple fictif d'un seul bouton.

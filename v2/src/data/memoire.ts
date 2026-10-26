@@ -1,7 +1,7 @@
 import type { Activite } from '../domain/agenda/types.ts';
 import type { Pia } from '../domain/pia/types.ts';
 import type { Eleve, Seance } from '../domain/types.ts';
-import type { Depot, Reglage } from './repository.ts';
+import type { Depot, EntreeSynchro, Reglage } from './repository.ts';
 
 /** Dépôt en mémoire : tests et démonstration, rien n'est conservé. */
 export function creerDepotMemoire(eleves: Eleve[] = [], seances: Seance[] = [], activites: Activite[] = [], pias: Pia[] = [], reglages: Reglage[] = []): Depot {
@@ -10,6 +10,7 @@ export function creerDepotMemoire(eleves: Eleve[] = [], seances: Seance[] = [], 
   const a = new Map(activites.map((x) => [x.id, x]));
   const p = new Map(pias.map((x) => [x.id, x]));
   const r = new Map(reglages.map((x) => [x.id, x]));
+  const y = new Map<string, EntreeSynchro>();
   return {
     chargerEleves: async () => [...e.values()],
     chargerSeances: async () => [...s.values()],
@@ -27,7 +28,12 @@ export function creerDepotMemoire(eleves: Eleve[] = [], seances: Seance[] = [], 
     supprimerActivite: async (id) => { a.delete(id); },
     chargerPias: async () => [...p.values()],
     enregistrerPia: async (x) => { p.set(x.id, x); },
+    supprimerPia: async (id) => { p.delete(id); },
     chargerReglages: async () => [...r.values()],
-    enregistrerReglage: async (x) => { r.set(x.id, x); }
+    enregistrerReglage: async (x) => { r.set(x.id, x); },
+    chargerSynchro: async () => [...y.values()],
+    enregistrerSynchro: async (entrees) => { for (const x of entrees) y.set(x.cle, x); },
+    supprimerSynchro: async (cles) => { for (const c of cles) y.delete(c); },
+    viderSynchro: async () => { y.clear(); }
   };
 }

@@ -3,6 +3,8 @@ import { anneeScolaire } from '../domain/export/journalier.ts';
 import { ajouterAmenagement, ajouterObjectifPeriode, ajouterPresent, modifierCase, modifierIdentite, modifierPv1, modifierRetour, piaVierge, definirRetenus } from '../domain/pia/index.ts';
 import type { Pia } from '../domain/pia/index.ts';
 import type { Seance } from '../domain/types.ts';
+import { ajouterJours, lundiDe } from '../domain/agenda/dates.ts';
+import type { Activite } from '../domain/agenda/types.ts';
 
 /** Élèves fictifs, uniquement pour essayer l'application sans données réelles. */
 export const ELEVES_DEMO: Eleve[] = [
@@ -20,7 +22,7 @@ function decaler(iso: string, jours: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export interface ExempleDemo { eleves: Eleve[]; seances: Seance[]; pias: Pia[] }
+export interface ExempleDemo { eleves: Eleve[]; seances: Seance[]; pias: Pia[]; activites: Activite[] }
 
 /**
  * Élèves, séances et un PIA fictifs, calés sur la date du jour : des séances avant et après la réunion du PV 1,
@@ -74,5 +76,19 @@ export function exempleDemo(aujourdhui: string): ExempleDemo {
   p = modifierRetour(p, 'parents', 'Les devoirs se passent mieux à la maison.');
   p = ajouterAmenagement(p, { types: ['P'], description: 'Consignes reformulées à l’oral', source: 'aide|reformulation' });
   p = ajouterAmenagement(p, { types: ['O'], description: 'Temps supplémentaire pour les évaluations' });
-  return { eleves: ELEVES_DEMO, seances, pias: [p] };
+
+  // Agenda : deux accompagnements qui se répètent chaque semaine jusqu'à la fin de l'année, et quelques rendez-vous isolés.
+  const lundi = lundiDe(aujourdhui);
+  const finAnnee = `${Number(annee.slice(0, 4)) + 1}-06-30`;
+  const act = (id: string, surcharge: Partial<Activite>): Activite => ({
+    id, type: 'eleve', titre: '', lieu: 'Local fictif', note: '', date: lundi, debut: 0, fin: 0, repetition: 'aucune', creeLe: maintenant, modifieLe: maintenant, ...surcharge
+  });
+  const activites: Activite[] = [
+    act('demo-a1', { eleveId: 'demo-alpha', titre: 'Remédiation fractions', matiere: 'Mathématiques', date: lundi, debut: 1, fin: 1, repetition: 'hebdomadaire', jusquau: finAnnee }),
+    act('demo-a2', { eleveId: 'demo-alpha', titre: 'Aide en français', matiere: 'Français', date: ajouterJours(lundi, 2), debut: 3, fin: 3, repetition: 'hebdomadaire', jusquau: finAnnee }),
+    act('demo-a3', { eleveId: 'demo-beta', titre: 'Sciences : le vocabulaire', matiere: 'Sciences', date: ajouterJours(lundi, 1), debut: 2, fin: 3, repetition: 'hebdomadaire', jusquau: finAnnee }),
+    act('demo-a4', { type: 'collaboration', titre: 'Concertation avec M. Test', date: ajouterJours(lundi, 3), debut: 5, fin: 5, lieu: 'Salle des professeurs' }),
+    act('demo-a5', { type: 'formation', titre: 'Formation fictive : outils numériques', date: ajouterJours(lundi, 9), debut: 0, fin: 2, lieu: 'En ligne' })
+  ];
+  return { eleves: ELEVES_DEMO, seances, pias: [p], activites };
 }
