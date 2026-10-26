@@ -189,6 +189,33 @@ ok((await lireBase('activites')).length === avant + 10, 'supprimer la semaine ty
 await page.keyboard.press('Escape');
 await fenetre.waitFor({ state: 'hidden' });
 
+/* ───────── Vue Mois : créer et déplacer ───────── */
+await bascule('Mois').click();
+await page.getByRole('button', { name: 'Aujourd’hui' }).click();
+ok(await titre() === 'octobre 2026', 'retour sur octobre 2026');
+await caseDu('23').hover();
+await caseDu('23').getByRole('button', { name: /^Nouvelle activité le/ }).click();
+await panneauNouveau().waitFor();
+ok(await panneauNouveau().getByLabel('Jour').inputValue() === '2026-10-23', 'bouton « + » d’un jour : nouvelle activité ce jour-là');
+await page.getByRole('button', { name: 'Fermer le panneau' }).click();
+// déplacer par glisser-déposer
+const formation = caseDu('29').locator('.mois-evt', { hasText: 'Formation pôle' });
+await formation.dragTo(caseDu('30'));
+await page.getByText('Activité déplacée').first().waitFor();
+let f = (await lireBase('activites')).find((a) => a.id === 'a3');
+ok(f.date === '2026-10-30' && f.debut === 2 && f.fin === 4, 'glisser-déposer : la formation passe au vendredi 30, mêmes périodes');
+ok(await caseDu('29').locator('.mois-evt', { hasText: 'Formation pôle' }).count() === 0 && await caseDu('30').locator('.mois-evt', { hasText: 'Formation pôle' }).count() === 1, 'le mois montre le changement');
+// copier avec Alt
+await page.keyboard.down('Alt');
+await caseDu('30').locator('.mois-evt', { hasText: 'Formation pôle' }).dragTo(caseDu('29'));
+await page.keyboard.up('Alt');
+await page.getByText(/Activité (dupliquée|déplacée)/).first().waitFor();
+const formations = (await lireBase('activites')).filter((a) => a.titre === 'Formation pôle' && a.date < '2026-11-01');
+console.log(`  (formations après Alt+glisser : ${formations.map((a) => a.date).join(', ')})`);
+ok(formations.length === 2 && formations.some((a) => a.date === '2026-10-29') && formations.some((a) => a.date === '2026-10-30'), 'Alt + glisser : copie le 29, l’original reste le 30');
+await page.screenshot({ path: `${SORTIE}/agenda6-mois-glisser.png`, fullPage: true });
+await bascule('Semaine').click();
+
 /* ───────── Impression ───────── */
 await bascule('Semaine').click();
 await page.evaluate(() => { window.__impressions = 0; window.print = () => { window.__impressions += 1; }; });

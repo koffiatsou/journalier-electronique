@@ -154,7 +154,11 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
           <Mois jour={focus} periodes={horaires} occurrences={visibles} eleves={eleves} couleurs={couleurs} aujourdhui={aujourdhui}
             selection={occSelection?.cle ?? null} etroit={etroit}
             onSelection={(o) => { setBrouillon(null); setSelection(o.cle); }}
-            onJour={(date) => { fermer(); setFocus(date); setVue('jour'); }} />
+            onJour={(date) => { fermer(); setFocus(date); setVue('jour'); }}
+            onCreer={(date) => { setSelection(null); setBrouillon({ date, debut: 0, fin: 0 }); }}
+            onDeplacer={(o, date, copier) => (copier
+              ? appliquer(dupliquer(o, date, o.debut), 'Activité dupliquée')
+              : appliquer(deplacer(o, date, o.debut), 'Activité déplacée'))} />
         ) : (
           <Grille jours={jours} periodes={horaires} occurrences={visibles} eleves={eleves} couleurs={couleurs} aujourdhui={aujourdhui}
             selection={occSelection?.cle ?? null}
