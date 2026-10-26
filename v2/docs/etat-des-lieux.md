@@ -38,7 +38,9 @@ Reste côté PIA : rien d'obligatoire. À relire avec l'utilisateur : textes d'e
 
 Reste côté Agenda (lot 5) : les dates de vacances de 2027-2028 et 2028-2029 viennent d'une seule source (à revérifier avant ces années) ; il faudra ajouter les années suivantes dans `ANNEES_SCOLAIRES_FWB` ; les journées pédagogiques propres à chaque école ne sont pas connues ; Le lot 6 est fait (voir ci-dessus).
 
-Reste côté Élèves : l'avatar n'apparaît pas encore au Journalier, à l'agenda ni à la séance (les initiales/pastilles de couleur y restent) ; l'agenda d'un élève archivé n'est pas modifié ; pas d'import des dossiers de la V75 (lot 9 ; la copie de secours du lot 8 existe, avec mot de passe depuis le lot 7).
+Reste côté Élèves : l'avatar n'apparaît pas encore au Journalier, à l'agenda ni à la séance (les initiales/pastilles de couleur y restent) ; l'agenda d'un élève archivé n'est pas modifié ; l'import des dossiers de la V75 existe depuis le lot 9 (écran « Reprendre mes données de la V75 »).
+
+- **Reprise V75** (lot 9). Écran `#/reprise` (liens sur l'accueil vide et dans l'écran Synchro) : lit en lecture seule le coffre local de la V75 (base `journalier-secure-v74`, même navigateur), le déchiffre avec sa clé, le convertit, affiche **élève par élève** ce qui sera repris (séances, agenda, dates, statut « nouveau / déjà repris / modifié »), ce qui ne peut pas l'être, et propose l'import. Après l'import, un **contrôle** relit la V2 et compare élément par élément. Jamais de suppression ni de remplacement ; ré-import sans doublon (identifiants `v75-…`). Refusé en mode essai. PIA non convertis (texte « fiche PIA » à copier). Plan de bascule et message à l'équipe : `docs/plan-de-bascule.md`. Vérifié : 47 tests de plus (439 au total), parcours navigateur `tools/navigateur/reprise.mjs`. Reste : essai avec de vraies données par l'utilisateur ; OneDrive de la V75 non lu (idée en attente).
 
 ## Référentiel : NON FINALISÉ
 À reprendre plus tard. Voir aussi `AGENTS.md` et `tools/referentiel/README.md`.

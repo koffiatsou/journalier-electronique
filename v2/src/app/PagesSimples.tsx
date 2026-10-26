@@ -38,6 +38,7 @@ export function Accueil({ magasin, onAller }: { magasin: Magasin; onAller: Aller
           <h2>Aucun élève pour l’instant</h2>
           <p>Chargez les données de démonstration (deux élèves fictifs, des séances, un agenda et un PIA) pour tout essayer sans compte et sans données réelles. Rien ne quitte votre appareil.</p>
           <Button variante="primaire" onClick={() => { void chargerDemo(); }}>Charger les données de démonstration</Button>
+          <p className="synchro-discret">Vous utilisiez la V75 ? <a href="#/reprise">Reprendre mes données de la V75</a>.</p>
         </section>
       ) : (
         <section className="liste-carte">

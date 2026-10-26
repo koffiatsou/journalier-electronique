@@ -99,7 +99,7 @@ function CopieDeSecours({ synchro }: { synchro: Synchro }) {
 
   return (
     <Section id="synchro-copie" titre="Copie de secours (sans compte)">
-      <p>Un seul fichier avec tout votre Journalier, à garder sur votre ordinateur. Utile si OneDrive n’est pas disponible, ou pour passer d’un appareil à l’autre à la main.</p>
+      <p>Un seul fichier avec tout votre Journalier, à garder sur votre ordinateur. Utile si OneDrive n’est pas disponible, ou pour passer d’un appareil à l’autre à la main. Vous venez de la V75 ? <a href="#/reprise">Reprendre mes données de la V75</a>.</p>
       <label className="synchro-case">
         <input type="checkbox" checked={protegee} onChange={(ev) => { setProtegee(ev.target.checked); setErreurMdp(null); }} />
         <span>Protéger la copie par un mot de passe (recommandé : sans mot de passe, quiconque ouvre le fichier lit les noms et les observations)</span>
