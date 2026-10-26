@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { appliquerTheme, themeEnregistre, themeSuivant } from '../ui/theme.ts';
+import type { Theme } from '../ui/theme.ts';
 import { IconeAccueil, IconeAgenda, IconeEleves, IconeJournalier, IconeReunion, IconeSeance } from '../ui/icons.tsx';
 import type { Aller, Page } from './useRoute.ts';
 
@@ -12,7 +15,15 @@ const NAV: { page: Page; libelle: string; icone: (p: { taille?: number }) => Rea
 ];
 
 /** Cadre de l'application : rail latéral sur grand écran, barre d'onglets en bas sur mobile. */
+const THEMES: Record<Theme, { symbole: string; libelle: string }> = {
+  auto: { symbole: '◐', libelle: 'Automatique' },
+  clair: { symbole: '☀', libelle: 'Clair' },
+  sombre: { symbole: '☾', libelle: 'Sombre' }
+};
+
 export function Shell({ page, onAller, children }: { page: Page; onAller: Aller; children: ReactNode }) {
+  const [theme, setTheme] = useState<Theme>(themeEnregistre);
+  const suivant = themeSuivant(theme);
   return (
     <div className="shell">
       <nav className="nav" aria-label="Navigation principale">
@@ -32,6 +43,11 @@ export function Shell({ page, onAller, children }: { page: Page; onAller: Aller;
           ))}
         </ul>
       </nav>
+      <button type="button" className="theme-bouton" title={`Thème : ${THEMES[theme].libelle}. Passer à : ${THEMES[suivant].libelle}`}
+        aria-label={`Thème : ${THEMES[theme].libelle}. Passer à : ${THEMES[suivant].libelle}`}
+        onClick={() => { setTheme(suivant); appliquerTheme(suivant); }}>
+        <span aria-hidden="true">{THEMES[theme].symbole}</span><span className="theme-texte">{THEMES[theme].libelle}</span>
+      </button>
       <main className="contenu" id="contenu">{children}</main>
     </div>
   );

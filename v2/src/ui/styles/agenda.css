@@ -7,10 +7,14 @@
   --c-texte: color-mix(in srgb, var(--c-bord) 52%, #000);
 }
 @media (prefers-color-scheme: dark) {
-  .c-0, .c-1, .c-2, .c-3, .c-4, .c-5, .c-6, .c-7, .c-8, .c-9, .t-collaboration, .t-formation, .t-administratif, .t-libre {
+  :root:not([data-theme='clair']) :is(.c-0, .c-1, .c-2, .c-3, .c-4, .c-5, .c-6, .c-7, .c-8, .c-9, .t-collaboration, .t-formation, .t-administratif, .t-libre) {
     --c-fond: color-mix(in srgb, var(--c-bord) 30%, #141b2e);
     --c-texte: color-mix(in srgb, var(--c-bord) 38%, #fff);
   }
+}
+:root[data-theme='sombre'] :is(.c-0, .c-1, .c-2, .c-3, .c-4, .c-5, .c-6, .c-7, .c-8, .c-9, .t-collaboration, .t-formation, .t-administratif, .t-libre) {
+  --c-fond: color-mix(in srgb, var(--c-bord) 30%, #141b2e);
+  --c-texte: color-mix(in srgb, var(--c-bord) 38%, #fff);
 }
 
 .agenda { display: grid; gap: var(--sp-4); }

@@ -25,6 +25,7 @@ LANG=C.UTF-8 node tools/navigateur/pia.mjs          # idem pour l'écran PIA (on
 LANG=C.UTF-8 node tools/navigateur/pia-4b.mjs       # idem pour le PV 2, l'export par partie, dé-identifié, impression
 LANG=C.UTF-8 node tools/navigateur/agenda-5.mjs     # idem pour l'agenda : mois, jours fériés, vacances scolaires, horaires réglables
 LANG=C.UTF-8 node tools/navigateur/agenda-6.mjs     # idem : glisser pour créer, semaine type, impression
+LANG=C.UTF-8 node tools/navigateur/theme.mjs     # bouton de thème Automatique / Clair / Sombre
 ```
 
 **Sans accès au registre npm** (environnement de travail de Claude) : les paquets aux bonnes versions (esbuild, zod, React, TypeScript, tsx) sont souvent déjà installés sur la machine ; on les relie dans `v2/node_modules` (liens symboliques, dossier ignoré par Git) et on ajoute `@types/react`, `@types/react-dom` (DefinitelyTyped) et `csstype` récupérés depuis GitHub.

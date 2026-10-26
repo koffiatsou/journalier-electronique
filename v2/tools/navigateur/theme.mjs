@@ -1,0 +1,47 @@
+// Bouton de thème : Automatique → Clair → Sombre, conservé après rechargement, suit l'appareil en mode automatique.
+// Lancer : PORT=5199 npm run dev   puis   LANG=C.UTF-8 node tools/navigateur/theme.mjs
+import { mkdirSync } from 'node:fs';
+import os from 'node:os';
+const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
+const URL_APP = process.env.URL_APP ?? 'http://localhost:5199/';
+const SORTIE = process.env.SORTIE ?? `${os.tmpdir()}/journalier-navigateur`;
+mkdirSync(SORTIE, { recursive: true });
+const ok = (c, m) => { if (!c) throw new Error(`ÉCHEC : ${m}`); console.log(`✓ ${m}`); };
+const erreurs = [];
+const nav = await chromium.launch();
+const ctx = await nav.newContext({ viewport: { width: 1280, height: 800 }, locale: 'fr-BE', colorScheme: 'light' });
+const page = await ctx.newPage();
+page.on('console', (m) => { if (m.type() === 'error') erreurs.push(m.text()); });
+page.on('pageerror', (e) => erreurs.push(String(e)));
+const fond = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+const bouton = () => page.locator('.theme-bouton');
+await page.goto(URL_APP);
+await page.getByRole('link', { name: 'Agenda' }).click();
+const clair = await fond();
+ok(await bouton().getAttribute('aria-label').then((t) => t.startsWith('Thème : Automatique')), 'au départ : automatique');
+await page.emulateMedia({ colorScheme: 'dark' });
+const autoSombre = await fond();
+ok(autoSombre !== clair, 'automatique : suit l’appareil (sombre)');
+await page.emulateMedia({ colorScheme: 'light' });
+await bouton().click();
+ok((await bouton().getAttribute('aria-label')).startsWith('Thème : Clair'), 'premier clic : clair');
+await page.emulateMedia({ colorScheme: 'dark' });
+ok(await fond() === clair, 'clair forcé : reste clair même si l’appareil est sombre');
+await bouton().click();
+ok((await bouton().getAttribute('aria-label')).startsWith('Thème : Sombre'), 'deuxième clic : sombre');
+await page.emulateMedia({ colorScheme: 'light' });
+ok(await fond() === autoSombre, 'sombre forcé : reste sombre même si l’appareil est clair');
+await page.screenshot({ path: `${SORTIE}/theme-sombre-force.png` });
+await page.reload();
+await page.getByRole('link', { name: 'Agenda' }).click();
+ok(await fond() === autoSombre && (await bouton().getAttribute('aria-label')).startsWith('Thème : Sombre'), 'le choix survit au rechargement');
+ok(await page.evaluate(() => getComputedStyle(document.querySelector('.agenda-titre')).color) !== 'rgb(0, 0, 0)', 'l’agenda reprend les couleurs sombres');
+await bouton().click();
+ok((await bouton().getAttribute('aria-label')).startsWith('Thème : Automatique') && await page.evaluate(() => !document.documentElement.hasAttribute('data-theme')), 'troisième clic : retour à automatique');
+// téléphone
+await page.setViewportSize({ width: 390, height: 844 });
+const b = await bouton().boundingBox();
+ok(b.x >= 0 && b.x + b.width <= 390 && b.y >= 0, 'téléphone : le bouton tient dans l’écran');
+await page.screenshot({ path: `${SORTIE}/theme-telephone.png` });
+ok(erreurs.length === 0, `aucune erreur console (${erreurs.join(' | ') || 'aucune'})`);
+await nav.close();

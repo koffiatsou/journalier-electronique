@@ -86,5 +86,5 @@ Mis à jour le 26 octobre 2026 (lots 1, 2, 2b, 3, 4a, 4b et 5 terminés). Ce fic
 - Archivage : les activités d'agenda (séries hebdomadaires) d'un élève archivé restent visibles ; à voir avec l'équipe si elles doivent se masquer ou s'arrêter à l'archivage.
 - Avatars : afficher aussi l'avatar au Journalier, dans l'agenda et dans l'écran Séance ; ajouter des coiffures/accessoires si l'équipe en demande ; avatar choisi au hasard à la création d'un élève.
 - Réunion : afficher aussi les remarques libres et la question « Utilisé ailleurs ? » (transfert) dans le résumé ; objectif retenu en zone de texte (un long texte est coupé sur téléphone) ; choisir la matière d'un objectif ajouté à la main.
-- Thème sombre : le bouton secondaire (`.btn`) manque de contraste dans toute l'application — à traiter au lot F.
+- Thème sombre : un doute sur le contraste des boutons secondaires (`.btn`) ; une capture prise juste après un changement de thème montrait un gris clair qui n'était que la transition de 0,2 s (couleurs réelles correctes) — à revérifier à l'œil au lot F ; choix du thème mémorisé dans la base (au lieu de l'appareil) si l'équipe le demande.
 - Élèves : tri au choix des cartes (nom, classe, dernière séance) et filtre par classe, si la liste devient longue.

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './app/App.tsx';
 import { creerDepotIndexedDb } from './data/indexeddb.ts';
 import { creerDepotMemoire } from './data/memoire.ts';
+import { appliquerTheme, themeEnregistre } from './ui/theme.ts';
 import { creerMagasin } from './state/store.ts';
 import './ui/styles/tokens.css';
 import './ui/styles/base.css';
@@ -13,6 +14,9 @@ import './ui/styles/agenda.css';
 import './ui/styles/eleves.css';
 import './ui/styles/reunion.css';
 import './ui/styles/pia.css';
+
+// Thème choisi sur cet appareil, appliqué avant l'affichage pour éviter un éclair clair.
+appliquerTheme(themeEnregistre(), false);
 
 async function demarrer() {
   // Repli en mémoire si IndexedDB est indisponible (navigation privée, par exemple).

@@ -52,3 +52,14 @@
 .liste-date { color: var(--ink-3); grid-row: span 2; align-self: center; }
 .liste-titre { font-weight: 600; }
 .liste-detail { color: var(--ink-2); font-size: 0.88rem; }
+
+/* Bouton de thème (Automatique / Clair / Sombre) : en haut à droite sur téléphone, en bas du menu sur grand écran */
+.theme-bouton { position: fixed; top: 8px; right: 8px; z-index: 51; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; min-width: 36px; justify-content: center; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 999px; background: color-mix(in srgb, var(--surface) 90%, transparent); color: var(--ink-2); font: inherit; font-size: .8125rem; cursor: pointer; }
+.theme-bouton:hover { color: var(--ink); }
+.theme-bouton:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.theme-texte { display: none; }
+@media print { .theme-bouton { display: none; } }
+@media (min-width: 900px) {
+  .theme-bouton { top: auto; right: auto; bottom: 16px; left: 16px; background: var(--surface); }
+  .theme-texte { display: inline; }
+}
