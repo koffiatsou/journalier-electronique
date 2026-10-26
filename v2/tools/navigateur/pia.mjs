@@ -6,6 +6,8 @@
 import { mkdirSync } from 'node:fs';
 import os from 'node:os';
 
+import { ajouterElevesFictifs, aller, ecrireBase as ecrireChiffre, lireBase as lireChiffre , recharger } from './_coffre.mjs';
+
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const URL_APP = process.env.URL_APP ?? 'http://localhost:5199/';
 const SORTIE = process.env.SORTIE ?? `${os.tmpdir()}/journalier-navigateur`;
@@ -45,32 +47,15 @@ const SEANCES = [
   base('beta', '2026-10-20', 'Sciences', { observations: [{ texte: 'Entre dans la tâche', niveau: 1 }] }, 'demo-beta')
 ];
 
-await page.goto(URL_APP);
-await page.getByRole('button', { name: 'Ajouter des élèves fictifs' }).click();
+await aller(page, URL_APP);
+await ajouterElevesFictifs(page);
 await page.getByText('Dernières séances').waitFor();
-await page.evaluate((seances) => new Promise((resolve, reject) => {
-  const ouverture = indexedDB.open('journalier-v2');
-  ouverture.onerror = () => reject(ouverture.error);
-  ouverture.onsuccess = () => {
-    const tx = ouverture.result.transaction('seances', 'readwrite');
-    for (const s of seances) tx.objectStore('seances').put(s);
-    tx.oncomplete = () => resolve(true);
-    tx.onerror = () => reject(tx.error);
-  };
-}), SEANCES);
-await page.reload();
+for (const s of SEANCES) await ecrireChiffre(page, 'seances', s);
+await recharger(page);
 console.log('✓ six séances réalistes injectées dans la base');
 
 
-const lireBase = (magasin, cle) => page.evaluate(([m, c]) => new Promise((resolve, reject) => {
-  const o = indexedDB.open('journalier-v2');
-  o.onerror = () => reject(o.error);
-  o.onsuccess = () => {
-    const r = o.result.transaction(m).objectStore(m).getAll();
-    r.onsuccess = () => resolve(r.result);
-    r.onerror = () => reject(r.error);
-  };
-}), [magasin, cle]);
+const lireBase = (magasin) => lireChiffre(page, magasin);
 
 // Menu : « PIA » remplace « Réunion »
 ok(await page.getByRole('link', { name: 'Réunion' }).count() === 0, 'plus de lien « Réunion »');
@@ -97,7 +82,7 @@ ok(await page.locator('.reunion-retenus li').count() === 3, 'trois objectifs ret
 await page.getByText(/Brouillon enregistré/).waitFor();
 let pias = await lireBase('pia');
 ok(pias.length === 1 && pias[0].retenus.length === 3, 'les objectifs retenus sont enregistrés dans la base (store pia)');
-await page.reload();
+await recharger(page);
 await page.getByRole('heading', { name: 'Objectifs à valider' }).waitFor();
 ok(await page.locator('.reunion-retenus li').count() === 3, 'après rechargement : les objectifs retenus sont retrouvés');
 
@@ -161,7 +146,7 @@ await page.getByText(/PIA Word créé/).waitFor();
 
 // Enregistrement + rechargement
 await page.getByText(/Brouillon enregistré/).waitFor();
-await page.reload();
+await recharger(page);
 await page.getByRole('tab', { name: 'Aménagements' }).click();
 ok(await page.locator('.pia-amenagement').count() === 2, 'après rechargement : aménagements retrouvés');
 await page.getByRole('tab', { name: 'Procès-verbal 1' }).click();
@@ -179,7 +164,7 @@ await page.getByRole('tab', { name: 'Procès-verbal 1' }).click();
 ok(await page.getByLabel('Retour de l’élève').inputValue() === '', 'autre année : PIA vierge');
 
 // Ancien lien Réunion
-await page.goto(`${URL_APP}#/reunion?eleve=demo-beta`);
+await aller(page, `${URL_APP}#/reunion?eleve=demo-beta`);
 await page.getByRole('heading', { name: 'Objectifs à valider' }).waitFor();
 ok(await page.getByLabel('Élève', { exact: true }).inputValue() === 'demo-beta', 'ancien lien #/reunion : ouvre Préparer pour le bon élève');
 
@@ -200,7 +185,7 @@ pias = await lireBase('pia');
 ok(pias.every((p) => p.eleveId !== 'demo-alpha'), 'après suppression de l’élève : aucun PIA orphelin');
 
 // Téléphone et thème sombre
-await page.goto(`${URL_APP}#/pia?eleve=demo-beta&onglet=preparer`);
+await aller(page, `${URL_APP}#/pia?eleve=demo-beta&onglet=preparer`);
 await page.getByRole('heading', { name: 'Objectifs à valider' }).waitFor();
 await page.setViewportSize({ width: 390, height: 844 });
 await page.screenshot({ path: `${SORTIE}/pia-telephone.png`, fullPage: true });

@@ -2,6 +2,7 @@
 // Lancer : PORT=5199 npm run dev   puis   LANG=C.UTF-8 node tools/navigateur/theme.mjs
 import { mkdirSync } from 'node:fs';
 import os from 'node:os';
+import { aller , recharger } from './_coffre.mjs';
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const URL_APP = process.env.URL_APP ?? 'http://localhost:5199/';
 const SORTIE = process.env.SORTIE ?? `${os.tmpdir()}/journalier-navigateur`;
@@ -15,7 +16,7 @@ page.on('console', (m) => { if (m.type() === 'error') erreurs.push(m.text()); })
 page.on('pageerror', (e) => erreurs.push(String(e)));
 const fond = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
 const bouton = () => page.locator('.theme-bouton');
-await page.goto(URL_APP);
+await aller(page, URL_APP);
 await page.getByRole('link', { name: 'Agenda' }).click();
 const clair = await fond();
 ok(await bouton().getAttribute('aria-label').then((t) => t.startsWith('Thème : Automatique')), 'au départ : automatique');
@@ -32,7 +33,7 @@ ok((await bouton().getAttribute('aria-label')).startsWith('Thème : Sombre'), 'd
 await page.emulateMedia({ colorScheme: 'light' });
 ok(await fond() === autoSombre, 'sombre forcé : reste sombre même si l’appareil est clair');
 await page.screenshot({ path: `${SORTIE}/theme-sombre-force.png` });
-await page.reload();
+await recharger(page);
 await page.getByRole('link', { name: 'Agenda' }).click();
 ok(await fond() === autoSombre && (await bouton().getAttribute('aria-label')).startsWith('Thème : Sombre'), 'le choix survit au rechargement');
 ok(await page.evaluate(() => getComputedStyle(document.querySelector('.agenda-titre')).color) !== 'rgb(0, 0, 0)', 'l’agenda reprend les couleurs sombres');

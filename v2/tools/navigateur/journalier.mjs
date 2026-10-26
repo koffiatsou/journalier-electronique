@@ -6,6 +6,8 @@ import { mkdirSync } from 'node:fs';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 
+import { ajouterElevesFictifs, aller , recharger } from './_coffre.mjs';
+
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const URL_APP = process.env.URL_APP ?? 'http://localhost:5199/';
 const SORTIE = process.env.SORTIE ?? `${os.tmpdir()}/journalier-navigateur`;
@@ -35,8 +37,8 @@ async function nouvelleSeance(date, matiere) {
   await page.getByText('Séance enregistrée').first().waitFor();
 }
 
-await page.goto(URL_APP);
-await page.getByRole('button', { name: 'Ajouter des élèves fictifs' }).click();
+await aller(page, URL_APP);
+await ajouterElevesFictifs(page);
 await nouvelleSeance('2026-06-15', 'Néerlandais');
 await nouvelleSeance('2026-10-20', 'Mathématiques');
 await nouvelleSeance('2026-09-14', 'Français');
@@ -111,7 +113,7 @@ await page.locator('.journalier-liste > li', { hasText: 'Français' }).getByRole
 await page.getByRole('dialog').getByRole('button', { name: 'Supprimer' }).click();
 await page.getByText('Séance du 14/09/2026 supprimée').waitFor();
 ok(await lignes().count() === 1, 'séance supprimée');
-await page.reload();
+await recharger(page);
 await page.getByRole('heading', { name: 'Journalier', level: 1 }).waitFor();
 ok(await lignes().count() === 1, 'suppression et modification conservées après rechargement');
 

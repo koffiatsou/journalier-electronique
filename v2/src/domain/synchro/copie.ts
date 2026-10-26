@@ -4,8 +4,8 @@ import type { Cle } from './cles.ts';
 
 /*
  * Copie de secours : tout le Journalier dans un seul fichier, à enregistrer sur l'ordinateur.
- * C'est le « repli manuel » quand OneDrive n'est pas disponible. La copie n'est pas chiffrée (le coffre chiffré
- * est un lot à part) : l'écran le dit clairement.
+ * C'est le « repli manuel » quand OneDrive n'est pas disponible. Ce fichier-ci est en clair ; l'écran propose de le
+ * protéger par un mot de passe (`domain/coffre/motdepasse.ts`), ce qui l'enveloppe dans un second fichier chiffré.
  */
 
 export const SCHEMA_COPIE = 'journalier-v2-copie/1';

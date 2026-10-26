@@ -7,6 +7,8 @@
 import { mkdirSync } from 'node:fs';
 import os from 'node:os';
 
+import { ajouterElevesFictifs, aller, ecrireBase as ecrireChiffre, lireBase as lireChiffre, modifierBase , recharger } from './_coffre.mjs';
+
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const URL_APP = process.env.URL_APP ?? 'http://localhost:5199/';
 const SORTIE = process.env.SORTIE ?? `${os.tmpdir()}/journalier-navigateur`;
@@ -20,15 +22,7 @@ const page = await ctx.newPage();
 page.on('console', (m) => { if (m.type() === 'error') erreurs.push(m.text()); });
 page.on('pageerror', (e) => erreurs.push(String(e)));
 
-const lireBase = (magasin) => page.evaluate((nom) => new Promise((resolve, reject) => {
-  const ouverture = indexedDB.open('journalier-v2');
-  ouverture.onerror = () => reject(ouverture.error);
-  ouverture.onsuccess = () => {
-    const req = ouverture.result.transaction(nom, 'readonly').objectStore(nom).getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  };
-}), magasin);
+const lireBase = (magasin) => lireChiffre(page, magasin);
 
 const versEleves = async () => {
   await page.evaluate(() => { location.hash = '#/accueil'; });
@@ -49,8 +43,8 @@ const apercu = () => page.locator('.choix-avatar-tete .avatar');
 const coche = async (nomGroupe, option) => (await groupe(nomGroupe).getByRole('radio', { name: option, exact: true }).getAttribute('aria-checked')) === 'true';
 
 /* ───────── Départ : deux élèves, sans avatar ───────── */
-await page.goto(URL_APP);
-await page.getByRole('button', { name: 'Ajouter des élèves fictifs' }).click();
+await aller(page, URL_APP);
+await ajouterElevesFictifs(page);
 await versEleves();
 ok((await carte('Alpha').locator('.avatar').innerText()).trim() === 'ÉA', 'sans avatar : initiales ÉA sur la carte');
 ok(await carte('Alpha').locator('.avatar svg').count() === 0, 'sans avatar : aucun dessin');
@@ -117,7 +111,7 @@ const attendu = { style: 'manga', teint: 2, cheveux: 4, coiffure: 5, visage: 4, 
 let alpha = (await lireBase('eleves')).find((e) => e.id === 'demo-alpha');
 ok(JSON.stringify(alpha.avatar) === JSON.stringify(attendu), `base : avatar enregistré ${JSON.stringify(alpha.avatar)}`);
 ok(JSON.stringify(Object.keys(alpha.avatar).sort()) === JSON.stringify(Object.keys(attendu).sort()), 'base : rien d’autre que les six réglages (aucune image)');
-await page.reload();
+await recharger(page);
 
 /* ───────── Affichage ───────── */
 await versEleves();
@@ -161,23 +155,13 @@ await versEleves();
 ok(await carte('Alpha').locator('.avatar svg').count() === 0, 'carte : retour aux initiales');
 
 /* ───────── Un avatar abîmé dans la base est réparé, un style inconnu donne les initiales ───────── */
-await page.evaluate(() => new Promise((resolve) => {
-  const o = indexedDB.open('journalier-v2');
-  o.onsuccess = () => {
-    const tx = o.result.transaction('eleves', 'readwrite');
-    const s = tx.objectStore('eleves');
-    const g = s.get('demo-alpha');
-    g.onsuccess = () => { s.put({ ...g.result, avatar: { style: 'pixel', teint: 99, cheveux: 'x', url: 'http://exemple.test/photo.png' } }); };
-    const g2 = s.get('demo-beta');
-    g2.onsuccess = () => { s.put({ ...g2.result, avatar: { style: 'photo' } }); };
-    tx.oncomplete = () => resolve(undefined);
-  };
-}));
-await page.reload();
+await modifierBase(page, 'eleves', 'demo-alpha', (e) => ({ ...e, avatar: { style: 'pixel', teint: 99, cheveux: 'x', url: 'http://exemple.test/photo.png' } }));
+await modifierBase(page, 'eleves', 'demo-beta', (e) => ({ ...e, avatar: { style: 'photo' } }));
+await recharger(page);
 await versEleves();
 ok(await carte('Alpha').locator('.avatar svg').count() === 1, 'avatar abîmé dans la base : réparé, l’application ne plante pas');
 ok(await carte('Bêta').locator('.avatar svg').count() === 0, 'style inconnu dans la base : initiales');
-ok(await page.locator('img').count() === 0, 'aucune image dans la page');
+ok(await page.locator('img:not(.marque-logo)').count() === 0, 'aucune image dans la page (hors logo du menu)');
 
 /* ───────── Thème sombre et téléphone ───────── */
 await page.emulateMedia({ colorScheme: 'dark' });

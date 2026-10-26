@@ -7,7 +7,7 @@ La V75 est née par ajouts successifs (≈ 33 000 lignes de JavaScript sans stru
 
 ## Principes
 - **Domaine pur** (`src/domain`) : types du Journalier et règles de rédaction. Aucune dépendance au navigateur, entièrement testé.
-- **Données locales** (`src/data`) : une interface `Depot` ; IndexedDB aujourd'hui, coffre chiffré (AES-GCM) ensuite, mémoire pour les tests.
+- **Données locales** (`src/data`) : une interface `Depot` ; IndexedDB chiffré (AES-GCM, lot 7), mémoire pour les tests.
 - **Interface** (`src/ui`, `src/features`) : composants React accessibles, un seul style (jetons CSS), mouvement réduit respecté.
 - **Sécurité** : aucun HTML construit à la main (React échappe le texte), politique CSP stricte (`script-src 'self'`), aucun script intégré.
 - **Garde-fous** : TypeScript strict, tests automatiques, `npm run check` obligatoire avant fusion (typecheck + tests + build).
@@ -26,6 +26,8 @@ LANG=C.UTF-8 node tools/navigateur/pia-4b.mjs       # idem pour le PV 2, l'expor
 LANG=C.UTF-8 node tools/navigateur/agenda-5.mjs     # idem pour l'agenda : mois, jours fériés, vacances scolaires, horaires réglables
 LANG=C.UTF-8 node tools/navigateur/agenda-6.mjs     # idem : glisser pour créer, semaine type, impression
 LANG=C.UTF-8 node tools/navigateur/theme.mjs     # bouton de thème Automatique / Clair / Sombre
+LANG=C.UTF-8 node tools/navigateur/coffre.mjs    # coffre chiffré : verrou, mode essai, rien en clair, clé perdue, migration, copie avec mot de passe
+# Depuis le lot 7, ces parcours passent par le mode essai (aide commune : tools/navigateur/_coffre.mjs).
 LANG=C.UTF-8 node --import tsx tools/navigateur/synchro.mjs   # synchronisation : démonstration, conflits, Outlook, copie de secours, connexion Microsoft (faux Microsoft)
 ```
 
@@ -47,7 +49,8 @@ Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des l
 | PIA (profil, procès-verbaux 1 et 2, aménagements, export Word entier ou par partie ; onglet Préparer = ex-Réunion) | disponible (lots 4a et 4b : PV 2, export par partie, version dé-identifiée, impression / PDF) |
 | OneDrive / Outlook (synchronisation sûre, conflits, copie de secours, mode démonstration) | disponible (lot 8) ; **première vraie connexion à essayer par l'utilisateur** |
 | Données de démonstration (bouton sur l'accueil, effaçables) | disponible (lot 8) |
-| Coffre chiffré, reprise V75 | lots 7 et 9 |
+| Coffre chiffré (écran verrouillé, mode essai, migration de l'ancienne base, copie de secours avec mot de passe) | disponible (lot 7) |
+| Reprise V75 | lot 9 (conseillé ensuite) |
 
 ## Outils de build
 `esbuild` compile le TypeScript et React (script `scripts/build.mjs`). Pas de Vite : l'environnement de développement initial n'avait pas accès au registre npm, et `esbuild` suffit à ce stade.

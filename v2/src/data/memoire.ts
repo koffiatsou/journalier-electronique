@@ -3,7 +3,7 @@ import type { Pia } from '../domain/pia/types.ts';
 import type { Eleve, Seance } from '../domain/types.ts';
 import type { Depot, EntreeSynchro, Reglage } from './repository.ts';
 
-/** Dépôt en mémoire : tests et démonstration, rien n'est conservé. */
+/** Dépôt en mémoire : tests, et repli quand le navigateur n'a pas de base (navigation privée) ; rien n'est conservé. */
 export function creerDepotMemoire(eleves: Eleve[] = [], seances: Seance[] = [], activites: Activite[] = [], pias: Pia[] = [], reglages: Reglage[] = []): Depot {
   const e = new Map(eleves.map((x) => [x.id, x]));
   const s = new Map(seances.map((x) => [x.id, x]));
@@ -11,6 +11,7 @@ export function creerDepotMemoire(eleves: Eleve[] = [], seances: Seance[] = [], 
   const p = new Map(pias.map((x) => [x.id, x]));
   const r = new Map(reglages.map((x) => [x.id, x]));
   const y = new Map<string, EntreeSynchro>();
+  let nuageDemo: string | null = null;
   return {
     chargerEleves: async () => [...e.values()],
     chargerSeances: async () => [...s.values()],
@@ -34,6 +35,10 @@ export function creerDepotMemoire(eleves: Eleve[] = [], seances: Seance[] = [], 
     chargerSynchro: async () => [...y.values()],
     enregistrerSynchro: async (entrees) => { for (const x of entrees) y.set(x.cle, x); },
     supprimerSynchro: async (cles) => { for (const c of cles) y.delete(c); },
-    viderSynchro: async () => { y.clear(); }
+    viderSynchro: async () => { y.clear(); },
+    chargerNuageDemo: async () => nuageDemo,
+    enregistrerNuageDemo: async (texte) => { nuageDemo = texte; },
+    illisibles: () => [],
+    ecarterIllisibles: async () => 0
   };
 }

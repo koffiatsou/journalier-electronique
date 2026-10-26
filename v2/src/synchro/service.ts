@@ -39,6 +39,10 @@ export interface EtatSynchro {
   outlookAutorise: boolean;
   dernierOutlook: BilanOutlook | null;
   nuageDemo: { fichiers: number; evenements: number };
+  /** La connexion à un vrai compte Microsoft est-elle permise ? Non dans le mode essai (données fictives seulement). */
+  microsoftPossible: boolean;
+  /** Éléments illisibles sur cet appareil : tant qu'il y en a, la synchronisation reste en pause (voir `ecarterIllisibles`). */
+  illisibles: number;
 }
 
 export interface DependancesSynchro {
@@ -55,9 +59,13 @@ export interface DependancesSynchro {
   /** Remplaçables dans les tests. */
   nuageMicrosoft?: () => Nuage;
   calendrierMicrosoft?: () => CalendrierNuage;
+  /** Faux : espace du mode essai, jamais relié à un vrai compte Microsoft (par défaut : vrai). */
+  autoriserMicrosoft?: boolean;
 }
 
-const CLE_MODE = 'journalier-synchro-mode';
+/** Préférence de cet appareil : mode de synchronisation (aucun, demonstration, microsoft). */
+export const CLE_MODE_SYNCHRO = 'journalier-synchro-mode';
+const CLE_MODE = CLE_MODE_SYNCHRO;
 const CLE_AUTO = 'journalier-synchro-auto';
 const COMPTE_DEMO: Compte = { id: 'demonstration', nom: 'Démonstration', courriel: '' };
 
@@ -96,17 +104,23 @@ export function creerSynchro(d: DependancesSynchro) {
   const lirePref = (k: string): string | null => { try { return d.preferences.getItem(k); } catch { return null; } };
   const ecrirePref = (k: string, v: string): void => { try { d.preferences.setItem(k, v); } catch { /* préférence non gardée */ } };
 
+  const microsoftPossible = d.autoriserMicrosoft !== false;
   const modeInitial = lirePref(CLE_MODE);
   let etat: EtatSynchro = {
-    mode: modeInitial === 'demonstration' || modeInitial === 'microsoft' ? modeInitial : 'aucun',
+    // Le mode essai ne se relie jamais à un vrai compte, même si l'appareil s'était réglé ainsi auparavant.
+    mode: modeInitial === 'demonstration' || (modeInitial === 'microsoft' && microsoftPossible) ? modeInitial : 'aucun',
     compte: null, reconnexion: false, enCours: null, derniere: null, conflits: [], message: null,
-    auto: lirePref(CLE_AUTO) !== 'non', outlook: REGLAGES_OUTLOOK_DEFAUT, outlookAutorise: false, dernierOutlook: null, nuageDemo: d.demo.resume()
+    auto: lirePref(CLE_AUTO) !== 'non', outlook: REGLAGES_OUTLOOK_DEFAUT, outlookAutorise: false, dernierOutlook: null, nuageDemo: d.demo.resume(),
+    microsoftPossible, illisibles: 0
   };
   const abonnes = new Set<() => void>();
+  /** Vrai une fois la session verrouillée : plus rien ne se lance, plus rien n'est écrit. */
+  let ferme = false;
   const maj = (suite: Partial<EtatSynchro>): void => { etat = { ...etat, ...suite }; abonnes.forEach((f) => f()); };
 
   /** Compte, session et droits tels que la connexion les connaît (à rappeler après toute connexion ou déconnexion). */
   const relire = (): void => {
+    etat = { ...etat, illisibles: d.depot.illisibles().length };
     if (etat.mode === 'demonstration') { maj({ compte: COMPTE_DEMO, reconnexion: false, outlookAutorise: true, nuageDemo: d.demo.resume() }); return; }
     if (etat.mode === 'microsoft') {
       const compte = d.connexion.compte();
@@ -115,7 +129,7 @@ export function creerSynchro(d: DependancesSynchro) {
     }
     maj({ compte: null, reconnexion: false, outlookAutorise: false });
   };
-  d.connexion.abonner(relire);
+  const cesserEcoute = d.connexion.abonner(() => { if (!ferme) relire(); });
 
   const nuage = (): Nuage => (etat.mode === 'demonstration' ? d.demo : d.nuageMicrosoft?.() ?? creerNuageGraph({ jeton: d.connexion }));
   const calendrier = (): CalendrierNuage => (etat.mode === 'demonstration' ? d.demo : d.calendrierMicrosoft?.() ?? creerCalendrierGraph({ jeton: d.connexion }));
@@ -124,6 +138,20 @@ export function creerSynchro(d: DependancesSynchro) {
     compteId: etat.mode === 'demonstration' ? COMPTE_DEMO.id : etat.compte?.id ?? '', exclureDemo: etat.mode === 'microsoft', maintenant
   });
   const pret = (): boolean => (etat.mode === 'demonstration' || (etat.mode === 'microsoft' && !!etat.compte && !etat.reconnexion));
+
+  /**
+   * Des éléments illisibles ici sont absents de ce que la synchronisation voit : elle les prendrait pour des éléments
+   * supprimés et les supprimerait dans OneDrive (ou dans Outlook). Tant qu'on ne les a pas écartés, on ne synchronise pas.
+   */
+  function enPause(silencieux: boolean): boolean {
+    const n = d.depot.illisibles().length;
+    if (!n) { if (etat.illisibles) maj({ illisibles: 0 }); return false; }
+    maj({
+      illisibles: n,
+      ...(silencieux ? {} : { message: { genre: 'erreur' as const, texte: `Synchronisation en pause : ${n} élément${n > 1 ? 's' : ''} de cet appareil ${n > 1 ? 'sont' : 'est'} illisible${n > 1 ? 's' : ''}. Écartez-${n > 1 ? 'les' : 'le'} ci-dessous : OneDrive ${n > 1 ? 'les' : 'le'} renverra.` } })
+    });
+    return true;
+  }
 
   function signaler(e: unknown): void {
     if (e instanceof ErreurAcces && e.code === 'non-connecte') relire();
@@ -136,7 +164,7 @@ export function creerSynchro(d: DependancesSynchro) {
   let enSynchro = false;
 
   async function synchroniserMaintenant(silencieux = false): Promise<void> {
-    if (enSynchro || !pret()) return;
+    if (ferme || enSynchro || !pret() || enPause(silencieux)) return;
     enSynchro = true;
     maj({ enCours: 'synchronisation', ...(silencieux ? {} : { message: null }) });
     try {
@@ -155,7 +183,7 @@ export function creerSynchro(d: DependancesSynchro) {
   }
 
   function programmerAuto(): void {
-    if (!etat.auto || !pret() || etat.conflits.length) return;
+    if (ferme || !etat.auto || !pret() || etat.conflits.length || d.depot.illisibles().length) return;
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
     if (minuteur) clearTimeout(minuteur);
     minuteur = setTimeout(() => { minuteur = null; void synchroniserMaintenant(true); }, d.delaiAutoMs ?? 30_000);
@@ -163,7 +191,7 @@ export function creerSynchro(d: DependancesSynchro) {
 
   // Tout changement de données ici déclenche un envoi, après un moment de calme (comme en V75, 30 secondes).
   let vu = d.magasin.lire();
-  d.magasin.abonner(() => {
+  const cesserMagasin = d.magasin.abonner(() => {
     const e = d.magasin.lire();
     const change = e.eleves !== vu.eleves || e.seances !== vu.seances || e.activites !== vu.activites || e.pias !== vu.pias || e.horaires !== vu.horaires || e.semaineType !== vu.semaineType;
     vu = e;
@@ -173,7 +201,7 @@ export function creerSynchro(d: DependancesSynchro) {
   /* ───────── Outlook ───────── */
 
   async function envoyerVersOutlook(silencieux = false): Promise<void> {
-    if (!pret() || !etat.outlook.actif || !etat.outlookAutorise || etat.enCours === 'outlook') return;
+    if (ferme || !pret() || !etat.outlook.actif || !etat.outlookAutorise || etat.enCours === 'outlook' || enPause(silencieux)) return;
     maj({ enCours: 'outlook', ...(silencieux ? {} : { message: null }) });
     try {
       const cal = calendrier();
@@ -207,8 +235,17 @@ export function creerSynchro(d: DependancesSynchro) {
     lire: () => etat,
     abonner(f: () => void) { abonnes.add(f); return () => { abonnes.delete(f); }; },
 
+    /** Verrouillage : arrête le minuteur et les écoutes. Ce service ne sert plus ensuite. */
+    arreter(): void {
+      ferme = true;
+      if (minuteur) { clearTimeout(minuteur); minuteur = null; }
+      cesserEcoute();
+      cesserMagasin();
+    },
+
     /** À appeler une fois au démarrage : relit les réglages et reprend là où on s'était arrêté. */
     async demarrer(): Promise<void> {
+      if (ferme) return;
       const reglage = (await d.depot.chargerReglages()).find((r) => r.id === REGLAGE_OUTLOOK);
       maj({ outlook: normaliserReglagesOutlook(reglage?.valeur) });
       relire();
@@ -227,6 +264,7 @@ export function creerSynchro(d: DependancesSynchro) {
     /** Ouvre la fenêtre de connexion Microsoft (à appeler depuis un clic). */
     async connecter(): Promise<void> {
       if (etat.enCours) return;
+      if (!microsoftPossible) { maj({ message: { genre: 'erreur', texte: 'Le mode essai n’est jamais relié à un vrai compte Microsoft. Verrouillez, puis ouvrez le Journalier avec votre compte.' } }); return; }
       maj({ enCours: 'connexion', message: null });
       try {
         await d.connexion.connecter(['fichiers']);
@@ -251,7 +289,7 @@ export function creerSynchro(d: DependancesSynchro) {
     changerAuto(auto: boolean) { ecrirePref(CLE_AUTO, auto ? 'oui' : 'non'); maj({ auto }); if (!auto && minuteur) { clearTimeout(minuteur); minuteur = null; } },
 
     async resoudre(conflit: ConflitAffiche, choix: Choix): Promise<void> {
-      if (!pret() || enSynchro) return;
+      if (!pret() || enSynchro || enPause(false)) return;
       enSynchro = true;
       maj({ enCours: 'synchronisation', message: null });
       try {
@@ -319,9 +357,16 @@ export function creerSynchro(d: DependancesSynchro) {
       maj({ nuageDemo: d.demo.resume(), derniere: null, conflits: [], dernierOutlook: null, message: { genre: 'ok', texte: 'Le faux OneDrive et le faux Outlook sont vides.' } });
     },
 
-    /* Copie de secours */
-    preparerCopie: () => preparerCopie(d.magasin, maintenant()),
-    preparerRestauration: (texte: string): Promise<LectureRestauration> => preparerRestauration(d.magasin, texte),
+    /** Retire de cet appareil les éléments illisibles (et leur trace de synchro) ; OneDrive les renverra à la prochaine synchronisation. */
+    async ecarterIllisibles(): Promise<number> {
+      const n = await d.magasin.ecarterIllisibles();
+      maj({ illisibles: d.depot.illisibles().length, message: { genre: 'ok', texte: n ? `${n} élément${n > 1 ? 's' : ''} illisible${n > 1 ? 's' : ''} écarté${n > 1 ? 's' : ''}. Lancez la synchronisation pour les récupérer depuis OneDrive.` : 'Rien à écarter.' } });
+      return n;
+    },
+
+    /* Copie de secours (avec un mot de passe, le fichier est chiffré) */
+    preparerCopie: (motDePasse?: string) => preparerCopie(d.magasin, maintenant(), motDePasse),
+    preparerRestauration: (texte: string, motDePasse?: string): Promise<LectureRestauration> => preparerRestauration(d.magasin, texte, motDePasse),
     async restaurer(prevue: RestaurationPrevue, remplacerDifferents: boolean): Promise<number> {
       const n = await appliquerRestauration(d.magasin, prevue, remplacerDifferents);
       maj({ message: { genre: 'ok', texte: n ? `Copie restaurée : ${n} élément${n > 1 ? 's' : ''} ajouté${n > 1 ? 's' : ''} ou remplacé${n > 1 ? 's' : ''}.` : 'Rien à restaurer : tout y est déjà.' } });

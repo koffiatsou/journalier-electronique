@@ -8,6 +8,8 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 
+import { ajouterElevesFictifs, aller, ecrireBase as ecrireChiffre, lireBase as lireChiffre , recharger } from './_coffre.mjs';
+
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const URL_APP = process.env.URL_APP ?? 'http://localhost:5199/';
 const SORTIE = process.env.SORTIE ?? `${os.tmpdir()}/journalier-navigateur`;
@@ -22,24 +24,8 @@ const page = await ctx.newPage();
 page.on('console', (m) => { if (m.type() === 'error') erreurs.push(m.text()); });
 page.on('pageerror', (e) => erreurs.push(String(e)));
 
-const lireBase = (magasin) => page.evaluate((nom) => new Promise((resolve, reject) => {
-  const ouverture = indexedDB.open('journalier-v2');
-  ouverture.onerror = () => reject(ouverture.error);
-  ouverture.onsuccess = () => {
-    const req = ouverture.result.transaction(nom, 'readonly').objectStore(nom).getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  };
-}), magasin);
-const ecrireActivite = (a) => page.evaluate((activite) => new Promise((resolve, reject) => {
-  const ouverture = indexedDB.open('journalier-v2');
-  ouverture.onsuccess = () => {
-    const tx = ouverture.result.transaction('activites', 'readwrite');
-    tx.objectStore('activites').put(activite);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  };
-}), a);
+const lireBase = (magasin) => lireChiffre(page, magasin);
+const ecrireActivite = (a) => ecrireChiffre(page, 'activites', a);
 const activite = (id, extra) => ({ id, type: 'eleve', titre: '', lieu: '', note: '', repetition: 'aucune', creeLe: '2026-10-24T08:00:00Z', modifieLe: '2026-10-24T08:00:00Z', debut: 0, fin: 0, ...extra });
 
 const bascule = (nom) => page.getByRole('group', { name: 'Affichage' }).getByRole('button', { name: nom, exact: true });
@@ -61,13 +47,13 @@ async function glisser(date, a, b) {
 }
 
 /* ───────── Préparation ───────── */
-await page.goto(URL_APP);
-await page.getByRole('button', { name: 'Ajouter des élèves fictifs' }).click();
+await aller(page, URL_APP);
+await ajouterElevesFictifs(page);
 await page.getByText('Alpha').first().waitFor().catch(() => undefined);
 await ecrireActivite(activite('a1', { eleveId: 'demo-alpha', date: '2026-10-26', debut: 0, fin: 1 }));
 await ecrireActivite(activite('a2', { eleveId: 'demo-beta', date: '2026-10-27', debut: 2, fin: 2 }));
 await ecrireActivite(activite('a3', { type: 'formation', titre: 'Formation pôle', date: '2026-10-29', debut: 2, fin: 4 }));
-await page.reload();
+await recharger(page);
 await ouvrirAgenda();
 console.log('✓ données de départ créées');
 
@@ -144,7 +130,7 @@ await fenetre.getByLabel(/Jusqu’au/).fill('2026-11-20');
 // après rechargement, la semaine type est toujours là
 await fenetre.getByRole('button', { name: 'Fermer' }).click();
 await fenetre.waitFor({ state: 'hidden' });
-await page.reload();
+await recharger(page);
 await page.getByRole('heading', { name: 'Agenda', level: 1 }).waitFor();
 await page.getByRole('button', { name: 'Semaine type', exact: true }).click();
 await fenetre.waitFor();
@@ -247,7 +233,7 @@ await page.emulateMedia({ media: 'screen' });
 
 /* ───────── Téléphone ───────── */
 await page.setViewportSize({ width: 390, height: 844 });
-await page.goto(URL_APP);
+await aller(page, URL_APP);
 await ouvrirAgenda();
 await page.getByRole('button', { name: 'Semaine type', exact: true }).click();
 const fenTel = page.getByRole('dialog', { name: 'Semaine type' });

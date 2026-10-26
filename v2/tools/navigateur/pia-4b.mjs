@@ -5,6 +5,8 @@
 import { mkdirSync } from 'node:fs';
 import os from 'node:os';
 
+import { aller, ecrireBase as ecrireChiffre, lireBase as lireChiffre , recharger } from './_coffre.mjs';
+
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const URL_APP = process.env.URL_APP ?? 'http://localhost:5199/';
 const SORTIE = process.env.SORTIE ?? `${os.tmpdir()}/journalier-navigateur`;
@@ -23,15 +25,7 @@ await page.addInitScript(() => {
   window.print = () => { window.__impressions.push(document.querySelector('.pia-impression')?.innerText ?? null); };
 });
 
-const lireBase = (magasin) => page.evaluate((m) => new Promise((resolve, reject) => {
-  const o = indexedDB.open('journalier-v2');
-  o.onerror = () => reject(o.error);
-  o.onsuccess = () => {
-    const r = o.result.transaction(m).objectStore(m).getAll();
-    r.onsuccess = () => resolve(r.result);
-    r.onerror = () => reject(r.error);
-  };
-}), magasin);
+const lireBase = (magasin) => lireChiffre(page, magasin);
 
 async function exporter(nomBouton = 'Exporter en Word') {
   const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: nomBouton }).click()]);
@@ -39,7 +33,7 @@ async function exporter(nomBouton = 'Exporter en Word') {
 }
 
 // Exemple fictif
-await page.goto(`${URL_APP}#/pia`);
+await aller(page, `${URL_APP}#/pia`);
 await page.getByRole('heading', { name: 'PIA', level: 1 }).waitFor();
 await page.getByRole('button', { name: 'Charger un exemple fictif' }).click();
 await page.getByText(/Exemple fictif chargé/).waitFor();
@@ -89,7 +83,7 @@ await page.getByText(/Brouillon enregistré/).waitFor();
 let base = (await lireBase('pia'))[0];
 ok(base.pv2.date === '2027-06-20' && base.pv2.evaluations[0]?.resultat === 'partiel' && base.pv2.amenagements.length === 2, 'PV 2 enregistré dans la base');
 ok(base.amenagements.length === 2, 'les aménagements de l’année ne sont pas touchés par ceux de la rentrée');
-await page.reload();
+await recharger(page);
 await page.getByRole('heading', { name: 'Évaluation des objectifs du procès-verbal 1' }).waitFor();
 ok(await page.getByLabel('Commentaire sur l’objectif 1').inputValue() === 'Progrès nets depuis octobre.', 'après rechargement : le PV 2 est retrouvé');
 

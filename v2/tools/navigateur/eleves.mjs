@@ -7,6 +7,8 @@ import { mkdirSync } from 'node:fs';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 
+import { ajouterElevesFictifs, aller, ecrireBase as ecrireChiffre, lireBase as lireChiffre , recharger } from './_coffre.mjs';
+
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const URL_APP = process.env.URL_APP ?? 'http://localhost:5199/';
 const SORTIE = process.env.SORTIE ?? `${os.tmpdir()}/journalier-navigateur`;
@@ -21,28 +23,12 @@ page.on('console', (m) => { if (m.type() === 'error') erreurs.push(m.text()); })
 page.on('pageerror', (e) => erreurs.push(String(e)));
 
 /** Contenu réel d'un magasin IndexedDB (pas l'affichage). */
-const lireBase = (magasin) => page.evaluate((nom) => new Promise((resolve, reject) => {
-  const ouverture = indexedDB.open('journalier-v2');
-  ouverture.onerror = () => reject(ouverture.error);
-  ouverture.onsuccess = () => {
-    const req = ouverture.result.transaction(nom, 'readonly').objectStore(nom).getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  };
-}), magasin);
+const lireBase = (magasin) => lireChiffre(page, magasin);
 
-const ecrireActivite = (a) => page.evaluate((activite) => new Promise((resolve, reject) => {
-  const ouverture = indexedDB.open('journalier-v2');
-  ouverture.onsuccess = () => {
-    const tx = ouverture.result.transaction('activites', 'readwrite');
-    tx.objectStore('activites').put(activite);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  };
-}), a);
+const ecrireActivite = (a) => ecrireChiffre(page, 'activites', a);
 
 async function nouvelleSeance(eleve, date, matiere) {
-  await page.goto(`${URL_APP}#/seance`);
+  await aller(page, `${URL_APP}#/seance`);
   await page.getByLabel('Élève accompagné').selectOption({ label: eleve });
   await page.getByLabel('Date', { exact: true }).fill(date);
   await page.getByLabel('Matière').fill(matiere);
@@ -60,8 +46,8 @@ const cartes = () => page.locator('.liste-carte:not(.archives) .carte-eleve');
 const ouvrirDossier = async (nom) => { await versEleves(); await cartes().filter({ hasText: nom }).first().click(); await page.getByRole('heading', { name: new RegExp(nom), level: 2 }).waitFor(); };
 
 /* ───────── Préparation : 2 élèves fictifs, 3 séances, 2 activités d'agenda ───────── */
-await page.goto(URL_APP);
-await page.getByRole('button', { name: 'Ajouter des élèves fictifs' }).click();
+await aller(page, URL_APP);
+await ajouterElevesFictifs(page);
 await nouvelleSeance('Alpha Élève', '2026-09-14', 'Français');
 await nouvelleSeance('Alpha Élève', '2026-10-20', 'Mathématiques');
 await nouvelleSeance('Bêta Élève', '2026-10-21', 'Sciences');
@@ -70,7 +56,7 @@ await ecrireActivite({ id: 'act-beta', type: 'eleve', eleveId: 'demo-beta', titr
 console.log('✓ données de départ créées');
 
 /* ───────── Cartes ───────── */
-await page.goto(URL_APP);
+await aller(page, URL_APP);
 await page.getByRole('link', { name: 'Élèves' }).click();
 await page.getByRole('heading', { name: 'Élèves', level: 1 }).waitFor();
 ok(await cartes().count() === 2, 'deux cartes d’élèves');
@@ -113,14 +99,14 @@ ok(await groupeLangues.getByRole('button', { pressed: true }).count() === 3, 'tr
 await page.screenshot({ path: `${SORTIE}/eleves-fiche-bureau.png`, fullPage: true });
 await page.getByRole('button', { name: 'Enregistrer' }).click();
 await page.getByText('Alpha Élève enregistré').first().waitFor();
-await page.reload();
+await recharger(page);
 await ouvrirDossier('Alpha');
 const infos = await page.locator('.dossier-infos').innerText();
 ok(infos.includes('Éducation physique'), 'matière libre conservée après rechargement');
 ok(/Néerlandais, Anglais, Espagnol/.test(infos), 'trois langues conservées après rechargement');
 
 // Séance : les langues sont proposées comme matières
-await page.goto(`${URL_APP}#/seance`);
+await aller(page, `${URL_APP}#/seance`);
 await page.getByLabel('Élève accompagné').selectOption({ label: 'Alpha Élève' });
 const propositions = await page.locator('datalist option').evaluateAll((l) => l.map((o) => o.value));
 ok(['Anglais', 'Espagnol', 'Néerlandais', 'Éducation physique'].every((m) => propositions.includes(m)), `matières proposées dans la séance : ${propositions.join(', ')}`);
@@ -138,10 +124,10 @@ ok(await page.locator('.archives .carte-eleve').count() === 1, 'Alpha est dans l
 await recherche.fill('alpha');
 ok(await page.locator('.archives').evaluate((d) => d.open), 'une recherche ouvre les archives qui correspondent');
 await recherche.fill('');
-await page.goto(`${URL_APP}#/seance`);
+await aller(page, `${URL_APP}#/seance`);
 const choix = await page.getByLabel('Élève accompagné').locator('option').allInnerTexts();
 ok(!choix.some((c) => c.includes('Alpha')), 'un élève archivé n’est plus proposé pour une nouvelle séance');
-await page.goto(`${URL_APP}#/journalier`);
+await aller(page, `${URL_APP}#/journalier`);
 ok(await page.locator('.journalier-liste > li').count() === 3, 'ses séances restent dans le Journalier');
 const optionsJ = await page.getByLabel('Élève', { exact: true }).locator('option').allInnerTexts();
 ok(optionsJ.some((o) => o.includes('Alpha') && o.includes('archivé')), 'Journalier : Alpha reste choisissable (« archivé »)');
@@ -172,7 +158,7 @@ await ouvrirDossier('Alpha');
 const apres = await page.locator('.dossier-identite').innerText();
 ok(apres.includes('2CB'), 'Alpha est passé en 2CB');
 ok(!(await page.locator('.dossier-infos').innerText()).includes('M. Test'), 'titulaire effacé');
-await page.goto(`${URL_APP}#/journalier?eleve=demo-alpha`);
+await aller(page, `${URL_APP}#/journalier?eleve=demo-alpha`);
 ok(await page.locator('.journalier-liste > li').count() === 2, 'les séances d’Alpha sont intactes après le passage');
 await versEleves();
 await page.getByRole('button', { name: 'Passage d’année' }).click();
@@ -183,7 +169,7 @@ ok((await page.getByLabel('Que faire pour Élève Alpha').inputValue()) === 'lai
 await page.getByRole('button', { name: 'Annuler' }).click();
 
 /* ───────── Recherche dans le Journalier ───────── */
-await page.goto(`${URL_APP}#/journalier`);
+await aller(page, `${URL_APP}#/journalier`);
 const recJ = page.getByLabel('Rechercher une séance');
 await recJ.fill('FRANCAIS');
 ok(await page.locator('.journalier-liste > li').count() === 1, 'recherche « FRANCAIS » : une séance');
@@ -225,7 +211,7 @@ ok((await lireBase('activites')).every((a) => a.eleveId !== 'demo-beta'), 'base 
 ok((await lireBase('activites')).some((a) => a.eleveId === 'demo-alpha'), 'base : l’agenda d’Alpha est intact');
 const idsEleves = new Set((await lireBase('eleves')).map((e) => e.id));
 ok((await lireBase('seances')).every((s) => idsEleves.has(s.eleveId)), 'aucune séance orpheline');
-await page.reload();
+await recharger(page);
 await page.getByRole('link', { name: 'Journalier' }).click();
 await page.getByRole('heading', { name: 'Journalier', level: 1 }).waitFor();
 ok(await page.locator('.journalier-liste > li').count() === 2, 'après rechargement : 2 séances (celles d’Alpha)');

@@ -1,95 +1,100 @@
-import type { Activite } from '../domain/agenda/types.ts';
-import type { Pia } from '../domain/pia/types.ts';
-import type { Eleve, Seance } from '../domain/types.ts';
-import type { Depot, EntreeSynchro, Reglage } from './repository.ts';
+import type { EntreeSynchro } from './repository.ts';
+import type { Rangee, StockageBrut, Table } from './stockage-brut.ts';
 
-const NOM_BASE = 'journalier-v2';
-const VERSION = 5;
+/*
+ * Stockage IndexedDB du coffre : UNE base par propriétaire (journalier-v2-<propriétaire>), ne contenant que des rangées
+ * chiffrées (le chiffrement est fait au-dessus, dans `depot-chiffre.ts`), le registre de synchronisation et la clé.
+ * Les données restent sur l'appareil.
+ */
 
-function ouvrir(): Promise<IDBDatabase> {
+const VERSION = 1;
+const TABLES: readonly Table[] = ['eleves', 'seances', 'activites', 'pia', 'reglages', 'meta'];
+const ID_CLE = 'principale';
+
+function ouvrirBase(nom: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(NOM_BASE, VERSION);
+    const req = indexedDB.open(nom, VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
-      if (!db.objectStoreNames.contains('eleves')) db.createObjectStore('eleves', { keyPath: 'id' });
-      if (!db.objectStoreNames.contains('seances')) db.createObjectStore('seances', { keyPath: 'id' });
-      if (!db.objectStoreNames.contains('activites')) db.createObjectStore('activites', { keyPath: 'id' });
-      if (!db.objectStoreNames.contains('pia')) db.createObjectStore('pia', { keyPath: 'id' });
-      if (!db.objectStoreNames.contains('reglages')) db.createObjectStore('reglages', { keyPath: 'id' });
+      for (const t of TABLES) if (!db.objectStoreNames.contains(t)) db.createObjectStore(t, { keyPath: 'id' });
       if (!db.objectStoreNames.contains('synchro')) db.createObjectStore('synchro', { keyPath: 'cle' });
+      if (!db.objectStoreNames.contains('cles')) db.createObjectStore('cles', { keyPath: 'id' });
     };
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      // Si un autre onglet veut supprimer ou mettre à jour cette base, on lui laisse la place.
+      req.result.onversionchange = () => req.result.close();
+      resolve(req.result);
+    };
     req.onerror = () => reject(req.error ?? new Error('Ouverture de la base impossible'));
+    req.onblocked = () => reject(new Error('Base bloquée par un autre onglet : fermez les autres onglets du Journalier.'));
   });
 }
 
-function requete<T>(db: IDBDatabase, magasin: string, mode: IDBTransactionMode, action: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+/** Transaction d'écriture « stricte » (écrite sur le disque avant d'annoncer la réussite) quand le navigateur le permet. */
+function transactionEcriture(db: IDBDatabase, magasins: string | string[]): IDBTransaction {
+  try { return db.transaction(magasins, 'readwrite', { durability: 'strict' }); } catch { return db.transaction(magasins, 'readwrite'); }
+}
+
+/** Exécute des actions dans UNE transaction ; réussit quand la transaction est terminée (et non quand la requête répond). */
+function ecrireTx(db: IDBDatabase, magasins: string | string[], actions: (tx: IDBTransaction) => void): Promise<void> {
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(magasin, mode);
-    const req = action(tx.objectStore(magasin));
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error ?? new Error('Opération impossible'));
+    const tx = transactionEcriture(db, magasins);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error ?? new Error('Enregistrement impossible'));
+    tx.onabort = () => reject(tx.error ?? new Error('Enregistrement annulé'));
+    actions(tx);
   });
 }
 
-/** Supprime, dans la transaction en cours, tous les enregistrements d'un magasin dont `eleveId` correspond. */
-function supprimerLies(tx: IDBTransaction, magasin: string, eleveId: string): void {
-  const req = tx.objectStore(magasin).openCursor();
+function toutLire<T>(db: IDBDatabase, magasin: string): Promise<T[]> {
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(magasin, 'readonly').objectStore(magasin).getAll();
+    req.onsuccess = () => resolve(req.result as T[]);
+    req.onerror = () => reject(req.error ?? new Error('Lecture impossible'));
+  });
+}
+
+/** Supprime, dans la transaction en cours, toutes les rangées d'une table dont le lien est cet élève. */
+function supprimerLies(tx: IDBTransaction, table: string, eleveId: string): void {
+  const req = tx.objectStore(table).openCursor();
   req.onsuccess = () => {
     const curseur = req.result;
     if (!curseur) return;
-    if ((curseur.value as { eleveId?: string }).eleveId === eleveId) curseur.delete();
+    if ((curseur.value as Rangee).lien === eleveId) curseur.delete();
     curseur.continue();
   };
 }
 
-/**
- * Dépôt IndexedDB local. Les données restent sur l'appareil.
- * Le chiffrement du coffre (AES-GCM, comme en V75) viendra s'intercaler ici sans changer l'interface.
- */
-export async function creerDepotIndexedDb(): Promise<Depot> {
-  const db = await ouvrir();
+export interface StockageIndexedDb extends StockageBrut { fermer(): void }
+
+export async function ouvrirStockageIndexedDb(nomBase: string): Promise<StockageIndexedDb> {
+  const db = await ouvrirBase(nomBase);
   return {
-    chargerEleves: () => requete<Eleve[]>(db, 'eleves', 'readonly', (s) => s.getAll()),
-    chargerSeances: () => requete<Seance[]>(db, 'seances', 'readonly', (s) => s.getAll()),
-    enregistrerEleve: async (e) => { await requete(db, 'eleves', 'readwrite', (s) => s.put(e)); },
-    supprimerEleve: (id) => new Promise<void>((resolve, reject) => {
-      // Une seule transaction sur tous les magasins liés à l'élève : tout est supprimé, ou rien.
-      const tx = db.transaction(['eleves', 'seances', 'activites', 'pia'], 'readwrite');
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error ?? new Error('Suppression impossible'));
-      tx.onabort = () => reject(tx.error ?? new Error('Suppression annulée'));
+    lire: (table) => toutLire<Rangee>(db, table),
+    ecrire: (table, rangees) => ecrireTx(db, table, (tx) => { for (const r of rangees) tx.objectStore(table).put(r); }),
+    supprimer: (table, ids) => ecrireTx(db, table, (tx) => { for (const id of ids) tx.objectStore(table).delete(id); }),
+    supprimerEleve: (id) => ecrireTx(db, ['eleves', 'seances', 'activites', 'pia'], (tx) => {
+      // Une seule transaction sur toutes les tables liées à l'élève : tout est supprimé, ou rien.
       tx.objectStore('eleves').delete(id);
-      supprimerLies(tx, 'seances', id);
-      supprimerLies(tx, 'activites', id);
-      supprimerLies(tx, 'pia', id);
+      for (const t of ['seances', 'activites', 'pia']) supprimerLies(tx, t, id);
     }),
-    enregistrerSeance: async (x) => { await requete(db, 'seances', 'readwrite', (s) => s.put(x)); },
-    supprimerSeance: async (id) => { await requete(db, 'seances', 'readwrite', (s) => s.delete(id)); },
-    chargerActivites: () => requete<Activite[]>(db, 'activites', 'readonly', (s) => s.getAll()),
-    enregistrerActivite: async (a) => { await requete(db, 'activites', 'readwrite', (s) => s.put(a)); },
-    supprimerActivite: async (id) => { await requete(db, 'activites', 'readwrite', (s) => s.delete(id)); },
-    chargerPias: () => requete<Pia[]>(db, 'pia', 'readonly', (s) => s.getAll()),
-    enregistrerPia: async (x) => { await requete(db, 'pia', 'readwrite', (s) => s.put(x)); },
-    supprimerPia: async (id) => { await requete(db, 'pia', 'readwrite', (s) => s.delete(id)); },
-    chargerReglages: () => requete<Reglage[]>(db, 'reglages', 'readonly', (s) => s.getAll()),
-    enregistrerReglage: async (x) => { await requete(db, 'reglages', 'readwrite', (s) => s.put(x)); },
-    chargerSynchro: () => requete<EntreeSynchro[]>(db, 'synchro', 'readonly', (s) => s.getAll()),
+    lireSynchro: () => toutLire<EntreeSynchro>(db, 'synchro'),
     // Plusieurs entrées d'un coup, dans une seule transaction : le registre reste cohérent même si l'onglet se ferme.
-    enregistrerSynchro: (entrees) => new Promise<void>((resolve, reject) => {
-      const tx = db.transaction('synchro', 'readwrite');
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error ?? new Error('Enregistrement impossible'));
-      tx.onabort = () => reject(tx.error ?? new Error('Enregistrement annulé'));
-      for (const x of entrees) tx.objectStore('synchro').put(x);
-    }),
-    supprimerSynchro: (cles) => new Promise<void>((resolve, reject) => {
-      const tx = db.transaction('synchro', 'readwrite');
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error ?? new Error('Suppression impossible'));
-      tx.onabort = () => reject(tx.error ?? new Error('Suppression annulée'));
-      for (const c of cles) tx.objectStore('synchro').delete(c);
-    }),
-    viderSynchro: async () => { await requete(db, 'synchro', 'readwrite', (s) => s.clear()); }
+    ecrireSynchro: (entrees) => ecrireTx(db, 'synchro', (tx) => { for (const x of entrees) tx.objectStore('synchro').put(x); }),
+    supprimerSynchro: (cles) => ecrireTx(db, 'synchro', (tx) => { for (const c of cles) tx.objectStore('synchro').delete(c); }),
+    viderSynchro: () => ecrireTx(db, 'synchro', (tx) => { tx.objectStore('synchro').clear(); }),
+    lireCle: async () => (await toutLire<{ id: string; cle: CryptoKey }>(db, 'cles')).find((x) => x.id === ID_CLE)?.cle ?? null,
+    ecrireCle: (cle) => ecrireTx(db, 'cles', (tx) => { tx.objectStore('cles').put({ id: ID_CLE, cle }); }),
+    fermer: () => db.close()
   };
+}
+
+/** Supprime la base d'un propriétaire (remise à zéro de l'appareil pour cet espace). Fermer d'abord le stockage ouvert. */
+export function supprimerBase(nomBase: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.deleteDatabase(nomBase);
+    const delai = setTimeout(() => reject(new Error('Suppression bloquée : fermez les autres onglets du Journalier.')), 4000);
+    req.onsuccess = () => { clearTimeout(delai); resolve(); };
+    req.onerror = () => { clearTimeout(delai); reject(req.error ?? new Error('Suppression impossible')); };
+  });
 }

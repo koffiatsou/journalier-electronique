@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { LONGUEUR_MINIMALE_MOT_DE_PASSE, verifierMotDePasse } from '../../domain/coffre/index.ts';
 import { NOM_COPIE } from '../../synchro/secours.ts';
 import type { RestaurationPrevue } from '../../synchro/secours.ts';
 import { useSynchro } from '../../synchro/service.ts';
@@ -7,7 +8,7 @@ import type { Synchro } from '../../synchro/service.ts';
 import type { ConflitAffiche } from '../../synchro/synchroniser.ts';
 import type { NomDansOutlook } from '../../domain/synchro/outlook.ts';
 import { Button } from '../../ui/Button.tsx';
-import { Field } from '../../ui/Field.tsx';
+import { Field, Input } from '../../ui/Field.tsx';
 import { aujourdhuiISO } from '../seance/brouillon.ts';
 
 const quand = (iso: string): string => {
@@ -51,21 +52,47 @@ function CopieDeSecours({ synchro }: { synchro: Synchro }) {
   const champ = useRef<HTMLInputElement>(null);
   const [prevue, setPrevue] = useState<RestaurationPrevue | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [occupe, setOccupe] = useState(false);
+  // Enregistrer : mot de passe facultatif (saisi deux fois).
+  const [protegee, setProtegee] = useState(false);
+  const [mdp, setMdp] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const [erreurMdp, setErreurMdp] = useState<string | null>(null);
+  // Restaurer : un fichier chiffré attend son mot de passe.
+  const [enAttente, setEnAttente] = useState<string | null>(null);
+  const [mdpRestauration, setMdpRestauration] = useState('');
 
   const exporter = async () => {
-    const texte = await synchro.preparerCopie();
-    const lien = document.createElement('a');
-    lien.href = URL.createObjectURL(new Blob([texte], { type: 'application/json' }));
-    lien.download = NOM_COPIE(aujourdhuiISO());
-    lien.click();
-    setTimeout(() => URL.revokeObjectURL(lien.href), 1000);
+    setErreur(null); setErreurMdp(null);
+    if (protegee) {
+      const probleme = verifierMotDePasse(mdp) ?? (mdp !== confirmation ? 'Les deux mots de passe ne sont pas identiques.' : null);
+      if (probleme) { setErreurMdp(probleme); return; }
+    }
+    setOccupe(true);
+    try {
+      const texte = await synchro.preparerCopie(protegee ? mdp : undefined);
+      const lien = document.createElement('a');
+      lien.href = URL.createObjectURL(new Blob([texte], { type: 'application/json' }));
+      lien.download = NOM_COPIE(aujourdhuiISO(), protegee);
+      lien.click();
+      setTimeout(() => URL.revokeObjectURL(lien.href), 1000);
+      setMdp(''); setConfirmation('');
+    } catch (e) { setErreur(`La copie n’a pas pu être préparée : ${e instanceof Error ? e.message : 'erreur inconnue'}.`); } finally { setOccupe(false); }
+  };
+  const lire = async (texte: string, motDePasse?: string) => {
+    setOccupe(true);
+    try {
+      const r = await synchro.preparerRestauration(texte, motDePasse);
+      if (r.ok) { setPrevue(r.prevue); setEnAttente(null); setMdpRestauration(''); setErreur(null); }
+      else if (r.motDePasseRequis) { setEnAttente(texte); setErreur(motDePasse ? r.erreur : null); }
+      else { setEnAttente(null); setErreur(r.erreur); }
+    } finally { setOccupe(false); }
   };
   const choisir = async (fichier: File | undefined) => {
-    setErreur(null); setPrevue(null);
+    setErreur(null); setPrevue(null); setEnAttente(null); setMdpRestauration('');
     if (!fichier) return;
     if (fichier.size > 50_000_000) { setErreur('Ce fichier est trop gros pour être une copie du Journalier.'); return; }
-    const r = await synchro.preparerRestauration(await fichier.text());
-    if (r.ok) setPrevue(r.prevue); else setErreur(r.erreur);
+    await lire(await fichier.text());
     if (champ.current) champ.current.value = '';
   };
   const appliquer = async (remplacer: boolean) => { if (prevue) { await synchro.restaurer(prevue, remplacer); setPrevue(null); } };
@@ -73,11 +100,38 @@ function CopieDeSecours({ synchro }: { synchro: Synchro }) {
   return (
     <Section id="synchro-copie" titre="Copie de secours (sans compte)">
       <p>Un seul fichier avec tout votre Journalier, à garder sur votre ordinateur. Utile si OneDrive n’est pas disponible, ou pour passer d’un appareil à l’autre à la main.</p>
+      <label className="synchro-case">
+        <input type="checkbox" checked={protegee} onChange={(ev) => { setProtegee(ev.target.checked); setErreurMdp(null); }} />
+        <span>Protéger la copie par un mot de passe (recommandé : sans mot de passe, quiconque ouvre le fichier lit les noms et les observations)</span>
+      </label>
+      {protegee ? (
+        <div className="synchro-champs">
+          <Field label="Mot de passe de la copie" aide={`Au moins ${LONGUEUR_MINIMALE_MOT_DE_PASSE} caractères. Il n’est enregistré nulle part : s’il est perdu, la copie est définitivement illisible.`}>
+            {(id) => <Input id={id} type="password" autoComplete="new-password" value={mdp} onChange={(ev) => setMdp(ev.target.value)} />}
+          </Field>
+          <Field label="Confirmer le mot de passe">
+            {(id) => <Input id={id} type="password" autoComplete="new-password" value={confirmation} onChange={(ev) => setConfirmation(ev.target.value)} />}
+          </Field>
+          {erreurMdp ? <p className="erreur" role="alert">{erreurMdp}</p> : null}
+        </div>
+      ) : null}
       <div className="synchro-actions">
-        <Button onClick={() => { void exporter(); }}>Enregistrer une copie</Button>
-        <Button onClick={() => champ.current?.click()}>Restaurer une copie…</Button>
+        <Button disabled={occupe} onClick={() => { void exporter(); }}>{occupe && protegee ? 'Chiffrement…' : 'Enregistrer une copie'}</Button>
+        <Button disabled={occupe} onClick={() => champ.current?.click()}>Restaurer une copie…</Button>
         <input ref={champ} type="file" accept=".json,application/json" hidden aria-label="Choisir un fichier de copie" onChange={(e) => { void choisir(e.target.files?.[0]); }} />
       </div>
+      {enAttente ? (
+        <div className="synchro-restauration" role="region" aria-label="Copie protégée par un mot de passe">
+          <p><strong>Cette copie est protégée par un mot de passe.</strong></p>
+          <Field label="Mot de passe de la copie">
+            {(id) => <Input id={id} type="password" autoComplete="off" value={mdpRestauration} onChange={(ev) => setMdpRestauration(ev.target.value)} />}
+          </Field>
+          <div className="synchro-actions">
+            <Button variante="primaire" disabled={occupe || !mdpRestauration} onClick={() => { void lire(enAttente, mdpRestauration); }}>{occupe ? 'Ouverture…' : 'Ouvrir la copie'}</Button>
+            <Button variante="discret" disabled={occupe} onClick={() => { setEnAttente(null); setMdpRestauration(''); setErreur(null); }}>Annuler</Button>
+          </div>
+        </div>
+      ) : null}
       {erreur ? <p className="erreur" role="alert">{erreur}</p> : null}
       {prevue ? (
         <div className="synchro-restauration" role="region" aria-label="Aperçu de la restauration">
@@ -114,11 +168,12 @@ export function SynchroPage({ synchro, adresseRetour }: { synchro: Synchro; adre
           <>
             <p>Pas de synchronisation pour l’instant : tout reste sur cet appareil.</p>
             <div className="synchro-actions">
-              <Button variante="primaire" disabled={occupe} onClick={() => { void synchro.connecter(); }}>{e.enCours === 'connexion' ? 'Fenêtre Microsoft ouverte…' : 'Se connecter avec Microsoft'}</Button>
-              <Button disabled={occupe} onClick={() => synchro.utiliserDemonstration()}>Essayer en démonstration (sans compte)</Button>
+              {e.microsoftPossible ? <Button variante="primaire" disabled={occupe} onClick={() => { void synchro.connecter(); }}>{e.enCours === 'connexion' ? 'Fenêtre Microsoft ouverte…' : 'Se connecter avec Microsoft'}</Button> : null}
+              <Button variante={e.microsoftPossible ? 'secondaire' : 'primaire'} disabled={occupe} onClick={() => synchro.utiliserDemonstration()}>Essayer en démonstration (sans compte)</Button>
               {e.enCours === 'connexion' ? <Button variante="discret" onClick={() => synchro.annulerConnexion()}>Annuler</Button> : null}
             </div>
-            <p className="synchro-discret">La démonstration utilise un faux OneDrive et un faux Outlook, gardés sur cet appareil. Idéal pour essayer sans risque.</p>
+            <p className="synchro-discret">La démonstration utilise un faux OneDrive et un faux Outlook, gardés (chiffrés) sur cet appareil. Idéal pour essayer sans risque.</p>
+            {!e.microsoftPossible ? <p className="synchro-discret">Vous êtes dans le mode essai : il n’est jamais relié à un vrai compte Microsoft. Pour synchroniser vos vraies données, verrouillez le Journalier (bouton « Verrouiller ») puis connectez-vous avec votre compte.</p> : null}
           </>
         ) : (
           <>
@@ -128,7 +183,7 @@ export function SynchroPage({ synchro, adresseRetour }: { synchro: Synchro; adre
               {e.reconnexion
                 ? <Button variante="primaire" disabled={occupe} onClick={() => { void synchro.connecter(); }}>Se reconnecter</Button>
                 : <Button variante="primaire" disabled={occupe} onClick={() => { void synchro.synchroniser(); }}>{e.enCours === 'synchronisation' ? 'Synchronisation…' : 'Synchroniser maintenant'}</Button>}
-              <Button variante="discret" disabled={occupe} onClick={() => synchro.deconnecter()}>{demo ? 'Quitter la démonstration' : 'Se déconnecter'}</Button>
+              <Button variante="discret" disabled={occupe} onClick={() => synchro.deconnecter()}>{demo ? 'Quitter la démonstration' : 'Se déconnecter et verrouiller'}</Button>
             </div>
             <label className="synchro-case">
               <input type="checkbox" checked={e.auto} onChange={(ev) => synchro.changerAuto(ev.target.checked)} />
@@ -139,7 +194,7 @@ export function SynchroPage({ synchro, adresseRetour }: { synchro: Synchro; adre
             {e.derniere?.erreurs.length ? <details open><summary>{e.derniere.erreurs.length} élément(s) en erreur</summary><ul>{e.derniere.erreurs.map((t) => <li key={t}>{t}</li>)}</ul></details> : null}
           </>
         )}
-        {e.mode !== 'demonstration' ? (
+        {e.mode !== 'demonstration' && e.microsoftPossible ? (
           <details className="synchro-aide">
             <summary>Première connexion : à faire une seule fois par l’administrateur</summary>
             <p>Dans l’inscription d’application Microsoft Entra, ajoutez cette adresse de retour (type « Application monopage ») :</p>

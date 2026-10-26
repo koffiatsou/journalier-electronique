@@ -22,7 +22,7 @@ const THEMES: Record<Theme, { symbole: string; libelle: string }> = {
   sombre: { symbole: '☾', libelle: 'Sombre' }
 };
 
-export function Shell({ page, onAller, children }: { page: Page; onAller: Aller; children: ReactNode }) {
+export function Shell({ page, onAller, essai, onVerrouiller, children }: { page: Page; onAller: Aller; essai: boolean; onVerrouiller: () => void; children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(themeEnregistre);
   const suivant = themeSuivant(theme);
   return (
@@ -49,7 +49,14 @@ export function Shell({ page, onAller, children }: { page: Page; onAller: Aller;
         onClick={() => { setTheme(suivant); appliquerTheme(suivant); }}>
         <span aria-hidden="true">{THEMES[theme].symbole}</span><span className="theme-texte">{THEMES[theme].libelle}</span>
       </button>
-      <main className="contenu" id="contenu">{children}</main>
+      <button type="button" className="verrouiller-bouton" title="Verrouiller le Journalier : il faudra se reconnecter pour l’ouvrir"
+        aria-label="Verrouiller le Journalier" onClick={onVerrouiller}>
+        <span aria-hidden="true">🔒</span><span className="theme-texte">Verrouiller</span>
+      </button>
+      <main className="contenu" id="contenu">
+        {essai ? <p className="bandeau-essai" role="note"><strong>Mode essai</strong> — données fictives seulement. N’écrivez jamais de vrais noms d’élèves ici.</p> : null}
+        {children}
+      </main>
     </div>
   );
 }

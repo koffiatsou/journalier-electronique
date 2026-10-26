@@ -1,3 +1,4 @@
+import { chiffrerCopie, dechiffrerCopie, estCopieChiffree } from '../domain/coffre/index.ts';
 import { aPlat, comparerCopie, construireCopie, empreinte, lireCopie, normaliserObjet } from '../domain/synchro/index.ts';
 import type { Cle, ComparaisonCopie, Copie, ObjetSynchro, ObjetsLocaux } from '../domain/synchro/index.ts';
 import type { Magasin } from '../state/store.ts';
@@ -7,10 +8,12 @@ import type { Magasin } from '../state/store.ts';
  * Restaurer ne supprime jamais rien : on ajoute ce qui manque, et on remplace ce qui est différent seulement si l'utilisateur le demande.
  */
 
-export const NOM_COPIE = (jour: string): string => `journalier-copie-${jour}.json`;
+export const NOM_COPIE = (jour: string, chiffree = false): string => `journalier-copie${chiffree ? '-chiffree' : ''}-${jour}.json`;
 
-export async function preparerCopie(magasin: Magasin, maintenant: string): Promise<string> {
-  return JSON.stringify(construireCopie(await magasin.lireObjets(), maintenant));
+/** Le fichier de copie. Avec un mot de passe, il est chiffré : sans le mot de passe, il est définitivement illisible. */
+export async function preparerCopie(magasin: Magasin, maintenant: string, motDePasse?: string): Promise<string> {
+  const texte = JSON.stringify(construireCopie(await magasin.lireObjets(), maintenant));
+  return motDePasse ? chiffrerCopie(texte, motDePasse) : texte;
 }
 
 async function empreintes(objets: ObjetsLocaux): Promise<{ parCle: Map<Cle, string>; objets: Map<Cle, ObjetSynchro> }> {
@@ -34,9 +37,17 @@ export interface RestaurationPrevue {
   objets: Map<Cle, ObjetSynchro>;
 }
 
-export type LectureRestauration = { ok: true; prevue: RestaurationPrevue } | { ok: false; erreur: string };
+/** `motDePasseRequis` : le fichier est chiffré, il faut (re)demander le mot de passe. */
+export type LectureRestauration = { ok: true; prevue: RestaurationPrevue } | { ok: false; erreur: string; motDePasseRequis?: boolean };
 
-export async function preparerRestauration(magasin: Magasin, texte: string): Promise<LectureRestauration> {
+export async function preparerRestauration(magasin: Magasin, fichier: string, motDePasse?: string): Promise<LectureRestauration> {
+  let texte = fichier;
+  if (estCopieChiffree(fichier)) {
+    if (!motDePasse) return { ok: false, erreur: 'Cette copie est protégée par un mot de passe.', motDePasseRequis: true };
+    const ouvert = await dechiffrerCopie(fichier, motDePasse);
+    if (!ouvert.ok) return { ok: false, erreur: ouvert.erreur, motDePasseRequis: ouvert.raison === 'mot-de-passe' };
+    texte = ouvert.texte;
+  }
   const lu = lireCopie(texte);
   if (!lu.ok) return lu;
   const dansCopie = await empreintes(lu.copie);

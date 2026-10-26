@@ -1,14 +1,9 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { App } from './app/App.tsx';
-import { creerDepotIndexedDb } from './data/indexeddb.ts';
-import { creerDepotMemoire } from './data/memoire.ts';
+import { Racine } from './app/Racine.tsx';
 import { appliquerTheme, themeEnregistre } from './ui/theme.ts';
-import { creerMagasin } from './state/store.ts';
 import { CANAL_RETOUR, Connexion, IDENTIFIANTS_MICROSOFT } from './synchro/connexion.ts';
 import type { MessageRetour, Stockage } from './synchro/connexion.ts';
-import { NuageSimule } from './synchro/simule.ts';
-import { creerSynchro } from './synchro/service.ts';
 import './ui/styles/tokens.css';
 import './ui/styles/base.css';
 import './ui/styles/components.css';
@@ -19,21 +14,19 @@ import './ui/styles/eleves.css';
 import './ui/styles/reunion.css';
 import './ui/styles/pia.css';
 import './ui/styles/synchro.css';
+import './ui/styles/verrou.css';
 
 // Thème choisi sur cet appareil, appliqué avant l'affichage pour éviter un éclair clair.
 appliquerTheme(themeEnregistre(), false);
 
-async function demarrer() {
-  // Repli en mémoire si IndexedDB est indisponible (navigation privée, par exemple).
-  const depot = await creerDepotIndexedDb().catch(() => creerDepotMemoire());
-  const magasin = creerMagasin(depot);
-  // Un brouillon de PIA ne doit pas se perdre si l'on ferme l'onglet ou change d'application.
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') void magasin.viderEnregistrements(); });
-  globalThis.addEventListener('pagehide', () => { void magasin.viderEnregistrements(); });
+/*
+ * Ici on ne lit AUCUNE donnée : on prépare seulement ce qui sert à ouvrir le Journalier (stockages du navigateur,
+ * connexion Microsoft). Les données ne sont lues qu'une fois le coffre ouvert (voir app/Racine.tsx).
+ */
+function demarrer() {
   // Stockages du navigateur : ils peuvent être indisponibles (navigation privée) ; on se rabat alors sur la mémoire.
   const memoire = (): Stockage => { const m = new Map<string, string>(); return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => { m.set(k, v); }, removeItem: (k) => { m.delete(k); } }; };
   const stockage = (nom: 'localStorage' | 'sessionStorage'): Stockage => { try { return globalThis[nom]; } catch { return memoire(); } };
-  const local = stockage('localStorage');
   const adresseRetour = new URL('./msal-redirect.html', globalThis.location.href.split('#')[0]).href;
   const connexion = new Connexion({
     config: { ...IDENTIFIANTS_MICROSOFT, adresseRetour },
@@ -48,14 +41,10 @@ async function demarrer() {
       return () => canal.close();
     }
   });
-  const demo = new NuageSimule({
-    lire: () => { try { return local.getItem('journalier-demo-nuage'); } catch { return null; } },
-    ecrire: (t) => { try { local.setItem('journalier-demo-nuage', t); } catch { /* simulation non gardée */ } }
-  });
-  const synchro = creerSynchro({ magasin, depot, connexion, demo, preferences: local });
   const racine = document.getElementById('root');
   if (!racine) throw new Error('Élément #root introuvable');
-  createRoot(racine).render(<StrictMode><App magasin={magasin} synchro={synchro} adresseRetour={adresseRetour} /></StrictMode>);
+  const env = { local: stockage('localStorage'), session: stockage('sessionStorage'), connexion };
+  createRoot(racine).render(<StrictMode><Racine env={env} adresseRetour={adresseRetour} /></StrictMode>);
 }
 
-void demarrer();
+demarrer();

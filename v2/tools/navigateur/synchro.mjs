@@ -7,6 +7,8 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import { FauxMicrosoft } from '../../tests/fauxMicrosoft.ts';
 
+import { aller as ouvrirApp, baseDuCompte, ecrireBase as ecrireChiffre, lireBase as lireChiffre, recharger } from './_coffre.mjs';
+
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const URL_APP = process.env.URL_APP ?? 'http://localhost:5199/';
 const SORTIE = process.env.SORTIE ?? `${os.tmpdir()}/journalier-navigateur`;
@@ -27,24 +29,17 @@ const suivre = (p) => {
 };
 suivre(page);
 
-const lireBase = (magasin) => page.evaluate((nom) => new Promise((resolve, reject) => {
-  const o = indexedDB.open('journalier-v2');
-  o.onerror = () => reject(o.error);
-  o.onsuccess = () => { const r = o.result.transaction(nom, 'readonly').objectStore(nom).getAll(); r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); };
-}), magasin);
-const ecrireBase = (magasin, objet) => page.evaluate(([nom, o]) => new Promise((resolve, reject) => {
-  const ou = indexedDB.open('journalier-v2');
-  ou.onsuccess = () => { const tx = ou.result.transaction(nom, 'readwrite'); tx.objectStore(nom).put(o); tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); };
-}), [magasin, objet]);
+const lireBase = (magasin) => lireChiffre(page, magasin);
+const ecrireBase = (magasin, objet) => ecrireChiffre(page, magasin, objet);
 const aller = async (nom) => { await page.getByRole('link', { name: nom, exact: true }).click(); };
 const message = () => page.locator('.synchro-message').innerText();
 const attendreMessage = async (re) => { await page.locator('.synchro-message', { hasText: re }).waitFor({ timeout: 10_000 }); };
 const bouton = (nom) => page.getByRole('button', { name: nom });
 
 /* ───────── 1. Démonstration chargée depuis l'accueil ───────── */
-await page.goto(URL_APP);
-await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
-await page.reload();
+await ouvrirApp(page, URL_APP);
+await page.evaluate(() => { localStorage.clear(); });
+await recharger(page);
 await page.getByRole('heading', { name: 'Bonjour', level: 1 }).waitFor();
 await bouton('Charger les données de démonstration').click();
 await page.locator('.bandeau-demo').waitFor();
@@ -75,7 +70,7 @@ ok((await lireBase('seances')).some((s) => /autre appareil/.test(s.remarque)), '
 await page.getByRole('checkbox', { name: /Envoyer automatiquement/ }).uncheck(); // sinon la synchronisation de démarrage enverrait nos changements avant le conflit
 const seances = await lireBase('seances');
 for (const s of seances) await ecrireBase('seances', { ...s, remarque: 'changé ici', modifieLe: '2026-10-26T13:00:00.000Z' });
-await page.reload();
+await recharger(page);
 await aller('Synchro');
 await bouton(/modifiée sur un autre appareil/).click();
 await bouton('Synchroniser maintenant').click();
@@ -131,7 +126,7 @@ ok(true, 'un fichier étranger est refusé avec un message');
 
 /* ───────── 7. Téléphone et thème sombre ───────── */
 await page.setViewportSize({ width: 375, height: 800 });
-await page.reload();
+await recharger(page);
 await page.getByRole('heading', { name: 'Synchronisation', level: 1 }).waitFor();
 ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'téléphone : pas de défilement horizontal');
 ok((await page.locator('.nav-lien').count()) === 7 && await page.locator('.nav-lien').last().isVisible(), 'téléphone : les 7 onglets sont visibles');
@@ -144,8 +139,8 @@ await page.emulateMedia({ colorScheme: 'light' });
 
 /* ───────── 8. Se déconnecter de la démonstration ───────── */
 await bouton('Quitter la démonstration').click();
-await bouton('Se connecter avec Microsoft').waitFor();
-ok(true, 'quitter la démonstration ramène au choix du compte');
+await page.getByText('mode essai', { exact: false }).first().waitFor();
+ok(await bouton('Se connecter avec Microsoft').count() === 0, 'mode essai : pas de bouton Microsoft (jamais relié à un vrai compte)');
 
 /* ───────── 9. Connexion Microsoft complète contre un faux Microsoft ───────── */
 const faux = new FauxMicrosoft();
@@ -159,23 +154,31 @@ await ctx.route(/^https:\/\/(login\.microsoftonline\.com|graph\.microsoft\.com)\
   const rep = await faux.fetch(url, { method: req.method(), headers: req.headers(), body: req.postData() ?? undefined });
   await route.fulfill({ status: rep.status, headers: Object.fromEntries(rep.headers), body: Buffer.from(await rep.arrayBuffer()) });
 });
-await ecrireBase('eleves', { id: 'e-reel', nom: 'Réel', prenom: 'Léo', classe: '2A', ecole: 'École X', titulaire: '', dateNaissance: '', matieres: [] });
-await page.evaluate(() => { localStorage.removeItem('journalier-demo-nuage'); });
-await page.reload();
+// Se connecter se fait depuis l'écran verrouillé : « Verrouiller » ramène à cet écran, puis la fenêtre Microsoft s'ouvre.
+await bouton('Verrouiller le Journalier').click();
+const [popup] = await Promise.all([ctx.waitForEvent('page'), bouton('Se connecter avec Microsoft').click()]);
+suivre(popup);
+await page.getByRole('link', { name: 'Synchro', exact: true }).waitFor({ timeout: 20_000 });
+await page.locator('.chargement').waitFor({ state: 'hidden' });
+const baseCompte = await baseDuCompte(page);
+ok(baseCompte !== 'journalier-v2-essai', `l’espace du compte est une base à part (${baseCompte})`);
+ok((await lireChiffre(page, 'eleves', baseCompte)).length === 0, 'l’espace du compte démarre vide : la démonstration n’y entre pas');
+await ecrireChiffre(page, 'eleves', { id: 'e-reel', nom: 'Réel', prenom: 'Léo', classe: '2A', ecole: 'École X', titulaire: '', dateNaissance: '', matieres: [] }, baseCompte);
+await recharger(page);
 await aller('Synchro');
+await page.getByText('Connecté : Agent Test').waitFor();
+ok(true, 'connexion par la fenêtre Microsoft (code + PKCE) réussie, session rouverte après rechargement');
 const adresse = await page.locator('.synchro-aide code').innerText().catch(() => '');
 await page.locator('.synchro-aide summary').click();
 ok(/msal-redirect\.html$/.test(await page.locator('.synchro-aide code').innerText()), 'l’adresse de retour à déclarer chez Microsoft est affichée');
-const [popup] = await Promise.all([ctx.waitForEvent('page'), bouton('Se connecter avec Microsoft').click()]);
-suivre(popup);
+await bouton('Synchroniser maintenant').click();
 await attendreMessage(/envoyés? vers OneDrive|Tout est à jour/);
-await page.getByText('Connecté : Agent Test').waitFor();
-ok(true, 'connexion par la fenêtre Microsoft (code + PKCE) réussie');
 ok(faux.chemins().some((c) => c.includes('eleves/')), 'l’élève réel est arrivé dans le faux OneDrive de Microsoft');
 ok(!faux.chemins().some((c) => c.includes('demo-')), 'aucune donnée de démonstration n’est partie chez Microsoft');
-await bouton('Se déconnecter').click();
+await bouton('Se déconnecter et verrouiller').click();
 await bouton('Se connecter avec Microsoft').waitFor();
-ok(true, 'la déconnexion fonctionne');
+ok(true, 'la déconnexion verrouille le Journalier');
+ok((await lireChiffre(page, 'eleves', baseCompte)).length === 1, 'les données du compte restent chiffrées sur l’appareil');
 
 ok(erreurs.length === 0, `aucune erreur dans la console${erreurs.length ? ` : ${erreurs.join(' | ')}` : ''}`);
 await navigateur.close();

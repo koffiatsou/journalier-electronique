@@ -40,12 +40,14 @@ export interface Etat {
   /** Modèle de semaine habituelle de l'agenda, s'il en existe un. */
   semaineType: SemaineType | null;
   statutPia: StatutPia;
+  /** Éléments enregistrés sur cet appareil mais illisibles (abîmés) : mis de côté, jamais supprimés tout seuls. */
+  illisibles: number;
   /** Séance à ouvrir préremplie (depuis l'agenda) ; consommée une fois. */
   preparation: Partial<Seance> | null;
 }
 
 const initial: Etat = {
-  pret: false, erreur: null, eleves: [], seances: [], activites: [], pias: [], horaires: horairesParDefaut(), semaineType: null, statutPia: { etat: 'repos', le: '', message: '' }, preparation: null
+  pret: false, erreur: null, eleves: [], seances: [], activites: [], pias: [], horaires: horairesParDefaut(), semaineType: null, statutPia: { etat: 'repos', le: '', message: '' }, illisibles: 0, preparation: null
 };
 
 /** Nom du réglage « horaires des périodes » dans la base. */
@@ -91,11 +93,20 @@ export function creerMagasin(depot: Depot) {
           pret: true, erreur: null, eleves: eleves.map(normaliserEleve), seances, activites,
           pias: pias.map(normaliserPia).filter((p): p is Pia => p !== null),
           horaires: normaliserHoraires(reglages.find((r) => r.id === REGLAGE_HORAIRES)?.valeur),
-          semaineType: normaliserSemaineType(reglages.find((r) => r.id === REGLAGE_SEMAINE_TYPE)?.valeur)
+          semaineType: normaliserSemaineType(reglages.find((r) => r.id === REGLAGE_SEMAINE_TYPE)?.valeur),
+          illisibles: depot.illisibles().length
         });
       } catch (e) {
         maj({ pret: true, erreur: e instanceof Error ? e.message : 'Chargement impossible' });
       }
+    },
+
+    /** Écarte les éléments illisibles (et leur trace de synchro : OneDrive les renverra), puis recharge. Renvoie leur nombre. */
+    async ecarterIllisibles(): Promise<number> {
+      await file;
+      const n = await depot.ecarterIllisibles();
+      await this.charger();
+      return n;
     },
 
     async ajouterEleves(brutes: Eleve[]) {

@@ -8,6 +8,8 @@
 import { mkdirSync } from 'node:fs';
 import os from 'node:os';
 
+import { ajouterElevesFictifs, aller, ecrireBase as ecrireChiffre, lireBase as lireChiffre , recharger } from './_coffre.mjs';
+
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const URL_APP = process.env.URL_APP ?? 'http://localhost:5199/';
 const SORTIE = process.env.SORTIE ?? `${os.tmpdir()}/journalier-navigateur`;
@@ -22,24 +24,8 @@ const page = await ctx.newPage();
 page.on('console', (m) => { if (m.type() === 'error') erreurs.push(m.text()); });
 page.on('pageerror', (e) => erreurs.push(String(e)));
 
-const lireBase = (magasin) => page.evaluate((nom) => new Promise((resolve, reject) => {
-  const ouverture = indexedDB.open('journalier-v2');
-  ouverture.onerror = () => reject(ouverture.error);
-  ouverture.onsuccess = () => {
-    const req = ouverture.result.transaction(nom, 'readonly').objectStore(nom).getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  };
-}), magasin);
-const ecrireActivite = (a) => page.evaluate((activite) => new Promise((resolve, reject) => {
-  const ouverture = indexedDB.open('journalier-v2');
-  ouverture.onsuccess = () => {
-    const tx = ouverture.result.transaction('activites', 'readwrite');
-    tx.objectStore('activites').put(activite);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  };
-}), a);
+const lireBase = (magasin) => lireChiffre(page, magasin);
+const ecrireActivite = (a) => ecrireChiffre(page, 'activites', a);
 const activite = (id, extra) => ({ id, type: 'eleve', titre: '', lieu: '', note: '', repetition: 'aucune', creeLe: '2026-10-24T08:00:00Z', modifieLe: '2026-10-24T08:00:00Z', debut: 0, fin: 0, ...extra });
 
 const bascule = (nom) => page.getByRole('group', { name: 'Affichage' }).getByRole('button', { name: nom, exact: true });
@@ -49,15 +35,15 @@ const caseDu = (jour) => page.locator('.mois-case:not(.hors-mois)').filter({ has
 const ouvrirAgenda = async () => { await page.evaluate(() => { location.hash = '#/accueil'; }); await page.getByRole('link', { name: 'Agenda' }).click(); await page.getByRole('heading', { name: 'Agenda', level: 1 }).waitFor(); };
 
 /* ───────── Préparation : 2 élèves fictifs et des activités ───────── */
-await page.goto(URL_APP);
-await page.getByRole('button', { name: 'Ajouter des élèves fictifs' }).click();
+await aller(page, URL_APP);
+await ajouterElevesFictifs(page);
 await page.getByText('Alpha').first().waitFor().catch(() => undefined);
 await ecrireActivite(activite('a1', { eleveId: 'demo-alpha', date: '2026-10-26', debut: 0, fin: 0 }));
 await ecrireActivite(activite('a2', { eleveId: 'demo-beta', date: '2026-10-27', debut: 1, fin: 1 }));
 await ecrireActivite(activite('a3', { type: 'formation', titre: 'Formation pôle', date: '2026-10-28', debut: 2, fin: 4 }));
 for (let i = 0; i < 5; i++) await ecrireActivite(activite(`m${i}`, { type: 'administratif', titre: `Tâche ${i + 1}`, date: '2026-10-29', debut: i, fin: i }));
 await ecrireActivite(activite('n1', { eleveId: 'demo-alpha', date: '2026-11-03', debut: 0, fin: 0 }));
-await page.reload();
+await recharger(page);
 console.log('✓ données de départ créées');
 
 /* ───────── Semaine : congé d'automne en cours ───────── */
@@ -170,7 +156,7 @@ ok(reglages.length === 1 && reglages[0].id === 'agenda-horaires' && reglages[0].
 await page.screenshot({ path: `${SORTIE}/agenda5-semaine-horaires.png`, fullPage: true });
 
 // après rechargement
-await page.reload();
+await recharger(page);
 await page.getByRole('heading', { name: 'Agenda', level: 1 }).waitFor();
 ok((await page.locator('.axe').innerText()).includes('07:45'), 'après rechargement : horaires conservés');
 ok(await page.locator('.evt').count() >= 3, 'les activités sont toujours attachées à leur période (1e H, 2e H…)');
@@ -206,7 +192,7 @@ ok(true, 'Échap ferme la fenêtre des horaires');
 
 /* ───────── Téléphone ───────── */
 await page.setViewportSize({ width: 390, height: 844 });
-await page.goto(URL_APP);
+await aller(page, URL_APP);
 await ouvrirAgenda();
 ok(await bascule('Semaine').count() === 0, 'téléphone : pas de bouton Semaine (trop large)');
 ok(await bascule('Jour').getAttribute('aria-pressed') === 'true', 'téléphone : vue Jour par défaut');
@@ -234,17 +220,10 @@ await sombre.clock.setFixedTime(new Date('2026-10-26T12:00:00'));
 const p2 = await sombre.newPage();
 p2.on('console', (m) => { if (m.type() === 'error') erreurs.push(m.text()); });
 p2.on('pageerror', (e) => erreurs.push(String(e)));
-await p2.goto(URL_APP);
-await p2.getByRole('button', { name: 'Ajouter des élèves fictifs' }).click();
-await p2.evaluate(() => new Promise((resolve) => {
-  const o = indexedDB.open('journalier-v2');
-  o.onsuccess = () => {
-    const tx = o.result.transaction('activites', 'readwrite');
-    tx.objectStore('activites').put({ id: 'd1', type: 'eleve', eleveId: 'demo-alpha', titre: '', lieu: '', note: '', date: '2026-11-03', debut: 0, fin: 0, repetition: 'aucune', creeLe: '2026-10-24T08:00:00Z', modifieLe: '2026-10-24T08:00:00Z' });
-    tx.oncomplete = () => resolve();
-  };
-}));
-await p2.reload();
+await aller(p2, URL_APP);
+await ajouterElevesFictifs(p2);
+await ecrireChiffre(p2, 'activites', { id: 'd1', type: 'eleve', eleveId: 'demo-alpha', titre: '', lieu: '', note: '', date: '2026-11-03', debut: 0, fin: 0, repetition: 'aucune', creeLe: '2026-10-24T08:00:00Z', modifieLe: '2026-10-24T08:00:00Z' });
+await recharger(p2);
 await p2.getByRole('link', { name: 'Agenda' }).click();
 await p2.getByRole('group', { name: 'Affichage' }).getByRole('button', { name: 'Mois', exact: true }).click();
 await p2.getByRole('button', { name: 'Mois suivant' }).click();
