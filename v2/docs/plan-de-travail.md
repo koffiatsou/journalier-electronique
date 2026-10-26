@@ -71,7 +71,7 @@ Mis à jour le 26 octobre 2026 (lots 1, 2, 2b et 3 terminés). Ce fichier est la
 - Le tableau de la page 2 est le **profil** : une fois par PIA, avant le PV 1 ; il peut évoluer en cours d'année.
 - Aménagements : une ligne = un aménagement, on coche le type — P pédagogique (méthodes d'enseignement, d'évaluation, d'apprentissage), O organisationnel (temps, espace, déroulement), M matériel (outils, mobilier, logiciels).
 - Comme pour le Journalier : l'écran visualise chaque partie ; on peut exporter par partie, mais le PIA est le document entier.
-- À trancher au lot 4a : rangement des observations par aspect (ex. organisation → « Lié à l'autonomie ») ; « Physique et psychomoteur » n'a aucune donnée de séance (saisie à la main) ; correspondance aide → P/O/M à valider (proposition de départ : reformulation, explicitation, décomposition, modélisation, guidage → P ; aide à l'organisation, environnement → O ; matériel, outil numérique, gabarit → M ; support visuel à décider).
+- À trancher au lot 4a : rangement des observations par aspect (ex. organisation → « Lié à l'autonomie ») ; « Physique et psychomoteur » n'a aucune donnée de séance (saisie à la main) ; correspondance aide → P/O/M à valider (proposition de départ : reformulation, explicitation, décomposition, modélisation, guidage → P ; aide à l'organisation, environnement → O ; matériel, outil numérique, gabarit → M ; support visuel → P, sauf problème de vue de l'élève, ce qui est rare : décision de l'utilisateur du 26/10).
 - Le code PIA de la V75 (`src/v74/pia-*.js`, `v74-docx-pia-pv.js`, tests `tests/pia-*.mjs`) peut servir de référence, pas de copie.
 
 ## Idées en attente (non planifiées)
