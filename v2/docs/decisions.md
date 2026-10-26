@@ -46,3 +46,6 @@
 | 2026-10-26 | La page Réunion devient l'onglet « Préparer » de l'écran PIA | Une réunion = préparation + procès-verbal ; éviter la double saisie des objectifs |
 | 2026-10-26 | Le tableau de la page 2 du PIA est le « profil » de l'élève : une fois par PIA, avant le PV 1, modifiable en cours d'année | Modèle officiel ; demande de l'utilisateur |
 | 2026-10-26 | Aménagements : une ligne = un aménagement, types P / O / M à cocher | Réponse de l'utilisateur |
+| 2026-10-26 | Profil du PIA : jamais rempli automatiquement ; indices cliquables (phrases génériques + rapprochements tirés des séances pour cognitif, autonomie, comportement) | L'agent connaît son élève ; les indices aident à savoir quoi écrire |
+| 2026-10-26 | Deux niveaux d'objectifs : généraux (profil) et de la période (PV 1, avec critères d'évaluation) | Le modèle officiel les distingue |
+| 2026-10-26 | Support visuel = aménagement pédagogique (sauf problème de vue) | Réponse de l'utilisateur |
