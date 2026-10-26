@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Aller } from '../../app/useRoute.ts';
 import { couleursEleves } from '../../domain/agenda/index.ts';
 import { telechargerJournalier, telechargerJournaliers } from '../../domain/export/telecharger.ts';
-import { anneesDisponibles, bornes, libellePeriode, rechercherSeances, seancesDuJournalier } from '../../domain/journalier/index.ts';
+import { anneesDisponibles, bornes, construirePeriode, libellePeriode, rechercherSeances, seancesDuJournalier } from '../../domain/journalier/index.ts';
 import type { Periode } from '../../domain/journalier/index.ts';
 import { construireBloc } from '../../domain/redaction/index.ts';
 import { dateFR } from '../../domain/redaction/langue.ts';
@@ -32,12 +32,6 @@ let dernier: Filtre | null = null;
 const nomEleve = (e: Eleve | undefined): string => (e ? `${e.nom} ${e.prenom}`.trim() : 'Élève supprimé');
 const pluriel = (n: number, mot: string): string => `${n} ${mot}${n > 1 ? 's' : ''}`;
 const creneau = (s: Seance): string => (s.periodeFin && s.periodeFin !== s.periodeDebut ? `${s.periodeDebut} → ${s.periodeFin}` : s.periodeDebut);
-
-function periodeDe(f: Filtre): Periode {
-  if (f.genre === 'annee') return { genre: 'annee', annee: f.annee };
-  if (f.genre === 'dates') return { genre: 'dates', du: f.du, au: f.au };
-  return { genre: 'a-ce-jour' };
-}
 
 /** Texte de la séance tel qu'il ira dans le Journalier (aperçu repliable). */
 function ApercuSeance({ seance, eleve, precedentes }: { seance: Seance; eleve: Eleve | undefined; precedentes: Seance[] }) {
@@ -84,7 +78,7 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
   const [aSupprimer, setASupprimer] = useState<Seance | null>(null);
   const [enCours, setEnCours] = useState(false);
 
-  const periode = periodeDe(f);
+  const periode = construirePeriode(f);
   const resultat = bornes(periode, aujourdhui);
   const liste = resultat.ok ? seancesDuJournalier(seances, f.eleveId, resultat.bornes) : [];
   const parEleve = new Map(eleves.map((e) => [e.id, e]));

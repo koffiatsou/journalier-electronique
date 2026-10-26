@@ -13,6 +13,15 @@ export type Periode =
 
 export interface Bornes { du: string; au: string }
 
+export type GenrePeriode = Periode['genre'];
+
+/** Période choisie à l'écran (Journalier et Réunion) à partir des champs du formulaire. */
+export function construirePeriode(c: { genre: GenrePeriode; annee: string; du: string; au: string }): Periode {
+  if (c.genre === 'annee') return { genre: 'annee', annee: c.annee };
+  if (c.genre === 'dates') return { genre: 'dates', du: c.du, au: c.au };
+  return { genre: 'a-ce-jour' };
+}
+
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** « 2026-2027 » → du 1er août 2026 au 31 juillet 2027 (même découpage que les noms de fichiers). */

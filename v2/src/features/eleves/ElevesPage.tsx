@@ -216,6 +216,7 @@ export function ElevesPage({ magasin, onAller }: { magasin: Magasin; onAller: Al
 
           <div className="fiche-actions dossier-actions">
             <Button variante="primaire" onClick={() => onAller('journalier', { eleve: ouvert.id })}>Voir le Journalier</Button>
+            <Button onClick={() => onAller('reunion', { eleve: ouvert.id })}>Préparer la réunion</Button>
             <Button onClick={() => setVue({ genre: 'fiche', eleve: ouvert, retour: vue })}>Modifier le dossier</Button>
             <Button onClick={() => { void basculerArchive(ouvert); }}>{ouvert.archiveLe ? 'Suivre à nouveau' : 'Archiver'}</Button>
             <Button className="btn-danger" onClick={() => setASupprimer(ouvert)}>Supprimer…</Button>

@@ -12,6 +12,13 @@ import { statsPresence } from './presence.ts';
 const NIVEAUX = ['Partiellement', 'Suffisamment', 'Totalement'] as const;
 const EFFET_MOT = ['aucun effet', 'effet partiel', 'effet positif'] as const;
 
+/** Une observation suivie séance après séance (niveau 0 partiel, 1 suffisant, 2 total). */
+export interface SuiviObservation { texte: string; suite: { date: string; niveau: number }[] }
+/** Une aide et l'effet noté à chaque séance (null = effet non précisé). */
+export interface SuiviAide { texte: string; effets: (number | null)[] }
+/** Une compétence et son dernier niveau (null = notée sans niveau). */
+export interface SuiviCompetence { texte: string; niveau: number | null }
+
 export interface SyntheseMatiere {
   matiere: string;
   dateDebut: string;
@@ -21,6 +28,8 @@ export interface SyntheseMatiere {
   aides: string[];
   aidesSansEffet: string[];
   competences: string[];
+  /** Le même contenu sous forme de données (sert aux propositions d'objectifs de la réunion). */
+  suivis: { observations: SuiviObservation[]; aides: SuiviAide[]; competences: SuiviCompetence[] };
 }
 
 export interface Synthese {
@@ -101,7 +110,12 @@ export function synthese(seances: readonly Seance[]): Synthese {
       matiere,
       dateDebut: premiere?.date ?? '',
       dateFin: derniere?.date ?? '',
-      appuis, aTravailler: travail, aides: lignesAides, aidesSansEffet: sansEffet, competences
+      appuis, aTravailler: travail, aides: lignesAides, aidesSansEffet: sansEffet, competences,
+      suivis: {
+        observations: [...obs].map(([texte, suite]) => ({ texte, suite })),
+        aides: [...aides].map(([texte, effets]) => ({ texte, effets })),
+        competences: [...comps].map(([texte, niveau]) => ({ texte, niveau }))
+      }
     });
   });
   matieres.sort((a, b) => a.matiere.localeCompare(b.matiere, 'fr'));

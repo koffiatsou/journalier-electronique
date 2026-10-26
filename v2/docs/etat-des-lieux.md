@@ -1,6 +1,6 @@
 # État des lieux de la V2
 
-Mis à jour le 26 octobre 2026 (lot 2 et lot 2b terminés). Le travail est organisé en lots : voir `docs/plan-de-travail.md`. Branche `v2/react-ts`, PR #37 (brouillon, jamais fusionnée sans validation).
+Mis à jour le 26 octobre 2026 (lots 2, 2b et 3 terminés). Le travail est organisé en lots : voir `docs/plan-de-travail.md`. Branche `v2/react-ts`, PR #37 (brouillon, jamais fusionnée sans validation).
 
 ## Fait
 - Séance en 5 étapes, panneau « Feuille » avec rappel de la dernière séance et des aides fréquentes.
@@ -15,7 +15,10 @@ Mis à jour le 26 octobre 2026 (lot 2 et lot 2b terminés). Le travail est organ
 - **Supprimer** (définitif) : confirmation avec décompte (séances, activités d'agenda), case à cocher, Journalier Word proposé avant ; tout est supprimé en une seule opération de base. Vérifié dans la base du navigateur : aucune séance ni activité orpheline.
 - **Passage d'année scolaire** : proposition ligne par ligne (classe suivante modifiable, ne pas changer, archiver), titulaires effacés (case décochable), jamais appliqué sans validation ; un dossier déjà à jour ou d'année inconnue reste « Ne pas changer » par défaut ; les séances ne bougent pas.
 - **Avatars dessinés** (lot 2b, pas de photo) : dans la fiche, « Initiales » ou « Avatar dessiné » avec aperçu en direct. Cinq styles (Manga, Bande dessinée, Dessin animé, Pixel, Minimaliste), six teints, huit couleurs de cheveux, huit coiffures, cinq visages, cinq accessoires (aucun, lunettes rondes ou carrées, casque audio, casquette), bouton « Au hasard ». Le vêtement et le fond reprennent la couleur de l'agenda de l'élève (thème clair et sombre). Affiché sur les cartes, le dossier et le passage d'année ; sans avatar, les initiales. Dessins originaux calculés par le code (aucun personnage ni marque). Vérifié : base (six réglages seulement), rechargement, archivage, avatar abîmé réparé, aucune erreur console (politique de sécurité respectée).
+- Écran **Réunion** (lot 3, remplace « Rapports » dans le menu) : choix d'un élève et de la période (état à ce jour, année scolaire, dates libres) ; un résumé en langage simple **par matière** (points d'appui, à travailler, compétence travaillée, aides utilisées, aides sans effet constaté) avec les dates ; ligne des absences / cours annulés. **Objectifs à valider** : propositions tirées des séances (faire progresser, consolider, continuer une compétence, garder ou revoir une aide), chacune avec sa raison ; on coche, on reformule, on retire, on ajoute les siens. **Texte pour la réunion** : copier dans le presse-papiers ou lire à l'écran, option « Sans nom (pour partager) ». Accès aussi depuis le dossier d'un élève (« Préparer la réunion »). Les séances d'absence ne comptent pas dans les observations. Vérifié par des tests (23) et un parcours navigateur (`tools/navigateur/reunion.mjs`, bureau, téléphone, thème sombre).
 - Journalier : **recherche d'une séance** (élève, matière, objectif, observations, aides, suite, date…) ; l'export Word garde toute la période choisie.
+
+Reste côté Réunion : les objectifs retenus ne sont gardés que le temps de la visite (pas encore dans la base : lot 4) ; pas d'export Word de la réunion (lot 4).
 
 Reste côté Élèves : l'avatar n'apparaît pas encore au Journalier, à l'agenda ni à la séance (les initiales/pastilles de couleur y restent) ; l'agenda d'un élève archivé n'est pas modifié ; pas d'import/export des dossiers (lots 7 et 9).
 

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { IconeAccueil, IconeAgenda, IconeEleves, IconeJournalier, IconeRapports, IconeSeance } from '../ui/icons.tsx';
+import { IconeAccueil, IconeAgenda, IconeEleves, IconeJournalier, IconeReunion, IconeSeance } from '../ui/icons.tsx';
 import type { Aller, Page } from './useRoute.ts';
 
 const NAV: { page: Page; libelle: string; icone: (p: { taille?: number }) => ReactNode }[] = [
@@ -8,7 +8,7 @@ const NAV: { page: Page; libelle: string; icone: (p: { taille?: number }) => Rea
   { page: 'seance', libelle: 'Séance', icone: IconeSeance },
   { page: 'journalier', libelle: 'Journalier', icone: IconeJournalier },
   { page: 'eleves', libelle: 'Élèves', icone: IconeEleves },
-  { page: 'rapports', libelle: 'Rapports', icone: IconeRapports }
+  { page: 'reunion', libelle: 'Réunion', icone: IconeReunion }
 ];
 
 /** Cadre de l'application : rail latéral sur grand écran, barre d'onglets en bas sur mobile. */

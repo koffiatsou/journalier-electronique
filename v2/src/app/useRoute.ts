@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 
-export type Page = 'accueil' | 'agenda' | 'seance' | 'journalier' | 'eleves' | 'rapports';
-const PAGES: readonly Page[] = ['accueil', 'agenda', 'seance', 'journalier', 'eleves', 'rapports'];
+export type Page = 'accueil' | 'agenda' | 'seance' | 'journalier' | 'eleves' | 'reunion';
+const PAGES: readonly Page[] = ['accueil', 'agenda', 'seance', 'journalier', 'eleves', 'reunion'];
 
-/** Paramètres facultatifs après la page : #/journalier?eleve=… */
+/** Paramètres facultatifs après la page : #/journalier?eleve=… ou #/reunion?eleve=… */
 export type Parametres = Record<string, string>;
 export type Aller = (p: Page, parametres?: Parametres) => void;
 

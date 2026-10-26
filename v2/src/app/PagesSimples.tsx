@@ -52,21 +52,3 @@ export function Accueil({ magasin, onAller }: { magasin: Magasin; onAller: Aller
     </div>
   );
 }
-
-const A_VENIR: Record<string, { titre: string; texte: string }> = {
-  rapports: { titre: 'Rapports et PIA', texte: 'La préparation de réunion et l’export du PIA officiel arrivent dans une prochaine étape de la V2.' }
-};
-
-export function PageAVenir({ page }: { page: 'rapports' }) {
-  const p = A_VENIR[page];
-  return (
-    <div className="page">
-      <header className="page-entete"><h1>{p?.titre}</h1></header>
-      <section className="vide">
-        <h2>Pas encore dans la V2</h2>
-        <p>{p?.texte}</p>
-        <a className="btn" href="../">Ouvrir la version actuelle (V75)</a>
-      </section>
-    </div>
-  );
-}

@@ -5,7 +5,7 @@ export { deIdentifier } from './deidentifier.ts';
 export { statsPresence } from './presence.ts';
 export type { StatsPresence } from './presence.ts';
 export { synthese } from './synthese.ts';
-export type { Synthese, SyntheseMatiere } from './synthese.ts';
+export type { Synthese, SyntheseMatiere, SuiviAide, SuiviCompetence, SuiviObservation } from './synthese.ts';
 export { versFaits } from './faits.ts';
 export type { Bloc, Faits, LigneOrtho, Peda } from './types.ts';
 export { dateFR, dateCourte, NBSP } from './langue.ts';

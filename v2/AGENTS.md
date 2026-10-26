@@ -57,6 +57,13 @@ PRODUCT.md (qui, pourquoi) · DESIGN.md (look & mouvement) · ARCHITECTURE.md ·
 - Teint le plus foncé : yeux et bouche en traits clairs (`encreDe`), sinon illisibles.
 - Tests navigateur : `tools/navigateur/eleves.mjs`, `avatars.mjs` (vérifie aussi le contenu réel d'IndexedDB). Dans les parcours, utiliser `getByLabel(..., { exact: true })` : des `aria-label` de fenêtres cachées contiennent « élève ».
 
+## Réunion (lot 3)
+- `src/domain/reunion/` (pur, testé dans `tests/reunion.test.ts`) : `proposerObjectifs(synthese)` → `Proposition[]` (id stable matière|genre|texte d'origine ; au plus 3 observations, 2 compétences, 2 aides à garder, 1 à revoir par matière ; le DERNIER niveau noté décide : « Totalement » = rien à proposer) ; `retenir` / `retirer` / `reecrire` / `ajouterLibre` / `retenusParMatiere` ; `texteReunion` (texte brut en puces ; « sans nom » = `masquer` + `deIdentifier`, l'en-tête est ajouté APRÈS le masquage).
+- La synthèse (`redaction/synthese.ts`) garde aussi `suivis` (niveaux par date, effets des aides, niveau des compétences) : les propositions s'appuient dessus, jamais sur les phrases. Une séance d'absence ne compte pas.
+- Écran : `src/features/reunion/ReunionPage.tsx`, styles `reunion.css` (classes `reunion-*`, zone ortho = sarcelle). Route `#/reunion?eleve=<id>`. `construirePeriode` (domain/journalier) est partagé avec le Journalier.
+- Objectifs retenus : gardés en mémoire par élève le temps de la visite SEULEMENT (pas dans IndexedDB) ; à enregistrer au lot 4 (PIA / procès-verbaux).
+- Test navigateur : `tools/navigateur/reunion.mjs` (séances injectées dans IndexedDB). Avec des élèves fictifs (prénom « Élève »), le masquage de noms peut tout remplacer : ne pas s'en inquiéter.
+
 ## Journalier (écran, lot 1)
 - `src/domain/journalier/` (pur, testé) : `Periode` = année scolaire (1er août → 31 juillet, même découpage que `anneeScolaire`) / état à ce jour / dates libres ; `bornes`, `seancesDuJournalier` (élève ou tous, plus récentes d'abord), `libellePeriode` (version fichier sans « / »).
 - `src/features/journalier/JournalierPage.tsx` : seul endroit avec le bouton d'export Word (l'écran Élèves renvoie vers lui : `#/journalier?eleve=<id>`). Tous les élèves → un .docx par élève dans un .zip (`construireJournaliers`) ; dé-identifié → noms distincts par classe. Noms d'entrées zip en UTF-8 (bit 11).

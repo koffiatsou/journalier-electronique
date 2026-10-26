@@ -36,3 +36,9 @@
 | 2026-10-26 | Teint le plus foncé : traits du visage clairs ; deux teints foncés légèrement éclaircis | Lisibilité des yeux et de la bouche sur tous les teints |
 | 2026-10-26 | Repasser aux initiales retire l'avatar du dossier ; revenir au dessin dans la même fiche retrouve le dernier choix | Pas de réglage fantôme dans les données ; pas de perte par fausse manip |
 | 2026-10-26 | Avatar visible sur cartes, dossier et passage d'année seulement (pas encore Journalier, agenda, séance) | Reste dans le périmètre du lot ; idée en attente |
+| 2026-10-26 | « Rapports » devient « Réunion » dans le menu (la page PIA aura son propre lien au lot 4) | La page « Rapports » n'était qu'un message « à venir » |
+| 2026-10-26 | Réunion = un élève à la fois, période au choix (mêmes choix que le Journalier) | Une réunion parle d'un élève ; comportement connu |
+| 2026-10-26 | Propositions d'objectifs : règles simples sur le dernier niveau noté, jamais de décision automatique ; l'agent coche, reformule ou ajoute | L'agent reste maître des objectifs ; pas d'invention |
+| 2026-10-26 | Au plus 3 observations, 2 compétences, 2 aides à garder et 1 à revoir par matière | Une liste courte se valide ; une longue se survole |
+| 2026-10-26 | Objectifs retenus gardés seulement le temps de la visite (pas en base) | Évite de changer la base avant le lot 4 (procès-verbaux) ; signalé à l'écran |
+| 2026-10-26 | Texte de réunion en texte brut à copier, option « Sans nom » ; pas d'export Word au lot 3 | Word officiel = lot 4 |

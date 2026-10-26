@@ -1,6 +1,6 @@
 # Plan de travail de la V2 (un lot = une conversation)
 
-Mis à jour le 24 octobre 2026 (lot 1 terminé). Ce fichier est la **liste des lots**. Pour démarrer : ouvrir une nouvelle conversation, écrire « Lot N » (ou « le lot suivant ») ; Claude lit `AGENTS.md`, ce plan et `docs/etat-des-lieux.md`, puis travaille uniquement sur ce lot.
+Mis à jour le 26 octobre 2026 (lots 1, 2, 2b et 3 terminés). Ce fichier est la **liste des lots**. Pour démarrer : ouvrir une nouvelle conversation, écrire « Lot N » (ou « le lot suivant ») ; Claude lit `AGENTS.md`, ce plan et `docs/etat-des-lieux.md`, puis travaille uniquement sur ce lot.
 
 ## Principe
 - Une conversation = un lot. Pas de dérive vers un autre lot : toute idée en plus va dans « Idées en attente » ci‑dessous.
@@ -28,8 +28,8 @@ Mis à jour le 24 octobre 2026 (lot 1 terminé). Ce fichier est la **liste des l
 | 1 — Journalier (écran) | Écran « Journalier » : séances d'un élève ou de tous, période (année scolaire, état à ce jour, dates libres), modification/suppression d'une séance, export Word par période (identifié / dé‑identifié) depuis cet écran | Parcours séance → Journalier → Word sans passer par Élèves ; période respectée dans le fichier | ✅ (24/10/2026) |
 | 2 — Élèves complets | Page Élèves en cartes (initiales sur pastille de couleur), recherche, matière libre, plusieurs langues modernes, archivage, suppression complète (séances et agenda compris, confirmation), passage d'année scolaire ; recherche d'une séance au Journalier | Suppression testée ; aucune séance orpheline (vérifié dans la base du navigateur) | ✅ (24/10/2026) |
 | 2b — Avatars dessinés | **Pas de photo** : avatar dessiné au choix, personnalisable (teint, coiffure, couleur des cheveux, visage, accessoire) en cinq styles génériques (manga, bande dessinée, dessin animé, pixel, minimaliste), dessins originaux, sans personnage ni marque existants ; sans avatar, les initiales | Dessins relus sur écran par l'utilisateur ; choix conservé après rechargement ; initiales si aucun avatar | ✅ (26/10/2026, dans la même conversation que le lot 2) — **à relire par l'utilisateur** |
-| 3 — Réunion | Vue réunion en langage simple par matière (points d'appui, à travailler, compétence, aides), choix de la période, propositions d'objectifs à valider | Synthèse correcte sur des séances réelles ; textes relus par l'utilisateur | 🔜 |
-| 4 — PIA | Cases du modèle officiel (voir `docs/PIA_MODELE_STRUCTURE.md` à la racine du dépôt), procès‑verbaux, export Word officiel + dé‑identifié, option PDF | Fichier comparé au modèle officiel (conversion PDF relue) | ⏳ |
+| 3 — Réunion | Vue réunion en langage simple par matière (points d'appui, à travailler, compétence, aides), choix de la période, propositions d'objectifs à valider | Synthèse correcte sur des séances réelles ; textes relus par l'utilisateur | ✅ (26/10/2026) — **textes à relire par l'utilisateur** |
+| 4 — PIA | Cases du modèle officiel (voir `docs/PIA_MODELE_STRUCTURE.md` à la racine du dépôt), procès‑verbaux, export Word officiel + dé‑identifié, option PDF ; **enregistrer les objectifs retenus à la réunion** (aujourd'hui gardés seulement le temps de la visite) | Fichier comparé au modèle officiel (conversion PDF relue) | 🔜 |
 
 ### Agenda
 | Lot | Contenu | Statut |
@@ -70,4 +70,6 @@ Mis à jour le 24 octobre 2026 (lot 1 terminé). Ce fichier est la **liste des l
 - Menu : un second clic sur « Élèves » depuis un dossier ouvert ne ramène pas à la liste (seul « ← Tous les élèves » le fait).
 - Archivage : les activités d'agenda (séries hebdomadaires) d'un élève archivé restent visibles ; à voir avec l'équipe si elles doivent se masquer ou s'arrêter à l'archivage.
 - Avatars : afficher aussi l'avatar au Journalier, dans l'agenda et dans l'écran Séance ; ajouter des coiffures/accessoires si l'équipe en demande ; avatar choisi au hasard à la création d'un élève.
+- Réunion : afficher aussi les remarques libres et la question « Utilisé ailleurs ? » (transfert) dans le résumé ; objectif retenu en zone de texte (un long texte est coupé sur téléphone) ; choisir la matière d'un objectif ajouté à la main.
+- Thème sombre : le bouton secondaire (`.btn`) manque de contraste dans toute l'application — à traiter au lot F.
 - Élèves : tri au choix des cartes (nom, classe, dernière séance) et filtre par classe, si la liste devient longue.

@@ -11,6 +11,7 @@ import './ui/styles/layout.css';
 import './ui/styles/seance.css';
 import './ui/styles/agenda.css';
 import './ui/styles/eleves.css';
+import './ui/styles/reunion.css';
 
 async function demarrer() {
   // Repli en mémoire si IndexedDB est indisponible (navigation privée, par exemple).
