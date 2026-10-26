@@ -29,3 +29,10 @@
 | 2026-10-24 | Matière libre dans la fiche (champ « Autre matière », sans doublon à l'accent près) ; les langues ont leur propre rubrique, plus dans la liste des matières | Retour utilisateur ; pas de doublon visuel « Anglais » |
 | 2026-10-24 | Recherche d'élèves (nom, classe, matière, langue, titulaire, niveau d'étude) et recherche de séances au Journalier : accents et majuscules ignorés, tous les mots doivent correspondre | Retrouver vite ; la recherche des séances ne limite jamais l'export (toute la période) |
 | 2026-10-24 | Page Élèves en cartes avec pastille d'initiales sur la couleur de l'agenda (en attendant les avatars dessinés) ; dossier ouvert au toucher d'une carte | Demande utilisateur (carte d'étudiant) ; le composant `Avatar` accueillera les dessins au lot 2b |
+| 2026-10-26 | Lot 2b (avatars) fait dans la même conversation que le lot 2, à la demande de l'utilisateur | « On est toujours dans le lot 2 » |
+| 2026-10-26 | Avatar = réglages (style, teint, cheveux, coiffure, visage, accessoire) enregistrés dans le dossier ; le dessin est recalculé à l'affichage, aucune image stockée | Pas de photo (donnée sensible) ; stockage minuscule ; dessins améliorables sans toucher aux données |
+| 2026-10-26 | Cinq styles : manga, bande dessinée, dessin animé, pixel, minimaliste ; dessins originaux et génériques | Décision du 24/10 : aucun personnage ni marque existants |
+| 2026-10-26 | Le vêtement et le fond de l'avatar reprennent la couleur de l'agenda de l'élève (pas de réglage de couleur en plus) | Un seul réglage de couleur, cohérent avec l'agenda et le thème sombre |
+| 2026-10-26 | Teint le plus foncé : traits du visage clairs ; deux teints foncés légèrement éclaircis | Lisibilité des yeux et de la bouche sur tous les teints |
+| 2026-10-26 | Repasser aux initiales retire l'avatar du dossier ; revenir au dessin dans la même fiche retrouve le dernier choix | Pas de réglage fantôme dans les données ; pas de perte par fausse manip |
+| 2026-10-26 | Avatar visible sur cartes, dossier et passage d'année seulement (pas encore Journalier, agenda, séance) | Reste dans le périmètre du lot ; idée en attente |

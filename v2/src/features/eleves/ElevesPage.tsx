@@ -146,7 +146,7 @@ export function ElevesPage({ magasin, onAller }: { magasin: Magasin; onAller: Al
         {entete}
         <section className="liste-carte fiche-carte">
           <div className="liste-entete"><h2>{eleves.some((x) => x.id === eleve.id) ? 'Modifier le dossier' : 'Nouvel élève'}</h2></div>
-          <FicheEleve eleve={eleve} onEnregistrer={(e) => { void enregistrer(e, retour); }} onAnnuler={() => setVue(retour)} />
+          <FicheEleve eleve={eleve} couleurParDefaut={couleurs.get(eleve.id) ?? 0} onEnregistrer={(e) => { void enregistrer(e, retour); }} onAnnuler={() => setVue(retour)} />
         </section>
       </div>
     );

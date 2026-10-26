@@ -3,6 +3,7 @@
  * Archivage, suppression complète, passage d'année scolaire, recherche, cartes.
  */
 import type { Activite } from '../agenda/types.ts';
+import { normaliserAvatar } from '../avatar/avatar.ts';
 import { analyserClasse } from '../referentiel/contexte.ts';
 import { sansAccents } from '../referentiel/texte.ts';
 import { FILIERES_LIBELLES } from '../types.ts';
@@ -21,9 +22,10 @@ export function languesDe(e: Pick<Eleve, 'langues' | 'langue'>): string[] {
 
 /** Dossier tel que l'application l'attend : l'ancien champ `langue` devient `langues`. */
 export function normaliserEleve(e: Eleve): Eleve {
-  const { langue: _ancienne, langues: _l, ...reste } = e;
+  const { langue: _ancienne, langues: _l, avatar: brut, ...reste } = e;
   const langues = languesDe(e);
-  return langues.length ? { ...reste, langues } : reste;
+  const avatar = normaliserAvatar(brut);
+  return { ...reste, ...(langues.length ? { langues } : {}), ...(avatar ? { avatar } : {}) };
 }
 
 /* ───────── Archivage ───────── */

@@ -67,3 +67,28 @@
   .passage-ligne { grid-template-columns: 1fr; }
   .ajout-libre { flex-direction: column; }
 }
+
+/* ───────── Avatars dessinés ───────── */
+.avatar-dessin { background: var(--c-fond); overflow: hidden; }
+.avatar-svg { display: block; width: 100%; height: 100%; }
+.av-fond { fill: var(--c-fond); }
+.av-haut { fill: var(--c-bord); }
+
+/* Choix dans la fiche élève */
+.choix-avatar { gap: var(--sp-3); }
+.choix-avatar-tete { display: flex; align-items: center; gap: var(--sp-4); flex-wrap: wrap; }
+.choix-detail { display: grid; gap: var(--sp-4); padding: var(--sp-4); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-m); }
+.choix-groupe { display: grid; gap: var(--sp-2); }
+.choix-titre { font-size: 0.8125rem; font-weight: 600; color: var(--ink-2); }
+.choix-options { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.choix-bouton, .choix-pastille {
+  padding: 0; border: 2px solid var(--line-strong); background: var(--surface); cursor: pointer; line-height: 0;
+  transition: border-color 140ms ease-out, transform 140ms ease-out;
+}
+.choix-bouton { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; }
+.choix-pastille { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; }
+.choix-pastille svg { width: 24px; height: 24px; }
+.choix-bouton:active, .choix-pastille:active { transform: scale(0.95); }
+@media (hover: hover) and (pointer: fine) { .choix-bouton:hover, .choix-pastille:hover { border-color: var(--ink-3); } }
+.choix-bouton[aria-checked='true'], .choix-pastille[aria-checked='true'] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--surface) inset; }
+.choix-bouton:focus-visible, .choix-pastille:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

@@ -1,3 +1,5 @@
+import type { AvatarEleve } from './avatar/types.ts';
+
 /*
  * Modèle de données du Journalier (V2).
  *
@@ -124,6 +126,8 @@ export interface Eleve {
   couleur?: number;
   /** Année scolaire (« 2026-2027 ») pour laquelle le dossier (classe, titulaire) est à jour ; posée par le passage d'année. */
   anneeDossier?: string;
+  /** Avatar dessiné (jamais de photo) ; sans avatar, les initiales sur la couleur de l'élève. */
+  avatar?: AvatarEleve;
   /** Date d'archivage (AAAA-MM-JJ) : l'élève n'est plus suivi, son historique reste au Journalier. */
   archiveLe?: string;
 }

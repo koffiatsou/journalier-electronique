@@ -1,6 +1,6 @@
 # État des lieux de la V2
 
-Mis à jour le 24 octobre 2026 (lot 2 terminé). Le travail est organisé en lots : voir `docs/plan-de-travail.md`. Branche `v2/react-ts`, PR #37 (brouillon, jamais fusionnée sans validation).
+Mis à jour le 26 octobre 2026 (lot 2 et lot 2b terminés). Le travail est organisé en lots : voir `docs/plan-de-travail.md`. Branche `v2/react-ts`, PR #37 (brouillon, jamais fusionnée sans validation).
 
 ## Fait
 - Séance en 5 étapes, panneau « Feuille » avec rappel de la dernière séance et des aides fréquentes.
@@ -14,9 +14,10 @@ Mis à jour le 24 octobre 2026 (lot 2 terminé). Le travail est organisé en lot
 - **Archiver / suivre à nouveau** : l'élève archivé quitte la liste principale (section repliable « Élèves archivés »), n'est plus proposé pour une séance ou une activité d'agenda ; ses séances restent au Journalier et exportables.
 - **Supprimer** (définitif) : confirmation avec décompte (séances, activités d'agenda), case à cocher, Journalier Word proposé avant ; tout est supprimé en une seule opération de base. Vérifié dans la base du navigateur : aucune séance ni activité orpheline.
 - **Passage d'année scolaire** : proposition ligne par ligne (classe suivante modifiable, ne pas changer, archiver), titulaires effacés (case décochable), jamais appliqué sans validation ; un dossier déjà à jour ou d'année inconnue reste « Ne pas changer » par défaut ; les séances ne bougent pas.
+- **Avatars dessinés** (lot 2b, pas de photo) : dans la fiche, « Initiales » ou « Avatar dessiné » avec aperçu en direct. Cinq styles (Manga, Bande dessinée, Dessin animé, Pixel, Minimaliste), six teints, huit couleurs de cheveux, huit coiffures, cinq visages, cinq accessoires (aucun, lunettes rondes ou carrées, casque audio, casquette), bouton « Au hasard ». Le vêtement et le fond reprennent la couleur de l'agenda de l'élève (thème clair et sombre). Affiché sur les cartes, le dossier et le passage d'année ; sans avatar, les initiales. Dessins originaux calculés par le code (aucun personnage ni marque). Vérifié : base (six réglages seulement), rechargement, archivage, avatar abîmé réparé, aucune erreur console (politique de sécurité respectée).
 - Journalier : **recherche d'une séance** (élève, matière, objectif, observations, aides, suite, date…) ; l'export Word garde toute la période choisie.
 
-Reste côté Élèves : avatars dessinés personnalisables (lot 2b) ; l'agenda d'un élève archivé n'est pas modifié ; pas d'import/export des dossiers (lots 7 et 9).
+Reste côté Élèves : l'avatar n'apparaît pas encore au Journalier, à l'agenda ni à la séance (les initiales/pastilles de couleur y restent) ; l'agenda d'un élève archivé n'est pas modifié ; pas d'import/export des dossiers (lots 7 et 9).
 
 ## Référentiel : NON FINALISÉ
 À reprendre plus tard. Voir aussi `AGENTS.md` et `tools/referentiel/README.md`.

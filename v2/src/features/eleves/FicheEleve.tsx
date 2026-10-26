@@ -8,6 +8,7 @@ import type { Eleve, Filiere } from '../../domain/types.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Chips } from '../../ui/Chip.tsx';
 import { Field, Input, Select } from '../../ui/Field.tsx';
+import { ChoixAvatar } from './ChoixAvatar.tsx';
 
 /** Matières proposées d'un toucher ; toute autre matière s'ajoute avec le champ « Autre matière ». Les langues ont leur propre rubrique. */
 const MATIERES = ['Mathématiques', 'Français', 'Sciences', 'Sciences économiques', 'Histoire', 'Géographie'];
@@ -21,7 +22,15 @@ function deduction(classe: string): string {
 
 const memeMatiere = (a: string, b: string): boolean => sansAccents(a).trim() === sansAccents(b).trim();
 
-export function FicheEleve({ eleve, onEnregistrer, onAnnuler }: { eleve: Eleve; onEnregistrer: (e: Eleve) => void; onAnnuler: () => void }) {
+interface Props {
+  eleve: Eleve;
+  /** Couleur de l'élève dans l'agenda quand elle n'est pas encore choisie (déduite de son identifiant). */
+  couleurParDefaut: number;
+  onEnregistrer: (e: Eleve) => void;
+  onAnnuler: () => void;
+}
+
+export function FicheEleve({ eleve, couleurParDefaut, onEnregistrer, onAnnuler }: Props) {
   const [e, setE] = useState(eleve);
   const [autre, setAutre] = useState('');
   const maj = (p: Partial<Eleve>) => setE((x) => ({ ...x, ...p }));
@@ -96,6 +105,13 @@ export function FicheEleve({ eleve, onEnregistrer, onAnnuler }: { eleve: Eleve; 
           ))}
         </div>
       </div>
+
+      <ChoixAvatar
+        eleve={e}
+        valeur={e.avatar}
+        couleur={e.couleur ?? couleurParDefaut}
+        onChange={(avatar) => { const { avatar: _a, ...reste } = e; setE(avatar ? { ...reste, avatar } : reste); }}
+      />
 
       <div className="fiche-actions">
         <Button type="submit" variante="primaire" disabled={!valide}>Enregistrer</Button>

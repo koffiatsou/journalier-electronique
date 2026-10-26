@@ -47,7 +47,9 @@ await page.getByRole('link', { name: 'Journalier' }).click();
 await page.getByRole('heading', { name: 'Journalier', level: 1 }).waitFor();
 const lignes = () => page.locator('.journalier-liste > li');
 ok(await lignes().count() === 2, 'état à ce jour : 2 séances (juin exclue)');
-ok((await page.locator('.journalier-resume').innerText()).includes('2026-2027 au 24/10/2026'), 'résumé de la période lisible');
+const aujourdhui = new Date();
+const jma = `${String(aujourdhui.getDate()).padStart(2, '0')}/${String(aujourdhui.getMonth() + 1).padStart(2, '0')}/${aujourdhui.getFullYear()}`;
+ok((await page.locator('.journalier-resume').innerText()).includes(`2026-2027 au ${jma}`), `résumé de la période lisible (jusqu’à aujourd’hui, ${jma})`);
 await page.screenshot({ path: `${SORTIE}/journalier-bureau.png`, fullPage: true });
 
 await page.getByRole('radio', { name: 'Année scolaire' }).click();

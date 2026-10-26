@@ -20,6 +20,7 @@ npm run dev        # compile puis sert http://localhost:5173
 npm run check      # typecheck + tests + build (utilisé par la CI)
 LANG=C.UTF-8 node tools/navigateur/journalier.mjs   # parcours dans un vrai navigateur (Playwright, serveur sur le port 5199)
 LANG=C.UTF-8 node tools/navigateur/eleves.mjs       # idem pour l'écran Élèves (cartes, archivage, passage d'année, suppression)
+LANG=C.UTF-8 node tools/navigateur/avatars.mjs      # idem pour les avatars dessinés
 ```
 
 **Sans accès au registre npm** (environnement de travail de Claude) : les paquets aux bonnes versions (esbuild, zod, React, TypeScript, tsx) sont souvent déjà installés sur la machine ; on les relie dans `v2/node_modules` (liens symboliques, dossier ignoré par Git) et on ajoute `@types/react`, `@types/react-dom` (DefinitelyTyped) et `csstype` récupérés depuis GitHub.
@@ -33,7 +34,7 @@ Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des l
 | Moteur de rédaction (blocs, synthèse, absences, dé-identification) | porté et testé |
 | Écran Séance (5 étapes, feuille vivante) | disponible |
 | Référentiel de compétences (pistes) | partiel (lots R1–R3) |
-| Élèves (cartes, recherche, fiche, archivage, suppression, passage d'année, plusieurs langues) | disponible (lot 2) ; avatars dessinés : lot 2b |
+| Élèves (cartes, recherche, fiche, archivage, suppression, passage d'année, plusieurs langues) | disponible (lots 2 et 2b, avatars dessinés compris) |
 | Écran Journalier (période, modifier/supprimer, export Word élève ou tous) | disponible (lot 1) |
 | Agenda (semaine/jour, couleurs, glisser‑déplacer) | disponible (lots 5–6 : mois, vacances, semaine type) |
 | Réunion, PIA | lots 3–4 |
