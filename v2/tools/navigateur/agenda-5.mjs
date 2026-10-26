@@ -118,7 +118,7 @@ await page.getByRole('button', { name: 'Mois suivant' }).click();
 ok(await titre() === 'décembre 2026', 'mois suivant : décembre 2026');
 ok((await caseDu('25').innerText()).includes('Noël'), '25 décembre : Noël (férié affiché avant les vacances d’hiver)');
 ok((await caseDu('22').innerText()).includes('Vacances d’hiver'), '22 décembre : Vacances d’hiver');
-ok((await caseDu('18').innerText()).trim() === '18', '18 décembre : jour de classe, rien d’affiché');
+ok((await caseDu('18').innerText()).replace('+', '').trim() === '18', '18 décembre : jour de classe, rien d’affiché');
 await page.getByRole('button', { name: 'Mois précédent' }).click();
 await page.getByRole('button', { name: 'Mois précédent' }).click();
 await page.getByRole('button', { name: 'Aujourd’hui' }).click();
@@ -129,7 +129,7 @@ ok(await page.locator('.agenda-note').count() === 0, 'pas de note pour une péri
 for (let i = 0; i < 48; i++) await page.getByRole('button', { name: 'Mois suivant' }).click();
 ok(await titre() === 'octobre 2030', '48 mois plus tard : octobre 2030');
 ok(await page.locator('.agenda-note').count() === 1, 'hors du tableau : la note explique que les vacances ne sont pas connues');
-ok((await caseDu('25').innerText()).trim() === '25', 'octobre 2030 : aucune vacance inventée');
+ok((await caseDu('25').innerText()).replace('+', '').trim() === '25', 'octobre 2030 : aucune vacance inventée');
 await page.getByRole('button', { name: 'Aujourd’hui' }).click();
 
 /* ───────── Horaires ───────── */
