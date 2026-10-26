@@ -3,6 +3,8 @@ import type { Depot } from '../data/repository.ts';
 import type { Activite } from '../domain/agenda/types.ts';
 import type { Changement } from '../domain/agenda/planning.ts';
 import { horairesParDefaut, normaliserHoraires, verifierHoraires } from '../domain/agenda/horaires.ts';
+import { REGLAGE_SEMAINE_TYPE, normaliserSemaineType } from '../domain/agenda/semainetype.ts';
+import type { SemaineType } from '../domain/agenda/semainetype.ts';
 import type { ErreurHoraire } from '../domain/agenda/horaires.ts';
 import type { Periode } from '../domain/agenda/types.ts';
 import { effetSuppression, normaliserEleve } from '../domain/eleves/index.ts';
@@ -32,13 +34,15 @@ export interface Etat {
   pias: Pia[];
   /** Horaires des périodes de l'agenda (réglables ; les noms 1e H… ne changent pas). */
   horaires: Periode[];
+  /** Modèle de semaine habituelle de l'agenda, s'il en existe un. */
+  semaineType: SemaineType | null;
   statutPia: StatutPia;
   /** Séance à ouvrir préremplie (depuis l'agenda) ; consommée une fois. */
   preparation: Partial<Seance> | null;
 }
 
 const initial: Etat = {
-  pret: false, erreur: null, eleves: [], seances: [], activites: [], pias: [], horaires: horairesParDefaut(), statutPia: { etat: 'repos', le: '', message: '' }, preparation: null
+  pret: false, erreur: null, eleves: [], seances: [], activites: [], pias: [], horaires: horairesParDefaut(), semaineType: null, statutPia: { etat: 'repos', le: '', message: '' }, preparation: null
 };
 
 /** Nom du réglage « horaires des périodes » dans la base. */
@@ -83,7 +87,8 @@ export function creerMagasin(depot: Depot) {
         maj({
           pret: true, erreur: null, eleves: eleves.map(normaliserEleve), seances, activites,
           pias: pias.map(normaliserPia).filter((p): p is Pia => p !== null),
-          horaires: normaliserHoraires(reglages.find((r) => r.id === REGLAGE_HORAIRES)?.valeur)
+          horaires: normaliserHoraires(reglages.find((r) => r.id === REGLAGE_HORAIRES)?.valeur),
+          semaineType: normaliserSemaineType(reglages.find((r) => r.id === REGLAGE_SEMAINE_TYPE)?.valeur)
         });
       } catch (e) {
         maj({ pret: true, erreur: e instanceof Error ? e.message : 'Chargement impossible' });
@@ -161,6 +166,12 @@ export function creerMagasin(depot: Depot) {
       await depot.enregistrerReglage({ id: REGLAGE_HORAIRES, valeur: horaires });
       maj({ horaires });
       return [];
+    },
+
+    /** Enregistre la semaine type (ou l'efface avec `null`). */
+    async enregistrerSemaineType(modele: SemaineType | null) {
+      await depot.enregistrerReglage({ id: REGLAGE_SEMAINE_TYPE, valeur: modele });
+      maj({ semaineType: modele });
     },
 
     async supprimerSeance(id: string) {

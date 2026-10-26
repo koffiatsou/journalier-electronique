@@ -47,7 +47,7 @@
 /* Version imprimable : cachée à l'écran ; à l'impression, elle remplace toute la page. */
 .pia-impression { display: none; }
 @media print {
-  body > #root { display: none !important; }
+  body:has(> .pia-impression) > #root { display: none !important; }
   .pia-impression { display: block; color: #000; background: #fff; font-size: 11pt; line-height: 1.35; }
   .pia-impression h1 { font-size: 16pt; margin: 0 0 8pt; }
   .pia-impression h2 { font-size: 13pt; margin: 14pt 0 6pt; break-after: avoid; }

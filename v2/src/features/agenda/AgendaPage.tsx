@@ -12,6 +12,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Grille } from './Grille.tsx';
 import { HorairesDialog } from './HorairesDialog.tsx';
 import { Mois } from './Mois.tsx';
+import { SemaineTypeDialog } from './SemaineTypeDialog.tsx';
 import type { Cible, ModeGeste } from './Grille.tsx';
 import { Panneau } from './Panneau.tsx';
 import type { Brouillon } from './Panneau.tsx';
@@ -42,12 +43,14 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
   const activites = useMagasin(magasin, (e) => e.activites);
   const seances = useMagasin(magasin, (e) => e.seances);
   const horaires = useMagasin(magasin, (e) => e.horaires);
+  const semaineType = useMagasin(magasin, (e) => e.semaineType);
   const { annoncer } = useToast();
   const etroit = useMedia(ETROIT);
   const large = useMedia(LARGE);
   const [focus, setFocus] = useState(jourDeDepart);
   const [vue, setVue] = useState<'semaine' | 'jour' | 'mois'>('semaine');
   const [horairesOuverts, setHorairesOuverts] = useState(false);
+  const [semaineTypeOuverte, setSemaineTypeOuverte] = useState(false);
   const [selection, setSelection] = useState<string | null>(null);
   const [brouillon, setBrouillon] = useState<Brouillon | null>(null);
   const [filtre, setFiltre] = useState<string | null>(null);
@@ -98,6 +101,11 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
     <div className="page agenda">
       <header className="page-entete"><h1>Agenda</h1></header>
 
+      <p className="agenda-impression-titre">
+        Agenda · {mois ? titreMois(focus) : vueEffective === 'jour' ? `${nomJour(jours[0]!)} ${jourMois(jours[0]!)}` : titreSemaine(focus)}
+        {filtre ? ` · ${eleves.find((e) => e.id === filtre)?.prenom ?? ''} ${eleves.find((e) => e.id === filtre)?.nom ?? ''}` : ''}
+      </p>
+
       <div className="agenda-barre">
         <div className="agenda-nav">
           <Button onClick={() => naviguer(-1)} aria-label={mois ? 'Mois précédent' : vueEffective === 'jour' ? 'Jour précédent' : 'Semaine précédente'}>‹</Button>
@@ -112,6 +120,8 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
           <button type="button" aria-pressed={vueEffective === 'mois'} onClick={() => setVue('mois')}>Mois</button>
         </div>
         <Button variante="discret" onClick={() => setHorairesOuverts(true)}>Horaires</Button>
+        <Button variante="discret" onClick={() => setSemaineTypeOuverte(true)}>Semaine type</Button>
+        <Button variante="discret" onClick={() => globalThis.print()}>Imprimer</Button>
         <Button variante="primaire" onClick={() => { setSelection(null); setBrouillon({ date: jourCourant, debut: 0, fin: 0 }); }}>Nouvelle activité</Button>
       </div>
 
@@ -149,7 +159,7 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
           <Grille jours={jours} periodes={horaires} occurrences={visibles} eleves={eleves} couleurs={couleurs} aujourdhui={aujourdhui}
             selection={occSelection?.cle ?? null}
             onSelection={(o) => { setBrouillon(null); setSelection(o.cle); }}
-            onCreer={(date, p) => { setSelection(null); setBrouillon({ date, debut: p, fin: p }); }}
+            onCreer={(date, debut, fin) => { setSelection(null); setBrouillon({ date, debut, fin }); }}
             onGeste={geste} />
         )}
         {occSelection ? (
@@ -165,6 +175,11 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
             onDupliquer={() => undefined} onAnnuler={() => undefined} onRealiser={() => undefined} onSupprimer={() => undefined} />
         ) : null}
       </div>
+
+      <SemaineTypeDialog ouvert={semaineTypeOuverte} jour={jourCourant} aujourdhui={aujourdhui} modele={semaineType} periodes={horaires}
+        eleves={eleves} activites={activites} seances={seances} onFermer={() => setSemaineTypeOuverte(false)}
+        onEnregistrer={(m) => { void magasin.enregistrerSemaineType(m).then(() => annoncer(m ? 'Semaine type enregistrée' : 'Semaine type supprimée')); }}
+        onAppliquer={(c, n) => appliquer(c, `${n} activité${n > 1 ? 's' : ''} ajoutée${n > 1 ? 's' : ''}`)} />
 
       <HorairesDialog ouvert={horairesOuverts} horaires={horaires} onFermer={() => setHorairesOuverts(false)}
         onEnregistrer={async (p) => {

@@ -151,3 +151,33 @@
   /* Sur téléphone, on touche le champ lui-même pour choisir l'heure : l'icône d'horloge ne sert qu'à prendre de la place. */
   .horaires-ligne input[type='time']::-webkit-calendar-picker-indicator { display: none; }
 }
+
+/* ───────── Semaine type ───────── */
+.semaine-type-bloc { display: grid; gap: var(--sp-2); padding-bottom: var(--sp-3); border-bottom: 1px solid var(--line); }
+.semaine-type-bloc h3 { margin: 0; font-size: .95rem; }
+.semaine-type-liste { margin: 0; display: grid; gap: var(--sp-2); }
+.semaine-type-liste > div { display: grid; grid-template-columns: 6.5rem 1fr; gap: var(--sp-2); font-size: .875rem; }
+.semaine-type-liste dt { font-weight: 600; text-transform: capitalize; color: var(--ink-2); }
+.semaine-type-liste dd { margin: 0; display: grid; gap: 2px; }
+.semaine-type-apercu { margin: 0; padding: var(--sp-2) var(--sp-3); background: var(--surface-2); border-radius: var(--r-s); font-size: .875rem; }
+.case-a-cocher { display: flex; gap: var(--sp-2); align-items: flex-start; font-size: .875rem; }
+.fantome.creation { border-style: solid; }
+
+/* ───────── Impression de l'agenda (la vue affichée : semaine, jour ou mois) ───────── */
+@page agenda { size: A4 landscape; margin: 10mm; }
+.agenda-impression-titre { display: none; }
+@media print {
+  .agenda { page: agenda; }
+  .nav, .agenda-barre, .agenda-note, .jours-onglets, .panneau, .toasts, .page-entete, .cellule { display: none !important; }
+  .shell { display: block; padding: 0; min-height: 0; }
+  .contenu { padding: 0; }
+  .agenda { gap: 6pt; color: #000; }
+  .agenda-impression-titre { display: block; margin: 0; font-size: 14pt; font-weight: 700; text-transform: capitalize; }
+  .legende button { border-color: #888; font-size: 9pt; min-height: 0; padding: 1pt 8pt 1pt 5pt; }
+  .grille, .mois { box-shadow: none; border-radius: 0; break-inside: avoid; border-color: #888; }
+  .mois-case { min-height: 84px; }
+  .evt, .mois-evt, .grille-entete > div, .mois-case, .colonne, .legende i { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .evt { cursor: default; box-shadow: none; }
+  .evt-poignee { display: none; }
+  .mois-plus { display: none; }
+}

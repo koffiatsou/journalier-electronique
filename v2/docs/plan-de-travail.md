@@ -36,13 +36,13 @@ Mis à jour le 26 octobre 2026 (lots 1, 2, 2b, 3, 4a, 4b et 5 terminés). Ce fic
 | Lot | Contenu | Statut |
 |---|---|---|
 | 5 — Agenda : calendrier | Vue mois, jours fériés et vacances scolaires FWB, horaires des périodes réglables | ✅ 26/10/2026 — **dates de vacances à relire par l'utilisateur** |
-| 6 — Agenda : confort | « Semaine type », glisser pour créer sur plusieurs périodes, impression | 🔜 |
+| 6 — Agenda : confort | « Semaine type », glisser pour créer sur plusieurs périodes, impression | ✅ 26/10/2026 (demandé sous le nom « lot 6b » : le plan n'a pas de 6b, tout est dans le lot 6) |
 
 ### Données et sécurité
 | Lot | Contenu | Statut |
 |---|---|---|
 | 7 — Coffre chiffré | Chiffrement AES‑GCM local (voir `docs/STOCKAGE_LOCAL_V74.md`), mot de passe, verrouillage, export/import de secours | ⏳ (après le lot 8 : la clé sera liée au compte Microsoft, comme en V75 ; avant la mise en service) |
-| 8 — OneDrive / Outlook | Synchronisation Microsoft (Entra ID, Graph), conflits, repli manuel ; liaison Outlook (agenda) | ⏳ |
+| 8 — OneDrive / Outlook | Synchronisation Microsoft (Entra ID, Graph), conflits, repli manuel ; liaison Outlook (agenda) | 🔜 |
 | 9 — Reprise V75 | Import des données de la V75 vers la V2, vérification élève par élève, plan de bascule et d'information de l'équipe | ⏳ |
 
 ### Référentiel (« R »), à reprendre quand l'utilisateur le décide
@@ -76,6 +76,7 @@ Mis à jour le 26 octobre 2026 (lots 1, 2, 2b, 3, 4a, 4b et 5 terminés). Ce fic
 - Le code PIA de la V75 (`src/v74/pia-*.js`, `v74-docx-pia-pv.js`, tests `tests/pia-*.mjs`) peut servir de référence, pas de copie.
 
 ## Idées en attente (non planifiées)
+- Agenda (lot 6) : glisser pour créer aussi dans la vue Mois ; semaines types multiples (semaine A / semaine B) ; appliquer la semaine type à partir d'une autre date que la semaine affichée ; imprimer une seule journée en grand format.
 - Agenda (lot 5) : jours de congé propres à l'école (journées pédagogiques, congés de l'établissement), à saisir par l'agent ; revérifier les vacances de 2027-2028 et 2028-2029 (une seule source) et ajouter chaque année la suivante dans `ANNEES_SCOLAIRES_FWB` ; en vue Mois, créer une activité en touchant un jour vide et déplacer par glisser-déposer entre les jours ; prévenir (sans bloquer) quand on place une séance un jour de congé ; afficher les fériés des week-ends (1er mai 2027 un samedi) si l'équipe le demande ; mémoriser la vue choisie (semaine / jour / mois).
 - PIA (lot 4b) : PDF fidèle au modèle officiel (aujourd'hui : Word puis « Enregistrer en PDF » ; l'impression du navigateur est une mise en page simple) ; exporter aussi la version dé-identifiée de plusieurs élèves d'un coup (.zip) ; effacer les données de l'exemple fictif d'un seul bouton.
 - PIA (lot 4a) : choisir la matière d'un objectif ajouté à la main au PV 1 ; ajouter des rapprochements pour les autres aspects si l'équipe en demande ; importer un PIA existant (lot 9) ; rappel dans l'agenda de la date du PV 2.

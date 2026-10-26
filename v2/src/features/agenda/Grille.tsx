@@ -16,11 +16,14 @@ interface Props {
   aujourdhui: string;
   selection: string | null;
   onSelection: (o: Occurrence) => void;
-  onCreer: (date: string, periode: number) => void;
+  /** Création d'une activité : une période (clic) ou plusieurs (glisser sur les cases vides). */
+  onCreer: (date: string, debut: number, fin: number) => void;
   onGeste: (o: Occurrence, mode: ModeGeste, cible: Cible) => void;
 }
 
 interface Geste { o: Occurrence; mode: ModeGeste; cible: Cible }
+/** Sélection en cours sur des cases vides d'un même jour : de la période de départ à la période sous le pointeur. */
+interface Selection { date: string; depart: number; courant: number }
 
 const SEUIL = 5;
 const APPUI_LONG = 320;
@@ -38,16 +41,32 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
   const geo = useMemo(() => geometrie(periodes), [periodes]);
   const disp = useMemo(() => disposer(occurrences), [occurrences]);
   const [geste, setGeste] = useState<Geste | null>(null);
+  const [creation, setCreation] = useState<Selection | null>(null);
+  const suiviCreation = useRef<{ date: string; depart: number; courant: number; x: number; y: number; actif: boolean; tactile: boolean; minuteur: number | undefined } | null>(null);
   const suivi = useRef<{ o: Occurrence; mode: ModeGeste; x: number; y: number; actif: boolean; tactile: boolean; minuteur: number | undefined } | null>(null);
   const dernier = useRef<Geste | null>(null);
   const clicIgnore = useRef(false);
-  const rappel = useRef({ onGeste, onSelection });
-  rappel.current = { onGeste, onSelection };
+  const rappel = useRef({ onGeste, onSelection, onCreer });
+  rappel.current = { onGeste, onSelection, onCreer };
 
   const nomDe = (o: Occurrence): string => eleves.find((e) => e.id === o.activite.eleveId) ? `${eleves.find((e) => e.id === o.activite.eleveId)!.prenom} ${eleves.find((e) => e.id === o.activite.eleveId)!.nom}` : '';
 
   useEffect(() => {
     const bouger = (e: PointerEvent) => {
+      const n = suiviCreation.current;
+      if (n) {
+        if (!n.actif) {
+          const d = Math.hypot(e.clientX - n.x, e.clientY - n.y);
+          if (n.tactile) { if (d > 10) { window.clearTimeout(n.minuteur); suiviCreation.current = null; } return; }
+          if (d < SEUIL) return;
+          n.actif = true;
+        }
+        e.preventDefault();
+        const c = caseSous(e.clientX, e.clientY);
+        // On reste dans la colonne du jour de départ ; hors de la colonne, la sélection garde sa dernière taille.
+        if (c && c.date === n.date) { n.courant = c.debut; setCreation({ date: n.date, depart: n.depart, courant: c.debut }); }
+        return;
+      }
       const s = suivi.current;
       if (!s) return;
       if (!s.actif) {
@@ -65,6 +84,18 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
       setGeste(g);
     };
     const finir = () => {
+      const n = suiviCreation.current;
+      if (n) {
+        window.clearTimeout(n.minuteur);
+        suiviCreation.current = null;
+        setCreation(null);
+        if (n.actif) {
+          clicIgnore.current = true;
+          setTimeout(() => { clicIgnore.current = false; }, 0);
+          rappel.current.onCreer(n.date, Math.min(n.depart, n.courant), Math.max(n.depart, n.courant));
+        }
+        return;
+      }
       const s = suivi.current;
       window.clearTimeout(s?.minuteur);
       suivi.current = null;
@@ -78,7 +109,7 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
       }
       setGeste(null);
     };
-    const bloquerDefilement = (e: TouchEvent) => { if (suivi.current?.actif) e.preventDefault(); };
+    const bloquerDefilement = (e: TouchEvent) => { if (suivi.current?.actif || suiviCreation.current?.actif) e.preventDefault(); };
     window.addEventListener('pointermove', bouger, { passive: false });
     window.addEventListener('pointerup', finir);
     window.addEventListener('pointercancel', finir);
@@ -98,6 +129,14 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
     if (tactile) s.minuteur = window.setTimeout(() => { if (suivi.current === s) { s.actif = true; navigator.vibrate?.(15); } }, APPUI_LONG);
     suivi.current = s;
     if (mode === 'etirer') e.stopPropagation();
+  };
+
+  const commencerCreation = (e: React.PointerEvent, date: string, periode: number) => {
+    if (e.button !== 0) return;
+    const tactile = e.pointerType === 'touch';
+    const s = { date, depart: periode, courant: periode, x: e.clientX, y: e.clientY, actif: false, tactile, minuteur: undefined as number | undefined };
+    if (tactile) s.minuteur = window.setTimeout(() => { if (suiviCreation.current === s) { s.actif = true; navigator.vibrate?.(15); setCreation({ date, depart: periode, courant: periode }); } }, APPUI_LONG);
+    suiviCreation.current = s;
   };
 
   const style = (o: Occurrence, yDeb: number, yFin: number): Record<string, string | number> => {
@@ -139,7 +178,8 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
               <button key={p.label} type="button" className="cellule" data-date={j} data-periode={i}
                 style={{ top: geo.y[i]!, height: finY(i) - geo.y[i]! }}
                 aria-label={`Nouvelle activité, ${nomJour(j)} ${jourMois(j)}, ${p.label}, ${p.debut}`}
-                onClick={() => onCreer(j, i)} />
+                onPointerDown={(e) => commencerCreation(e, j, i)}
+                onClick={() => { if (!clicIgnore.current) onCreer(j, i, i); }} />
             ))}
             {occurrences.filter((o) => o.date === j).map((o) => {
               const t = teinteDe(o.activite, couleurs);
@@ -160,6 +200,11 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
                 </button>
               );
             })}
+            {creation && creation.date === j ? (() => {
+              const d = Math.min(creation.depart, creation.courant);
+              const f = Math.max(creation.depart, creation.courant);
+              return <div className="fantome creation c-0" aria-hidden="true" style={{ left: 2, right: 2, top: geo.y[d]! + 2, height: finY(f) - geo.y[d]! - 4 }} />;
+            })() : null}
             {geste && geste.mode !== 'etirer' && geste.cible.date === j ? (() => {
               const t = teinteDe(geste.o.activite, couleurs);
               const longueur = geste.o.fin - geste.o.debut;

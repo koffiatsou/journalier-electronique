@@ -102,3 +102,4 @@
 .dialog::backdrop { background: rgb(13 20 36 / 45%); backdrop-filter: blur(2px); }
 .dialog[open] { animation: dialog-in var(--t-panel) var(--ease-out) both; }
 @keyframes dialog-in { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: none; } }
+.dialog { max-height: 92dvh; overflow: auto; }
