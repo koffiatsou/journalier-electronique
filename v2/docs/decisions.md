@@ -64,3 +64,4 @@
 | 2026-10-26 | PDF : « Imprimer / PDF » du navigateur sur une mise en page simple (pas de PDF fidèle au modèle officiel, qui demanderait un convertisseur) ; PDF officiel = Word puis « Enregistrer en PDF » | Reste hors ligne, sans service externe |
 | 2026-10-26 | Exemple fictif (élèves Alpha et Bêta, séances, PIA) chargeable depuis l'écran PIA | Essayer le PIA sans données réelles (demande de l'utilisateur) |
 | 2026-10-26 | Lot 7 (coffre chiffré) mis en pause : l'accès se fera par la connexion au compte professionnel Outlook (lot 8) | Décision de l'utilisateur ; les données locales restent non chiffrées sur l'appareil |
+| 2026-10-26 | Le coffre chiffré (lot 7) est maintenu, après le lot 8 ; l'agenda (lots 5 et 6) est finalisé avant la connexion Outlook | La V75 chiffrait déjà les données (clé liée au compte) ; la V2 doit offrir au moins la même protection avant sa mise en service |
