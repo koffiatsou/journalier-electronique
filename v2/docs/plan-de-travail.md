@@ -60,7 +60,7 @@ Mis à jour le 26 octobre 2026 (lots 1, 2, 2b, 3, 4a, 4b et 5 terminés). Ce fic
 ### Habillage
 | Lot | Contenu | Statut |
 |---|---|---|
-| F — Finition visuelle (dernier lot) | Habillage de l'application : couleurs, logo, vocabulaire du menu, icônes, espacements, tablette ; relecture écran par écran avec l'utilisateur. Le style « Bleu encre » reste la base (décision validée) sauf demande contraire. | ⏳ (à faire en tout dernier) |
+| F — Finition visuelle (dernier lot) | Habillage de l'application : couleurs, logo (déjà en place dans le menu, à ajuster ailleurs : accueil, téléphone, exports), vocabulaire du menu, icônes, espacements, tablette ; relecture écran par écran avec l'utilisateur. Le style « Bleu encre » reste la base (décision validée) sauf demande contraire. | ⏳ (à faire en tout dernier) |
 
 ## Ordre conseillé
 1 → 2 → 2b → 3 → 4a → 4b → 5 ✅ (le fil séance → Journalier → réunion → PIA est complet, l'agenda a son calendrier) → 6 (agenda finalisé) → 8 → 7 → 9 (mise en service ; jamais avant 8 et 7) ; les lots 5, 6, R et Q s'intercalent selon les retours de l'équipe. Le lot F (finition visuelle) vient en tout dernier. L'utilisateur peut changer l'ordre à tout moment : on met alors ce fichier à jour.

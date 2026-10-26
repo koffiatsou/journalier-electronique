@@ -28,7 +28,7 @@ export function Shell({ page, onAller, children }: { page: Page; onAller: Aller;
     <div className="shell">
       <nav className="nav" aria-label="Navigation principale">
         <div className="marque">
-          <span className="marque-logo" aria-hidden="true">J</span>
+          <img className="marque-logo" src="./logo-poles-territoriaux.svg" alt="Logo des Pôles territoriaux" width="150" height="103" />
           <span className="marque-texte"><strong>Journalier</strong><small>Pôle territorial WBE BXL</small></span>
         </div>
         <ul>
