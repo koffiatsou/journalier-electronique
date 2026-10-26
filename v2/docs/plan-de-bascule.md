@@ -12,6 +12,14 @@ Document pour l'utilisateur, à adapter avant de le donner à l'équipe. Rien n'
 2. Essayer la reprise **avec vos vraies données** (voir ci-dessous) et comparer quelques séances avec la V75.
 3. Relire le message à l'équipe et choisir la date de bascule.
 
+## Connexion Microsoft : quelle adresse déclarer chez Entra
+- Connexion = votre **compte Microsoft** (celui qui a OneDrive), pas un compte GitHub. GitHub ne fait qu'héberger le site.
+- Chez Entra (inscription de l'application, « Authentification »), ajouter une adresse de retour de type **Application monopage (SPA)**, sans toucher à celles de la V75.
+- **Essai en local, avant la fusion** (connexion et synchronisation seulement) : télécharger la branche, dans le dossier `v2` lancer `npm install` puis `npm run dev`, ouvrir `http://localhost:5173/` et déclarer `http://localhost:5173/msal-redirect.html`. Même port, `localhost` (pas `127.0.0.1`). À retirer ensuite.
+- **En ligne, après la fusion de la PR** : la V2 est publiée dans `/v2/` du même site que la V75 ; déclarer `<adresse du site>/v2/msal-redirect.html` (l'adresse exacte est affichée dans l'écran Synchro, sous « adresse de retour »).
+- **La reprise V75 ne marche qu'en ligne** (même adresse de site que la V75) : en local, la V2 ne voit pas les données de la V75.
+- L'aperçu dans Claude ne permet pas la connexion Microsoft (adresse non déclarée).
+
 ## Étapes pour un agent (sur son ordinateur habituel)
 1. Ouvrir la V75 une dernière fois, **dans le même navigateur** que d'habitude, et vérifier que tout s'affiche.
 2. Ouvrir la V2, se connecter avec le compte Microsoft.
