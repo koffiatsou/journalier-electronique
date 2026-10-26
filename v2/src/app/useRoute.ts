@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react';
 
-export type Page = 'accueil' | 'agenda' | 'seance' | 'journalier' | 'eleves' | 'reunion';
-const PAGES: readonly Page[] = ['accueil', 'agenda', 'seance', 'journalier', 'eleves', 'reunion'];
+export type Page = 'accueil' | 'agenda' | 'seance' | 'journalier' | 'eleves' | 'pia';
+const PAGES: readonly Page[] = ['accueil', 'agenda', 'seance', 'journalier', 'eleves', 'pia'];
 
-/** Paramètres facultatifs après la page : #/journalier?eleve=… ou #/reunion?eleve=… */
+/** Paramètres facultatifs après la page : #/journalier?eleve=… ou #/pia?eleve=…&onglet=preparer */
 export type Parametres = Record<string, string>;
 export type Aller = (p: Page, parametres?: Parametres) => void;
 
 function lire(): { page: Page; parametres: Parametres } {
   const [chemin = '', requete = ''] = globalThis.location.hash.replace(/^#\/?/, '').split('?');
+  const parametres: Parametres = Object.fromEntries(new URLSearchParams(requete));
+  // L'ancien écran « Réunion » est devenu l'onglet « Préparer » de l'écran PIA (anciens liens conservés).
+  if (chemin === 'reunion') return { page: 'pia', parametres: { ...parametres, onglet: 'preparer' } };
   const page = (PAGES as readonly string[]).includes(chemin) ? (chemin as Page) : 'accueil';
-  return { page, parametres: Object.fromEntries(new URLSearchParams(requete)) };
+  return { page, parametres };
 }
 
 /** Navigation par fragment d'URL (#/seance) : fonctionne sur GitHub Pages sans configuration serveur. */

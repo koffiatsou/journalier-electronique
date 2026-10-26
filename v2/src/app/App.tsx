@@ -5,7 +5,7 @@ import { FournisseurToast } from '../ui/Toast.tsx';
 import { AgendaPage } from '../features/agenda/AgendaPage.tsx';
 import { ElevesPage } from '../features/eleves/ElevesPage.tsx';
 import { JournalierPage } from '../features/journalier/JournalierPage.tsx';
-import { ReunionPage } from '../features/reunion/ReunionPage.tsx';
+import { PiaPage } from '../features/pia/PiaPage.tsx';
 import { SeancePage } from '../features/seance/SeancePage.tsx';
 import { Accueil } from './PagesSimples.tsx';
 import { Shell } from './Shell.tsx';
@@ -27,7 +27,7 @@ export function App({ magasin }: { magasin: Magasin }) {
         {pret && page === 'agenda' ? <AgendaPage magasin={magasin} /> : null}
         {pret && page === 'journalier' ? <JournalierPage key={parametres.eleve ?? ''} magasin={magasin} onAller={aller} eleveInitial={parametres.eleve ?? null} /> : null}
         {pret && page === 'eleves' ? <ElevesPage magasin={magasin} onAller={aller} /> : null}
-        {pret && page === 'reunion' ? <ReunionPage key={parametres.eleve ?? ''} magasin={magasin} onAller={aller} eleveInitial={parametres.eleve ?? null} /> : null}
+        {pret && page === 'pia' ? <PiaPage key={`${parametres.eleve ?? ''}|${parametres.annee ?? ''}`} magasin={magasin} onAller={aller} parametres={parametres} /> : null}
       </Shell>
     </FournisseurToast>
   );

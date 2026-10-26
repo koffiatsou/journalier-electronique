@@ -1,9 +1,12 @@
 import { lireZip, ecrireZip } from './zip.ts';
 import { identiteDe, nomFichier, preparerBlocs, remplirDocument } from './journalier.ts';
+import { nomFichierPia, remplirEntete, remplirPia } from './pia.ts';
+import type { Pia } from '../pia/types.ts';
 import type { Eleve, Seance } from '../types.ts';
 
 export { lireZip, ecrireZip } from './zip.ts';
 export { remplirDocument, preparerBlocs, nomFichier, anneeScolaire } from './journalier.ts';
+export { remplirPia, nomFichierPia } from './pia.ts';
 
 export const TYPE_DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 export const TYPE_ZIP = 'application/zip';
@@ -26,13 +29,38 @@ export async function construireJournalier(modele: Uint8Array, eleve: Eleve, sea
   const dec = new TextDecoder();
   const enc = new TextEncoder();
   entrees['word/document.xml'] = enc.encode(remplirDocument(dec.decode(doc), preparerBlocs(seances, eleve, deidentifie), identiteDe(eleve, deidentifie)));
-  const core = entrees['docProps/core.xml'];
-  if (core) {
-    entrees['docProps/core.xml'] = enc.encode(dec.decode(core)
-      .replace(/<dc:creator>[\s\S]*?<\/dc:creator>/, '<dc:creator>Pôle Territorial WBE BXL</dc:creator>')
-      .replace(/<cp:lastModifiedBy>[\s\S]*?<\/cp:lastModifiedBy>/, '<cp:lastModifiedBy>Pôle Territorial WBE BXL</cp:lastModifiedBy>'));
-  }
+  signerPole(entrees);
   return { octets: ecrireZip(entrees), nom: nomFichier(eleve, seances, deidentifie, periode, precision) };
+}
+
+/** Le créateur du fichier est toujours le pôle, jamais une personne : on le remet à chaque export. */
+function signerPole(entrees: Record<string, Uint8Array>): void {
+  const core = entrees['docProps/core.xml'];
+  if (!core) return;
+  const dec = new TextDecoder();
+  entrees['docProps/core.xml'] = new TextEncoder().encode(dec.decode(core)
+    .replace(/<dc:creator>[\s\S]*?<\/dc:creator>/, '<dc:creator>Pôle Territorial WBE BXL</dc:creator>')
+    .replace(/<cp:lastModifiedBy>[\s\S]*?<\/cp:lastModifiedBy>/, '<cp:lastModifiedBy>Pôle Territorial WBE BXL</cp:lastModifiedBy>'));
+}
+
+/** Construit le PIA Word d'un élève à partir du modèle officiel (octets du .docx). */
+export async function construirePia(modele: Uint8Array, pia: Pia, eleve: Eleve): Promise<{ octets: Uint8Array; nom: string }> {
+  const entrees = await lireZip(modele);
+  const doc = entrees['word/document.xml'];
+  if (!doc) throw new Error('Modèle PIA invalide.');
+  const dec = new TextDecoder();
+  const enc = new TextEncoder();
+  const identite = {
+    nom: `${eleve.nom} ${eleve.prenom}`.trim(), dateNaissance: eleve.dateNaissance, ecole: eleve.ecole, classe: eleve.classe,
+    option: pia.identite.option, titulaire: eleve.titulaire, cpms: pia.identite.cpms,
+    representantPole: pia.identite.representantPole, responsable: pia.identite.responsable
+  };
+  entrees['word/document.xml'] = enc.encode(remplirPia(dec.decode(doc), { pia, identite }));
+  for (const nom of Object.keys(entrees)) {
+    if (/^word\/header\d*\.xml$/.test(nom)) entrees[nom] = enc.encode(remplirEntete(dec.decode(entrees[nom]), pia.annee));
+  }
+  signerPole(entrees);
+  return { octets: ecrireZip(entrees), nom: nomFichierPia(eleve, pia.annee) };
 }
 
 /** Rend chaque nom unique dans l'archive (« … (2).docx »). */

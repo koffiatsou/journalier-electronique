@@ -49,3 +49,11 @@
 | 2026-10-26 | Profil du PIA : jamais rempli automatiquement ; indices cliquables (phrases génériques + rapprochements tirés des séances pour cognitif, autonomie, comportement) | L'agent connaît son élève ; les indices aident à savoir quoi écrire |
 | 2026-10-26 | Deux niveaux d'objectifs : généraux (profil) et de la période (PV 1, avec critères d'évaluation) | Le modèle officiel les distingue |
 | 2026-10-26 | Support visuel = aménagement pédagogique (sauf problème de vue) | Réponse de l'utilisateur |
+| 2026-10-26 | Un PIA = un enregistrement par élève et par année scolaire (identifiant « élève, année ») ; base IndexedDB version 3, magasin `pia` | Un seul PIA par année, retrouvé sans doublon ; supprimé avec l'élève |
+| 2026-10-26 | Enregistrement automatique du brouillon de PIA 0,4 s après la dernière frappe, et à la fermeture de la page | Rien ne se perd, sans écriture à chaque lettre |
+| 2026-10-26 | Les objectifs retenus à la réunion sont enregistrés dans le PIA (fin du « gardé le temps de la visite ») | Objectifs retrouvés au PV 1 sans ressaisie |
+| 2026-10-26 | PV 1 : « Reprendre les objectifs retenus » une seule fois par objectif, sans critères (l'agent les écrit) | Évite les doublons ; les critères relèvent de l'agent |
+| 2026-10-26 | Rapprochements du profil : au moins 2 séances, 3 par case au plus ; le dernier niveau noté décide (Acquis / Pas encore acquis / Faire progresser / Consolider) | Court et vérifiable ; textes à relire avec l'utilisateur |
+| 2026-10-26 | Aménagements proposés : aides à effet positif dont le dernier effet n'est pas « aucun » (6 au plus) ; type P / O / M proposé, à corriger ; aide inconnue = à classer | L'agent reste maître |
+| 2026-10-26 | Export Word du PIA : on remplit le modèle officiel sans le reconstruire ; lignes ajoutées au-delà de 9 présents / 10 aménagements ; PV 2 laissé vide | Fidélité au document officiel ; PV 2 = lot 4b |
+| 2026-10-26 | Informations de santé : uniquement sur l'appareil, aucun envoi | Données sensibles d'élèves |

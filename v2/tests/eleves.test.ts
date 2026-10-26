@@ -74,8 +74,9 @@ describe('Élèves : suppression complète', () => {
   const activites = [activite('t1', 'a'), activite('t2', 'b'), activite('t3')];
 
   it('liste exactement ce qui disparaît avec l’élève', () => {
-    assert.deepEqual(effetSuppression('a', seances, activites), { seances: ['s1', 's2'], activites: ['t1'] });
-    assert.deepEqual(effetSuppression('zzz', seances, activites), { seances: [], activites: [] });
+    assert.deepEqual(effetSuppression('a', seances, activites), { seances: ['s1', 's2'], activites: ['t1'], pias: [] });
+    assert.deepEqual(effetSuppression('a', seances, activites, [{ id: 'a|2026-2027', eleveId: 'a' }, { id: 'b|2026-2027', eleveId: 'b' }]).pias, ['a|2026-2027']);
+    assert.deepEqual(effetSuppression('zzz', seances, activites), { seances: [], activites: [], pias: [] });
   });
 
   it('le magasin supprime l’élève, ses séances et ses activités : aucune séance orpheline, y compris après rechargement', async () => {
@@ -83,7 +84,7 @@ describe('Élèves : suppression complète', () => {
     const magasin = creerMagasin(depot);
     await magasin.charger();
     const effet = await magasin.supprimerEleve('a');
-    assert.deepEqual(effet, { seances: ['s1', 's2'], activites: ['t1'] });
+    assert.deepEqual(effet, { seances: ['s1', 's2'], activites: ['t1'], pias: [] });
 
     const apres = magasin.lire();
     assert.deepEqual(apres.eleves.map((e) => e.id), ['b']);

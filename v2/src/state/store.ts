@@ -4,7 +4,21 @@ import type { Activite } from '../domain/agenda/types.ts';
 import type { Changement } from '../domain/agenda/planning.ts';
 import { effetSuppression, normaliserEleve } from '../domain/eleves/index.ts';
 import type { EffetSuppression } from '../domain/eleves/index.ts';
+import { normaliserPia } from '../domain/pia/index.ts';
+import type { Pia } from '../domain/pia/index.ts';
 import type { Eleve, Seance } from '../domain/types.ts';
+
+/** Où en est l'enregistrement automatique du brouillon de PIA. */
+export interface StatutPia {
+  /** repos : rien n'a été modifié ; attente : modifié, pas encore écrit ; ok : écrit ; erreur : l'écriture a échoué. */
+  etat: 'repos' | 'attente' | 'ok' | 'erreur';
+  /** Moment du dernier enregistrement réussi (date ISO), ou vide. */
+  le: string;
+  message: string;
+}
+
+/** Délai entre la dernière frappe et l'écriture dans la base : évite une écriture par lettre. */
+const DELAI_PIA_MS = 400;
 
 export interface Etat {
   pret: boolean;
@@ -12,11 +26,15 @@ export interface Etat {
   eleves: Eleve[];
   seances: Seance[];
   activites: Activite[];
+  pias: Pia[];
+  statutPia: StatutPia;
   /** Séance à ouvrir préremplie (depuis l'agenda) ; consommée une fois. */
   preparation: Partial<Seance> | null;
 }
 
-const initial: Etat = { pret: false, erreur: null, eleves: [], seances: [], activites: [], preparation: null };
+const initial: Etat = {
+  pret: false, erreur: null, eleves: [], seances: [], activites: [], pias: [], statutPia: { etat: 'repos', le: '', message: '' }, preparation: null
+};
 
 /** Petit magasin d'état : une source de vérité en mémoire, écrite dans le dépôt à chaque action. */
 export function creerMagasin(depot: Depot) {
@@ -24,14 +42,40 @@ export function creerMagasin(depot: Depot) {
   const abonnes = new Set<() => void>();
   const maj = (suite: Partial<Etat>) => { etat = { ...etat, ...suite }; abonnes.forEach((a) => a()); };
 
+  /* Brouillon de PIA : l'écran voit le changement tout de suite, la base est écrite juste après (en une file, dans l'ordre). */
+  let enAttente = new Map<string, Pia>();
+  let minuteur: ReturnType<typeof setTimeout> | null = null;
+  let file: Promise<void> = Promise.resolve();
+  const statut = (suite: Partial<StatutPia>) => maj({ statutPia: { ...etat.statutPia, ...suite } });
+
+  const ecrirePias = (): Promise<void> => {
+    file = file.then(async () => {
+      const lot = [...enAttente.values()];
+      enAttente = new Map();
+      if (!lot.length) return;
+      try {
+        for (const p of lot) await depot.enregistrerPia(p);
+        statut(enAttente.size ? { etat: 'attente' } : { etat: 'ok', le: new Date().toISOString(), message: '' });
+      } catch (e) {
+        // On garde ce qui n'a pas été écrit : la prochaine modification (ou « vider ») réessaiera.
+        for (const p of lot) if (!enAttente.has(p.id)) enAttente.set(p.id, p);
+        statut({ etat: 'erreur', message: e instanceof Error ? e.message : 'Enregistrement impossible' });
+      }
+    });
+    return file;
+  };
+
   return {
     lire: () => etat,
     abonner(f: () => void) { abonnes.add(f); return () => { abonnes.delete(f); }; },
 
     async charger() {
       try {
-        const [eleves, seances, activites] = await Promise.all([depot.chargerEleves(), depot.chargerSeances(), depot.chargerActivites()]);
-        maj({ pret: true, erreur: null, eleves: eleves.map(normaliserEleve), seances, activites });
+        const [eleves, seances, activites, pias] = await Promise.all([depot.chargerEleves(), depot.chargerSeances(), depot.chargerActivites(), depot.chargerPias()]);
+        maj({
+          pret: true, erreur: null, eleves: eleves.map(normaliserEleve), seances, activites,
+          pias: pias.map(normaliserPia).filter((p): p is Pia => p !== null)
+        });
       } catch (e) {
         maj({ pret: true, erreur: e instanceof Error ? e.message : 'Chargement impossible' });
       }
@@ -43,14 +87,36 @@ export function creerMagasin(depot: Depot) {
       maj({ eleves: [...etat.eleves.filter((x) => !liste.some((n) => n.id === x.id)), ...liste] });
     },
 
-    /** Supprime l'élève avec ses séances et ses activités d'agenda (définitif). Renvoie ce qui a disparu. */
+    /** Supprime l'élève avec ses séances, ses activités d'agenda et ses PIA (définitif). Renvoie ce qui a disparu. */
     async supprimerEleve(id: string): Promise<EffetSuppression> {
-      const effet = effetSuppression(id, etat.seances, etat.activites);
+      const effet = effetSuppression(id, etat.seances, etat.activites, etat.pias);
+      // Un brouillon de PIA encore en attente ne doit jamais être réécrit APRÈS la suppression.
+      await file;
+      for (const [cle, p] of [...enAttente]) if (p.eleveId === id) enAttente.delete(cle);
       await depot.supprimerEleve(id);
       const s = new Set(effet.seances);
       const a = new Set(effet.activites);
-      maj({ eleves: etat.eleves.filter((x) => x.id !== id), seances: etat.seances.filter((x) => !s.has(x.id)), activites: etat.activites.filter((x) => !a.has(x.id)) });
+      const pi = new Set(effet.pias);
+      maj({
+        eleves: etat.eleves.filter((x) => x.id !== id), seances: etat.seances.filter((x) => !s.has(x.id)),
+        activites: etat.activites.filter((x) => !a.has(x.id)), pias: etat.pias.filter((x) => !pi.has(x.id))
+      });
       return effet;
+    },
+
+    /** Enregistre le PIA : visible tout de suite à l'écran, écrit dans la base après une courte pause. */
+    enregistrerPia(p: Pia) {
+      maj({ pias: [...etat.pias.filter((x) => x.id !== p.id), p] });
+      statut({ etat: 'attente' });
+      enAttente.set(p.id, p);
+      if (minuteur) clearTimeout(minuteur);
+      minuteur = setTimeout(() => { minuteur = null; void ecrirePias(); }, DELAI_PIA_MS);
+    },
+
+    /** Écrit tout de suite ce qui attend (changement d'écran, fermeture de la page, tests). */
+    viderEnregistrements(): Promise<void> {
+      if (minuteur) { clearTimeout(minuteur); minuteur = null; }
+      return ecrirePias();
     },
 
     async enregistrerSeance(s: Seance) {

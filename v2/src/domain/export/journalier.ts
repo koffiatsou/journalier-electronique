@@ -12,7 +12,7 @@ const NBSP = ' ';
 const PARTICULES = new Set(['de', 'du', 'des', 'la', 'le', 'les', 'van', 'von', 'der', 'den', 'el', 'al', 'ben', 'ait']);
 
 // eslint-disable-next-line no-control-regex
-const esc = (s: string): string => s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+export const esc = (s: string): string => s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /* ───────── constructeurs OpenXML ───────── */
 const run = (t: string, gras = false): string => (t === '' ? '' : `<w:r>${gras ? '<w:rPr><w:b/></w:rPr>' : ''}<w:t xml:space="preserve">${esc(t)}</w:t></w:r>`);
@@ -25,17 +25,17 @@ const para = (runs: string, opts: { puce?: boolean; retrait?: number } = {}): st
 const etiquette = (label: string, valeur: string): string => para(run(`${label}${NBSP}: `, true) + run(valeur));
 
 /* ───────── découpage du XML du modèle ───────── */
-interface Tableau { debut: number; fin: number; xml: string }
-function decouperTables(xml: string): Tableau[] {
+export interface Tableau { debut: number; fin: number; xml: string }
+export function decouperTables(xml: string): Tableau[] {
   const tables: Tableau[] = [];
   const re = /<w:tbl>[\s\S]*?<\/w:tbl>/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(xml))) tables.push({ debut: m.index, fin: m.index + m[0].length, xml: m[0] });
   return tables;
 }
-const lignes = (tbl: string): string[] => tbl.match(/<w:tr[ >][\s\S]*?<\/w:tr>/g) ?? [];
-const cellules = (tr: string): string[] => tr.match(/<w:tc>[\s\S]*?<\/w:tc>/g) ?? [];
-const sansBalises = (x: string): string => { let out = x; let avant: string; do { avant = out; out = out.replace(/<[^>]+>/g, ''); } while (out !== avant); return out; };
+export const lignes = (tbl: string): string[] => tbl.match(/<w:tr[ >][\s\S]*?<\/w:tr>/g) ?? [];
+export const cellules = (tr: string): string[] => tr.match(/<w:tc>[\s\S]*?<\/w:tc>/g) ?? [];
+export const sansBalises = (x: string): string => { let out = x; let avant: string; do { avant = out; out = out.replace(/<[^>]+>/g, ''); } while (out !== avant); return out; };
 
 /** Remplace le contenu d'une cellule en gardant ses propriétés (largeur, fusion). */
 function remplirCellule(tc: string, paragraphes: string): string {

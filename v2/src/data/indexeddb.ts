@@ -1,9 +1,10 @@
 import type { Activite } from '../domain/agenda/types.ts';
+import type { Pia } from '../domain/pia/types.ts';
 import type { Eleve, Seance } from '../domain/types.ts';
 import type { Depot } from './repository.ts';
 
 const NOM_BASE = 'journalier-v2';
-const VERSION = 2;
+const VERSION = 3;
 
 function ouvrir(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -13,6 +14,7 @@ function ouvrir(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains('eleves')) db.createObjectStore('eleves', { keyPath: 'id' });
       if (!db.objectStoreNames.contains('seances')) db.createObjectStore('seances', { keyPath: 'id' });
       if (!db.objectStoreNames.contains('activites')) db.createObjectStore('activites', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('pia')) db.createObjectStore('pia', { keyPath: 'id' });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error ?? new Error('Ouverture de la base impossible'));
@@ -50,19 +52,22 @@ export async function creerDepotIndexedDb(): Promise<Depot> {
     chargerSeances: () => requete<Seance[]>(db, 'seances', 'readonly', (s) => s.getAll()),
     enregistrerEleve: async (e) => { await requete(db, 'eleves', 'readwrite', (s) => s.put(e)); },
     supprimerEleve: (id) => new Promise<void>((resolve, reject) => {
-      // Une seule transaction sur les trois magasins : tout est supprimé, ou rien.
-      const tx = db.transaction(['eleves', 'seances', 'activites'], 'readwrite');
+      // Une seule transaction sur tous les magasins liés à l'élève : tout est supprimé, ou rien.
+      const tx = db.transaction(['eleves', 'seances', 'activites', 'pia'], 'readwrite');
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error ?? new Error('Suppression impossible'));
       tx.onabort = () => reject(tx.error ?? new Error('Suppression annulée'));
       tx.objectStore('eleves').delete(id);
       supprimerLies(tx, 'seances', id);
       supprimerLies(tx, 'activites', id);
+      supprimerLies(tx, 'pia', id);
     }),
     enregistrerSeance: async (x) => { await requete(db, 'seances', 'readwrite', (s) => s.put(x)); },
     supprimerSeance: async (id) => { await requete(db, 'seances', 'readwrite', (s) => s.delete(id)); },
     chargerActivites: () => requete<Activite[]>(db, 'activites', 'readonly', (s) => s.getAll()),
     enregistrerActivite: async (a) => { await requete(db, 'activites', 'readwrite', (s) => s.put(a)); },
-    supprimerActivite: async (id) => { await requete(db, 'activites', 'readwrite', (s) => s.delete(id)); }
+    supprimerActivite: async (id) => { await requete(db, 'activites', 'readwrite', (s) => s.delete(id)); },
+    chargerPias: () => requete<Pia[]>(db, 'pia', 'readonly', (s) => s.getAll()),
+    enregistrerPia: async (x) => { await requete(db, 'pia', 'readwrite', (s) => s.put(x)); }
   };
 }

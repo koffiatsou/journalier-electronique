@@ -60,9 +60,9 @@ PRODUCT.md (qui, pourquoi) · DESIGN.md (look & mouvement) · ARCHITECTURE.md ·
 ## Réunion (lot 3)
 - `src/domain/reunion/` (pur, testé dans `tests/reunion.test.ts`) : `proposerObjectifs(synthese)` → `Proposition[]` (id stable matière|genre|texte d'origine ; au plus 3 observations, 2 compétences, 2 aides à garder, 1 à revoir par matière ; le DERNIER niveau noté décide : « Totalement » = rien à proposer) ; `retenir` / `retirer` / `reecrire` / `ajouterLibre` / `retenusParMatiere` ; `texteReunion` (texte brut en puces ; « sans nom » = `masquer` + `deIdentifier`, l'en-tête est ajouté APRÈS le masquage).
 - La synthèse (`redaction/synthese.ts`) garde aussi `suivis` (niveaux par date, effets des aides, niveau des compétences) : les propositions s'appuient dessus, jamais sur les phrases. Une séance d'absence ne compte pas.
-- Écran : `src/features/reunion/ReunionPage.tsx`, styles `reunion.css` (classes `reunion-*`, zone ortho = sarcelle). Route `#/reunion?eleve=<id>`. `construirePeriode` (domain/journalier) est partagé avec le Journalier.
-- Objectifs retenus : gardés en mémoire par élève le temps de la visite SEULEMENT (pas dans IndexedDB) ; à enregistrer au lot 4a. La page Réunion deviendra l'onglet « Préparer » de l'écran PIA. Cadrage du PIA (profil, PV 1 / PV 2, aménagements P/O/M) : voir « Cadrage du PIA » dans `docs/plan-de-travail.md`.
-- Test navigateur : `tools/navigateur/reunion.mjs` (séances injectées dans IndexedDB). Avec des élèves fictifs (prénom « Élève »), le masquage de noms peut tout remplacer : ne pas s'en inquiéter.
+- Écran : `src/features/pia/Preparer.tsx` (onglet « Préparer » du PIA), styles `reunion.css` (classes `reunion-*`, zone ortho = sarcelle). Ancienne route `#/reunion?eleve=<id>` → `#/pia?eleve=<id>&onglet=preparer`. `construirePeriode` (domain/journalier) est partagé avec le Journalier.
+- Objectifs retenus : enregistrés dans le PIA (`Pia.retenus`, lot 4a). Cadrage du PIA (profil, PV 1 / PV 2, aménagements P/O/M) : voir « Cadrage du PIA » dans `docs/plan-de-travail.md`.
+- Test navigateur : `tools/navigateur/pia.mjs` (séances injectées dans IndexedDB). Avec des élèves fictifs (prénom « Élève »), le masquage de noms peut tout remplacer : ne pas s'en inquiéter.
 
 ## Journalier (écran, lot 1)
 - `src/domain/journalier/` (pur, testé) : `Periode` = année scolaire (1er août → 31 juillet, même découpage que `anneeScolaire`) / état à ce jour / dates libres ; `bornes`, `seancesDuJournalier` (élève ou tous, plus récentes d'abord), `libellePeriode` (version fichier sans « / »).
@@ -78,3 +78,11 @@ PRODUCT.md (qui, pourquoi) · DESIGN.md (look & mouvement) · ARCHITECTURE.md ·
 - Une activité = date + périodes (index 0–7) + répétition hebdomadaire ; modifier « cette date » détache une occurrence (exceptions de la série). Réalisé = séance du même élève sur le créneau (calculé), sinon état manuel.
 - Couleurs : `Eleve.couleur` (0–9) sinon déduite de l'identifiant ; classes CSS `.c-0…c-9` et `.t-<type>` (agenda.css, clair/sombre via color-mix).
 - « Encoder » : `magasin.preparerSeance(partiel)` puis hash `/seance` (consommé à l'ouverture).
+
+## PIA (lot 4a)
+- `src/domain/pia/` (pur, testé : `tests/pia.test.ts`, `tests/export-pia.test.ts`) : `types.ts` (Pia, Profil 5 aspects × 3 colonnes, IdentitePia, ProcesVerbal1, Amenagement P/O/M), `pia.ts` (`piaVierge`, `normaliserPia`, modificateurs purs), `indices.ts` (exemples, phrases cliquables, `rapprocher(seances)` : Cognitif, Autonomie, Comportemental seulement, ≥ 2 séances, 3 max par case), `amenagements.ts` (`proposerAmenagements`, `TYPE_DE_AIDE`). Id d'un PIA = `eleveId|année`.
+- Rien n'est jamais rempli automatiquement dans le profil : les indices se cochent / se cliquent, l'agent garde la main. Textes des indices et correspondance aide → P/O/M = propositions de départ, à relire avec l'utilisateur.
+- Stockage : IndexedDB version 3, magasin `pia` ; `magasin.enregistrerPia(p)` (affichage immédiat, écriture après 400 ms, file en série) et `magasin.viderEnregistrements()` (changement d'écran, `pagehide`, export). `supprimerEleve` supprime aussi les PIA et annule les écritures en attente.
+- Écran : `src/features/pia/PiaPage.tsx` (route `#/pia?eleve=…&annee=…&onglet=preparer|identite|profil|pv1|amenagements`, flèches du clavier entre onglets), un composant par onglet, styles `pia.css` (classes `pia-*`). `changer(modif)` applique la modification au PIA le plus récent du magasin.
+- Export : `src/domain/export/pia.ts` modifie le XML du modèle `public/modeles/PIA_modele_officiel_2025-09-11.docx` (structure : `docs/PIA_MODELE_STRUCTURE.md` à la racine) sans le reconstruire ; erreur « Le modèle PIA est inattendu » si les libellés changent. PV 2 (tableaux T6–T8) laissé intact : lot 4b.
+- Test navigateur : `tools/navigateur/pia.mjs` (`PLAYWRIGHT=<chemin>/playwright/index.mjs` si besoin).

@@ -8,7 +8,7 @@ const NAV: { page: Page; libelle: string; icone: (p: { taille?: number }) => Rea
   { page: 'seance', libelle: 'Séance', icone: IconeSeance },
   { page: 'journalier', libelle: 'Journalier', icone: IconeJournalier },
   { page: 'eleves', libelle: 'Élèves', icone: IconeEleves },
-  { page: 'reunion', libelle: 'Réunion', icone: IconeReunion }
+  { page: 'pia', libelle: 'PIA', icone: IconeReunion }
 ];
 
 /** Cadre de l'application : rail latéral sur grand écran, barre d'onglets en bas sur mobile. */

@@ -65,6 +65,7 @@ export function ElevesPage({ magasin, onAller }: { magasin: Magasin; onAller: Al
   const eleves = useMagasin(magasin, (s) => s.eleves);
   const seances = useMagasin(magasin, (s) => s.seances);
   const activites = useMagasin(magasin, (s) => s.activites);
+  const pias = useMagasin(magasin, (s) => s.pias);
   const { annoncer } = useToast();
   const aujourdhui = aujourdhuiISO();
   const anneeCourante = anneeScolaire(aujourdhui);
@@ -175,7 +176,7 @@ export function ElevesPage({ magasin, onAller }: { magasin: Magasin; onAller: Al
     const s = seancesDe(ouvert.id);
     const langues = languesDe(ouvert);
     const fil = ouvert.filiere ?? analyserClasse(ouvert.classe)?.filiere;
-    const effet = effetSuppression(ouvert.id, seances, activites);
+    const effet = effetSuppression(ouvert.id, seances, activites, pias);
     return (
       <div className="page">
         {entete}
@@ -216,7 +217,8 @@ export function ElevesPage({ magasin, onAller }: { magasin: Magasin; onAller: Al
 
           <div className="fiche-actions dossier-actions">
             <Button variante="primaire" onClick={() => onAller('journalier', { eleve: ouvert.id })}>Voir le Journalier</Button>
-            <Button onClick={() => onAller('reunion', { eleve: ouvert.id })}>Préparer la réunion</Button>
+            <Button onClick={() => onAller('pia', { eleve: ouvert.id, onglet: 'preparer' })}>Préparer la réunion</Button>
+            <Button onClick={() => onAller('pia', { eleve: ouvert.id })}>Ouvrir le PIA</Button>
             <Button onClick={() => setVue({ genre: 'fiche', eleve: ouvert, retour: vue })}>Modifier le dossier</Button>
             <Button onClick={() => { void basculerArchive(ouvert); }}>{ouvert.archiveLe ? 'Suivre à nouveau' : 'Archiver'}</Button>
             <Button className="btn-danger" onClick={() => setASupprimer(ouvert)}>Supprimer…</Button>
@@ -228,8 +230,8 @@ export function ElevesPage({ magasin, onAller }: { magasin: Magasin; onAller: Al
             <>
               <p>
                 Le dossier de <strong>{nomComplet(aSupprimer)}</strong> sera supprimé
-                {effet.seances.length || effet.activites.length ? (
-                  <>, avec <strong>{pluriel(effet.seances.length, 'séance')}</strong> du Journalier et <strong>{pluriel(effet.activites.length, 'activité')}</strong> de l’agenda</>
+                {effet.seances.length || effet.activites.length || effet.pias.length ? (
+                  <>, avec <strong>{pluriel(effet.seances.length, 'séance')}</strong> du Journalier{effet.pias.length ? ', ' : ' et '}<strong>{pluriel(effet.activites.length, 'activité')}</strong> de l’agenda{effet.pias.length ? <> et <strong>{pluriel(effet.pias.length, 'PIA')}</strong></> : null}</>
                 ) : ' (aucune séance ni activité n’y est liée)'}.
                 {' '}Cette action est définitive.
               </p>

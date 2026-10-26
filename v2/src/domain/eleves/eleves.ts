@@ -53,13 +53,16 @@ export interface EffetSuppression {
   seances: string[];
   /** Identifiants des activités de l'agenda (séries et occurrences) qui disparaissent aussi. */
   activites: string[];
+  /** Identifiants des PIA (un par année scolaire) qui disparaissent aussi. */
+  pias: string[];
 }
 
-/** Ce qu'entraîne la suppression d'un élève : ses séances et ses activités d'agenda (aucune ne doit rester sans élève). */
-export function effetSuppression(eleveId: string, seances: readonly Seance[], activites: readonly Activite[]): EffetSuppression {
+/** Ce qu'entraîne la suppression d'un élève : ses séances, ses activités d'agenda et ses PIA (rien ne doit rester sans élève). */
+export function effetSuppression(eleveId: string, seances: readonly Seance[], activites: readonly Activite[], pias: readonly { id: string; eleveId: string }[] = []): EffetSuppression {
   return {
     seances: seances.filter((s) => s.eleveId === eleveId).map((s) => s.id),
-    activites: activites.filter((a) => a.eleveId === eleveId).map((a) => a.id)
+    activites: activites.filter((a) => a.eleveId === eleveId).map((a) => a.id),
+    pias: pias.filter((x) => x.eleveId === eleveId).map((x) => x.id)
   };
 }
 

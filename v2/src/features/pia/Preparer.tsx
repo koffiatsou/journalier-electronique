@@ -4,18 +4,19 @@ import type { Aller } from '../../app/useRoute.ts';
 import { noms } from '../../domain/export/journalier.ts';
 import { anneesDisponibles, bornes, construirePeriode, libellePeriode, seancesDuJournalier } from '../../domain/journalier/index.ts';
 import type { GenrePeriode } from '../../domain/journalier/index.ts';
+import { definirRetenus } from '../../domain/pia/index.ts';
 import { synthese } from '../../domain/redaction/index.ts';
 import type { SyntheseMatiere } from '../../domain/redaction/index.ts';
 import { dateFR, majusculePremiere } from '../../domain/redaction/langue.ts';
 import { ajouterLibre, estRetenu, proposerObjectifs, reecrire, retenir, retirer, texteReunion } from '../../domain/reunion/index.ts';
 import type { ObjectifRetenu, Proposition } from '../../domain/reunion/index.ts';
-import type { Eleve } from '../../domain/types.ts';
+import type { Seance } from '../../domain/types.ts';
 import { aujourdhuiISO } from '../seance/brouillon.ts';
-import type { Magasin } from '../../state/store.ts';
-import { useMagasin } from '../../state/store.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Field, Input, Select } from '../../ui/Field.tsx';
 import { useToast } from '../../ui/Toast.tsx';
+import type { PropsOnglet } from './contexte.ts';
+import { nomEleve } from './contexte.ts';
 
 const GENRES: { genre: GenrePeriode; libelle: string }[] = [
   { genre: 'a-ce-jour', libelle: 'État à ce jour' },
@@ -23,13 +24,13 @@ const GENRES: { genre: GenrePeriode; libelle: string }[] = [
   { genre: 'dates', libelle: 'Dates libres' }
 ];
 
-interface Filtre { eleveId: string; genre: GenrePeriode; annee: string; du: string; au: string; anonyme: boolean }
+/** Période du résumé et option « sans nom » : gardées par l'écran PIA quand on change d'onglet. */
+export interface FiltrePreparer { genre: GenrePeriode; annee: string; du: string; au: string; anonyme: boolean }
 
-/* Gardés le temps de la visite (retour d'un autre écran). Rien n'est enregistré dans la base pour l'instant. */
-let dernier: Filtre | null = null;
-const retenusParEleve = new Map<string, ObjectifRetenu[]>();
+export const filtreInitial = (annee: string, aujourdhui: string): FiltrePreparer => ({
+  genre: 'annee', annee, du: '', au: aujourdhui, anonyme: false
+});
 
-const nomEleve = (e: Eleve | undefined): string => (e ? `${e.nom} ${e.prenom}`.trim() : '');
 const pluriel = (n: number, mot: string): string => `${n} ${mot}${n > 1 ? 's' : ''}`;
 
 function Rubrique({ titre, lignes }: { titre: string; lignes: readonly string[] }) {
@@ -64,46 +65,47 @@ function CarteMatiere({ m }: { m: SyntheseMatiere }) {
   );
 }
 
-export function ReunionPage({ magasin, onAller, eleveInitial }: { magasin: Magasin; onAller: Aller; eleveInitial: string | null }) {
-  const eleves = useMagasin(magasin, (e) => e.eleves);
-  const seances = useMagasin(magasin, (e) => e.seances);
+interface Props extends Pick<PropsOnglet, 'eleve' | 'pia' | 'changer'> {
+  /** Toutes les séances de l'élève : la période du résumé peut sortir de l'année du PIA. */
+  seancesEleve: readonly Seance[];
+  filtre: FiltrePreparer;
+  onFiltre: (f: FiltrePreparer) => void;
+  onAller: Aller;
+  onPv1: () => void;
+}
+
+/**
+ * Onglet « Préparer » (ancien écran Réunion) : résumé par matière, objectifs à valider, texte à copier.
+ * Les objectifs retenus sont enregistrés dans le PIA de l'élève.
+ */
+export function Preparer({ eleve, pia, changer, seancesEleve, filtre: f, onFiltre, onAller, onPv1 }: Props) {
   const { annoncer } = useToast();
   const aujourdhui = aujourdhuiISO();
-  const annees = useMemo(() => anneesDisponibles(seances, aujourdhui), [seances, aujourdhui]);
-
-  const [f, setF] = useState<Filtre>(() => {
-    const base: Filtre = dernier ?? { eleveId: '', genre: 'a-ce-jour', annee: annees[0] ?? '', du: '', au: aujourdhui, anonyme: false };
-    return eleveInitial !== null ? { ...base, eleveId: eleveInitial } : base;
-  });
-  const maj = (p: Partial<Filtre>) => setF((x) => { const n = { ...x, ...p }; dernier = n; return n; });
-
-  const [retenus, setRetenus] = useState<ObjectifRetenu[]>(() => retenusParEleve.get(f.eleveId) ?? []);
-  const changerRetenus = (suite: ObjectifRetenu[]) => { setRetenus(suite); retenusParEleve.set(f.eleveId, suite); };
-  const changerEleve = (id: string) => { maj({ eleveId: id }); setRetenus(retenusParEleve.get(id) ?? []); };
+  const annees = useMemo(() => anneesDisponibles(seancesEleve, aujourdhui), [seancesEleve, aujourdhui]);
+  const maj = (p: Partial<FiltrePreparer>) => onFiltre({ ...f, ...p });
   const [libre, setLibre] = useState('');
 
-  const triees = [...eleves].sort((a, b) => nomEleve(a).localeCompare(nomEleve(b), 'fr'));
-  const eleve = eleves.find((e) => e.id === f.eleveId);
+  const retenus: readonly ObjectifRetenu[] = pia.retenus;
+  const changerRetenus = (suite: ObjectifRetenu[]) => changer((p) => definirRetenus(p, suite));
+
   const periode = construirePeriode(f);
   const resultat = bornes(periode, aujourdhui);
-  const liste = resultat.ok && f.eleveId ? seancesDuJournalier(seances, f.eleveId, resultat.bornes) : [];
+  const liste = resultat.ok ? seancesDuJournalier(seancesEleve, eleve.id, resultat.bornes) : [];
   const sy = synthese(liste);
   const propositions = proposerObjectifs(sy);
   const matieresAvecPropositions = [...new Set(propositions.map((p) => p.matiere))];
   const nbAbsences = liste.length - sy.seances;
 
-  const texte = eleve
-    ? texteReunion(sy, retenus, {
-      eleve: nomEleve(eleve), classe: eleve.classe, periode: libellePeriode(periode, aujourdhui),
-      masquer: f.anonyme ? noms(eleve) : []
-    })
-    : '';
+  const texte = texteReunion(sy, [...retenus], {
+    eleve: nomEleve(eleve), classe: eleve.classe, periode: libellePeriode(periode, aujourdhui),
+    masquer: f.anonyme ? noms(eleve) : []
+  });
 
-  const basculer = (p: Proposition) => changerRetenus(estRetenu(retenus, p.id) ? retirer(retenus, p.id) : retenir(retenus, p));
+  const basculer = (p: Proposition) => changerRetenus(estRetenu([...retenus], p.id) ? retirer([...retenus], p.id) : retenir([...retenus], p));
   const ajouter = (ev: FormEvent) => {
     ev.preventDefault();
     if (!libre.trim()) return;
-    changerRetenus(ajouterLibre(retenus, libre));
+    changerRetenus(ajouterLibre([...retenus], libre));
     setLibre('');
   };
   const copier = async () => {
@@ -116,22 +118,9 @@ export function ReunionPage({ magasin, onAller, eleveInitial }: { magasin: Magas
   };
 
   return (
-    <div className="page">
-      <header className="page-entete">
-        <h1>Réunion</h1>
-        <p className="page-sous-titre">Un résumé simple par matière, tiré de vos séances, et des objectifs à valider avant la réunion.</p>
-      </header>
-
-      <section className="liste-carte reunion-filtres" aria-label="Choix de l’élève et de la période">
+    <>
+      <section className="liste-carte reunion-filtres" aria-label="Période du résumé">
         <div className="reunion-grille">
-          <Field label="Élève">
-            {(id) => (
-              <Select id={id} value={f.eleveId} onChange={(ev) => changerEleve(ev.target.value)}>
-                <option value="">Choisir un élève…</option>
-                {triees.map((e) => <option key={e.id} value={e.id}>{nomEleve(e)}{e.classe ? ` (${e.classe})` : ''}{e.archiveLe ? ' — archivé' : ''}</option>)}
-              </Select>
-            )}
-          </Field>
           <div className="field">
             <span className="field-label" id="reunion-periode-titre">Période</span>
             <div className="chips" role="radiogroup" aria-labelledby="reunion-periode-titre">
@@ -141,13 +130,12 @@ export function ReunionPage({ magasin, onAller, eleveInitial }: { magasin: Magas
             </div>
           </div>
         </div>
-
         {f.genre === 'annee' ? (
           <div className="reunion-grille">
             <Field label="Année scolaire" aide="Du 1er août au 31 juillet.">
               {(id) => (
                 <Select id={id} value={f.annee} onChange={(ev) => maj({ annee: ev.target.value })}>
-                  {annees.map((a) => <option key={a} value={a}>{a}</option>)}
+                  {[...new Set([...annees, f.annee])].map((a) => <option key={a} value={a}>{a}</option>)}
                 </Select>
               )}
             </Field>
@@ -161,7 +149,7 @@ export function ReunionPage({ magasin, onAller, eleveInitial }: { magasin: Magas
         ) : null}
 
         <p className="reunion-resume" aria-live="polite">
-          {!resultat.ok ? <span className="barre-erreur">{resultat.raison}</span> : !eleve ? 'Choisissez un élève pour préparer la réunion.' : (
+          {!resultat.ok ? <span className="barre-erreur">{resultat.raison}</span> : (
             <>
               <strong className="num">{pluriel(sy.seances, 'séance')} d’accompagnement</strong>
               {' · '}{libellePeriode(periode, aujourdhui)}
@@ -171,7 +159,7 @@ export function ReunionPage({ magasin, onAller, eleveInitial }: { magasin: Magas
         </p>
       </section>
 
-      {eleve && resultat.ok ? (
+      {resultat.ok ? (
         <>
           {sy.absences ? <p className="reunion-absences">{sy.absences}</p> : null}
 
@@ -197,7 +185,7 @@ export function ReunionPage({ magasin, onAller, eleveInitial }: { magasin: Magas
                     {propositions.filter((p) => p.matiere === matiere).map((p) => (
                       <li key={p.id}>
                         <label className="reunion-choix">
-                          <input type="checkbox" checked={estRetenu(retenus, p.id)} onChange={() => basculer(p)} />
+                          <input type="checkbox" checked={estRetenu([...retenus], p.id)} onChange={() => basculer(p)} />
                           <span>
                             <span className="reunion-proposition">{p.texte}</span>
                             <small className="reunion-raison">{p.raison}</small>
@@ -218,9 +206,9 @@ export function ReunionPage({ magasin, onAller, eleveInitial }: { magasin: Magas
                         <Input
                           value={r.texte}
                           aria-label={`Objectif retenu ${i + 1}${r.matiere ? ` (${r.matiere})` : ''}`}
-                          onChange={(ev) => changerRetenus(reecrire(retenus, r.id, ev.target.value))}
+                          onChange={(ev) => changerRetenus(reecrire([...retenus], r.id, ev.target.value))}
                         />
-                        <Button variante="discret" aria-label={`Retirer l’objectif ${i + 1}`} onClick={() => changerRetenus(retirer(retenus, r.id))}>Retirer</Button>
+                        <Button variante="discret" aria-label={`Retirer l’objectif ${i + 1}`} onClick={() => changerRetenus(retirer([...retenus], r.id))}>Retirer</Button>
                       </li>
                     ))}
                   </ol>
@@ -232,6 +220,8 @@ export function ReunionPage({ magasin, onAller, eleveInitial }: { magasin: Magas
                   </Field>
                   <Button type="submit" disabled={!libre.trim()}>Ajouter</Button>
                 </form>
+                <p className="field-hint">Les objectifs retenus sont enregistrés dans le PIA de l’élève. Au procès-verbal 1, vous pourrez les reprendre et ajouter leurs critères d’évaluation.</p>
+                {retenus.some((r) => r.texte.trim()) ? <div><Button onClick={onPv1}>Passer au procès-verbal 1</Button></div> : null}
               </div>
             </div>
           </section>
@@ -250,11 +240,10 @@ export function ReunionPage({ magasin, onAller, eleveInitial }: { magasin: Magas
                 <summary>Voir le texte</summary>
                 <pre className="reunion-texte" tabIndex={0}>{texte}</pre>
               </details>
-              <p className="field-hint">Les objectifs retenus sont gardés tant que cette fenêtre reste ouverte ; ils ne sont pas encore enregistrés dans le dossier de l’élève.</p>
             </div>
           </section>
         </>
       ) : null}
-    </div>
+    </>
   );
 }
