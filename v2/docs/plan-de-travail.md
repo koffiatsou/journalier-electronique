@@ -29,7 +29,8 @@ Mis à jour le 26 octobre 2026 (lots 1, 2, 2b et 3 terminés). Ce fichier est la
 | 2 — Élèves complets | Page Élèves en cartes (initiales sur pastille de couleur), recherche, matière libre, plusieurs langues modernes, archivage, suppression complète (séances et agenda compris, confirmation), passage d'année scolaire ; recherche d'une séance au Journalier | Suppression testée ; aucune séance orpheline (vérifié dans la base du navigateur) | ✅ (24/10/2026) |
 | 2b — Avatars dessinés | **Pas de photo** : avatar dessiné au choix, personnalisable (teint, coiffure, couleur des cheveux, visage, accessoire) en cinq styles génériques (manga, bande dessinée, dessin animé, pixel, minimaliste), dessins originaux, sans personnage ni marque existants ; sans avatar, les initiales | Dessins relus sur écran par l'utilisateur ; choix conservé après rechargement ; initiales si aucun avatar | ✅ (26/10/2026, dans la même conversation que le lot 2) — **à relire par l'utilisateur** |
 | 3 — Réunion | Vue réunion en langage simple par matière (points d'appui, à travailler, compétence, aides), choix de la période, propositions d'objectifs à valider | Synthèse correcte sur des séances réelles ; textes relus par l'utilisateur | ✅ (26/10/2026) — **textes à relire par l'utilisateur** |
-| 4 — PIA | Cases du modèle officiel (voir `docs/PIA_MODELE_STRUCTURE.md` à la racine du dépôt), procès‑verbaux, export Word officiel + dé‑identifié, option PDF ; **enregistrer les objectifs retenus à la réunion** (aujourd'hui gardés seulement le temps de la visite) | Fichier comparé au modèle officiel (conversion PDF relue) | 🔜 |
+| 4a — PIA : écran, profil, PV 1 | Écran **PIA** par élève et par année scolaire, parties dans l'ordre du modèle officiel : identité (préremplie), **profil** (tableau Aspect / Ressources / Difficultés / Objectifs), **PV 1** (présents, axe, objectifs et critères, ressources, retours) et **aménagements** (une ligne = un aménagement, cases P / O / M). La page Réunion du lot 3 devient l'onglet « Préparer » de cet écran (ses objectifs retenus alimentent le profil et le PV 1). Brouillon enregistré. Propositions d'aménagements tirées des aides. Export Word du PIA entier (modèle `public/modeles/PIA_modele_officiel_2025-09-11.docx`, structure : `docs/PIA_MODELE_STRUCTURE.md` à la racine du dépôt) | PIA complet rempli, fichier comparé au modèle officiel (conversion PDF relue) ; objectifs retenus enregistrés | 🔜 |
+| 4b — PIA : PV 2 et exports | PV 2 de fin d'année : évaluation des objectifs du PV 1 (atteint / en partie / pas atteint) avec rappel des séances depuis le PV 1, mise à jour des aménagements pour la rentrée ; export de chaque partie à part ; version dé-identifiée ; option PDF | PIA de fin d'année complet ; chaque partie exportable | ⏳ |
 
 ### Agenda
 | Lot | Contenu | Statut |
@@ -62,7 +63,16 @@ Mis à jour le 26 octobre 2026 (lots 1, 2, 2b et 3 terminés). Ce fichier est la
 | F — Finition visuelle (dernier lot) | Habillage de l'application : couleurs, logo, vocabulaire du menu, icônes, espacements, tablette ; relecture écran par écran avec l'utilisateur. Le style « Bleu encre » reste la base (décision validée) sauf demande contraire. | ⏳ (à faire en tout dernier) |
 
 ## Ordre conseillé
-1 → 2 → 2b → 3 → 4 (le fil séance → Journalier → réunion → PIA est complet) → 7 → 8 → 9 (mise en service) ; les lots 5, 6, R et Q s'intercalent selon les retours de l'équipe. Le lot F (finition visuelle) vient en tout dernier. L'utilisateur peut changer l'ordre à tout moment : on met alors ce fichier à jour.
+1 → 2 → 2b → 3 → 4a → 4b (le fil séance → Journalier → réunion → PIA est complet) → 7 → 8 → 9 (mise en service) ; les lots 5, 6, R et Q s'intercalent selon les retours de l'équipe. Le lot F (finition visuelle) vient en tout dernier. L'utilisateur peut changer l'ordre à tout moment : on met alors ce fichier à jour.
+
+## Cadrage du PIA (validé avec l'utilisateur le 26/10/2026)
+- Le PIA = le document entier ; il doit être disponible à la fin de la réunion. Deux réunions par an = deux procès-verbaux (PV 1 en cours d'année, PV 2 en fin d'année qui évalue les objectifs du PV 1).
+- L'agent écrit le PV. L'axe de difficulté et le profil peuvent être posés avant la réunion et complétés pendant (CPMS, enseignants, parents, collègues apportent des informations).
+- Le tableau de la page 2 est le **profil** : une fois par PIA, avant le PV 1 ; il peut évoluer en cours d'année.
+- Aménagements : une ligne = un aménagement, on coche le type — P pédagogique (méthodes d'enseignement, d'évaluation, d'apprentissage), O organisationnel (temps, espace, déroulement), M matériel (outils, mobilier, logiciels).
+- Comme pour le Journalier : l'écran visualise chaque partie ; on peut exporter par partie, mais le PIA est le document entier.
+- À trancher au lot 4a : rangement des observations par aspect (ex. organisation → « Lié à l'autonomie ») ; « Physique et psychomoteur » n'a aucune donnée de séance (saisie à la main) ; correspondance aide → P/O/M à valider (proposition de départ : reformulation, explicitation, décomposition, modélisation, guidage → P ; aide à l'organisation, environnement → O ; matériel, outil numérique, gabarit → M ; support visuel à décider).
+- Le code PIA de la V75 (`src/v74/pia-*.js`, `v74-docx-pia-pv.js`, tests `tests/pia-*.mjs`) peut servir de référence, pas de copie.
 
 ## Idées en attente (non planifiées)
 - Journalier : en-tête du document Word avec la période choisie (aujourd'hui elle n'est que dans le nom du fichier) — à valider avec l'équipe (le modèle papier n'a pas de case prévue).

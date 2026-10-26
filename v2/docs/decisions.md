@@ -42,3 +42,7 @@
 | 2026-10-26 | Au plus 3 observations, 2 compétences, 2 aides à garder et 1 à revoir par matière | Une liste courte se valide ; une longue se survole |
 | 2026-10-26 | Objectifs retenus gardés seulement le temps de la visite (pas en base) | Évite de changer la base avant le lot 4 (procès-verbaux) ; signalé à l'écran |
 | 2026-10-26 | Texte de réunion en texte brut à copier, option « Sans nom » ; pas d'export Word au lot 3 | Word officiel = lot 4 |
+| 2026-10-26 | Lot 4 coupé en 4a (écran PIA, profil, PV 1, aménagements, export du PIA entier) et 4b (PV 2, exports par partie, PDF) | Trop gros pour une conversation ; le PIA entier doit pourtant être disponible dès la fin de la réunion |
+| 2026-10-26 | La page Réunion devient l'onglet « Préparer » de l'écran PIA | Une réunion = préparation + procès-verbal ; éviter la double saisie des objectifs |
+| 2026-10-26 | Le tableau de la page 2 du PIA est le « profil » de l'élève : une fois par PIA, avant le PV 1, modifiable en cours d'année | Modèle officiel ; demande de l'utilisateur |
+| 2026-10-26 | Aménagements : une ligne = un aménagement, types P / O / M à cocher | Réponse de l'utilisateur |
