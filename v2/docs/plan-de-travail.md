@@ -41,8 +41,8 @@ Mis à jour le 26 octobre 2026 (lots 1, 2, 2b et 3 terminés). Ce fichier est la
 ### Données et sécurité
 | Lot | Contenu | Statut |
 |---|---|---|
-| 7 — Coffre chiffré | Chiffrement AES‑GCM local (voir `docs/STOCKAGE_LOCAL_V74.md`), mot de passe, verrouillage, export/import de secours | 🔜 |
-| 8 — OneDrive / Outlook | Synchronisation Microsoft (Entra ID, Graph), conflits, repli manuel ; liaison Outlook (agenda) | ⏳ |
+| 7 — Coffre chiffré | Chiffrement AES‑GCM local (voir `docs/STOCKAGE_LOCAL_V74.md`), mot de passe, verrouillage, export/import de secours | ⏸ abandonné pour l'instant (26/10/2026) : la connexion au compte professionnel Outlook protège l'accès |
+| 8 — OneDrive / Outlook | Synchronisation Microsoft (Entra ID, Graph), conflits, repli manuel ; liaison Outlook (agenda) | 🔜 |
 | 9 — Reprise V75 | Import des données de la V75 vers la V2, vérification élève par élève, plan de bascule et d'information de l'équipe | ⏳ |
 
 ### Référentiel (« R »), à reprendre quand l'utilisateur le décide
@@ -63,7 +63,7 @@ Mis à jour le 26 octobre 2026 (lots 1, 2, 2b et 3 terminés). Ce fichier est la
 | F — Finition visuelle (dernier lot) | Habillage de l'application : couleurs, logo, vocabulaire du menu, icônes, espacements, tablette ; relecture écran par écran avec l'utilisateur. Le style « Bleu encre » reste la base (décision validée) sauf demande contraire. | ⏳ (à faire en tout dernier) |
 
 ## Ordre conseillé
-1 → 2 → 2b → 3 → 4a → 4b ✅ (le fil séance → Journalier → réunion → PIA est complet) → 7 → 8 → 9 (mise en service) ; les lots 5, 6, R et Q s'intercalent selon les retours de l'équipe. Le lot F (finition visuelle) vient en tout dernier. L'utilisateur peut changer l'ordre à tout moment : on met alors ce fichier à jour.
+1 → 2 → 2b → 3 → 4a → 4b ✅ (le fil séance → Journalier → réunion → PIA est complet) → 8 → 9 (mise en service ; lot 7 en pause) ; les lots 5, 6, R et Q s'intercalent selon les retours de l'équipe. Le lot F (finition visuelle) vient en tout dernier. L'utilisateur peut changer l'ordre à tout moment : on met alors ce fichier à jour.
 
 ## Cadrage du PIA (validé avec l'utilisateur le 26/10/2026)
 - Le PIA = le document entier ; il doit être disponible à la fin de la réunion. Deux réunions par an = deux procès-verbaux (PV 1 en cours d'année, PV 2 en fin d'année qui évalue les objectifs du PV 1).

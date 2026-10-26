@@ -63,3 +63,4 @@
 | 2026-10-26 | Version dé-identifiée du PIA : nom remplacé par « l'élève » dans les textes, dossier et coordonnées non écrits, seule la fonction des présents gardée | Partage hors de l'équipe, comme pour le Journalier |
 | 2026-10-26 | PDF : « Imprimer / PDF » du navigateur sur une mise en page simple (pas de PDF fidèle au modèle officiel, qui demanderait un convertisseur) ; PDF officiel = Word puis « Enregistrer en PDF » | Reste hors ligne, sans service externe |
 | 2026-10-26 | Exemple fictif (élèves Alpha et Bêta, séances, PIA) chargeable depuis l'écran PIA | Essayer le PIA sans données réelles (demande de l'utilisateur) |
+| 2026-10-26 | Lot 7 (coffre chiffré) mis en pause : l'accès se fera par la connexion au compte professionnel Outlook (lot 8) | Décision de l'utilisateur ; les données locales restent non chiffrées sur l'appareil |
