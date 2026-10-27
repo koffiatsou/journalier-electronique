@@ -13,38 +13,39 @@
 .rattrapage-liste li { display: grid; grid-template-columns: 5.5rem 1fr auto; gap: var(--sp-3); align-items: center; padding: var(--sp-2) 0; border-top: 1px solid var(--line); }
 .rattrapage-liste .num { color: var(--ink-2); }
 
-/* ma journée */
+/* ma journée : une ligne par rendez-vous, un seul déplié à la fois */
 .journee-date { color: var(--ink-2); font-size: 0.9rem; margin-top: 2px; }
 .creneaux { list-style: none; margin: 0; padding: 0; }
-.creneau {
-  display: grid; grid-template-columns: 7.5rem minmax(0, 1fr) auto; gap: var(--sp-4); align-items: start;
-  padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--line);
-}
+.creneau { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; border-bottom: 1px solid var(--line); padding-right: var(--sp-5); }
 .creneau:last-child { border-bottom: 0; }
 .creneau[data-statut='realise'] .creneau-titre { color: var(--ink-2); }
 .creneau[data-statut='attendu'] { background: color-mix(in srgb, var(--attention-soft) 55%, transparent); }
-.creneau-heure { display: grid; gap: 2px; color: var(--ink); font-weight: 650; padding-top: 2px; }
+.creneau[data-ouvert='true'] { background: var(--surface-2); }
+.creneau[data-ouvert='true'][data-statut='attendu'] { background: color-mix(in srgb, var(--attention-soft) 70%, var(--surface-2)); }
+.creneau-tete {
+  display: grid; grid-template-columns: 7rem minmax(0, 1fr) auto; gap: var(--sp-3); align-items: center; width: 100%; min-height: 56px;
+  padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-5); border: 0; background: transparent; color: inherit; font: inherit; text-align: left;
+}
+button.creneau-tete { cursor: pointer; transition: background-color var(--t-ui) ease-out; }
+button.creneau-tete:hover { background: color-mix(in srgb, var(--surface-2) 70%, transparent); }
+button.creneau-tete:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: var(--r-m); }
+.creneau-heure { display: grid; gap: 2px; font-weight: 650; color: var(--ink); }
 .creneau-heure small { color: var(--ink-3); font-weight: 500; font-size: 0.78rem; }
-.creneau-titre { font-weight: 650; }
-.creneau-detail { color: var(--ink-2); font-size: 0.88rem; }
-.creneau-detail:empty { display: none; }
-.creneau-action { display: grid; gap: var(--sp-2); justify-items: end; align-content: start; }
+.creneau-corps { display: grid; gap: 1px; min-width: 0; }
+.creneau-titre { font-weight: 650; overflow-wrap: anywhere; }
+.creneau-detail { color: var(--ink-2); font-size: 0.85rem; }
+.creneau-signes { display: flex; align-items: center; gap: var(--sp-2); }
+.creneau-chevron { color: var(--ink-3); transition: transform var(--t-ui) var(--ease-out); }
+.creneau[data-ouvert='true'] .creneau-chevron { transform: rotate(180deg); }
+.creneau-action { display: flex; align-items: center; }
 
-/* ce qui avait été noté la dernière fois */
-.creneau-suite { margin-top: var(--sp-3); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-m); font-size: 0.9rem; color: var(--ink); }
-.creneau-suite > p { padding: 0 var(--sp-4); margin-bottom: 2px; }
-.creneau-suite > p:last-child { padding-bottom: var(--sp-3); }
-.creneau-suite summary { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); min-height: 44px; padding: 0 var(--sp-4); cursor: pointer; list-style: none; color: var(--ink-2); font-size: 0.82rem; font-weight: 600; }
-.creneau-suite summary::-webkit-details-marker { display: none; }
-.creneau-suite summary::after { content: ''; flex: none; width: 8px; height: 8px; border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3); transform: rotate(45deg); transition: transform var(--t-ui) var(--ease-out); }
-.creneau-suite[open] summary::after { transform: rotate(-135deg); }
-.creneau-suite summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--r-m); }
-.creneau-suite-seule { margin-top: var(--sp-2); color: var(--ink-3); font-size: 0.85rem; }
+/* détail déplié : ce qu'on avait noté la dernière fois, et les mémos */
+.creneau-ouvert { grid-column: 1 / -1; margin: 0 calc(-1 * var(--sp-5)) 0 0; padding: 0 var(--sp-5) var(--sp-4) calc(var(--sp-5) + 7rem + var(--sp-3)); display: grid; gap: var(--sp-3); }
+.creneau-suite { padding: var(--sp-3) var(--sp-4); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-m); display: grid; gap: 2px; font-size: 0.9rem; color: var(--ink); }
+.creneau-suite-titre { color: var(--ink-3); font-size: 0.78rem; font-weight: 600; }
 .creneau-suite-etiquette { color: var(--ink-3); font-size: 0.8rem; font-weight: 600; margin-right: 4px; }
-
-/* mémos qui réapparaissent sur le rendez-vous */
-.creneau-memos { list-style: none; margin: var(--sp-3) 0 0; padding: 0; display: grid; gap: var(--sp-1); }
-.creneau-memos label { display: flex; align-items: flex-start; gap: var(--sp-2); min-height: 32px; padding: 4px var(--sp-3); background: var(--attention-soft); border-radius: var(--r-s, 10px); color: var(--ink); font-size: 0.9rem; cursor: pointer; }
+.creneau-memos { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-1); }
+.creneau-memos label { display: flex; align-items: flex-start; gap: var(--sp-2); min-height: 32px; padding: 4px var(--sp-3); background: var(--attention-soft); border-radius: var(--r-s); color: var(--ink); font-size: 0.9rem; cursor: pointer; }
 .creneau-memos input { margin-top: 3px; }
 @media (pointer: coarse) { .creneau-memos label { min-height: 44px; align-items: center; } }
 
@@ -76,11 +77,12 @@
 .accueil-synchro { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-3) var(--sp-5); border: 1px solid var(--line); border-radius: var(--r-m); background: var(--surface); color: var(--ink-2); font-size: 0.9rem; }
 .accueil-synchro p { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
 
-/* téléphone : l'heure passe au-dessus, le bouton en dessous */
+/* téléphone : l'heure passe au-dessus du nom */
 @media (max-width: 599px) {
-  .creneau { grid-template-columns: 1fr; gap: var(--sp-2); padding: var(--sp-4); }
-  .creneau-heure { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2); }
-  .creneau-action { display: flex; flex-wrap: wrap; justify-items: initial; align-items: center; }
+  .creneau { padding-right: var(--sp-3); }
+  .creneau-tete { grid-template-columns: minmax(0, 1fr) auto; padding-left: var(--sp-4); row-gap: 2px; }
+  .creneau-heure { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2); font-size: 0.85rem; }
+  .creneau-ouvert { padding-left: var(--sp-4); margin-right: calc(-1 * var(--sp-3)); padding-right: var(--sp-3); }
   .trajet { padding: var(--sp-3) var(--sp-4); }
   .rattrapage-liste li { grid-template-columns: 1fr auto; }
   .rattrapage-liste .num { grid-column: 1 / -1; }

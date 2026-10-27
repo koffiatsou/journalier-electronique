@@ -72,10 +72,14 @@ for (let i = 0; i < 6; i += 1) {
 await recharger(page);
 await page.locator('.creneau').first().waitFor();
 ok(await page.locator('.creneau').count() >= 7, 'journée chargée : au moins sept rendez-vous');
-ok(await page.locator('.creneau-suite[open]').count() === 1, 'un seul rappel est déplié (le prochain rendez-vous)');
-ok(await page.locator('.creneau-suite:not([open])').count() >= 5, 'les autres sont repliés sur une ligne');
-await page.locator('.creneau-suite:not([open]) summary').first().click();
-ok(await page.locator('.creneau-suite[open]').count() === 2, 'un rappel se déplie d’un toucher');
+ok(await page.locator('.creneau[data-ouvert="true"]').count() === 1, 'un seul rendez-vous est déplié (le prochain)');
+ok(await page.locator('.creneau[data-ouvert="false"]').count() >= 6, 'les autres tiennent sur une ligne');
+await page.locator('button.creneau-tete[aria-expanded="false"]').first().click();
+ok(await page.locator('.creneau[data-ouvert="true"]').count() === 1, 'en déplier un autre replie le premier : jamais plus d’un ouvert');
+await page.locator('button.creneau-tete[aria-expanded="true"]').click();
+ok(await page.locator('.creneau[data-ouvert="true"]').count() === 0, 'on peut tout replier');
+const hauteurListe = await page.locator('.creneaux').evaluate((e) => e.getBoundingClientRect().height);
+ok(hauteurListe < 700, `la journée chargée reste compacte (${Math.round(hauteurListe)} px pour 7 rendez-vous)`);
 await page.screenshot({ path: `${SORTIE}/accueil-chargee.png`, fullPage: true });
 
 // téléphone

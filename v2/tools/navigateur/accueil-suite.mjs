@@ -59,9 +59,9 @@ ok(bloc.includes('Apporter la fiche plastifiée.'), 'précision reprise');
 ok(!bloc.includes('Reformuler la consigne'), 'la note de la séance de démonstration plus ancienne n’est plus affichée');
 
 // le rappel se replie et se déplie d'un toucher
-await page.locator('.creneau-suite summary').click();
+await page.locator('.creneau-tete').click();
 ok(!(await page.getByText('Retenir le vocabulaire du cycle de l’eau').isVisible()), 'le rappel se replie');
-await page.locator('.creneau-suite summary').click();
+await page.locator('.creneau-tete').click();
 ok(await page.getByText('Retenir le vocabulaire du cycle de l’eau').isVisible(), '… et se déplie');
 await page.waitForTimeout(4000); // laisse partir les messages de confirmation
 if (process.env.SORTIE) await page.locator('.journee').screenshot({ path: `${process.env.SORTIE}/accueil-rappel.png` });

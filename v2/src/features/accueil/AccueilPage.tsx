@@ -15,7 +15,7 @@ import type { Synchro } from '../../synchro/service.ts';
 import { Badge } from '../../ui/Badge.tsx';
 import { Button } from '../../ui/Button.tsx';
 import { Input, Select } from '../../ui/Field.tsx';
-import { IconeAgenda } from '../../ui/icons.tsx';
+import { IconeAgenda, IconeChevron } from '../../ui/icons.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import type { Aller } from '../../app/useRoute.ts';
 import { aujourdhuiISO } from '../seance/brouillon.ts';
@@ -54,6 +54,8 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
   const [confirmer, setConfirmer] = useState(false);
   const [texteMemo, setTexteMemo] = useState('');
   const [cibleMemo, setCibleMemo] = useState('');
+  /* undefined = choix par défaut (le prochain rendez-vous) ; null = tout replié ; sinon la clé du rendez-vous déplié. */
+  const [choix, setChoix] = useState<string | null | undefined>(undefined);
 
   const aujourdhui = aujourdhuiISO();
   const nbDemo = eleves.filter((e) => estDemo(e.id)).length + activites.filter((a) => estDemo(a.id)).length;
@@ -77,9 +79,11 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
   const changements = useMemo(() => deplacements(jour.creneaux, trajet), [jour.creneaux, trajet]);
   const retard = useMemo(() => aEncoder(aujourdhui, activites, seances), [aujourdhui, activites, seances]);
   const aujourdhuiMeme = jour.date === aujourdhui;
-  /* Seul le prochain rendez-vous d'élève (pas encore passé, pas encore encodé) a son rappel déplié ; les autres se déplient d'un toucher. */
+  /* Un seul rendez-vous est déplié à la fois : par défaut le prochain rendez-vous d'élève (pas encore passé, pas encore encodé) ; un toucher en déplie un autre. */
   const prochain = jour.creneaux.find((c) => c.occ.activite.type === 'eleve' && c.occ.statut !== 'realise' && !(aujourdhuiMeme && c.finMin !== null && c.finMin < maintenantMin()));
   const plusieursEcoles = ecoles.length > 1;
+
+  const ouvertCle = choix === undefined ? (prochain?.occ.cle ?? null) : choix;
 
   const encoder = (o: Occurrence) => {
     const el = eleves.find((e) => e.id === o.activite.eleveId);
@@ -167,37 +171,54 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
                     const rappel = c.suite ? lignesSuite(c.suite) : [];
                     const siens = memosDuCreneau(memos, o.activite.eleveId, c.ecole.id);
                     const trajetApres = changements.find((d) => d.de === c);
-                    const carte = (
-                      <li key={o.cle} className="creneau" data-statut={realise ? 'realise' : attendu ? 'attendu' : 'prevu'}>
-                        <div className="creneau-heure">
+                    const aDetail = rappel.length > 0 || siens.length > 0;
+                    const ouvert = aDetail && ouvertCle === o.cle;
+                    const quandSeance = c.suite ? `Dernière séance : ${dateFR(c.suite.date)}${c.suite.matiere ? ` · ${c.suite.matiere}` : ''}` : '';
+                    const sousLigne = [o.activite.matiere, o.activite.lieu, c.suite && !rappel.length ? `dernière séance le ${dateFR(c.suite.date)}` : ''].filter(Boolean).join(' · ') || (o.activite.type === 'eleve' ? '' : 'Hors accompagnement d’élève');
+                    const tete = (
+                      <>
+                        <span className="creneau-heure">
                           <span className="num">{c.heures || PERIODES_AGENDA[o.debut]?.label}</span>
                           {plusieursEcoles ? <small>{c.ecole.nom}</small> : null}
-                        </div>
-                        <div className="creneau-corps">
-                          <p className="creneau-titre">{c.nom}</p>
-                          <p className="creneau-detail">{[o.activite.matiere, o.activite.lieu].filter(Boolean).join(' · ') || (o.activite.type === 'eleve' ? '' : 'Hors accompagnement d’élève')}</p>
-                          {c.suite && rappel.length ? (
-                            <details className="creneau-suite" open={c === prochain}>
-                              <summary>Dernière séance : {dateFR(c.suite.date)}{c.suite.matiere ? ` · ${c.suite.matiere}` : ''}</summary>
-                              {rappel.map((l) => <p key={l.etiquette}><span className="creneau-suite-etiquette">{l.etiquette}</span> {l.texte}</p>)}
-                            </details>
-                          ) : c.suite ? (
-                            <p className="creneau-suite-seule">Dernière séance : {dateFR(c.suite.date)}{c.suite.matiere ? ` · ${c.suite.matiere}` : ''}</p>
-                          ) : null}
-                          {siens.length ? (
-                            <ul className="creneau-memos" aria-label="Mémos pour ce rendez-vous">
-                              {siens.map((m) => (
-                                <li key={m.id}>
-                                  <label><input type="checkbox" checked={m.fait} onChange={() => changerMemos((l) => basculerMemo(l, m.id))} /> <span>{m.texte}</span></label>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : null}
-                        </div>
-                        <div className="creneau-action">
+                        </span>
+                        <span className="creneau-corps">
+                          <span className="creneau-titre">{c.nom}</span>
+                          {sousLigne ? <span className="creneau-detail">{sousLigne}</span> : null}
+                        </span>
+                        <span className="creneau-signes">
                           {realise ? <Badge ton="ok">Séance encodée</Badge> : attendu ? <Badge ton="attention">À encoder</Badge> : null}
+                          {siens.length ? <Badge ton="attention">{siens.length} mémo{siens.length > 1 ? 's' : ''}</Badge> : null}
+                          {aDetail ? <IconeChevron className="creneau-chevron" /> : null}
+                        </span>
+                      </>
+                    );
+                    const carte = (
+                      <li key={o.cle} className="creneau" data-statut={realise ? 'realise' : attendu ? 'attendu' : 'prevu'} data-ouvert={ouvert}>
+                        {aDetail ? (
+                          <button type="button" className="creneau-tete" aria-expanded={ouvert} aria-controls={`detail-${o.cle}`} onClick={() => setChoix(ouvert ? null : o.cle)}>{tete}</button>
+                        ) : <div className="creneau-tete">{tete}</div>}
+                        <div className="creneau-action">
                           {eleveType ? (realise ? <Button onClick={() => ouvrir(o)}>Ouvrir</Button> : <Button variante={attendu ? 'primaire' : 'secondaire'} onClick={() => encoder(o)}>Encoder</Button>) : null}
                         </div>
+                        {ouvert ? (
+                          <div className="creneau-ouvert" id={`detail-${o.cle}`}>
+                            {rappel.length ? (
+                              <div className="creneau-suite">
+                                <p className="creneau-suite-titre">{quandSeance}</p>
+                                {rappel.map((l) => <p key={l.etiquette}><span className="creneau-suite-etiquette">{l.etiquette}</span> {l.texte}</p>)}
+                              </div>
+                            ) : null}
+                            {siens.length ? (
+                              <ul className="creneau-memos" aria-label="Mémos pour ce rendez-vous">
+                                {siens.map((m) => (
+                                  <li key={m.id}>
+                                    <label><input type="checkbox" checked={m.fait} onChange={() => changerMemos((l) => basculerMemo(l, m.id))} /> <span>{m.texte}</span></label>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : null}
+                          </div>
+                        ) : null}
                       </li>
                     );
                     return trajetApres ? [carte, <PhraseTrajet key={`${o.cle}-trajet`} d={trajetApres} />] : [carte];
