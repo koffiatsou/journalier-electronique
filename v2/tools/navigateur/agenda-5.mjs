@@ -124,7 +124,7 @@ ok((await page.locator('.axe').innerText()).includes('08:00'), 'avant : la 1e H 
 await page.getByRole('button', { name: 'Horaires', exact: true }).click();
 const fenetre = page.getByRole('dialog', { name: 'Horaires des périodes' });
 await fenetre.waitFor();
-ok(await fenetre.locator('input[type=time]').count() === 16, 'seize champs : début et fin des huit périodes');
+ok(await fenetre.locator('input[type=time]').count() === 18, 'dix-huit champs : début et fin des neuf périodes (la 9e H est vide : non utilisée)');
 ok(await fenetre.getByRole('button', { name: 'Enregistrer' }).isDisabled(), 'Enregistrer est grisé tant que rien n’a changé');
 ok(await fenetre.getByRole('button', { name: 'Remettre les horaires habituels' }).isDisabled(), 'Remettre est grisé tant que rien n’a changé');
 ok((await fenetre.innerText()).includes('Récré · 15 min') && (await fenetre.innerText()).includes('Midi · 50 min'), 'les pauses (récré, midi) sont indiquées');
@@ -152,7 +152,7 @@ await page.getByText('Horaires enregistrés').first().waitFor();
 await fenetre.waitFor({ state: 'hidden' });
 ok((await page.locator('.axe').innerText()).includes('07:45'), 'la grille affiche la 1e H à 07:45');
 const reglages = await lireBase('reglages');
-ok(reglages.length === 1 && reglages[0].id === 'agenda-horaires' && reglages[0].valeur[0].debut === '07:45' && reglages[0].valeur[0].label === '1e H', 'réglage enregistré dans la base (noms des périodes inchangés)');
+ok(reglages.length === 1 && reglages[0].id === 'agenda-ecoles' && reglages[0].valeur.ecoles[0].periodes[0].debut === '07:45' && reglages[0].valeur.ecoles[0].periodes[0].label === '1e H', 'réglage enregistré dans la base (noms des périodes inchangés)');
 await page.screenshot({ path: `${SORTIE}/agenda5-semaine-horaires.png`, fullPage: true });
 
 // après rechargement

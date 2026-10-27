@@ -7,6 +7,8 @@ interface Props {
   /** N'importe quelle date du mois à afficher. */
   jour: string;
   periodes: readonly Periode[];
+  /** Clés des occurrences concernées par un avertissement (chevauchement, trajet trop court). */
+  alertes?: ReadonlySet<string>;
   occurrences: Occurrence[];
   eleves: Eleve[];
   couleurs: ReadonlyMap<string, number>;
@@ -28,7 +30,7 @@ const MAX_LARGE = 3;
 const MAX_ETROIT = 4;
 
 /** Vue Mois : une case par jour de classe possible (lundi à vendredi), fériés et vacances signalés. */
-export function Mois({ jour, periodes, occurrences, eleves, couleurs, aujourdhui, selection, etroit, onSelection, onJour, onCreer, onDeplacer }: Props) {
+export function Mois({ jour, periodes, alertes, occurrences, eleves, couleurs, aujourdhui, selection, etroit, onSelection, onJour, onCreer, onDeplacer }: Props) {
   const [survol, setSurvol] = useState<string | null>(null);
   const semaines = useMemo(() => semainesDuMois(jour), [jour]);
   const parJour = useMemo(() => {
@@ -86,8 +88,8 @@ export function Mois({ jour, periodes, occurrences, eleves, couleurs, aujourdhui
                         <button type="button" aria-pressed={selection === o.cle} draggable={!o.seanceId}
                           onDragStart={(e) => { e.dataTransfer.setData('text/plain', o.cle); e.dataTransfer.effectAllowed = 'copyMove'; }}
                           onDragEnd={() => setSurvol(null)}
-                          className={`mois-evt ${teinte} ${o.statut === 'annule' ? 'annule' : ''}`}
-                          aria-label={`${texte}, ${jourComplet(o.date)}, ${quand}${o.statut === 'annule' ? ', annulé' : o.statut === 'realise' ? ', réalisé' : ''}`}
+                          className={`mois-evt ${teinte} ${alertes?.has(o.cle) ? 'alerte' : ''} ${o.statut === 'annule' ? 'annule' : ''}`}
+                          aria-label={`${texte}, ${jourComplet(o.date)}, ${quand}${o.statut === 'annule' ? ', annulé' : o.statut === 'realise' ? ', réalisé' : ''}${alertes?.has(o.cle) ? ', attention : chevauchement ou trajet trop court' : ''}`}
                           title={`${texte} (${quand})`}
                           onClick={() => onSelection(o)}>
                           {texte}

@@ -153,6 +153,16 @@
 .horaires-erreurs { margin: 0; padding: var(--sp-2) var(--sp-3) var(--sp-2) 28px; background: var(--danger-soft); border-left: 4px solid var(--danger); border-radius: var(--r-s); color: var(--ink); font-size: .875rem; }
 .horaires-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
 .horaires-actions .espace { flex: 1; }
+.horaires-inutilisee { grid-column: 2 / -1; font-size: .8125rem; color: var(--ink-3); }
+.ecoles-choix { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
+.input-court { max-width: 8rem; }
+.agenda-ecole-filtre .select { min-height: 40px; max-width: 14rem; }
+.agenda-alertes { margin: 0; padding: var(--sp-2) var(--sp-3); background: var(--attention-soft); border: 1px solid var(--attention); border-left-width: 4px; border-radius: var(--r-s); font-size: .875rem; color: var(--ink); }
+.agenda-alertes ul { margin: 4px 0 0; padding-left: 1.1rem; }
+.agenda-alertes small { color: var(--ink-2); }
+.evt.alerte { box-shadow: 0 0 0 2px var(--attention); }
+.evt .evt-ecole { font-weight: 600; }
+.mois-evt.alerte { box-shadow: inset 0 0 0 2px var(--attention); }
 @media (max-width: 759px) {
   .horaires-ligne { grid-template-columns: 2.6rem minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; }
   .horaires-pause { margin-left: calc(2.6rem + 6px); }
@@ -177,7 +187,7 @@
 .agenda-impression-titre { display: none; }
 @media print {
   .agenda { page: agenda; }
-  .nav, .agenda-barre, .agenda-note, .jours-onglets, .panneau, .toasts, .page-entete, .cellule { display: none !important; }
+  .nav, .agenda-barre, .agenda-note, .agenda-alertes, .jours-onglets, .panneau, .toasts, .page-entete, .cellule { display: none !important; }
   .shell { display: block; padding: 0; min-height: 0; }
   .contenu { padding: 0; }
   .agenda { gap: 6pt; color: #000; }

@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import {
-  NB_COULEURS, NOMS_COULEURS, TYPES_LIBELLES, creer, editer, jourComplet, libelle
+  NB_COULEURS, NOMS_COULEURS, TYPES_LIBELLES, creer, ecoleDeEleve, ecoleParDefaut, editer, jourComplet, libelle, nbPeriodesUtilisees
 } from '../../domain/agenda/index.ts';
-import type { Activite, Changement, Edition, Occurrence, Periode, Portee, TypeActivite } from '../../domain/agenda/index.ts';
+import type { Activite, Changement, Ecole, Edition, Occurrence, Portee, TypeActivite } from '../../domain/agenda/index.ts';
 import { elevesProposes, languesDe } from '../../domain/eleves/index.ts';
 import type { Eleve } from '../../domain/types.ts';
 import { Button } from '../../ui/Button.tsx';
@@ -12,7 +12,7 @@ export interface Brouillon { date: string; debut: number; fin: number }
 
 interface Props {
   occurrence: Occurrence | null;
-  periodes: readonly Periode[];
+  ecoles: readonly Ecole[];
   nouveau: Brouillon | null;
   eleves: Eleve[];
   onChanger: (c: Changement) => void;
@@ -27,7 +27,7 @@ interface Props {
 const TYPES = Object.keys(TYPES_LIBELLES) as TypeActivite[];
 
 /** Panneau d'une activité : création et modification, sans fenêtre modale. */
-export function Panneau({ occurrence, periodes, nouveau, eleves, onChanger, onFermer, onEncoder, onDupliquer, onAnnuler, onRealiser, onSupprimer }: Props) {
+export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFermer, onEncoder, onDupliquer, onAnnuler, onRealiser, onSupprimer }: Props) {
   const a: Activite | null = occurrence?.activite ?? null;
   const base = useMemo<Activite>(() => a ?? creer({ type: 'eleve', date: nouveau?.date ?? '', debut: nouveau?.debut ?? 0, fin: nouveau?.fin ?? 0 }), [a, nouveau]);
   const [type, setType] = useState<TypeActivite>(base.type);
@@ -43,10 +43,18 @@ export function Panneau({ occurrence, periodes, nouveau, eleves, onChanger, onFe
   const [repetition, setRepetition] = useState(base.repetition);
   const [jusquau, setJusquau] = useState(base.jusquau ?? '');
   const [couleur, setCouleur] = useState<number | undefined>(base.couleur);
+  const [ecoleId, setEcoleId] = useState(base.ecoleId ?? '');
   const [portee, setPortee] = useState<Portee>('occurrence');
-  const OPTIONS_PERIODES = useMemo(() => periodes.map((p, i) => ({ i, texte: `${p.label} (${p.debut} – ${p.fin})` })), [periodes]);
   const serie = a?.repetition === 'hebdomadaire';
   const eleve = eleves.find((e) => e.id === eleveId);
+  // Les heures affichées sont celles de l'école de l'élève (ou de l'école choisie pour une autre activité).
+  const plusieurs = ecoles.length > 1;
+  const ecole: Ecole = type === 'eleve' ? ecoleDeEleve(eleve, ecoles) : (ecoles.find((e) => e.id === ecoleId) ?? ecoleParDefaut(ecoles));
+  const OPTIONS_PERIODES = useMemo(() => {
+    // Les périodes de l'école ; on garde aussi celle déjà choisie (une activité plus ancienne peut sortir des horaires actuels).
+    const n = Math.max(nbPeriodesUtilisees(ecole.periodes), debut + 1, fin + 1);
+    return ecole.periodes.slice(0, n).map((p, i) => ({ i, texte: p.debut && p.fin ? `${p.label} (${p.debut} – ${p.fin})` : `${p.label} (pas d’horaire pour cette école)` }));
+  }, [ecole, debut, fin]);
   const matieres = eleve ? [...eleve.matieres, ...languesDe(eleve).filter((l) => !eleve.matieres.includes(l))] : [];
   const valide = type === 'eleve' ? Boolean(eleveId || nomLibre.trim()) : Boolean(titre.trim()) && date !== '';
 
@@ -57,7 +65,8 @@ export function Panneau({ occurrence, periodes, nouveau, eleves, onChanger, onFe
       ...(type === 'eleve' ? (eleveId ? { eleveId } : { nomLibre: nomLibre.trim() }) : {}),
       ...(matiere.trim() ? { matiere: matiere.trim() } : {}),
       ...(repetition === 'hebdomadaire' && jusquau ? { jusquau } : {}),
-      ...(typeof couleur === 'number' ? { couleur } : {})
+      ...(typeof couleur === 'number' ? { couleur } : {}),
+      ...(type !== 'eleve' && ecoleId ? { ecoleId } : {})
     };
     if (occurrence) {
       const c = editer(occurrence, champs, portee);
@@ -67,6 +76,7 @@ export function Panneau({ occurrence, periodes, nouveau, eleves, onChanger, onFe
         else if (eleveId) delete act.nomLibre; else delete act.eleveId;
         if (!matiere.trim()) delete act.matiere;
         if (couleur === undefined) delete act.couleur;
+        if (type === 'eleve' || !ecoleId) delete act.ecoleId;
         if (repetition === 'aucune') { delete act.jusquau; }
       }
       onChanger(c);
@@ -104,10 +114,22 @@ export function Panneau({ occurrence, periodes, nouveau, eleves, onChanger, onFe
             )}
           </Field>
           {!eleveId ? <Field label="Nom saisi librement">{(id) => <Input id={id} value={nomLibre} onChange={(e) => setNomLibre(e.target.value)} placeholder="Prénom ou initiales" />}</Field> : null}
+          {plusieurs ? <p className="field-hint">École : {ecole.nom} (celle du dossier de l’élève).</p> : null}
           <Field label="Matière" optionnel>
             {(id) => (<><Input id={id} list={`${id}-m`} value={matiere} onChange={(e) => setMatiere(e.target.value)} placeholder="Choisir ou saisir" /><datalist id={`${id}-m`}>{matieres.map((m) => <option key={m} value={m} />)}</datalist></>)}
           </Field>
         </>
+      ) : null}
+
+      {type !== 'eleve' && plusieurs ? (
+        <Field label="École" aide="Les heures des périodes sont celles de cette école.">
+          {(id) => (
+            <Select id={id} value={ecoleId} onChange={(e) => setEcoleId(e.target.value)}>
+              <option value="">École par défaut ({ecoleParDefaut(ecoles).nom})</option>
+              {ecoles.map((e) => <option key={e.id} value={e.id}>{e.nom}</option>)}
+            </Select>
+          )}
+        </Field>
       ) : null}
 
       <Field label={type === 'eleve' ? 'Précision' : 'Titre'} optionnel={type === 'eleve'}>

@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { Depot } from '../data/repository.ts';
+import { ecoleDeOccurrence } from '../domain/agenda/ecoles.ts';
 import { estDemo } from '../domain/synchro/cles.ts';
 import { NOM_CALENDRIER, REGLAGES_OUTLOOK_DEFAUT, REGLAGE_OUTLOOK, evenementsSouhaites, fenetreOutlook, normaliserReglagesOutlook, planifierOutlook } from '../domain/synchro/outlook.ts';
 import type { ReglagesOutlook } from '../domain/synchro/outlook.ts';
@@ -196,7 +197,7 @@ export function creerSynchro(d: DependancesSynchro) {
   let vu = d.magasin.lire();
   const cesserMagasin = d.magasin.abonner(() => {
     const e = d.magasin.lire();
-    const change = e.eleves !== vu.eleves || e.seances !== vu.seances || e.activites !== vu.activites || e.pias !== vu.pias || e.horaires !== vu.horaires || e.semaineType !== vu.semaineType;
+    const change = e.eleves !== vu.eleves || e.seances !== vu.seances || e.activites !== vu.activites || e.pias !== vu.pias || e.horaires !== vu.horaires || e.ecoles !== vu.ecoles || e.trajet !== vu.trajet || e.semaineType !== vu.semaineType;
     vu = e;
     if (change && !enSynchro) programmerAuto();
   });
@@ -213,7 +214,7 @@ export function creerSynchro(d: DependancesSynchro) {
       const e = d.magasin.lire();
       const demoSeulement = etat.mode === 'demonstration';
       const activites = e.activites.filter((a) => demoSeulement || !(estDemo(a.id) || (a.eleveId && estDemo(a.eleveId))));
-      const souhaites = evenementsSouhaites(activites, e.eleves, e.seances, e.horaires, du, au, etat.outlook);
+      const souhaites = evenementsSouhaites(activites, e.eleves, e.seances, (o) => ecoleDeOccurrence(o, e.eleves, e.ecoles).periodes, du, au, etat.outlook);
       const plan = planifierOutlook(souhaites, await cal.evenements(id, du, au));
       await enParallele(plan.supprimer, 4, (x) => cal.supprimerEvenement(id, x));
       await enParallele(plan.modifier, 4, (x) => cal.modifier(id, x.id, x.evenement));

@@ -3,6 +3,8 @@ import type { Depot } from '../data/repository.ts';
 import type { Activite } from '../domain/agenda/types.ts';
 import type { Changement } from '../domain/agenda/planning.ts';
 import { horairesParDefaut, normaliserHoraires, verifierHoraires } from '../domain/agenda/horaires.ts';
+import { REGLAGE_ECOLES, ecolesParDefaut, elevesApresChangement, normaliserEcoles, verifierEcoles } from '../domain/agenda/ecoles.ts';
+import type { Ecole, ErreurEcole } from '../domain/agenda/ecoles.ts';
 import { REGLAGE_SEMAINE_TYPE, normaliserSemaineType } from '../domain/agenda/semainetype.ts';
 import type { SemaineType } from '../domain/agenda/semainetype.ts';
 import type { ErreurHoraire } from '../domain/agenda/horaires.ts';
@@ -35,8 +37,12 @@ export interface Etat {
   seances: Seance[];
   activites: Activite[];
   pias: Pia[];
-  /** Horaires des périodes de l'agenda (réglables ; les noms 1e H… ne changent pas). */
+  /** Horaires de l'école par défaut (réglables ; les noms 1e H… ne changent pas). Les autres écoles sont dans `ecoles`. */
   horaires: Periode[];
+  /** Écoles de l'agenda avec leurs horaires ; la première est l'école par défaut. */
+  ecoles: Ecole[];
+  /** Temps de trajet minimal (minutes) entre deux écoles. */
+  trajet: number;
   /** Modèle de semaine habituelle de l'agenda, s'il en existe un. */
   semaineType: SemaineType | null;
   statutPia: StatutPia;
@@ -47,11 +53,17 @@ export interface Etat {
 }
 
 const initial: Etat = {
-  pret: false, erreur: null, eleves: [], seances: [], activites: [], pias: [], horaires: horairesParDefaut(), semaineType: null, statutPia: { etat: 'repos', le: '', message: '' }, illisibles: 0, preparation: null
+  pret: false, erreur: null, eleves: [], seances: [], activites: [], pias: [], horaires: horairesParDefaut(), ecoles: ecolesParDefaut().ecoles, trajet: ecolesParDefaut().trajet, semaineType: null, statutPia: { etat: 'repos', le: '', message: '' }, illisibles: 0, preparation: null
 };
 
-/** Nom du réglage « horaires des périodes » dans la base. */
+/** Ancien nom du réglage « horaires des périodes » (une seule école) : encore relu tant que `agenda-ecoles` n'existe pas. */
 export const REGLAGE_HORAIRES = 'agenda-horaires';
+
+/** Les écoles à partir des réglages enregistrés (nouveau réglage, sinon ancien réglage d'une seule école). */
+function ecolesDepuis(reglages: readonly { id: string; valeur: unknown }[]) {
+  const cfg = normaliserEcoles(reglages.find((r) => r.id === REGLAGE_ECOLES)?.valeur, reglages.find((r) => r.id === REGLAGE_HORAIRES)?.valeur);
+  return { ecoles: cfg.ecoles, trajet: cfg.trajet, horaires: cfg.ecoles[0]!.periodes };
+}
 
 /** Petit magasin d'état : une source de vérité en mémoire, écrite dans le dépôt à chaque action. */
 export function creerMagasin(depot: Depot) {
@@ -92,7 +104,7 @@ export function creerMagasin(depot: Depot) {
         maj({
           pret: true, erreur: null, eleves: eleves.map(normaliserEleve), seances, activites,
           pias: pias.map(normaliserPia).filter((p): p is Pia => p !== null),
-          horaires: normaliserHoraires(reglages.find((r) => r.id === REGLAGE_HORAIRES)?.valeur),
+          ...ecolesDepuis(reglages),
           semaineType: normaliserSemaineType(reglages.find((r) => r.id === REGLAGE_SEMAINE_TYPE)?.valeur),
           illisibles: depot.illisibles().length
         });
@@ -163,7 +175,7 @@ export function creerMagasin(depot: Depot) {
       const seances: Seance[] = [];
       const activites: Activite[] = [];
       const pias: Pia[] = [];
-      let horaires = etat.horaires;
+      let ecolesRecues = false;
       let semaineType = etat.semaineType;
       for (const o of ecrire) {
         if (o.type === 'eleve') { const e = normaliserEleve(o.donnees as Eleve); await depot.enregistrerEleve(e); eleves.push(e); }
@@ -173,18 +185,19 @@ export function creerMagasin(depot: Depot) {
         else {
           const r = o.donnees as { id: string; valeur: unknown };
           await depot.enregistrerReglage({ id: r.id, valeur: r.valeur });
-          if (r.id === REGLAGE_HORAIRES) horaires = normaliserHoraires(r.valeur);
+          if (r.id === REGLAGE_HORAIRES || r.id === REGLAGE_ECOLES) ecolesRecues = true;
           else if (r.id === REGLAGE_SEMAINE_TYPE) semaineType = normaliserSemaineType(r.valeur);
         }
       }
       const ids = (l: readonly { id: string }[]) => new Set(l.map((x) => x.id));
       const [ie, is, ia, ip] = [ids(eleves), ids(seances), ids(activites), ids(pias)];
+      const ecolesLues = ecolesRecues ? ecolesDepuis(await depot.chargerReglages()) : {};
       maj({
         eleves: [...etat.eleves.filter((x) => !ie.has(x.id)), ...eleves],
         seances: [...etat.seances.filter((x) => !is.has(x.id)), ...seances],
         activites: [...etat.activites.filter((x) => !ia.has(x.id)), ...activites],
         pias: [...etat.pias.filter((x) => !ip.has(x.id)), ...pias],
-        horaires, semaineType
+        ...ecolesLues, semaineType
       });
     },
 
@@ -237,13 +250,28 @@ export function creerMagasin(depot: Depot) {
       maj({ activites: [...etat.activites.filter((a) => !ids.has(a.id)), ...c.enregistrer] });
     },
 
-    /** Enregistre de nouveaux horaires. S'ils sont incohérents, rien n'est écrit et les erreurs sont renvoyées. */
+    /** Enregistre de nouveaux horaires pour l'école par défaut. S'ils sont incohérents, rien n'est écrit et les erreurs sont renvoyées. */
     async changerHoraires(periodes: readonly Periode[]): Promise<ErreurHoraire[]> {
       const erreurs = verifierHoraires(periodes);
       if (erreurs.length) return erreurs;
-      const horaires = normaliserHoraires(periodes);
-      await depot.enregistrerReglage({ id: REGLAGE_HORAIRES, valeur: horaires });
-      maj({ horaires });
+      const [premiere, ...autres] = etat.ecoles;
+      const refus = await this.changerEcoles([{ ...premiere!, periodes: normaliserHoraires(periodes) }, ...autres], etat.trajet);
+      return refus.map((r) => ({ index: r.index ?? 0, message: r.message }));
+    },
+
+    /**
+     * Enregistre les écoles et leurs horaires (la première est l'école par défaut). Si quelque chose est incohérent,
+     * rien n'est écrit et les erreurs sont renvoyées. Les élèves rattachés à une école renommée ou supprimée suivent.
+     */
+    async changerEcoles(ecoles: readonly Ecole[], trajet: number): Promise<ErreurEcole[]> {
+      const erreurs = verifierEcoles(ecoles);
+      if (erreurs.length) return erreurs;
+      const cfg = normaliserEcoles({ ecoles: ecoles.map((e) => ({ ...e, nom: e.nom.trim() })), trajet });
+      const aMettreAJour = elevesApresChangement(etat.eleves, etat.ecoles, cfg.ecoles);
+      await depot.enregistrerReglage({ id: REGLAGE_ECOLES, valeur: cfg });
+      for (const e of aMettreAJour) await depot.enregistrerEleve(e);
+      const modifies = new Map(aMettreAJour.map((e) => [e.id, e]));
+      maj({ ecoles: cfg.ecoles, trajet: cfg.trajet, horaires: cfg.ecoles[0]!.periodes, ...(modifies.size ? { eleves: etat.eleves.map((e) => modifies.get(e.id) ?? e) } : {}) });
       return [];
     },
 

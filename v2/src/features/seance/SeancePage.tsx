@@ -25,6 +25,7 @@ const reduireMouvement = (): boolean => globalThis.matchMedia?.('(prefers-reduce
 
 export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Aller }) {
   const eleves = useMagasin(magasin, (e) => e.eleves);
+  const ecoles = useMagasin(magasin, (e) => e.ecoles);
   const seances = useMagasin(magasin, (e) => e.seances);
   const { annoncer } = useToast();
   const [s, setS] = useState<Seance>(() => ({ ...seanceVide(), ...(magasin.lire().preparation ?? {}) }));
@@ -68,7 +69,7 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
   };
 
   const formulaires = [
-    <FormulaireCreneau key="1" s={s} maj={maj} eleves={eleves} />,
+    <FormulaireCreneau key="1" s={s} maj={maj} eleves={eleves} ecoles={ecoles} />,
     <FormulaireFonctionnement key="2" s={s} maj={maj} />,
     <FormulaireCompetence key="3" s={s} maj={maj} eleve={eleve} />,
     <FormulaireAides key="4" s={s} maj={maj} />,

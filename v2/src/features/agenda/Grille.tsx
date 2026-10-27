@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { disposer, infosJour, jourMois, libelle, natureJour, nomJour, teinteDe } from '../../domain/agenda/index.ts';
-import type { Occurrence, Periode } from '../../domain/agenda/index.ts';
+import { disposer, heuresDe, infosJour, jourMois, libelle, libelleHeures, natureJour, nomJour, teinteDe } from '../../domain/agenda/index.ts';
+import type { Ecole, Occurrence, Periode } from '../../domain/agenda/index.ts';
 import type { Eleve } from '../../domain/types.ts';
 import { geometrie, PH } from './geometrie.ts';
 
@@ -15,6 +15,12 @@ interface Props {
   couleurs: ReadonlyMap<string, number>;
   aujourdhui: string;
   selection: string | null;
+  /** École d'une occurrence (heures réelles de la case). */
+  ecoleDe: (o: Occurrence) => Ecole;
+  /** Plusieurs écoles : chaque case indique l'heure réelle et l'école. */
+  plusieurs: boolean;
+  /** Clés des occurrences concernées par un avertissement (chevauchement, trajet trop court). */
+  alertes: ReadonlySet<string>;
   onSelection: (o: Occurrence) => void;
   /** Création d'une activité : une période (clic) ou plusieurs (glisser sur les cases vides). */
   onCreer: (date: string, debut: number, fin: number) => void;
@@ -37,7 +43,7 @@ function caseSous(x: number, y: number): Cible | null {
   return null;
 }
 
-export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourdhui, selection, onSelection, onCreer, onGeste }: Props) {
+export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourdhui, selection, ecoleDe, plusieurs, alertes, onSelection, onCreer, onGeste }: Props) {
   const geo = useMemo(() => geometrie(periodes), [periodes]);
   const disp = useMemo(() => disposer(occurrences), [occurrences]);
   const [geste, setGeste] = useState<Geste | null>(null);
@@ -177,7 +183,7 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
             {periodes.map((p, i) => (
               <button key={p.label} type="button" className="cellule" data-date={j} data-periode={i}
                 style={{ top: geo.y[i]!, height: finY(i) - geo.y[i]! }}
-                aria-label={`Nouvelle activité, ${nomJour(j)} ${jourMois(j)}, ${p.label}, ${p.debut}`}
+                aria-label={`Nouvelle activité, ${nomJour(j)} ${jourMois(j)}, ${p.label}${p.debut ? `, ${p.debut}` : ''}`}
                 onPointerDown={(e) => commencerCreation(e, j, i)}
                 onClick={() => { if (!clicIgnore.current) onCreer(j, i, i); }} />
             ))}
@@ -187,15 +193,19 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
               const enCours = geste?.o.cle === o.cle;
               const nom = nomDe(o);
               const etire = enCours && geste?.mode === 'etirer' ? geste.cible.fin ?? o.fin : o.fin;
+              const ecole = plusieurs ? ecoleDe(o) : null;
+              const heures = ecole ? libelleHeures(heuresDe(ecole, o.debut, o.fin)) : '';
+              const alerte = alertes.has(o.cle);
               return (
                 <button key={o.cle} type="button" aria-pressed={selection === o.cle}
-                  className={`evt ${cls} ${o.statut === 'annule' ? 'annule' : ''} ${o.statut === 'realise' ? 'realise' : ''} ${enCours && geste?.mode !== 'etirer' ? 'glisse' : ''}`}
+                  className={`evt ${cls} ${alerte ? 'alerte' : ''} ${o.statut === 'annule' ? 'annule' : ''} ${o.statut === 'realise' ? 'realise' : ''} ${enCours && geste?.mode !== 'etirer' ? 'glisse' : ''}`}
                   style={style(o, geo.y[o.debut]!, finY(etire))}
-                  aria-label={`${libelle(o.activite, nom || undefined)}, ${nomJour(o.date)} ${jourMois(o.date)}, ${periodes[o.debut]!.label}${o.fin > o.debut ? ` à ${periodes[o.fin]!.label}` : ''}${o.statut === 'annule' ? ', annulé' : o.statut === 'realise' ? ', réalisé' : ''}`}
+                  aria-label={`${libelle(o.activite, nom || undefined)}, ${nomJour(o.date)} ${jourMois(o.date)}, ${periodes[o.debut]!.label}${o.fin > o.debut ? ` à ${periodes[o.fin]!.label}` : ''}${heures ? `, ${heures}` : ''}${ecole ? `, ${ecole.nom}` : ''}${o.statut === 'annule' ? ', annulé' : o.statut === 'realise' ? ', réalisé' : ''}${alerte ? ', attention : chevauchement ou trajet trop court' : ''}`}
                   onPointerDown={(e) => commencer(e, o, 'deplacer')}
                   onClick={() => { if (!clicIgnore.current) rappel.current!.onSelection(o); }}>
                   <strong>{libelle(o.activite, nom || undefined)}</strong>
                   <small>{periodes[o.debut]!.label}{o.fin > o.debut ? `–${periodes[o.fin]!.label}` : ''}{o.activite.matiere ? ` · ${o.activite.matiere}` : ''}{o.activite.lieu ? ` · ${o.activite.lieu}` : ''}</small>
+                  {ecole ? <small className="evt-ecole">{heures ? `${heures} · ` : ''}{ecole.nom}</small> : null}
                   {o.seanceId ? null : <span className="evt-poignee" onPointerDown={(e) => commencer(e, o, 'etirer')} aria-hidden="true" />}
                 </button>
               );

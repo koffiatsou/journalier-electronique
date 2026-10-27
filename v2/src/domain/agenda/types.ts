@@ -16,7 +16,10 @@ export interface Periode {
   fin: string;
 }
 
-/** Horaires habituels ; l'utilisateur peut les régler (voir `horaires.ts`). Les pauses sont l'espace entre deux périodes. */
+/**
+ * Horaires habituels ; l'utilisateur peut les régler, école par école (voir `horaires.ts` et `ecoles.ts`). Les pauses sont l'espace entre deux périodes.
+ * Il y a neuf périodes au plus (certaines écoles en ont neuf) : une période sans heures (« 9e H » ici) n'est pas utilisée par l'école.
+ */
 export const PERIODES_AGENDA: readonly Periode[] = [
   { label: '1e H', debut: '08:00', fin: '08:50' },
   { label: '2e H', debut: '08:50', fin: '09:40' },
@@ -25,7 +28,8 @@ export const PERIODES_AGENDA: readonly Periode[] = [
   { label: '5e H', debut: '11:35', fin: '12:25' },
   { label: '6e H', debut: '13:15', fin: '14:05' },
   { label: '7e H', debut: '14:05', fin: '14:55' },
-  { label: '8e H', debut: '14:55', fin: '15:45' }
+  { label: '8e H', debut: '14:55', fin: '15:45' },
+  { label: '9e H', debut: '', fin: '' }
 ];
 
 /**
@@ -49,6 +53,8 @@ export interface Activite {
   /** Index de période (0 = 1e H). */
   debut: number;
   fin: number;
+  /** École d'une activité qui n'est pas pour un élève (collaboration, formation…) ; pour un élève, c'est l'école de son dossier qui compte. */
+  ecoleId?: string;
   repetition: 'aucune' | 'hebdomadaire';
   /** Dernier jour de la série (inclus). */
   jusquau?: string;

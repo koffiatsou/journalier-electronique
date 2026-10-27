@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { NB_COULEURS, NOMS_COULEURS } from '../../domain/agenda/index.ts';
+import { NB_COULEURS, NOMS_COULEURS, ecoleParDefaut, rattachement } from '../../domain/agenda/index.ts';
+import type { Ecole } from '../../domain/agenda/index.ts';
 import { LANGUES_MODERNES, languesDe } from '../../domain/eleves/index.ts';
 import { analyserClasse } from '../../domain/referentiel/index.ts';
 import { sansAccents } from '../../domain/referentiel/texte.ts';
@@ -26,17 +27,20 @@ interface Props {
   eleve: Eleve;
   /** Couleur de l'élève dans l'agenda quand elle n'est pas encore choisie (déduite de son identifiant). */
   couleurParDefaut: number;
+  /** Écoles de l'agenda : s'il y en a plusieurs, l'école de l'élève se choisit dans la liste. */
+  ecoles: readonly Ecole[];
   onEnregistrer: (e: Eleve) => void;
   onAnnuler: () => void;
 }
 
-export function FicheEleve({ eleve, couleurParDefaut, onEnregistrer, onAnnuler }: Props) {
+export function FicheEleve({ eleve, couleurParDefaut, ecoles, onEnregistrer, onAnnuler }: Props) {
   const [e, setE] = useState(eleve);
   const [autre, setAutre] = useState('');
   const maj = (p: Partial<Eleve>) => setE((x) => ({ ...x, ...p }));
   const valide = e.nom.trim() !== '' && e.prenom.trim() !== '';
   const soumettre = (ev: { preventDefault(): void }) => { ev.preventDefault(); if (valide) onEnregistrer({ ...e, nom: e.nom.trim(), prenom: e.prenom.trim() }); };
   const filiereDeduite = analyserClasse(e.classe)?.filiere;
+  const ecoleAttachee = rattachement(e, ecoles);
 
   /** Une matière déjà connue (accents ou majuscules près) est simplement cochée au lieu d'être recréée. */
   const ajouterMatiere = () => {
@@ -74,7 +78,22 @@ export function FicheEleve({ eleve, couleurParDefaut, onEnregistrer, onAnnuler }
         </Field>
       </div>
       <div className="champs champs-2">
-        <Field label="École" optionnel>{(id) => <Input id={id} value={e.ecole} onChange={(ev) => maj({ ecole: ev.target.value })} />}</Field>
+        {ecoles.length > 1 ? (
+          <Field label="École" aide={ecoleAttachee ? 'Ses séances et rendez-vous prennent les horaires de cette école.' : e.ecole.trim() ? `Dans le dossier : « ${e.ecole.trim()} », qui ne correspond à aucune école de l’agenda : l’école par défaut (${ecoleParDefaut(ecoles).nom}) s’applique.` : `Sans choix, l’école par défaut (${ecoleParDefaut(ecoles).nom}) s’applique.`}>
+            {(id) => (
+              <Select id={id} value={ecoleAttachee?.id ?? ''} onChange={(ev) => {
+                const choisie = ecoles.find((x) => x.id === ev.target.value);
+                const { ecoleId: _i, ...reste } = e;
+                setE(choisie ? { ...reste, ecoleId: choisie.id, ecole: choisie.nom } : { ...reste, ecole: ecoleAttachee ? '' : e.ecole });
+              }}>
+                <option value="">Pas précisée (école par défaut)</option>
+                {ecoles.map((x) => <option key={x.id} value={x.id}>{x.nom}</option>)}
+              </Select>
+            )}
+          </Field>
+        ) : (
+          <Field label="École" optionnel>{(id) => <Input id={id} value={e.ecole} onChange={(ev) => maj({ ecole: ev.target.value })} />}</Field>
+        )}
         <Field label="Titulaire" optionnel>{(id) => <Input id={id} value={e.titulaire} onChange={(ev) => maj({ titulaire: ev.target.value })} />}</Field>
       </div>
 

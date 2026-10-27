@@ -10,6 +10,8 @@ import { Chips } from '../../ui/Chip.tsx';
 import { Field, Input, Select, Textarea } from '../../ui/Field.tsx';
 import { anneeDeNiveau, cibleDeSeance, defautsSeance, formeDeFiliere } from '../../domain/referentiel/index.ts';
 import { elevesProposes, languesDe } from '../../domain/eleves/index.ts';
+import { ecoleDeEleve, nbPeriodesUtilisees } from '../../domain/agenda/index.ts';
+import type { Ecole } from '../../domain/agenda/index.ts';
 import type { Piste } from '../../domain/referentiel/index.ts';
 import { indexDe } from '../../domain/referentiel/charger.ts';
 import { Point, TEINTES_EFFET, TEINTES_NIVEAU } from '../../ui/Point.tsx';
@@ -23,8 +25,13 @@ const niveau = (n: number): Niveau => n as Niveau;
 const effet = (n: number): Effet => n as Effet;
 
 /* ───────── 1. Créneau et partie pédagogique ───────── */
-export function FormulaireCreneau({ s, maj, eleves }: PropsFormulaire & { eleves: Eleve[] }) {
+export function FormulaireCreneau({ s, maj, eleves, ecoles = [] }: PropsFormulaire & { eleves: Eleve[]; ecoles?: readonly Ecole[] }) {
   const eleve = eleves.find((e) => e.id === s.eleveId);
+  // Les périodes proposées sont celles de l'école de l'élève (neuf au plus) ; on garde toujours celles déjà choisies.
+  const nbPeriodes = ecoles.length
+    ? Math.max(nbPeriodesUtilisees(ecoleDeEleve(eleve, ecoles).periodes), PERIODES_DEFAUT.indexOf(s.periodeDebut as never) + 1, PERIODES_DEFAUT.indexOf(s.periodeFin as never) + 1)
+    : PERIODES_DEFAUT.length;
+  const periodesProposees = PERIODES_DEFAUT.slice(0, nbPeriodes);
   // Les langues du dossier sont proposées comme matières (Anglais, Néerlandais…), après les matières suivies.
   const matieres = eleve ? [...eleve.matieres, ...languesDe(eleve).filter((l) => !eleve.matieres.includes(l))] : [];
   const absent = s.presence !== 'present';
@@ -62,11 +69,11 @@ export function FormulaireCreneau({ s, maj, eleves }: PropsFormulaire & { eleves
           {(id) => (
             <div className="periodes">
               <Select id={id} value={s.periodeDebut} aria-label="Première période" onChange={(e) => maj({ periodeDebut: e.target.value, periodeFin: e.target.value })}>
-                {PERIODES_DEFAUT.map((p) => <option key={p}>{p}</option>)}
+                {periodesProposees.map((p) => <option key={p}>{p}</option>)}
               </Select>
               <span aria-hidden="true">→</span>
               <Select value={s.periodeFin} aria-label="Dernière période" onChange={(e) => maj({ periodeFin: e.target.value })}>
-                {PERIODES_DEFAUT.map((p) => <option key={p}>{p}</option>)}
+                {periodesProposees.map((p) => <option key={p}>{p}</option>)}
               </Select>
             </div>
           )}

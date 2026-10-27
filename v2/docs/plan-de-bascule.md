@@ -36,6 +36,7 @@ Document pour l'utilisateur, à adapter avant de le donner à l'équipe. Rien n'
 - **OneDrive de la V75 peut être incomplet** : d'après la lecture du code, la V75 refuse d'envoyer sur OneDrive les séances qui contiennent la présence ou des notes de classe, et certains profils d'élèves. À vérifier avec votre compte : comparez le nombre de séances par élève avec la V75, puis lisez aussi l'appareil si besoin. (À signaler comme défaut de la V75 une fois confirmé.)
 - **Nouvel ordinateur, ou données de la V2 dépassées** : écran Synchro → « Repartir de OneDrive » : l'ordinateur reprend exactement ce que contient OneDrive (rien n'est fusionné ; OneDrive n'est jamais modifié ; un aperçu et une case à cocher avant tout remplacement). Pensez à enregistrer d'abord une copie de secours si vous hésitez.
 - **Noms** : la V75 n'avait qu'une case ; le nom est repris entier dans « Nom » (prénom vide).
+- **Écoles** : avant de saisir les premières séances, ouvrir Agenda → « Horaires » et déclarer vos écoles (nom + heures). Les horaires de la V75 ne servent que tant qu'aucune école n'est enregistrée ; les élèves reprennent l'école du même nom.
 - **Agenda** : les séries simples restent des séries ; les autres répétitions sont posées jour par jour jusqu'à fin juillet ; les rendez-vous de week-end ne sont pas repris (la liste est affichée).
 - **Mode essai** : la reprise y est refusée (jamais de vraies données en essai).
 - Après l'import, la synchronisation habituelle envoie tout vers OneDrive.

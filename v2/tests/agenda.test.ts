@@ -76,10 +76,11 @@ describe('modifications', () => {
     assert.equal(c.enregistrer[0]!.jusquau, '2026-11-10');
   });
   it('ne sort jamais de la grille des périodes', () => {
-    const c = deplacer(premiere(), '2026-10-26', 7);
+    // neuf périodes (1e H à 9e H) : la dernière est l'index 8
+    const c = deplacer(premiere(), '2026-10-26', 8);
     const u = c.enregistrer[1]!;
-    assert.equal(u.fin, 7);
-    assert.equal(u.debut, 6);
+    assert.equal(u.fin, 8);
+    assert.equal(u.debut, 7);
   });
   it('redimensionne sans passer sous le début', () => {
     assert.equal(redimensionner(premiere(), 0).enregistrer[1]!.fin, 1);

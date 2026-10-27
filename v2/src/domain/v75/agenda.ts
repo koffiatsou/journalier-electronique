@@ -49,14 +49,15 @@ export function finAnneeScolaire(date: string): string {
   return `${mois >= 8 ? annee + 1 : annee}-07-31`;
 }
 
-/** Les huit périodes de la V75 : noms (ordre) et horaires valides. */
+const NB_PERIODES_V75 = 8;
+/** Les huit périodes de la V75 : noms (ordre) et horaires valides (la neuvième période de la V2 reste sans heures). */
 export function lirePeriodesV75(config: unknown): { noms: string[]; horaires: Periode[] | null } {
   const noms = PERIODES_AGENDA.map((p) => p.label);
   const brut = liste(objet(config).periods);
-  if (brut.length !== PERIODES_AGENDA.length) return { noms, horaires: null };
+  if (brut.length !== NB_PERIODES_V75) return { noms, horaires: null };
   const lus = brut.map(objet);
   const nomsV75 = lus.map((p, i) => texte(p.label) || noms[i]!);
-  const horaires: Periode[] = lus.map((p, i) => ({ label: PERIODES_AGENDA[i]!.label, debut: texte(p.start), fin: texte(p.end) }));
+  const horaires: Periode[] = PERIODES_AGENDA.map((p, i) => ({ label: p.label, debut: lus[i] ? texte(lus[i]!.start) : '', fin: lus[i] ? texte(lus[i]!.end) : '' }));
   return { noms: nomsV75, horaires: verifierHoraires(horaires).length ? null : horaires };
 }
 

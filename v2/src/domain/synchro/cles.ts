@@ -20,7 +20,7 @@ export const DOSSIERS: Readonly<Record<TypeObjet, string>> = {
 };
 
 /** Réglages partagés entre les appareils (les autres, comme le thème, restent propres à l'appareil). */
-export const REGLAGES_SYNCHRONISES: readonly string[] = ['agenda-horaires', 'agenda-semaine-type'];
+export const REGLAGES_SYNCHRONISES: readonly string[] = ['agenda-horaires', 'agenda-ecoles', 'agenda-semaine-type'];
 
 export interface RefObjet { type: TypeObjet; id: string }
 export type Cle = string;

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ajouterJours, ajouterMois, annuler, calendrierConnu, couleursEleves, deplacer, dupliquer, indexJour, jourMois, lundiDe, marquerRealisee, nomJour,
+  PERIODES_AGENDA, ajouterJours, ajouterMois, annuler, avertissementsEcoles, calendrierConnu, couleursEleves, deplacer, dupliquer, ecoleDeOccurrence,
+  ecoleParDefaut, heuresDe, horairesReference, indexJour, jourMois, libelleHeures, lundiDe, marquerRealisee, nomJour,
   occurrencesAgenda as calculer, redimensionner, semaine, semainesDuMois, supprimer, titreMois, titreSemaine, versISO
 } from '../../domain/agenda/index.ts';
 import type { Changement, Occurrence, Portee } from '../../domain/agenda/index.ts';
@@ -43,7 +44,8 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
   const eleves = useMagasin(magasin, (e) => e.eleves);
   const activites = useMagasin(magasin, (e) => e.activites);
   const seances = useMagasin(magasin, (e) => e.seances);
-  const horaires = useMagasin(magasin, (e) => e.horaires);
+  const ecoles = useMagasin(magasin, (e) => e.ecoles);
+  const trajet = useMagasin(magasin, (e) => e.trajet);
   const semaineType = useMagasin(magasin, (e) => e.semaineType);
   const { annoncer } = useToast();
   const etroit = useMedia(ETROIT);
@@ -55,6 +57,7 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
   const [selection, setSelection] = useState<string | null>(null);
   const [brouillon, setBrouillon] = useState<Brouillon | null>(null);
   const [filtre, setFiltre] = useState<string | null>(null);
+  const [filtreEcole, setFiltreEcole] = useState('');
 
   // Sur téléphone, la semaine est trop large : on affiche le jour.
   const vueEffective = etroit && vue === 'semaine' ? 'jour' : vue;
@@ -65,7 +68,16 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
   const du = mois ? semainesDuMois(focus)[0]![0]! : jours[0]!;
   const au = mois ? semainesDuMois(focus).at(-1)![4]! : jours[jours.length - 1]!;
   const toutes = useMemo(() => calculer(activites, du, au, seances), [activites, du, au, seances]);
-  const visibles = filtre ? toutes.filter((o) => o.activite.eleveId === filtre) : toutes;
+  const plusieurs = ecoles.length > 1;
+  const ecoleFiltree = plusieurs ? ecoles.find((e) => e.id === filtreEcole) : undefined;
+  const ecoleDe = useMemo(() => (o: Occurrence) => ecoleDeOccurrence(o, eleves, ecoles), [eleves, ecoles]);
+  const deLEcole = ecoleFiltree ? toutes.filter((o) => ecoleDe(o).id === ecoleFiltree.id) : toutes;
+  const visibles = filtre ? deLEcole.filter((o) => o.activite.eleveId === filtre) : deLEcole;
+  // Les lignes de la grille : les périodes de l'école choisie, sinon celles de toutes les écoles (heures de l'école par défaut d'abord).
+  const jusqua = Math.max(0, ...visibles.map((o) => o.fin));
+  const horaires = useMemo(() => horairesReference(ecoleFiltree ? [ecoleFiltree] : ecoles, jusqua), [ecoleFiltree, ecoles, jusqua]);
+  const avertissements = useMemo(() => avertissementsEcoles(toutes, eleves, ecoles, trajet), [toutes, eleves, ecoles, trajet]);
+  const alertes = useMemo(() => new Set(avertissements.flatMap((a) => a.cles)), [avertissements]);
   const occSelection = selection ? toutes.find((o) => o.cle === selection) ?? null : null;
   const panneauOuvert = Boolean(occSelection || brouillon);
   const aujourdhui = versISO(new Date());
@@ -73,9 +85,9 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
   const vacancesInconnues = !calendrierConnu(du) || !calendrierConnu(au);
 
   const elevesAffiches = useMemo(() => {
-    const ids = new Set(toutes.map((o) => o.activite.eleveId).filter((x): x is string => Boolean(x)));
+    const ids = new Set(deLEcole.map((o) => o.activite.eleveId).filter((x): x is string => Boolean(x)));
     return eleves.filter((e) => ids.has(e.id));
-  }, [toutes, eleves]);
+  }, [deLEcole, eleves]);
 
   const appliquer = (c: Changement, message?: string) => { void magasin.changerAgenda(c).then(() => { if (message) annoncer(message); }); };
   const naviguer = (n: number) => setFocus((f) => (mois ? ajouterMois(f, n) : ajouterJours(f, vueEffective === 'jour' ? n : n * 7)));
@@ -91,7 +103,7 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
   const encoder = (o: Occurrence) => {
     const el = eleves.find((e) => e.id === o.activite.eleveId);
     magasin.preparerSeance({
-      eleveId: o.activite.eleveId ?? '', date: o.date, periodeDebut: horaires[o.debut]!.label, periodeFin: horaires[o.fin]!.label,
+      eleveId: o.activite.eleveId ?? '', date: o.date, periodeDebut: PERIODES_AGENDA[o.debut]!.label, periodeFin: PERIODES_AGENDA[o.fin]!.label,
       matiere: o.activite.matiere ?? '', ...defautsSeance(el)
     });
     globalThis.location.hash = '/seance';
@@ -128,6 +140,15 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
           <button type="button" aria-pressed={vueEffective === 'jour'} onClick={() => setVue('jour')}>Jour</button>
           <button type="button" aria-pressed={vueEffective === 'mois'} onClick={() => setVue('mois')}>Mois</button>
         </div>
+        {plusieurs ? (
+          <label className="agenda-ecole-filtre">
+            <span className="sr-only">École affichée</span>
+            <select className="select" aria-label="École affichée" value={ecoleFiltree?.id ?? ''} onChange={(e) => setFiltreEcole(e.target.value)}>
+              <option value="">Toutes les écoles</option>
+              {ecoles.map((e) => <option key={e.id} value={e.id}>{e.nom}</option>)}
+            </select>
+          </label>
+        ) : null}
         <Button variante="discret" onClick={() => setHorairesOuverts(true)}>Horaires</Button>
         <Button variante="discret" onClick={() => setSemaineTypeOuverte(true)}>Semaine type</Button>
         <Button variante="discret" onClick={() => globalThis.print()}>Imprimer</Button>
@@ -136,6 +157,20 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
 
       {vacancesInconnues ? (
         <p className="agenda-note" role="note">Les vacances scolaires de cette période ne sont pas encore dans l’application : seuls les jours fériés et les vacances d’été sont indiqués.</p>
+      ) : null}
+
+      {plusieurs && !ecoleFiltree && !mois ? (
+        <p className="agenda-note" role="note">La colonne de gauche montre les heures de « {ecoleParDefaut(ecoles).nom} » ; chaque case indique l’heure réelle de l’école de l’élève.</p>
+      ) : null}
+
+      {avertissements.length ? (
+        <div className="agenda-alertes" role="status">
+          <strong>{avertissements.length === 1 ? 'Un point à vérifier' : `${avertissements.length} points à vérifier`}</strong>
+          <ul>
+            {avertissements.slice(0, 4).map((a) => <li key={`${a.cles[0]}|${a.cles[1]}`}>{a.texte}</li>)}
+          </ul>
+          {avertissements.length > 4 ? <small>et {avertissements.length - 4} autre{avertissements.length - 4 > 1 ? 's' : ''} dans les semaines affichées.</small> : null}
+        </div>
       ) : null}
 
       {etroit && vueEffective === 'jour' ? (
@@ -160,7 +195,7 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
 
       <div className={`agenda-corps ${panneauOuvert && large ? 'avec-panneau' : ''}`}>
         {mois ? (
-          <Mois jour={focus} periodes={horaires} occurrences={visibles} eleves={eleves} couleurs={couleurs} aujourdhui={aujourdhui}
+          <Mois jour={focus} periodes={horaires} alertes={alertes} occurrences={visibles} eleves={eleves} couleurs={couleurs} aujourdhui={aujourdhui}
             selection={occSelection?.cle ?? null} etroit={etroit}
             onSelection={(o) => { setBrouillon(null); setSelection(o.cle); }}
             onJour={(date) => { fermer(); setFocus(date); setVue('jour'); }}
@@ -170,22 +205,22 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
               : appliquer(deplacer(o, date, o.debut), 'Activité déplacée'))} />
         ) : (
           <Grille jours={jours} periodes={horaires} occurrences={visibles} eleves={eleves} couleurs={couleurs} aujourdhui={aujourdhui}
-            selection={occSelection?.cle ?? null}
+            selection={occSelection?.cle ?? null} ecoleDe={ecoleDe} plusieurs={plusieurs} alertes={alertes}
             onSelection={(o) => { setBrouillon(null); setSelection(o.cle); }}
             onCreer={(date, debut, fin) => { setSelection(null); setBrouillon({ date, debut, fin }); }}
             onGeste={geste} />
         )}
         {occSelection?.seanceId ? (
-          <PanneauSeance key={occSelection.cle} occurrence={occSelection} periodes={horaires} eleves={eleves} seance={seances.find((x) => x.id === occSelection.seanceId)} onOuvrir={ouvrirSeance} onFermer={fermer} />
+          <PanneauSeance key={occSelection.cle} occurrence={occSelection} periodes={horaires} heures={plusieurs ? libelleHeures(heuresDe(ecoleDe(occSelection), occSelection.debut, occSelection.fin)) : undefined} eleves={eleves} seance={seances.find((x) => x.id === occSelection.seanceId)} onOuvrir={ouvrirSeance} onFermer={fermer} />
         ) : occSelection ? (
-          <Panneau key={occSelection.cle} occurrence={occSelection} periodes={horaires} nouveau={null} eleves={eleves}
+          <Panneau key={occSelection.cle} occurrence={occSelection} ecoles={ecoles} nouveau={null} eleves={eleves}
             onChanger={(c) => appliquer(c, 'Activité enregistrée')} onFermer={fermer} onEncoder={encoder}
             onDupliquer={(o) => { appliquer(dupliquer(o, ajouterJours(o.date, 7), o.debut), 'Dupliquée à la semaine suivante'); fermer(); }}
             onAnnuler={(o) => { appliquer(annuler(o, o.statut !== 'annule'), o.statut === 'annule' ? 'Activité rétablie' : 'Activité annulée'); fermer(); }}
             onRealiser={(o) => { appliquer(marquerRealisee(o, o.statut !== 'realise')); fermer(); }}
             onSupprimer={supprimerOcc} />
         ) : brouillon ? (
-          <Panneau key={`n-${brouillon.date}-${brouillon.debut}`} occurrence={null} periodes={horaires} nouveau={brouillon} eleves={eleves}
+          <Panneau key={`n-${brouillon.date}-${brouillon.debut}`} occurrence={null} ecoles={ecoles} nouveau={brouillon} eleves={eleves}
             onChanger={(c) => appliquer(c, 'Activité ajoutée')} onFermer={fermer} onEncoder={encoder}
             onDupliquer={() => undefined} onAnnuler={() => undefined} onRealiser={() => undefined} onSupprimer={() => undefined} />
         ) : null}
@@ -196,10 +231,10 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
         onEnregistrer={(m) => { void magasin.enregistrerSemaineType(m).then(() => annoncer(m ? 'Semaine type enregistrée' : 'Semaine type supprimée')); }}
         onAppliquer={(c, n) => appliquer(c, `${n} activité${n > 1 ? 's' : ''} ajoutée${n > 1 ? 's' : ''}`)} />
 
-      <HorairesDialog ouvert={horairesOuverts} horaires={horaires} onFermer={() => setHorairesOuverts(false)}
-        onEnregistrer={async (p) => {
-          const erreurs = await magasin.changerHoraires(p);
-          if (!erreurs.length) { setHorairesOuverts(false); annoncer('Horaires enregistrés'); }
+      <HorairesDialog ouvert={horairesOuverts} ecoles={ecoles} trajet={trajet} eleves={eleves} onFermer={() => setHorairesOuverts(false)}
+        onEnregistrer={async (liste, minutes) => {
+          const erreurs = await magasin.changerEcoles(liste, minutes);
+          if (!erreurs.length) { setHorairesOuverts(false); setFiltreEcole(''); annoncer(liste.length > 1 ? 'Écoles et horaires enregistrés' : 'Horaires enregistrés'); }
           return erreurs;
         }} />
     </div>

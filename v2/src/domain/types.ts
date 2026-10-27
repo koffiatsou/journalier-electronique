@@ -109,7 +109,10 @@ export interface Eleve {
   nom: string;
   prenom: string;
   classe: string;
+  /** Nom de l'école (texte du dossier, repris dans les documents). */
   ecole: string;
+  /** École de l'agenda à laquelle l'élève est rattaché (choisie dans la fiche) ; sinon on cherche une école du même nom, sinon l'école par défaut. */
+  ecoleId?: string;
   titulaire: string;
   dateNaissance: string;
   /** Matières suivies, proposées en priorité dans le formulaire de séance. */
@@ -142,7 +145,7 @@ export const FILIERES_LIBELLES: Readonly<Record<Filiere, string>> = {
   cefa: 'CEFA'
 };
 
-export const PERIODES_DEFAUT = ['1e H', '2e H', '3e H', '4e H', '5e H', '6e H', '7e H', '8e H'] as const;
+export const PERIODES_DEFAUT = ['1e H', '2e H', '3e H', '4e H', '5e H', '6e H', '7e H', '8e H', '9e H'] as const;
 
 /** Observations proposées par rubrique (l'agent peut aussi saisir librement). */
 export const OBSERVATIONS_SUGGEREES: ReadonlyArray<{ rubrique: string; items: readonly string[] }> = [

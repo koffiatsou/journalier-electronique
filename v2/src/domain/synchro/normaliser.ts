@@ -1,5 +1,5 @@
-import { normaliserHoraires, verifierHoraires } from '../agenda/horaires.ts';
-import { PERIODES_AGENDA } from '../agenda/types.ts';
+import { lireHoraires } from '../agenda/horaires.ts';
+import { MAX_ECOLES, TRAJET_MAXI, normaliserEcoles, verifierEcoles } from '../agenda/ecoles.ts';
 import { normaliserSemaineType } from '../agenda/semainetype.ts';
 import { normaliserEleve } from '../eleves/eleves.ts';
 import { normaliserPia } from '../pia/pia.ts';
@@ -34,12 +34,28 @@ export function normaliserObjet(type: TypeObjet, donnees: unknown): unknown | nu
     case 'reglage': {
       if (!texte(o.id) || !REGLAGES_SYNCHRONISES.includes(o.id)) return null;
       if (o.id === 'agenda-horaires') {
-        if (!Array.isArray(o.valeur) || o.valeur.length !== PERIODES_AGENDA.length || verifierHoraires(o.valeur as Parameters<typeof verifierHoraires>[0]).length) return null;
-        return { id: o.id, valeur: normaliserHoraires(o.valeur) };
+        const horaires = lireHoraires(o.valeur);
+        return horaires ? { id: o.id, valeur: horaires } : null;
       }
+      if (o.id === 'agenda-ecoles') return ecolesValides(o.valeur) ? { id: o.id, valeur: normaliserEcoles(o.valeur) } : null;
       if (o.valeur === null) return { id: o.id, valeur: null };
       const semaine = normaliserSemaineType(o.valeur);
       return semaine ? { id: o.id, valeur: semaine } : null;
     }
   }
+}
+
+/** Un réglage « écoles » reçu n'est accepté que s'il est entièrement lisible : on ne remplace jamais le sien par une moitié de réglage. */
+function ecolesValides(valeur: unknown): boolean {
+  const v = objet(valeur);
+  if (!v || !Array.isArray(v.ecoles) || v.ecoles.length === 0 || v.ecoles.length > MAX_ECOLES) return false;
+  if (typeof v.trajet !== 'number' || !Number.isInteger(v.trajet) || v.trajet < 0 || v.trajet > TRAJET_MAXI) return false;
+  const lues = [];
+  for (const x of v.ecoles) {
+    const e = objet(x);
+    const periodes = e ? lireHoraires(e.periodes) : null;
+    if (!e || !texte(e.id) || !texte(e.nom) || !periodes) return false;
+    lues.push({ id: e.id, nom: e.nom, periodes });
+  }
+  return new Set(lues.map((e) => e.id)).size === lues.length && verifierEcoles(lues).length === 0;
 }

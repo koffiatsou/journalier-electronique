@@ -1,7 +1,8 @@
 import { ajouterJours, lundiDe } from '../agenda/dates.ts';
 import { occurrences } from '../agenda/planning.ts';
 import { TYPES_LIBELLES } from '../agenda/types.ts';
-import type { Activite, Periode } from '../agenda/types.ts';
+import type { Activite, Occurrence, Periode } from '../agenda/types.ts';
+import { heureValide } from '../agenda/horaires.ts';
 import { initiales } from '../eleves/eleves.ts';
 import { anneeScolaire } from '../export/journalier.ts';
 import type { Eleve, Seance } from '../types.ts';
@@ -73,14 +74,21 @@ export function sujetDe(a: Activite, eleves: readonly Eleve[], option: NomDansOu
   return a.titre.trim() ? `${base} · ${a.titre.trim()}` : base;
 }
 
+/**
+ * Les horaires à utiliser pour une occurrence : une liste de périodes (une seule école) ou une fonction qui donne les
+ * périodes de l'école de l'occurrence (plusieurs écoles : Outlook reçoit les vraies heures de chaque école).
+ */
+export type HorairesOutlook = readonly Periode[] | ((o: Occurrence) => readonly Periode[]);
+
 /** Les événements que l'agenda doit produire entre deux dates (activités annulées exclues). */
-export function evenementsSouhaites(activites: readonly Activite[], eleves: readonly Eleve[], seances: readonly Seance[], horaires: readonly Periode[], du: string, au: string, reglages: ReglagesOutlook): EvenementSouhaite[] {
+export function evenementsSouhaites(activites: readonly Activite[], eleves: readonly Eleve[], seances: readonly Seance[], horaires: HorairesOutlook, du: string, au: string, reglages: ReglagesOutlook): EvenementSouhaite[] {
   const sortie: EvenementSouhaite[] = [];
   for (const o of occurrences(activites, du, au, seances)) {
     if (o.statut === 'annule') continue;
-    const debut = horaires[o.debut];
-    const fin = horaires[o.fin];
-    if (!debut || !fin) continue;
+    const periodes = typeof horaires === 'function' ? horaires(o) : horaires;
+    const debut = periodes[o.debut];
+    const fin = periodes[o.fin];
+    if (!debut || !fin || !heureValide(debut.debut) || !heureValide(fin.fin)) continue;
     sortie.push({
       cle: o.cle, sujet: sujetDe(o.activite, eleves, reglages.nom),
       debut: `${o.date}T${debut.debut}`, fin: `${o.date}T${fin.fin}`,

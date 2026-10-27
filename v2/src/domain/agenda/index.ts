@@ -5,3 +5,4 @@ export * from './planning.ts';
 export * from './calendrier.ts';
 export * from './horaires.ts';
 export * from './semainetype.ts';
+export * from './ecoles.ts';
