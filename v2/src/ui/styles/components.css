@@ -9,7 +9,7 @@
 }
 .btn:active { transform: scale(0.97); }
 @media (hover: hover) and (pointer: fine) { .btn:hover { background: var(--surface-2); border-color: var(--ink-3); } }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: var(--shadow-1); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); box-shadow: var(--shadow-1); }
 @media (hover: hover) and (pointer: fine) { .btn-primary:hover { background: var(--peda-ink); border-color: var(--peda-ink); } }
 .btn-ghost { border-color: transparent; background: transparent; }
 .btn[disabled] { opacity: 0.5; pointer-events: none; }
@@ -95,7 +95,7 @@
 .toast[data-leaving="true"] { animation: toast-out 180ms ease-in both; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(12px) scale(0.96); } to { opacity: 1; transform: none; } }
 @keyframes toast-out { to { opacity: 0; transform: translateY(6px) scale(0.98); } }
-@media (min-width: 900px) { .toasts { bottom: 24px; } }
+@media (min-width: 768px) { .toasts { bottom: 24px; } }
 
 /* ---------- fenêtre de dialogue (élément <dialog> natif) ---------- */
 .dialog { border: 0; padding: 0; border-radius: var(--r-l); background: var(--surface); color: var(--ink); box-shadow: var(--shadow-2); width: min(92vw, 520px); }

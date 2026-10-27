@@ -1,6 +1,20 @@
-/* ---------- cadre de l'application ---------- */
+/* ---------- cadre de l'application ----------
+   Trois dispositions :
+   - téléphone (< 768 px) : barre du haut (logo, outils) + barre d'onglets en bas ;
+   - tablette en portrait (768 à 899 px) : menu étroit à gauche (icône + mot) ;
+   - tablette en paysage et ordinateur (≥ 900 px) : menu large à gauche avec le logo. */
 .shell { min-height: 100dvh; display: grid; grid-template-columns: 1fr; padding-bottom: calc(var(--tabbar) + env(safe-area-inset-bottom)); }
-.contenu { min-width: 0; padding: var(--sp-5) var(--sp-4) var(--sp-7); }
+.contenu { min-width: 0; padding: var(--sp-4) var(--sp-4) var(--sp-7); }
+
+/* barre du haut (téléphone seulement) */
+.barre-haut {
+  position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: var(--sp-3);
+  height: calc(var(--barre-haut) + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 108px 0 var(--sp-4);
+  background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line);
+}
+.barre-haut-logo { height: 36px; width: auto; flex: none; box-sizing: content-box; padding: 3px 6px; border-radius: 8px; background: #fff; border: 1px solid var(--line); }
+.barre-haut-texte { display: grid; line-height: 1.15; min-width: 0; }
+.barre-haut-texte small { color: var(--ink-3); font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .nav {
   position: fixed; z-index: 50; left: 0; right: 0; bottom: 0; height: calc(var(--tabbar) + env(safe-area-inset-bottom));
@@ -18,18 +32,40 @@
 .nav-lien:active { transform: scale(0.96); }
 .nav-lien[aria-current="page"] { color: var(--accent); }
 
-@media (min-width: 900px) {
+/* menu à gauche (tablette, ordinateur) */
+@media (min-width: 768px) {
   .shell { grid-template-columns: var(--rail) 1fr; padding-bottom: 0; }
-  .nav { position: sticky; top: 0; height: 100dvh; padding: var(--sp-5) var(--sp-3); border-top: 0; border-right: 1px solid var(--line); background: var(--surface); backdrop-filter: none; display: flex; flex-direction: column; gap: var(--sp-5); }
-  .nav ul { display: grid; grid-template-columns: 1fr; height: auto; gap: 2px; }
+  .barre-haut { display: none; }
+  .nav { position: sticky; top: 0; height: 100dvh; padding: var(--sp-5) var(--sp-3) 140px; border-top: 0; border-right: 1px solid var(--line); background: var(--surface); backdrop-filter: none; display: flex; flex-direction: column; gap: var(--sp-5); overflow-y: auto; }
+  .nav ul { display: grid; grid-template-columns: 1fr; height: auto; gap: 4px; }
   .nav .marque { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 0 var(--sp-2); }
   .marque-logo { width: 150px; height: auto; flex: none; box-sizing: content-box; padding: 6px 8px; border-radius: 10px; background: #fff; border: 1px solid var(--line); }
   .marque-texte { display: grid; line-height: 1.2; }
   .marque-texte small { color: var(--ink-3); font-size: 0.72rem; }
-  .nav-lien { flex-direction: row; justify-content: flex-start; gap: 12px; height: 42px; padding: 0 var(--sp-3); border-radius: var(--r-s); font-size: 0.92rem; color: var(--ink-2); transition: background-color var(--t-ui) ease-out, color var(--t-ui) ease-out; }
+  .nav-lien { transition: background-color var(--t-ui) ease-out, color var(--t-ui) ease-out; }
   .nav-lien:hover { background: var(--surface-2); color: var(--ink); }
   .nav-lien[aria-current="page"] { background: var(--peda-soft); color: var(--peda-ink); }
   .contenu { padding: var(--sp-6) var(--sp-6) var(--sp-7); }
+}
+
+/* menu étroit : tablette en portrait */
+@media (min-width: 768px) and (max-width: 899px) {
+  .nav { align-items: center; padding-inline: var(--sp-2); }
+  .nav .marque { align-items: center; padding: 0; }
+  .marque-logo { width: 52px; padding: 4px 5px; border-radius: 8px; }
+  .marque-texte { display: none; }
+  .nav ul { width: 100%; }
+  .nav-lien { flex-direction: column; justify-content: center; gap: 3px; height: 62px; padding: 0 2px; border-radius: var(--r-m); font-size: 0.68rem; }
+  .contenu { padding: var(--sp-5) var(--sp-5) var(--sp-7); }
+}
+
+/* menu large : tablette en paysage et ordinateur */
+@media (min-width: 900px) {
+  .nav-lien { flex-direction: row; justify-content: flex-start; gap: 12px; height: 44px; padding: 0 var(--sp-3); border-radius: var(--r-s); font-size: 0.92rem; color: var(--ink-2); }
+  .nav-lien[aria-current="page"] { color: var(--peda-ink); }
+}
+@media (min-width: 900px) and (pointer: coarse) {
+  .nav-lien { height: 48px; }
 }
 
 /* ---------- pages ---------- */
@@ -38,6 +74,12 @@
 .page-sous-titre { color: var(--ink-2); max-width: 62ch; }
 .chargement, .erreur { padding: var(--sp-4); }
 .erreur { color: var(--danger); }
+
+/* page d'accueil : bonjour à gauche, logo à droite */
+.accueil-entete { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); }
+.accueil-entete > div { display: grid; gap: 4px; min-width: 0; }
+.accueil-logo { width: 132px; height: auto; flex: none; box-sizing: content-box; padding: 6px 8px; border-radius: var(--r-m); background: #fff; border: 1px solid var(--line); }
+@media (max-width: 767px) { .accueil-logo { display: none; } } /* sur téléphone, le logo est déjà dans la barre du haut */
 
 .vide { background: var(--surface); border: 1px dashed var(--line-strong); border-radius: var(--r-l); padding: var(--sp-6); display: grid; gap: var(--sp-3); justify-items: start; max-width: 640px; }
 .vide p { color: var(--ink-2); max-width: 56ch; }
@@ -53,13 +95,29 @@
 .liste-titre { font-weight: 600; }
 .liste-detail { color: var(--ink-2); font-size: 0.88rem; }
 
-/* Bouton de thème (Automatique / Clair / Sombre) : en haut à droite sur téléphone, en bas du menu sur grand écran */
-.theme-bouton { position: fixed; top: 8px; right: 8px; z-index: 51; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; min-width: 36px; justify-content: center; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 999px; background: color-mix(in srgb, var(--surface) 90%, transparent); color: var(--ink-2); font: inherit; font-size: .8125rem; cursor: pointer; }
-.theme-bouton:hover { color: var(--ink); }
-.theme-bouton:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* ---------- outils : thème et verrouillage ----------
+   Téléphone : dans la barre du haut, à droite. Menu étroit : en bas du menu, icônes seules.
+   Menu large : en bas du menu, avec le texte. */
+.outils { position: fixed; z-index: 51; top: calc(6px + env(safe-area-inset-top)); right: 8px; display: flex; gap: 8px; }
+.theme-bouton, .verrouiller-bouton {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; min-width: 44px; padding: 0 12px;
+  border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); color: var(--ink-2);
+  font: inherit; font-size: .8125rem; cursor: pointer;
+  transition: background-color var(--t-ui) ease-out, color var(--t-ui) ease-out, transform var(--t-press) var(--ease-out);
+}
+.theme-bouton:active, .verrouiller-bouton:active { transform: scale(0.97); }
+.theme-bouton:hover, .verrouiller-bouton:hover { color: var(--ink); background: var(--surface-2); }
+.theme-bouton:focus-visible, .verrouiller-bouton:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .theme-texte { display: none; }
-@media print { .theme-bouton { display: none; } }
+@media print { .outils, .barre-haut { display: none; } }
+@media (min-width: 768px) {
+  .outils { top: auto; right: auto; left: 22px; bottom: 16px; flex-direction: column-reverse; }
+}
 @media (min-width: 900px) {
-  .theme-bouton { top: auto; right: auto; bottom: 16px; left: 16px; background: var(--surface); }
+  .outils { left: 16px; }
+  .theme-bouton, .verrouiller-bouton { justify-content: flex-start; min-height: 40px; min-width: 0; }
   .theme-texte { display: inline; }
+}
+@media (min-width: 900px) and (pointer: coarse) {
+  .theme-bouton, .verrouiller-bouton { min-height: 44px; }
 }

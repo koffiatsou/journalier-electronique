@@ -203,6 +203,7 @@ ok((await lireBase(p2, 'seances')).some((s) => s.remarque === 'Remarque d’avan
 ok(!JSON.stringify(await contenuBrut(p2, BASE_ESSAI)).includes('Ancien'), 'et plus rien n’est lisible en clair');
 await recharger(p2);
 await p2.getByRole('link', { name: 'Élèves' }).click();
+await p2.locator('.carte-eleve').filter({ hasText: 'Ancien' }).first().waitFor({ timeout: 10_000 }).catch(() => undefined);
 ok(await p2.locator('.carte-eleve').filter({ hasText: 'Ancien' }).count() === 1, 'l’élève migré apparaît dans la liste');
 
 /* ───────── 8. Téléphone et thème sombre ───────── */

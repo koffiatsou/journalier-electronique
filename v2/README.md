@@ -26,6 +26,7 @@ LANG=C.UTF-8 node tools/navigateur/pia-4b.mjs       # idem pour le PV 2, l'expor
 LANG=C.UTF-8 node tools/navigateur/agenda-5.mjs     # idem pour l'agenda : mois, jours fériés, vacances scolaires, horaires réglables
 LANG=C.UTF-8 node tools/navigateur/agenda-6.mjs     # idem : glisser pour créer, semaine type, impression
 LANG=C.UTF-8 node tools/navigateur/theme.mjs     # bouton de thème Automatique / Clair / Sombre
+LANG=C.UTF-8 node tools/navigateur/captures.mjs    # captures de tous les écrans (4 tailles × clair/sombre) pour relire l'habillage (lot F)
 LANG=C.UTF-8 node tools/navigateur/coffre.mjs    # coffre chiffré : verrou, mode essai, rien en clair, clé perdue, migration, copie avec mot de passe
 # Depuis le lot 7, ces parcours passent par le mode essai (aide commune : tools/navigateur/_coffre.mjs).
 LANG=C.UTF-8 node --import tsx tools/navigateur/synchro.mjs   # synchronisation : démonstration, conflits, Outlook, copie de secours, connexion Microsoft (faux Microsoft)
@@ -54,6 +55,7 @@ Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des l
 | Reprise depuis OneDrive (lecture des dossiers de la V75, en lecture seule) et « Repartir de OneDrive » (nouvel ordinateur) | disponible (lot 9b) ; **à essayer avec un vrai compte par l'utilisateur** |
 | Agenda : les séances réalisées (même non planifiées) apparaissent dans l'agenda | disponible (lot 9c) |
 | Agenda : horaires par école (plusieurs écoles, heures réelles sur les cases, avertissement de chevauchement ou de trajet, heures réelles dans Outlook) | disponible (lot 10) ; **à essayer avec les vraies écoles par l'utilisateur** |
+| Finition visuelle (palette « Encre et papier », menu adapté à la tablette en portrait, logo, icônes) | **lot F en cours** : étape 1 faite (accueil, menu, connexion) ; reste la relecture des autres écrans |
 
 ## Outils de build
 `esbuild` compile le TypeScript et React (script `scripts/build.mjs`). Pas de Vite : l'environnement de développement initial n'avait pas accès au registre npm, et `esbuild` suffit à ce stade.

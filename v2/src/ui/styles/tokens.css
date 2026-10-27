@@ -1,39 +1,42 @@
 /* Système de design — jetons (couleurs, espacements, mouvement).
+   Palette « Encre et papier » (lot F) : fond crème comme le Journalier papier, bleu encre un peu profond.
    Les couleurs portent du sens : bleu = partie pédagogique, vert-bleu = partie
-   orthopédagogique, ambre = « à préciser », rouge = absence ou erreur. */
+   orthopédagogique, ambre = « à préciser », rouge = absence ou erreur.
+   Contrastes calculés : texte ≥ 4,5:1 sur tous les fonds (clair et sombre). */
 :root {
   --font: ui-sans-serif, "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  --ground: #eef1f6;
-  --surface: #ffffff;
-  --surface-2: #f6f8fb;
-  --line: #dde3ec;
-  --line-strong: #c4cddb;
-  --ink: #16233f;
-  --ink-2: #4a5873;
-  --ink-3: #75839d;
+  --ground: #f3f0ea;
+  --surface: #fffefb;
+  --surface-2: #f8f5ef;
+  --line: #e3ddd2;
+  --line-strong: #cfc7b8;
+  --ink: #1c2740;
+  --ink-2: #4b5670;
+  --ink-3: #5d6880;
 
-  --peda: #2b5fd1;
-  --peda-soft: #e8effc;
-  --peda-ink: #1c3f94;
-  --ortho: #0b8a7f;
-  --ortho-soft: #e2f4f1;
-  --ortho-ink: #086058;
-  --attention: #b86e00;
-  --attention-soft: #fff1d6;
-  --danger: #c93a34;
-  --danger-soft: #fdeceb;
-  --ok: #17803d;
-  --ok-soft: #e2f5e8;
+  --peda: #2f55b0;
+  --peda-soft: #e6ecf8;
+  --peda-ink: #1e3b82;
+  --ortho: #0f7b70;
+  --ortho-soft: #e0f1ec;
+  --ortho-ink: #0a5951;
+  --attention: #9a580a;
+  --attention-soft: #fbeccd;
+  --danger: #b93a30;
+  --danger-soft: #fbe9e5;
+  --ok: #1f7a41;
+  --ok-soft: #e3f2e6;
 
   --accent: var(--peda);
-  --focus: #2b5fd1;
+  --on-accent: #ffffff; /* texte posé sur --accent (bouton principal, numéro du jour) */
+  --focus: #2f55b0;
 
   --r-s: 8px;
   --r-m: 12px;
   --r-l: 18px;
-  --shadow-1: 0 1px 2px rgb(22 35 63 / 6%), 0 1px 1px rgb(22 35 63 / 4%);
-  --shadow-2: 0 8px 28px rgb(22 35 63 / 12%), 0 2px 6px rgb(22 35 63 / 6%);
+  --shadow-1: 0 1px 2px rgb(28 39 64 / 6%), 0 1px 1px rgb(28 39 64 / 4%);
+  --shadow-2: 0 8px 28px rgb(28 39 64 / 12%), 0 2px 6px rgb(28 39 64 / 6%);
 
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
 
@@ -45,58 +48,69 @@
 
   --rail: 232px;
   --tabbar: 64px;
+  --barre-haut: 56px;
+}
+
+/* Tablette en portrait (768 à 899 px) : menu étroit à gauche (icônes + mots), plus de barre du bas ni de barre du haut. */
+@media (min-width: 768px) and (max-width: 899px) {
+  :root { --rail: 88px; }
+}
+@media (min-width: 768px) {
+  :root { --tabbar: 0px; --barre-haut: 0px; }
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='clair']) {
-    --ground: #0d1424;
-    --surface: #151e33;
-    --surface-2: #1a2540;
-    --line: #26324f;
-    --line-strong: #364567;
-    --ink: #e9eefb;
-    --ink-2: #aab6d0;
-    --ink-3: #7f8cab;
-    --peda: #6c97ff;
-    --peda-soft: #1c2c52;
-    --peda-ink: #b7ccff;
-    --ortho: #3cc4b6;
-    --ortho-soft: #123a3a;
-    --ortho-ink: #9be6dd;
-    --attention: #f1b24a;
-    --attention-soft: #3a2c10;
-    --danger: #ff7a73;
-    --danger-soft: #3d1a1a;
-    --ok: #55d586;
-    --ok-soft: #123423;
-    --focus: #8fb0ff;
+    --ground: #12151e;
+    --surface: #1b1f2c;
+    --surface-2: #212636;
+    --line: #2d3347;
+    --line-strong: #3d445e;
+    --ink: #ece9e2;
+    --ink-2: #b9bdcb;
+    --ink-3: #98a0b6;
+    --peda: #7aa2ff;
+    --peda-soft: #222f55;
+    --peda-ink: #c2d3ff;
+    --ortho: #4cc9ba;
+    --ortho-soft: #153a39;
+    --ortho-ink: #a4ebe2;
+    --attention: #f0b54e;
+    --attention-soft: #3a2d12;
+    --danger: #ff8077;
+    --danger-soft: #3d1d1c;
+    --ok: #5bd68b;
+    --ok-soft: #14352a;
+    --on-accent: #10172b;
+    --focus: #9db9ff;
     --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
     --shadow-2: 0 10px 30px rgb(0 0 0 / 50%);
   }
 }
 
 :root[data-theme='sombre'] {
-    --ground: #0d1424;
-    --surface: #151e33;
-    --surface-2: #1a2540;
-    --line: #26324f;
-    --line-strong: #364567;
-    --ink: #e9eefb;
-    --ink-2: #aab6d0;
-    --ink-3: #7f8cab;
-    --peda: #6c97ff;
-    --peda-soft: #1c2c52;
-    --peda-ink: #b7ccff;
-    --ortho: #3cc4b6;
-    --ortho-soft: #123a3a;
-    --ortho-ink: #9be6dd;
-    --attention: #f1b24a;
-    --attention-soft: #3a2c10;
-    --danger: #ff7a73;
-    --danger-soft: #3d1a1a;
-    --ok: #55d586;
-    --ok-soft: #123423;
-    --focus: #8fb0ff;
+    --ground: #12151e;
+    --surface: #1b1f2c;
+    --surface-2: #212636;
+    --line: #2d3347;
+    --line-strong: #3d445e;
+    --ink: #ece9e2;
+    --ink-2: #b9bdcb;
+    --ink-3: #98a0b6;
+    --peda: #7aa2ff;
+    --peda-soft: #222f55;
+    --peda-ink: #c2d3ff;
+    --ortho: #4cc9ba;
+    --ortho-soft: #153a39;
+    --ortho-ink: #a4ebe2;
+    --attention: #f0b54e;
+    --attention-soft: #3a2d12;
+    --danger: #ff8077;
+    --danger-soft: #3d1d1c;
+    --ok: #5bd68b;
+    --ok-soft: #14352a;
+    --on-accent: #10172b;
+    --focus: #9db9ff;
     --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
     --shadow-2: 0 10px 30px rgb(0 0 0 / 50%);
 }

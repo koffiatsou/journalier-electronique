@@ -17,7 +17,7 @@
 .etape-titre { font-size: inherit; }
 .etape-bouton { width: 100%; display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-4) var(--sp-5); border: 0; background: none; text-align: left; border-radius: var(--r-l); min-height: 60px; }
 .etape-num { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 50%; font-size: 0.85rem; font-weight: 700; background: var(--zone-soft); color: var(--zone-ink); transition: background-color var(--t-ui) ease-out, color var(--t-ui) ease-out; }
-.etape[data-ouvert="true"] .etape-num { background: var(--zone); color: #fff; }
+.etape[data-ouvert="true"] .etape-num { background: var(--zone); color: var(--on-accent); }
 .etape-nom { flex: 1; font-weight: 650; font-size: 1.02rem; }
 .etape-chevron { flex: none; color: var(--ink-3); transition: transform var(--t-panel) var(--ease-out); }
 .etape[data-ouvert="true"] .etape-chevron { transform: rotate(180deg); }
@@ -78,7 +78,7 @@
 .barre-erreur { color: var(--danger); font-weight: 600; }
 .progres { height: 4px; border-radius: 999px; background: var(--line); overflow: hidden; }
 .progres span { display: block; height: 100%; background: var(--ortho); border-radius: inherit; transition: width var(--t-panel) var(--ease-out); }
-@media (min-width: 900px) { .barre-action { bottom: 20px; left: calc(50% + var(--rail) / 2); } }
+@media (min-width: 768px) { .barre-action { bottom: 20px; left: calc(50% + var(--rail) / 2); width: min(calc(100vw - var(--rail) - 48px), 760px); } }
 
 /* rappel de la dernière séance */
 .rappel { margin-top: var(--sp-3); padding: var(--sp-3); border-top: 1px solid var(--line); display: grid; gap: 4px; font-size: 0.9rem; }
@@ -96,7 +96,7 @@
   }
   .apercu[data-tiroir="true"] { visibility: visible; opacity: 1; transform: none; transition-delay: 0s; }
 }
-@media (min-width: 900px) and (max-width: 1099px) { .apercu { bottom: 104px; left: calc(var(--rail) + 24px); right: 24px; } }
+@media (min-width: 768px) and (max-width: 1099px) { .apercu { bottom: 104px; left: calc(var(--rail) + 24px); right: 24px; } }
 @media (min-width: 1100px) { .apercu-fermer, .btn-feuille { display: none; } }
 
 /* ───────── Élèves ───────── */

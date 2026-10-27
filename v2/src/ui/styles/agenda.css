@@ -44,7 +44,7 @@
 .grille-entete > div { padding: 8px 6px; text-align: center; font-size: .875rem; color: var(--ink-2); border-left: 1px solid var(--line); }
 .grille-entete > div:first-child { border-left: 0; }
 .grille-entete strong { display: block; color: var(--ink); font-size: 1rem; }
-.grille-entete .aujourdhui strong { color: #fff; background: var(--peda); border-radius: 999px; width: 2rem; height: 2rem; line-height: 2rem; margin: 0 auto; }
+.grille-entete .aujourdhui strong { color: var(--on-accent); background: var(--peda); border-radius: 999px; width: 2rem; height: 2rem; line-height: 2rem; margin: 0 auto; }
 .axe { position: relative; }
 .axe span { position: absolute; right: 6px; font-size: .75rem; color: var(--ink-3); transform: translateY(-50%); background: var(--surface); padding: 0 2px; }
 .axe b { position: absolute; left: 6px; font-weight: 600; font-size: .75rem; color: var(--ink-2); }
