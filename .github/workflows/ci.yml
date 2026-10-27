@@ -26,14 +26,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
+      # Même compilation que la mise en ligne (lot S) : la V75 vit dans /v75/, la V2 est à l'adresse principale.
+      - name: Build (V75, pour /v75/)
+        run: npm run build -- --base=/journalier-electronique/v75/
 
       - name: V2 — typecheck, tests et build
         working-directory: v2
         run: |
           npm install --no-audit --no-fund
           npm run check
+
+      # Vérifie ici, avant toute fusion, ce qui serait publié : chaque page appelle des fichiers qui existent, de sa propre version.
+      - name: Assembler le site (V2 à la racine, V75 dans /v75/) et vérifier toutes les adresses
+        working-directory: v2
+        run: npm run site
 
       # Parcours dans un vrai navigateur (lot Q) : l'accessibilité, l'agenda, la séance, le PIA, la synchronisation…
       # Playwright est un outil de vérification : installé ici seulement, sans toucher à v2/package.json ni aux dépendances de l'application.

@@ -32,8 +32,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Vite
-        run: npm run build
+      # Lot S : la V2 est la version définitive, à l'adresse principale ; la V75 reste en secours dans /v75/.
+      # La V75 doit donc être compilée pour vivre dans /v75/ (Vite écrit cette base dans ses adresses).
+      - name: Build Vite (V75, pour /v75/)
+        run: npm run build -- --base=/journalier-electronique/v75/
 
       - name: Vérifier et compiler la V2 (React + TypeScript)
         working-directory: v2
@@ -41,8 +43,9 @@ jobs:
           npm install --no-audit --no-fund
           npm run check
 
-      - name: Publier la V2 dans /v2/
-        run: cp -r v2/dist dist/v2
+      - name: Assembler le site (V2 à la racine, V75 dans /v75/) et vérifier toutes les adresses
+        working-directory: v2
+        run: npm run site
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b
@@ -50,7 +53,7 @@ jobs:
       - name: Upload build
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa
         with:
-          path: ./dist
+          path: ./site
 
   deploy:
     environment:

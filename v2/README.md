@@ -1,6 +1,6 @@
 # Journalier V2 — React + TypeScript
 
-Réécriture du Journalier électronique, construite **à côté** de la V75 (qui reste en ligne tant que la V2 ne fait pas tout aussi bien).
+Réécriture du Journalier électronique. **Depuis le lot S, la V2 est la version définitive : elle occupe l'adresse principale du site ; la V75 reste en secours dans `/v75/`** (voir `docs/plan-de-bascule.md`). Le site publié est assemblé par `npm run site` : V2 à la racine, V75 compilée avec `--base=/journalier-electronique/v75/`.
 
 ## Pourquoi une réécriture
 La V75 est née par ajouts successifs (≈ 33 000 lignes de JavaScript sans structure imposée). La V2 repart d'une architecture claire, vérifiée par le compilateur et par des tests, avec un design soigné et fluide.
@@ -18,6 +18,7 @@ cd v2
 npm install
 npm run dev        # compile puis sert http://localhost:5173
 npm run check      # typecheck + tests + build (utilisé par la CI)
+npm run site       # lot S : assemble ../site (V2 à la racine + V75 de ../dist dans v75/) et vérifie toutes les adresses ; la V75 doit avoir été compilée à la racine du dépôt avec : npm run build -- --base=/journalier-electronique/v75/
 npm run navigateur # rejoue TOUS les parcours dans un vrai navigateur (Playwright à installer : voir ci-dessous) ; utilisé par la CI
 LANG=C.UTF-8 node tools/navigateur/accessibilite.mjs # audit d'accessibilité de tous les écrans (clavier, contrastes, mouvement réduit…) (lot Q)
 LANG=C.UTF-8 node tools/navigateur/journalier.mjs   # parcours dans un vrai navigateur (Playwright, serveur sur le port 5199)
@@ -31,6 +32,7 @@ LANG=C.UTF-8 node tools/navigateur/theme.mjs     # bouton de thème Automatique 
 LANG=C.UTF-8 node tools/navigateur/accueil.mjs     # accueil : ma journée, séances à encoder, mémos (conservés après rechargement), état de la synchro, téléphone (lot A)
 LANG=C.UTF-8 node tools/navigateur/accueil-suite.mjs # de bout en bout : objectif, observation, aide et « Suite » saisis dans l'écran Séance sont repris sur l'accueil (lot A)
 LANG=C.UTF-8 node tools/navigateur/captures.mjs    # captures de tous les écrans (4 tailles × clair/sombre) pour relire l'habillage (lot F)
+LANG=C.UTF-8 node tools/navigateur/site.mjs      # la V2 servie sous /journalier-electronique/ comme sur GitHub Pages : connexion, adresse de retour Microsoft, modèles Word (lot S)
 LANG=C.UTF-8 node tools/navigateur/coffre.mjs    # coffre chiffré : verrou, mode essai, rien en clair, clé perdue, migration, copie avec mot de passe
 # Depuis le lot 7, ces parcours passent par le mode essai (aide commune : tools/navigateur/_coffre.mjs).
 LANG=C.UTF-8 node --import tsx tools/navigateur/synchro.mjs   # synchronisation : démonstration, conflits, Outlook, copie de secours, connexion Microsoft (faux Microsoft)
@@ -63,6 +65,7 @@ Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des l
 | Agenda : horaires par école (plusieurs écoles, heures réelles sur les cases, avertissement de chevauchement ou de trajet, heures réelles dans Outlook) | disponible (lot 10) ; **à essayer avec les vraies écoles par l'utilisateur** |
 | Finition visuelle (palette « Encre et papier », menu adapté à la tablette en portrait, logo, icônes) | **lot F terminé** (palette, cadre, logo, icônes ; tous les écrans relus) ; reste le retour de l'utilisateur sur sa tablette |
 | Finitions techniques : accessibilité (lien « Aller au contenu », titre et focus à chaque écran, cibles, mouvement réduit), vérification des données par schémas (zod), parcours navigateur dans la CI | **lot Q terminé** ; reste : première exécution du contrôle GitHub, essai au lecteur d'écran |
+| Mise en service : la V2 à l'adresse principale, la V75 en secours dans `/v75/`, assemblage du site vérifié (chaque page appelle des fichiers existants de sa propre version), adresse de retour Microsoft de la V2 = celle de la V75 | **lot S terminé** ; reste : déclarer l'adresse `/v75/` chez Entra, regarder le contrôle GitHub, essais réels, puis fusionner la demande #37 (= la bascule) |
 
 ## Outils de build
 `esbuild` compile le TypeScript et React (script `scripts/build.mjs`). Pas de Vite : l'environnement de développement initial n'avait pas accès au registre npm, et `esbuild` suffit à ce stade.
