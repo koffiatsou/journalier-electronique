@@ -11,6 +11,8 @@ import type { ErreurHoraire } from '../domain/agenda/horaires.ts';
 import type { Periode } from '../domain/agenda/types.ts';
 import { effetSuppression, normaliserEleve } from '../domain/eleves/index.ts';
 import type { EffetSuppression } from '../domain/eleves/index.ts';
+import { REGLAGE_MEMOS, normaliserMemos } from '../domain/accueil/index.ts';
+import type { Memo } from '../domain/accueil/index.ts';
 import { normaliserPia } from '../domain/pia/index.ts';
 import type { Pia } from '../domain/pia/index.ts';
 import { estDemo } from '../domain/synchro/cles.ts';
@@ -45,6 +47,8 @@ export interface Etat {
   trajet: number;
   /** Modèle de semaine habituelle de l'agenda, s'il en existe un. */
   semaineType: SemaineType | null;
+  /** Mémos de l'accueil. */
+  memos: Memo[];
   statutPia: StatutPia;
   /** Éléments enregistrés sur cet appareil mais illisibles (abîmés) : mis de côté, jamais supprimés tout seuls. */
   illisibles: number;
@@ -53,7 +57,7 @@ export interface Etat {
 }
 
 const initial: Etat = {
-  pret: false, erreur: null, eleves: [], seances: [], activites: [], pias: [], horaires: horairesParDefaut(), ecoles: ecolesParDefaut().ecoles, trajet: ecolesParDefaut().trajet, semaineType: null, statutPia: { etat: 'repos', le: '', message: '' }, illisibles: 0, preparation: null
+  pret: false, erreur: null, eleves: [], seances: [], activites: [], pias: [], horaires: horairesParDefaut(), ecoles: ecolesParDefaut().ecoles, trajet: ecolesParDefaut().trajet, semaineType: null, memos: [], statutPia: { etat: 'repos', le: '', message: '' }, illisibles: 0, preparation: null
 };
 
 /** Ancien nom du réglage « horaires des périodes » (une seule école) : encore relu tant que `agenda-ecoles` n'existe pas. */
@@ -106,6 +110,7 @@ export function creerMagasin(depot: Depot) {
           pias: pias.map(normaliserPia).filter((p): p is Pia => p !== null),
           ...ecolesDepuis(reglages),
           semaineType: normaliserSemaineType(reglages.find((r) => r.id === REGLAGE_SEMAINE_TYPE)?.valeur),
+          memos: normaliserMemos(reglages.find((r) => r.id === REGLAGE_MEMOS)?.valeur),
           illisibles: depot.illisibles().length
         });
       } catch (e) {
@@ -177,6 +182,7 @@ export function creerMagasin(depot: Depot) {
       const pias: Pia[] = [];
       let ecolesRecues = false;
       let semaineType = etat.semaineType;
+      let memos = etat.memos;
       for (const o of ecrire) {
         if (o.type === 'eleve') { const e = normaliserEleve(o.donnees as Eleve); await depot.enregistrerEleve(e); eleves.push(e); }
         else if (o.type === 'seance') { const x = o.donnees as Seance; await depot.enregistrerSeance(x); seances.push(x); }
@@ -187,6 +193,7 @@ export function creerMagasin(depot: Depot) {
           await depot.enregistrerReglage({ id: r.id, valeur: r.valeur });
           if (r.id === REGLAGE_HORAIRES || r.id === REGLAGE_ECOLES) ecolesRecues = true;
           else if (r.id === REGLAGE_SEMAINE_TYPE) semaineType = normaliserSemaineType(r.valeur);
+          else if (r.id === REGLAGE_MEMOS) memos = normaliserMemos(r.valeur);
         }
       }
       const ids = (l: readonly { id: string }[]) => new Set(l.map((x) => x.id));
@@ -197,7 +204,7 @@ export function creerMagasin(depot: Depot) {
         seances: [...etat.seances.filter((x) => !is.has(x.id)), ...seances],
         activites: [...etat.activites.filter((x) => !ia.has(x.id)), ...activites],
         pias: [...etat.pias.filter((x) => !ip.has(x.id)), ...pias],
-        ...ecolesLues, semaineType
+        ...ecolesLues, semaineType, memos
       });
     },
 
@@ -279,6 +286,20 @@ export function creerMagasin(depot: Depot) {
     async enregistrerSemaineType(modele: SemaineType | null) {
       await depot.enregistrerReglage({ id: REGLAGE_SEMAINE_TYPE, valeur: modele });
       maj({ semaineType: modele });
+    },
+
+    /** Enregistre la liste des mémos de l'accueil (remplace la précédente). */
+    async enregistrerMemos(memos: readonly Memo[]) {
+      const avant = etat.memos;
+      const liste = normaliserMemos(memos);
+      // L'écran voit le changement tout de suite (deux ajouts rapprochés ne s'écrasent pas) ; si l'écriture échoue, on revient en arrière.
+      maj({ memos: liste });
+      try {
+        await depot.enregistrerReglage({ id: REGLAGE_MEMOS, valeur: liste });
+      } catch (e) {
+        maj({ memos: avant });
+        throw e;
+      }
     },
 
     async supprimerSeance(id: string) {

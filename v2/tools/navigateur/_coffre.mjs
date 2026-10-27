@@ -106,7 +106,7 @@ export async function ajouterElevesFictifs(page) {
   }
   for (const table of ['activites', 'seances', 'pia']) await viderTable(page, table);
   await page.reload();
-  await page.getByText('Dernières séances').waitFor();
+  await page.getByRole('heading', { name: /Ma journée|Prochains rendez-vous/ }).waitFor();
 }
 
 /** Noms des bases du Journalier présentes dans ce navigateur (une par propriétaire, plus l'éventuelle ancienne base en clair). */

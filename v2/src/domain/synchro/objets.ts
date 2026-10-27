@@ -49,7 +49,7 @@ export function etiquette(type: TypeObjet, donnees: unknown, eleves: readonly El
       return `Agenda : ${texte(o.titre) || TYPES_LIBELLES[t] || 'activité'} (${dateFR(texte(o.date))})`;
     }
     case 'pia': return `PIA de ${nomEleve(texte(o.eleveId), eleves)} (${texte(o.annee)})`;
-    case 'reglage': return texte(o.id) === 'agenda-semaine-type' ? 'Semaine type de l’agenda' : 'Horaires de l’agenda';
+    case 'reglage': return texte(o.id) === 'agenda-semaine-type' ? 'Semaine type de l’agenda' : texte(o.id) === 'memos' ? 'Mes mémos' : 'Horaires de l’agenda';
   }
 }
 

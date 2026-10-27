@@ -49,7 +49,7 @@ const SEANCES = [
 
 await aller(page, URL_APP);
 await ajouterElevesFictifs(page);
-await page.getByText('Dernières séances').waitFor();
+await page.getByRole('heading', { name: /Ma journée|Prochains rendez-vous/ }).waitFor();
 for (const s of SEANCES) await ecrireChiffre(page, 'seances', s);
 await recharger(page);
 console.log('✓ six séances réalistes injectées dans la base');

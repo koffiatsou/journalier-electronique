@@ -11,7 +11,7 @@ import { ReprisePage } from '../features/reprise/ReprisePage.tsx';
 import { SynchroPage } from '../features/synchro/SynchroPage.tsx';
 import type { Synchro } from '../synchro/service.ts';
 import { SeancePage } from '../features/seance/SeancePage.tsx';
-import { Accueil } from './PagesSimples.tsx';
+import { Accueil } from '../features/accueil/AccueilPage.tsx';
 import { Shell } from './Shell.tsx';
 import { useRoute } from './useRoute.ts';
 
@@ -51,7 +51,7 @@ export function App({ magasin, synchro, adresseRetour, essai, notices, onVerroui
         ) : null}
         {!pret ? <p className="chargement" role="status">Chargement…</p> : null}
         {pret && erreur ? <p className="erreur" role="alert">Les données locales n’ont pas pu être lues : {erreur}</p> : null}
-        {pret && page === 'accueil' ? <Accueil magasin={magasin} onAller={aller} /> : null}
+        {pret && page === 'accueil' ? <Accueil magasin={magasin} synchro={synchro} onAller={aller} /> : null}
         {pret && page === 'seance' ? <SeancePage magasin={magasin} onAller={aller} /> : null}
         {pret && page === 'agenda' ? <AgendaPage magasin={magasin} /> : null}
         {pret && page === 'journalier' ? <JournalierPage key={parametres.eleve ?? ''} magasin={magasin} onAller={aller} eleveInitial={parametres.eleve ?? null} /> : null}

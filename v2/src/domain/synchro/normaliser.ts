@@ -3,6 +3,7 @@ import { MAX_ECOLES, TRAJET_MAXI, normaliserEcoles, verifierEcoles } from '../ag
 import { normaliserSemaineType } from '../agenda/semainetype.ts';
 import { normaliserEleve } from '../eleves/eleves.ts';
 import { normaliserPia } from '../pia/pia.ts';
+import { normaliserMemos } from '../accueil/memos.ts';
 import { REGLAGES_SYNCHRONISES } from './cles.ts';
 import type { TypeObjet } from './cles.ts';
 
@@ -38,6 +39,7 @@ export function normaliserObjet(type: TypeObjet, donnees: unknown): unknown | nu
         return horaires ? { id: o.id, valeur: horaires } : null;
       }
       if (o.id === 'agenda-ecoles') return ecolesValides(o.valeur) ? { id: o.id, valeur: normaliserEcoles(o.valeur) } : null;
+      if (o.id === 'memos') return Array.isArray(o.valeur) ? { id: o.id, valeur: normaliserMemos(o.valeur) } : null;
       if (o.valeur === null) return { id: o.id, valeur: null };
       const semaine = normaliserSemaineType(o.valeur);
       return semaine ? { id: o.id, valeur: semaine } : null;
