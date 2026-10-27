@@ -27,7 +27,7 @@ LANG=C.UTF-8 node tools/navigateur/agenda-5.mjs     # idem pour l'agenda : mois,
 LANG=C.UTF-8 node tools/navigateur/agenda-6.mjs     # idem : glisser pour créer, semaine type, impression
 LANG=C.UTF-8 node tools/navigateur/theme.mjs     # bouton de thème Automatique / Clair / Sombre
 LANG=C.UTF-8 node tools/navigateur/accueil.mjs     # accueil : ma journée, séances à encoder, mémos (conservés après rechargement), état de la synchro, téléphone (lot A)
-LANG=C.UTF-8 node tools/navigateur/accueil-suite.mjs # de bout en bout : la « Suite » saisie dans l'écran Séance est reprise sur l'accueil (lot A)
+LANG=C.UTF-8 node tools/navigateur/accueil-suite.mjs # de bout en bout : objectif, observation, aide et « Suite » saisis dans l'écran Séance sont repris sur l'accueil (lot A)
 LANG=C.UTF-8 node tools/navigateur/captures.mjs    # captures de tous les écrans (4 tailles × clair/sombre) pour relire l'habillage (lot F)
 LANG=C.UTF-8 node tools/navigateur/coffre.mjs    # coffre chiffré : verrou, mode essai, rien en clair, clé perdue, migration, copie avec mot de passe
 # Depuis le lot 7, ces parcours passent par le mode essai (aide commune : tools/navigateur/_coffre.mjs).

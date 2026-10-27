@@ -32,6 +32,8 @@
 
 /* ce qui avait été noté la dernière fois */
 .creneau-suite { margin-top: var(--sp-3); padding: var(--sp-3) var(--sp-4); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-m); display: grid; gap: 2px; font-size: 0.9rem; color: var(--ink); }
+.creneau-suite-seule { margin-top: var(--sp-2); color: var(--ink-3); font-size: 0.85rem; }
+.creneau-suite-etiquette { color: var(--ink-3); font-size: 0.8rem; font-weight: 600; margin-right: 4px; }
 .creneau-suite-titre { color: var(--ink-3); font-size: 0.78rem; font-weight: 600; }
 
 /* mémos qui réapparaissent sur le rendez-vous */

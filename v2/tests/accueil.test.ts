@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { creerDepotMemoire } from '../src/data/memoire.ts';
-import { aEncoder, basculerMemo, creerMemo, deplacements, journeeDu, memosDuCreneau, normaliserMemos, retirerMemo, suiteDerniereSeance, viderFaits } from '../src/domain/accueil/index.ts';
+import { aEncoder, basculerMemo, creerMemo, deplacements, journeeDu, lignesSuite, memosDuCreneau, normaliserMemos, retirerMemo, suiteDerniereSeance, viderFaits } from '../src/domain/accueil/index.ts';
 import { creer, PERIODES_AGENDA } from '../src/domain/agenda/index.ts';
 import type { Ecole } from '../src/domain/agenda/index.ts';
 import { normaliserObjet } from '../src/domain/synchro/index.ts';
@@ -23,23 +23,40 @@ const A = ecole('a', 'École A', '08:00');
 const B = ecole('b', 'École B', '08:00');
 const suiteVide = vide.suite!;
 
-describe('la suite notée à la dernière séance', () => {
-  it('reprend la dernière séance de l’élève avant ce jour', () => {
-    const vieille = seance({ date: '2026-10-01', suite: { ...suiteVide, objectif: 'ancien' } });
-    const derniere = seance({ date: '2026-10-08', suite: { ...suiteVide, objectif: 'Refaire les fractions avec le gabarit', actions: ['Préparer un support'], modalite: 'Groupe' } });
-    const autre = seance({ eleveId: 'beta', date: '2026-10-12', suite: { ...suiteVide, objectif: 'autre élève' } });
-    const s = suiteDerniereSeance('alpha', '2026-10-13', [vieille, autre, derniere]);
-    assert.equal(s?.objectif, 'Refaire les fractions avec le gabarit');
-    assert.deepEqual(s?.actions, ['Préparer un support']);
-    assert.equal(s?.date, '2026-10-08');
+describe('le rappel de la dernière séance', () => {
+  it('reprend la dernière séance de l’élève avant ce jour : objectif, ce qui a aidé, à retravailler, suite prévue', () => {
+    const vieille = seance({ date: '2026-10-01', monObjectif: 'ancien', suite: { ...suiteVide, objectif: 'ancien' } });
+    const derniere = seance({
+      date: '2026-10-08', monObjectif: 'Lire la consigne seul',
+      aides: [{ nom: 'Support visuel', effet: 2 }, { nom: 'Guidage verbal', effet: 1 }, { nom: 'Matériel', effet: 0 }],
+      observations: [{ texte: 'Maintient son attention', niveau: 0 }, { texte: 'Entre dans la tâche', niveau: 2 }, { texte: 'Contrôle sa production', niveau: 1 }],
+      suite: { ...suiteVide, objectif: 'Refaire les fractions avec le gabarit', actions: ['Préparer un support'], modalite: 'Groupe', collaborations: ['Échange avec l’enseignant'], precision: 'Apporter le gabarit.' }
+    });
+    const autre = seance({ eleveId: 'beta', date: '2026-10-12', monObjectif: 'autre élève' });
+    const s = suiteDerniereSeance('alpha', '2026-10-13', [vieille, autre, derniere])!;
+    assert.equal(s.date, '2026-10-08');
+    assert.equal(s.monObjectif, 'Lire la consigne seul');
+    assert.deepEqual(s.aides, ['Support visuel']);
+    assert.deepEqual(s.aRetravailler, ['Maintient son attention']);
+    assert.deepEqual(lignesSuite(s).map((l) => l.etiquette), ['Mon objectif', 'Ce qui a aidé', 'À retravailler', 'Objectif prévu', 'Actions prévues', 'À concerter', 'Précision']);
+  });
+  it('ne reprend pas le format de la prochaine séance', () => {
+    const s = suiteDerniereSeance('alpha', '2026-10-13', [seance({ date: '2026-10-08', suite: { ...suiteVide, modalite: 'Groupe' } })])!;
+    assert.ok(!JSON.stringify(lignesSuite(s)).includes('Groupe'));
+  });
+  it('n’affiche que ce qui est renseigné', () => {
+    const s = suiteDerniereSeance('alpha', '2026-10-13', [seance({ date: '2026-10-08', monObjectif: '', aides: [], observations: [], suite: { ...suiteVide, actions: ['Préparer un support'], collaborations: ['Échange avec l’enseignant'] } })])!;
+    assert.deepEqual(lignesSuite(s), [{ etiquette: 'Actions prévues', texte: 'Préparer un support' }, { etiquette: 'À concerter', texte: 'Échange avec l’enseignant' }]);
   });
   it('ne regarde ni le jour même ni l’avenir', () => {
-    assert.equal(suiteDerniereSeance('alpha', '2026-10-08', [seance({ date: '2026-10-08', suite: { ...suiteVide, objectif: 'x' } })]), null);
+    assert.equal(suiteDerniereSeance('alpha', '2026-10-08', [seance({ date: '2026-10-08' })]), null);
   });
-  it('ne remonte pas plus loin si la dernière séance n’a rien noté', () => {
-    const vieille = seance({ date: '2026-10-01', suite: { ...suiteVide, objectif: 'ancien' } });
-    const derniere = seance({ date: '2026-10-08', suite: suiteVide });
-    assert.equal(suiteDerniereSeance('alpha', '2026-10-13', [vieille, derniere]), null);
+  it('ne remonte pas plus loin si la dernière séance n’a presque rien noté : on garde seulement sa date', () => {
+    const vieille = seance({ date: '2026-10-01', monObjectif: 'ancien', suite: { ...suiteVide, objectif: 'ancien' } });
+    const derniere = seance({ date: '2026-10-08', monObjectif: '', aides: [], observations: [], suite: suiteVide });
+    const s = suiteDerniereSeance('alpha', '2026-10-13', [vieille, derniere])!;
+    assert.equal(s.date, '2026-10-08');
+    assert.deepEqual(lignesSuite(s), []);
   });
   it('rien sans élève ni séance', () => {
     assert.equal(suiteDerniereSeance(undefined, '2026-10-13', []), null);
@@ -58,7 +75,7 @@ describe('la journée', () => {
     assert.equal(j[0]!.heures, '08:50 – 09:40');
     assert.equal(j[0]!.ecole.id, 'a');
   });
-  it('joint la suite de la dernière séance à chaque rendez-vous d’élève', () => {
+  it('joint le rappel de la dernière séance à chaque rendez-vous d’élève', () => {
     const s = seance({ date: '2026-10-06', suite: { ...suiteVide, objectif: 'Reprendre la lecture de consignes' } });
     const j = journeeDu('2026-10-13', [act('x1', 'alpha', 1)], [s], eleves, [A, B]);
     assert.equal(j[0]!.suite?.objectif, 'Reprendre la lecture de consignes');

@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { exempleDemo } from '../../data/demo.ts';
-import { aEncoder, basculerMemo, creerMemo, deplacements, journeeDu, memosDuCreneau, retirerMemo, viderFaits } from '../../domain/accueil/index.ts';
-import type { Creneau, Deplacement, Memo, Suite } from '../../domain/accueil/index.ts';
+import { aEncoder, basculerMemo, creerMemo, deplacements, journeeDu, lignesSuite, memosDuCreneau, retirerMemo, viderFaits } from '../../domain/accueil/index.ts';
+import type { Creneau, Deplacement, Memo } from '../../domain/accueil/index.ts';
 import { PERIODES_AGENDA, ajouterJours, jourComplet, seanceDuCreneau } from '../../domain/agenda/index.ts';
 import type { Occurrence } from '../../domain/agenda/index.ts';
 import { defautsSeance } from '../../domain/referentiel/index.ts';
@@ -26,17 +26,6 @@ const quand = (iso: string): string => {
   const d = new Date(iso);
   return !iso || Number.isNaN(d.getTime()) ? 'date inconnue' : d.toLocaleString('fr-BE', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
 };
-
-/** Ce que l'agent avait prévu à la fin de la dernière séance, en lignes courtes. */
-function lignesSuite(s: Suite): string[] {
-  return [
-    s.objectif ? `Objectif : ${s.objectif}` : '',
-    s.actions.length ? s.actions.join(' · ') : '',
-    s.modalite ? `Format : ${s.modalite}` : '',
-    s.collaborations.length ? `À concerter : ${s.collaborations.join(' · ')}` : '',
-    s.precision
-  ].filter(Boolean);
-}
 
 function PhraseTrajet({ d }: { d: Deplacement }) {
   const libre = d.ecart < 0 ? 'ces deux rendez-vous se chevauchent' : d.ecart === 0 ? 'aucun temps libre entre les deux' : `${d.ecart} min libres entre les deux`;
@@ -173,7 +162,7 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
                     const eleveType = o.activite.type === 'eleve' && Boolean(o.activite.eleveId);
                     const passe = aujourdhuiMeme && c.finMin !== null && c.finMin < maintenantMin();
                     const attendu = eleveType && !realise && passe;
-                    const liste = c.suite ? lignesSuite(c.suite) : [];
+                    const rappel = c.suite ? lignesSuite(c.suite) : [];
                     const siens = memosDuCreneau(memos, o.activite.eleveId, c.ecole.id);
                     const trajetApres = changements.find((d) => d.de === c);
                     const carte = (
@@ -185,11 +174,13 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
                         <div className="creneau-corps">
                           <p className="creneau-titre">{c.nom}</p>
                           <p className="creneau-detail">{[o.activite.matiere, o.activite.lieu].filter(Boolean).join(' · ') || (o.activite.type === 'eleve' ? '' : 'Hors accompagnement d’élève')}</p>
-                          {liste.length ? (
+                          {c.suite && rappel.length ? (
                             <div className="creneau-suite">
-                              <p className="creneau-suite-titre">Noté à la séance du {dateFR(c.suite!.date)}</p>
-                              {liste.map((l) => <p key={l}>{l}</p>)}
+                              <p className="creneau-suite-titre">Dernière séance : {dateFR(c.suite.date)}{c.suite.matiere ? ` · ${c.suite.matiere}` : ''}</p>
+                              {rappel.map((l) => <p key={l.etiquette}><span className="creneau-suite-etiquette">{l.etiquette}</span> {l.texte}</p>)}
                             </div>
+                          ) : c.suite ? (
+                            <p className="creneau-suite-seule">Dernière séance : {dateFR(c.suite.date)}{c.suite.matiere ? ` · ${c.suite.matiere}` : ''}</p>
                           ) : null}
                           {siens.length ? (
                             <ul className="creneau-memos" aria-label="Mémos pour ce rendez-vous">

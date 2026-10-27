@@ -3,20 +3,26 @@ import type { Activite, Ecole, Occurrence } from '../agenda/index.ts';
 import { enMinutes, heureValide } from '../agenda/horaires.ts';
 import type { Eleve, Seance } from '../types.ts';
 
-/** Ce qui avait été noté à la fin de la dernière séance avec l'élève : la suite de l'accompagnement. */
+/** Ce qu'on sait de la dernière séance avec l'élève, pour reprendre où on s'était arrêté. */
 export interface Suite {
   date: string;
   matiere: string;
+  /** « Mon objectif » de cette séance. */
+  monObjectif: string;
+  /** Aides dont l'effet a été positif. */
+  aides: string[];
+  /** Points observés « Partiellement » : à retravailler. */
+  aRetravailler: string[];
+  /* Ce qui a été prévu pour la suite (étape « Suite » de la séance). */
   objectif: string;
   actions: string[];
-  modalite: string;
   collaborations: string[];
   precision: string;
 }
 
 /**
- * La suite notée à la dernière séance de l'élève avant ce jour. Seule la dernière séance compte : si elle n'a rien noté,
- * on ne remonte pas plus loin (une consigne ancienne ne serait plus d'actualité).
+ * Ce que la dernière séance de l'élève avant ce jour permet de rappeler. Seule la dernière séance compte : si elle n'a presque rien noté,
+ * on ne remonte pas plus loin (une consigne ancienne ne serait plus d'actualité). Le format de la prochaine séance n'est pas repris.
  */
 export function suiteDerniereSeance(eleveId: string | undefined, avant: string, seances: readonly Seance[]): Suite | null {
   if (!eleveId) return null;
@@ -25,11 +31,31 @@ export function suiteDerniereSeance(eleveId: string | undefined, avant: string, 
     .sort((a, b) => b.date.localeCompare(a.date) || b.creeLe.localeCompare(a.creeLe))[0];
   if (!derniere) return null;
   const s = derniere.suite;
-  const suite: Suite = {
-    date: derniere.date, matiere: derniere.matiere, objectif: s.objectif.trim(), actions: s.actions, modalite: s.modalite.trim(),
-    collaborations: s.collaborations, precision: s.precision.trim()
+  return {
+    date: derniere.date,
+    matiere: derniere.matiere,
+    monObjectif: derniere.monObjectif.trim(),
+    aides: derniere.aides.filter((a) => a.effet === 2).map((a) => a.nom),
+    aRetravailler: derniere.observations.filter((o) => o.niveau === 0).map((o) => o.texte),
+    objectif: s.objectif.trim(),
+    actions: s.actions,
+    collaborations: s.collaborations,
+    precision: s.precision.trim()
   };
-  return suite.objectif || suite.actions.length || suite.modalite || suite.collaborations.length || suite.precision ? suite : null;
+}
+
+/** Les lignes à montrer pour un rappel, avec leur étiquette ; vide si la séance n'a rien noté de plus que sa date. */
+export function lignesSuite(s: Suite): { etiquette: string; texte: string }[] {
+  const lignes: { etiquette: string; texte: string }[] = [
+    { etiquette: 'Mon objectif', texte: s.monObjectif },
+    { etiquette: 'Ce qui a aidé', texte: s.aides.join(' · ') },
+    { etiquette: 'À retravailler', texte: s.aRetravailler.join(' · ') },
+    { etiquette: 'Objectif prévu', texte: s.objectif },
+    { etiquette: 'Actions prévues', texte: s.actions.join(' · ') },
+    { etiquette: 'À concerter', texte: s.collaborations.join(' · ') },
+    { etiquette: 'Précision', texte: s.precision }
+  ];
+  return lignes.filter((l) => l.texte);
 }
 
 /** Un rendez-vous de la journée, avec tout ce qu'il faut pour le préparer. */
