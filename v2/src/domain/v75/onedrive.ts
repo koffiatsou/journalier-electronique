@@ -3,28 +3,31 @@ import type { LectureV75 } from './lecture.ts';
 import type { Ecart, PiaBrutV75 } from './types.ts';
 
 /*
- * Lecture du dossier « Journalier » que la V75 range dans OneDrive (dossier privé de l'application), en LECTURE SEULE.
- * Organisation de la V75 : eleves/<id>/profil.json, eleves/<id>/seances/<id>.json, agenda/agenda.json, pia/<id>/pia.json.
+ * Lecture de ce que la V75 range dans OneDrive (dossier privé de l'application), en LECTURE SEULE.
+ * Organisation de la V75, à la racine de ce dossier : eleves/<id>/profil.json, eleves/<id>/seances/<id>.json, agenda/agenda.json,
+ * pia/<id>/pia.json (la V75 appelle cette racine « Journalier » en interne ; dans OneDrive il n'y a pas de sous-dossier de ce nom).
+ * Les dossiers de la V2 (« v2 ») et les anciens dossiers (« Journalier-legacy »…) sont ignorés.
  * Le résultat a exactement la forme de la lecture du coffre local (`LectureV75`) : tout le reste de la reprise
  * (conversion, vérification élève par élève, import, contrôle) est le même, quelle que soit la source.
  */
 
 export interface ElementOneDrive { nom: string; id: string; dossier: boolean }
 
-/** Accès en lecture au dossier « Journalier » de la V75 dans OneDrive (remplacé par un faux dans les tests). */
+/** Accès en lecture aux données de la V75 dans OneDrive (remplacé par un faux dans les tests). */
 export interface LecteurOneDriveV75 {
-  /** Contenu d'un dossier, chemin relatif à « Journalier » ('' = « Journalier » lui-même). `null` si le dossier n'existe pas. */
+  /** Contenu d'un dossier, chemin relatif à la racine du dossier de l'application ('' = la racine). `null` si le dossier n'existe pas. */
   lister(chemin: string): Promise<ElementOneDrive[] | null>;
   /** Texte d'un fichier. */
   lire(id: string): Promise<string>;
 }
 
 export interface LectureOneDriveV75 extends LectureV75 {
-  /** Faux si OneDrive n'a aucun dossier « Journalier » de la V75 (rien n'est alors créé). */
+  /** Faux si OneDrive ne contient aucun dossier de la V75 (rien n'est alors créé). */
   trouve: boolean;
 }
 
 const ESSAIS_PARALLELES = 4;
+const DOSSIERS_V75 = ['eleves', 'agenda', 'pia', 'profil'];
 
 async function enParallele<T>(liste: readonly T[], action: (x: T) => Promise<void>): Promise<void> {
   let i = 0;
@@ -44,7 +47,8 @@ const fichierJson = (liste: readonly ElementOneDrive[] | null, nom: string): Ele
 export async function lireOneDriveV75(l: LecteurOneDriveV75, progres?: (texte: string) => void): Promise<LectureOneDriveV75> {
   const racine = await l.lister('');
   const vide: LectureOneDriveV75 = { trouve: false, etat: { eleves: [], seances: [], agenda: { __events: [], __exceptions: {}, __config: {} }, pias: {} }, illisibles: [] };
-  if (!racine) return vide;
+  // La racine existe toujours : la V75 y est reconnue à ses dossiers.
+  if (!racine?.some((x) => x.dossier && DOSSIERS_V75.includes(x.nom.toLowerCase()))) return vide;
 
   const illisibles: Ecart[] = [];
   const json = async (el: ElementOneDrive, quoi: string): Promise<unknown | undefined> => {

@@ -19,7 +19,7 @@ import type { Aller } from '../../app/useRoute.ts';
 
 const pluriel = (n: number, un: string, plusieurs = `${un}s`): string => `${n} ${n > 1 ? plusieurs : un}`;
 
-/** D'où viennent les données lues : du stockage de la V75 sur cet appareil, ou du dossier « Journalier » de la V75 dans OneDrive. */
+/** D'où viennent les données lues : du stockage de la V75 sur cet appareil, ou des dossiers de la V75 dans OneDrive. */
 type Source = 'appareil' | 'onedrive';
 
 interface Plan {
@@ -168,7 +168,7 @@ export function ReprisePage({ magasin, synchro, essai, onAller }: { magasin: Mag
     } finally { await st.fermer?.(); }
   };
 
-  /** Lit le dossier « Journalier » de la V75 dans OneDrive (lecture seule), avec la connexion Microsoft de la V2. */
+  /** Lit les dossiers de la V75 dans OneDrive (lecture seule), avec la connexion Microsoft de la V2. */
   const lireOneDrive = async () => {
     setErreur(null); setProgres(''); setEtape({ nom: 'lecture' });
     try {
@@ -235,7 +235,7 @@ export function ReprisePage({ magasin, synchro, essai, onAller }: { magasin: Mag
         <p>Deux endroits possibles. Si vos données de la V75 sont anciennes sur cet appareil, <strong>OneDrive est le plus sûr</strong> : c’est là que la V75 envoyait ses copies. Vous pouvez aussi lire les deux, l’un après l’autre : un élève ou une séance présent dans les deux n’est jamais dupliqué.</p>
 
         <div className="reprise-source">
-          <h3>Dans OneDrive (dossier « Journalier » de la V75)</h3>
+          <h3>Dans OneDrive (les dossiers de la V75)</h3>
           {mode === 'microsoft' && !reconnexion ? (
             <p className="synchro-discret">Connecté en tant que <strong>{compteMicrosoft?.nom}</strong>{compteMicrosoft?.courriel ? ` (${compteMicrosoft.courriel})` : ''}. Il faut que ce soit le compte Microsoft utilisé dans la V75. La V2 ne fait que lire : rien n’est modifié ni supprimé dans OneDrive.</p>
           ) : mode === 'demonstration' ? (

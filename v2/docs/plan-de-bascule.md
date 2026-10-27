@@ -3,7 +3,7 @@
 Document pour l'utilisateur, à adapter avant de le donner à l'équipe. Rien n'est supprimé dans la V75 : elle reste utilisable tant que l'équipe en a besoin.
 
 ## Ce qui a été vérifié (lot 9)
-- La V2 sait lire les données de la V75 **sur le même ordinateur et dans le même navigateur** (élèves, séances, agenda), ou **dans OneDrive** (dossier « Journalier » de la V75, lot 9b), les convertir, les contrôler élève par élève, puis les ajouter au coffre chiffré de la V2.
+- La V2 sait lire les données de la V75 **sur le même ordinateur et dans le même navigateur** (élèves, séances, agenda), ou **dans OneDrive** (dossiers de la V75, lot 9b), les convertir, les contrôler élève par élève, puis les ajouter au coffre chiffré de la V2.
 - Reprise **sans danger** : la V75 n'est jamais modifiée ; rien n'est supprimé ni remplacé dans la V2 ; on peut recommencer sans créer de doublons.
 - Vérifié par des tests automatiques (47 pour la lecture sur l'appareil, 22 de plus pour OneDrive et « Repartir de OneDrive ») et des essais dans un vrai navigateur (la connexion Microsoft est simulée : **le premier essai avec un vrai compte reste à faire**).
 

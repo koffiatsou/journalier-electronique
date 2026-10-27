@@ -53,17 +53,33 @@ describe('Reprise depuis le OneDrive de la V75', () => {
     assert.ok(lu.etat.pias['1001']);
   });
 
+  it('retrouve la V75 à la racine du dossier de l’application, au milieu des autres dossiers (comme dans un vrai OneDrive)', async () => {
+    deposerEtatV75(faux, etatV75());
+    faux.deposerV75('Journalier-legacy/ancien.json', '{}');
+    faux.deposerV75('system/sync.json', '{}');
+    faux.deposerV75('_journalier_appfolder_probe_1/probe.json', '{}');
+    // le dossier de la V2 est à côté : jamais lu comme données de la V75
+    await faux.fetch('https://graph.microsoft.com/v1.0/me/drive/special/approot:/v2/eleves/x.json:/content', { method: 'PUT', headers: { Authorization: `Bearer ${await obtenirJeton(faux, ['openid', 'Files.ReadWrite.AppFolder'])}` }, body: 'x' });
+    const lu = await lireOneDriveV75(lecteur);
+    assert.equal(lu.trouve, true);
+    assert.equal(lu.etat.eleves.length, 2);
+    assert.deepEqual(lu.illisibles, []);
+  });
+
   it('ne fait que des lectures : aucune écriture, aucune suppression', async () => {
     deposerEtatV75(faux, etatV75());
     const avant = new Map([...faux.fichiersV75].map(([c, f]) => [c, `${f.etag}|${f.contenu}`]));
     await lireOneDriveV75(lecteur);
     assert.ok(faux.journal.length > 5);
     assert.ok(faux.journal.every((l) => l.startsWith('GET ')), faux.journal.filter((l) => !l.startsWith('GET ')).join(', '));
+    assert.ok(faux.journal.includes('GET /me/drive/special/approot/children'), 'la racine est lue sans sous-dossier « Journalier »');
+    assert.ok(!faux.journal.some((l) => l.includes('/Journalier')));
     assert.deepEqual(new Map([...faux.fichiersV75].map(([c, f]) => [c, `${f.etag}|${f.contenu}`])), avant);
     assert.deepEqual(faux.chemins(), []); // rien n'est créé dans le dossier de la V2
   });
 
   it('dit simplement qu’il n’y a rien quand la V75 n’a jamais envoyé de données', async () => {
+    faux.deposerV75('system/sync.json', '{}'); // un dossier étranger ne suffit pas
     const lu = await lireOneDriveV75(lecteur);
     assert.equal(lu.trouve, false);
     assert.equal(lu.etat.eleves.length, 0);

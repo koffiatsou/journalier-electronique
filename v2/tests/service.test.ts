@@ -146,7 +146,7 @@ describe('service : reprise de la V75 depuis OneDrive et « repartir de OneDrive
     assert.equal(lu?.trouve, true);
     assert.equal(lu?.etat.eleves.length, 2);
     assert.equal(synchro.lire().enCours, null);
-    assert.ok(faux.journal.filter((l) => l.includes('/Journalier')).every((l) => l.startsWith('GET ')));
+    assert.ok(faux.journal.filter((l) => !l.includes('approot:/v2')).every((l) => l.startsWith('GET ')));
   });
 
   it('lire la V75 dans OneDrive : une session expirée donne un message clair', async () => {

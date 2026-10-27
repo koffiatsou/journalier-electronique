@@ -1,5 +1,5 @@
 // Vérification dans un vrai navigateur du Lot 9b : reprise de la V75 depuis OneDrive et « Repartir de OneDrive ».
-// Connexion Microsoft complète (fenêtre, code + PKCE) contre un faux Microsoft qui contient un dossier « Journalier » comme la V75 l'écrit.
+// Connexion Microsoft complète (fenêtre, code + PKCE) contre un faux Microsoft qui contient les dossiers de la V75 (à la racine du dossier de l'application, comme dans le vrai OneDrive) l'écrit.
 // Lancer : PORT=5199 npm run dev   puis   LANG=C.UTF-8 node --import tsx tools/navigateur/onedrive-9b.mjs
 // (Playwright : PLAYWRIGHT=<chemin vers playwright/index.mjs> si besoin.) La date du jour est figée au lundi 26 octobre 2026.
 import { mkdirSync } from 'node:fs';
@@ -76,7 +76,7 @@ await attendreMessage(/OneDrive de la V75 lu/);
 ok(/2 élèves/.test(await page.locator('.synchro-message-ok').first().innerText()), 'le résumé annonce 2 élèves');
 ok(await page.getByText('Séfora').first().isVisible() && await page.getByText('Nicoleta').first().isVisible(), 'les deux élèves de la V75 sont listés');
 ok(await page.getByText('refuse d’envoyer certaines séances').isVisible(), 'la remarque sur ce que la V75 envoie (ou pas) est affichée');
-const ecrituresV75 = faux.journal.filter((l) => l.includes('/Journalier') && !l.startsWith('GET '));
+const ecrituresV75 = faux.journal.filter((l) => !l.startsWith('GET ') && !l.includes('approot:/v2'));
 ok(ecrituresV75.length === 0, 'aucune écriture, aucune suppression dans le dossier de la V75');
 ok(faux.chemins().length === 0, 'rien n’a été créé dans OneDrive pendant la lecture');
 await page.screenshot({ path: `${SORTIE}/9b-plan.png`, fullPage: true });

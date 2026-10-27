@@ -145,17 +145,19 @@ export function creerNuageGraph(o: OptionsGraph): Nuage {
 }
 
 /**
- * Lecture seule du dossier « Journalier » de la V75 (même dossier privé de l'application que la V2, mais à côté de « v2 »).
- * Seules des requêtes GET sont faites : la V75 n'est jamais modifiée.
+ * Lecture seule des données de la V75 : elle range ses dossiers (eleves, agenda, pia…) directement à la RACINE du dossier privé
+ * de l'application (« Journalier » n'est que son nom interne pour cette racine, voir `graphRelativeAppPath` dans la V75) ;
+ * la V2 range les siens dans le sous-dossier « v2 », à côté. Seules des requêtes GET sont faites : la V75 n'est jamais modifiée.
  */
 export function creerLecteurV75Graph(o: OptionsGraph): LecteurOneDriveV75 {
   const c = creerClient(o);
   const segments = (chemin: string): string => chemin.split('/').filter(Boolean).map(encodeURIComponent).join('/');
   return {
     async lister(chemin) {
-      const complet = segments(`Journalier/${chemin}`);
+      const complet = segments(chemin);
+      const dossier = complet ? `approot:/${complet}:` : 'approot';
       try {
-        const items = await c.pages<ElementDrive & { folder?: object }>('fichiers', `${BASE}/me/drive/special/approot:/${complet}:/children?$select=id,name,eTag,file,folder&$top=200`);
+        const items = await c.pages<ElementDrive & { folder?: object }>('fichiers', `${BASE}/me/drive/special/${dossier}/children?$select=id,name,eTag,file,folder&$top=200`);
         return items.map((i): ElementOneDrive => ({ nom: i.name, id: i.id, dossier: !!i.folder }));
       } catch (e) {
         if (e instanceof Introuvable) return null;

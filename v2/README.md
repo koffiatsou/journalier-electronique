@@ -51,7 +51,7 @@ Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des l
 | Données de démonstration (bouton sur l'accueil, effaçables) | disponible (lot 8) |
 | Coffre chiffré (écran verrouillé, mode essai, migration de l'ancienne base, copie de secours avec mot de passe) | disponible (lot 7) |
 | Reprise V75 (lecture du stockage local de la V75, vérification élève par élève, contrôle après import ; plan de bascule dans `docs/plan-de-bascule.md`) | disponible (lot 9) ; **à essayer avec de vraies données par l'utilisateur** |
-| Reprise depuis OneDrive (lecture du dossier « Journalier » de la V75, en lecture seule) et « Repartir de OneDrive » (nouvel ordinateur) | disponible (lot 9b) ; **à essayer avec un vrai compte par l'utilisateur** |
+| Reprise depuis OneDrive (lecture du dossiers de la V75, en lecture seule) et « Repartir de OneDrive » (nouvel ordinateur) | disponible (lot 9b) ; **à essayer avec un vrai compte par l'utilisateur** |
 
 ## Outils de build
 `esbuild` compile le TypeScript et React (script `scripts/build.mjs`). Pas de Vite : l'environnement de développement initial n'avait pas accès au registre npm, et `esbuild` suffit à ce stade.

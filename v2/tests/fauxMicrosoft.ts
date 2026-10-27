@@ -14,7 +14,7 @@ const erreur = (statut: number, code: string): Response => json({ error: { code,
 
 export class FauxMicrosoft {
   fichiers = new Map<string, FichierFaux>();
-  /** Dossier « Journalier » de la V75 (à côté de « v2 »), chemins relatifs : « eleves/abc/profil.json ». Lecture seule pour l'application. */
+  /** Données de la V75, à la RACINE du dossier de l'application (à côté de « v2 »), chemins relatifs : « eleves/abc/profil.json ». Lecture seule pour l'application. */
   fichiersV75 = new Map<string, FichierFaux>();
   calendriers = new Map<string, { nom: string; evenements: Map<string, EvenementFaux> }>();
   /** Journal des requêtes Graph reçues : « METHOD /chemin ». */
@@ -119,12 +119,12 @@ export class FauxMicrosoft {
     if (!accordes) return erreur(401, 'InvalidAuthenticationToken');
     const texte = typeof corps === 'string' ? corps : '';
 
-    /* OneDrive : dossier « Journalier » de la V75 (lecture seule) */
-    const v75 = /^\/me\/drive\/special\/approot:\/Journalier((?:\/[^:]+)?):\/children$/.exec(chemin);
+    /* OneDrive : données de la V75, à la racine du dossier de l'application (lecture seule) ; « v2 » est à la V2 */
+    const v75 = /^\/me\/drive\/special\/approot(?::\/((?!v2(?:\/|:|$))[^:]+):)?\/children$/.exec(chemin);
     if (v75) {
       if (methode !== 'GET') return erreur(405, 'methodNotAllowed');
       if (!accordes.includes('Files.ReadWrite.AppFolder')) return erreur(403, 'accessDenied');
-      const prefixe = v75[1] ? `${v75[1].slice(1)}/` : '';
+      const prefixe = v75[1] ? `${v75[1]}/` : '';
       const enfants = new Map<string, { id: string; etag: string; dossier: boolean }>();
       for (const [c, f] of this.fichiersV75) {
         if (!c.startsWith(prefixe)) continue;
@@ -133,7 +133,7 @@ export class FauxMicrosoft {
         if (i < 0) enfants.set(reste, { id: f.id, etag: f.etag, dossier: false });
         else enfants.set(reste.slice(0, i), { id: `dossier-${prefixe}${reste.slice(0, i)}`, etag: '', dossier: true });
       }
-      if (!enfants.size) return erreur(404, 'itemNotFound');
+      if (!enfants.size && prefixe) return erreur(404, 'itemNotFound'); // la racine, elle, existe toujours
       return this.page(adresse, [...enfants].map(([nom, e]) => e.dossier ? { id: e.id, name: nom, folder: {} } : { id: e.id, name: nom, eTag: e.etag, file: {} }));
     }
 
