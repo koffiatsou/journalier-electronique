@@ -28,12 +28,9 @@ export function Accueil({ magasin, onAller }: { magasin: Magasin; onAller: Aller
 
   return (
     <div className="page">
-      <header className="accueil-entete">
-        <div>
-          <h1>Bonjour</h1>
-          <p className="page-sous-titre">Préparez une séance, retrouvez vos élèves et générez le Journalier.</p>
-        </div>
-        <img className="accueil-logo" src="./logo-poles-territoriaux.svg" alt="" width="132" height="91" />
+      <header className="page-entete">
+        <h1>Bonjour</h1>
+        <p className="page-sous-titre">Préparez une séance, retrouvez vos élèves et générez le Journalier.</p>
       </header>
 
       {!eleves.length ? (

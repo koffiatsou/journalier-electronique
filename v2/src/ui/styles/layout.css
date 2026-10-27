@@ -75,12 +75,6 @@
 .chargement, .erreur { padding: var(--sp-4); }
 .erreur { color: var(--danger); }
 
-/* page d'accueil : bonjour à gauche, logo à droite */
-.accueil-entete { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); }
-.accueil-entete > div { display: grid; gap: 4px; min-width: 0; }
-.accueil-logo { width: 132px; height: auto; flex: none; box-sizing: content-box; padding: 6px 8px; border-radius: var(--r-m); background: #fff; border: 1px solid var(--line); }
-@media (max-width: 767px) { .accueil-logo { display: none; } } /* sur téléphone, le logo est déjà dans la barre du haut */
-
 .vide { background: var(--surface); border: 1px dashed var(--line-strong); border-radius: var(--r-l); padding: var(--sp-6); display: grid; gap: var(--sp-3); justify-items: start; max-width: 640px; }
 .vide p { color: var(--ink-2); max-width: 56ch; }
 .vide-texte { color: var(--ink-2); padding: var(--sp-4) 0; }

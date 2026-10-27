@@ -161,7 +161,7 @@ await recharger(page);
 await versEleves();
 ok(await carte('Alpha').locator('.avatar svg').count() === 1, 'avatar abîmé dans la base : réparé, l’application ne plante pas');
 ok(await carte('Bêta').locator('.avatar svg').count() === 0, 'style inconnu dans la base : initiales');
-ok(await page.locator('img:not(.marque-logo):not(.barre-haut-logo):not(.accueil-logo):not(.verrou-logo)').count() === 0, 'aucune image dans la page (hors logo du menu)');
+ok(await page.locator('img:not(.marque-logo):not(.barre-haut-logo):not(.verrou-logo)').count() === 0, 'aucune image dans la page (hors logo du menu)');
 
 /* ───────── Thème sombre et téléphone ───────── */
 await page.emulateMedia({ colorScheme: 'dark' });
