@@ -32,7 +32,9 @@
 
 /* rangées de champs de formulaire (ne pas confondre avec .grille, la grille de l'agenda) */
 .champs { display: grid; gap: var(--sp-4); align-items: start; }
-@media (min-width: 640px) { .champs-2 { grid-template-columns: 1fr 1fr; } .champs-3 { grid-template-columns: 1.1fr 1fr 1.3fr; } }
+@media (min-width: 640px) { .champs-2 { grid-template-columns: 1fr 1fr; } }
+/* trois champs : trois colonnes tant que chacune garde 190 px, sinon on passe à la ligne (tablette en portrait) */
+.champs-3 { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
 .periodes { display: grid; grid-template-columns: 1fr auto 1fr; gap: 6px; align-items: center; color: var(--ink-3); }
 
 /* statut de présence */
@@ -119,7 +121,7 @@
 .journalier-ligne .liste-detail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .journalier-ligne .badge { vertical-align: 1px; }
 .journalier-actions { display: flex; gap: 2px; }
-.journalier-actions .btn { min-height: 36px; padding: 0 var(--sp-3); }
+.journalier-actions .btn { min-height: 36px; padding: 0 var(--sp-3); border-color: var(--line); }
 .btn-danger { color: var(--danger); }
 @media (hover: hover) and (pointer: fine) { .btn-danger:hover { background: var(--danger-soft); border-color: transparent; } }
 .btn-danger-plein { background: var(--danger); border-color: var(--danger); }

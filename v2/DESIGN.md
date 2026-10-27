@@ -1,7 +1,7 @@
 # Design
 
 **Couleurs** — palette « Encre et papier » (lot F, choisie le 27/10/2026 ; l'ancien « Bleu encre » reste la base d'esprit) : encre #1c2740 · fond crème #f3f0ea (surface #fffefb) · bleu #2f55b0 (pédagogique) · sarcelle #0f7b70 (ortho) · ambre #9a580a (à préciser) · rouge #b93a30 (absence, erreur). Niveaux : Partiellement ambre clair, Suffisamment bleu clair, Totalement sarcelle clair — toujours accompagnés du mot, jamais la couleur seule. Mode sombre : mêmes rôles, valeurs dans `tokens.css` (définies pour le mode automatique ET le mode forcé). Texte posé sur la couleur d'accent : `--on-accent` (blanc en clair, bleu nuit en sombre). Contrastes calculés : texte ≥ 4,5:1 sur tous les fonds.
-**Typographie** : pile de polices du système (`--font`) ; chiffres tabulaires pour dates et compteurs. (Instrument Sans n'est pas chargée : à décider à la suite du lot F.)
+**Typographie** : pile de polices du système (`--font`) ; chiffres tabulaires pour dates et compteurs. (Décision du 27/10/2026, lot F étape 2 : on **garde la police de l'appareil**, Instrument Sans n'est pas chargée.)
 **Mouvement** : 140–280 ms, `cubic-bezier(0.23,1,0.32,1)`, appui `scale(.97)`, jamais `transition: all`, `prefers-reduced-motion` coupe tout.
 **Interdits** : titres en petites majuscules espacées, cartes dans des cartes, dégradés sur texte, filets colorés d'un seul côté, emojis comme icônes.
 **Composants** : zones ≥ 44 px, focus visible, `<dialog>` natif, icônes SVG dessinées (`src/ui/icons.tsx`, y compris cadenas, soleil, lune, thème automatique).

@@ -22,6 +22,7 @@
 .agenda-titre { font-size: 1.15rem; font-weight: 650; margin: 0; min-width: 12ch; }
 .agenda-nav { display: flex; gap: var(--sp-1); }
 .agenda-barre .espace { flex: 1; }
+.agenda-barre .btn-primary { margin-left: auto; } /* si la barre passe sur deux lignes, « Nouvelle activité » reste calé à droite */
 .bascule { display: inline-flex; border: 1px solid var(--line-strong); border-radius: var(--r-s); overflow: hidden; }
 .bascule button { border: 0; background: var(--surface); padding: 8px 14px; font: inherit; cursor: pointer; color: var(--ink-2); min-height: 40px; }
 .bascule button[aria-pressed='true'] { background: var(--peda-soft); color: var(--peda-ink); font-weight: 600; }

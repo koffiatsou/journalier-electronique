@@ -46,7 +46,7 @@ await page.locator('.bandeau-demo').waitFor();
 await page.waitForTimeout(800); // l'écriture de tout le jeu de démonstration se termine juste après l'apparition du bandeau
 ok((await lireBase('eleves')).length === 2, 'la démonstration crée deux élèves fictifs');
 ok((await lireBase('activites')).filter((a) => a.id.startsWith('demo-a')).length === 5, 'et cinq rendez-vous d’agenda');
-ok((await page.locator('.liste li').count()) >= 1, 'les séances fictives s’affichent sur l’accueil');
+ok((await lireBase('seances')).length === 10, 'et dix séances fictives (l’accueil ne les liste plus depuis le lot A)');
 
 /* ───────── 2. Synchronisation en démonstration ───────── */
 await aller('Synchro');

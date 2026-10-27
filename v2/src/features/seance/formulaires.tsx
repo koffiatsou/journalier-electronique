@@ -84,7 +84,7 @@ export function FormulaireCreneau({ s, maj, eleves, ecoles = [] }: PropsFormulai
         <Field label="Matière" aide={matieres.length ? 'Les matières du dossier de l’élève sont proposées en priorité.' : undefined}>
           {(id) => (
             <>
-              <Input id={id} list={`${id}-liste`} value={s.matiere} placeholder="Choisir ou saisir une matière" onChange={(e) => maj({ matiere: e.target.value })} />
+              <Input id={id} list={`${id}-liste`} value={s.matiere} placeholder="Choisir ou écrire" onChange={(e) => maj({ matiere: e.target.value })} />
               <datalist id={`${id}-liste`}>{matieres.map((m) => <option key={m} value={m} />)}</datalist>
             </>
           )}
