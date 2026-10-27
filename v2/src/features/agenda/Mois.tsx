@@ -83,7 +83,7 @@ export function Mois({ jour, periodes, occurrences, eleves, couleurs, aujourdhui
                     if (etroit) return <li key={o.cle}><span className={`mois-pastille ${teinte} ${o.statut === 'annule' ? 'annule' : ''}`} aria-hidden="true" /></li>;
                     return (
                       <li key={o.cle}>
-                        <button type="button" aria-pressed={selection === o.cle} draggable
+                        <button type="button" aria-pressed={selection === o.cle} draggable={!o.seanceId}
                           onDragStart={(e) => { e.dataTransfer.setData('text/plain', o.cle); e.dataTransfer.effectAllowed = 'copyMove'; }}
                           onDragEnd={() => setSurvol(null)}
                           className={`mois-evt ${teinte} ${o.statut === 'annule' ? 'annule' : ''}`}

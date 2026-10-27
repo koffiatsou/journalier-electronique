@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  annuler, couleursEleves, editer, creer, deplacer, disposer, dupliquer, lundiDe, marquerRealisee, modifier, occurrences, redimensionner, semaine,
+  annuler, couleursEleves, editer, creer, deplacer, disposer, dupliquer, lundiDe, marquerRealisee, modifier, occurrences, occurrencesAgenda, redimensionner, semaine,
   statutDe, supprimer, teinteDe, titreSemaine
 } from '../src/domain/agenda/index.ts';
 import type { Eleve } from '../src/domain/types.ts';
@@ -160,5 +160,45 @@ describe('couleurs', () => {
     const c = couleursEleves([eleve('alpha', { couleur: 3 })]);
     assert.deepEqual(teinteDe(serie(), c), { kind: 'couleur', index: 3 });
     assert.deepEqual(teinteDe(creer({ type: 'formation', date: '2026-10-19', debut: 0, fin: 0 }), c), { kind: 'type', type: 'formation' });
+  });
+});
+
+describe('séances réalisées dans l’agenda (même sans planification)', () => {
+  const sc = (id: string, extra = {}) => seance({ id, eleveId: 'alpha', date: '2026-10-21', periodeDebut: '2e H', periodeFin: '2e H', ...extra });
+  it('une séance sans aucune planification apparaît, réalisée, au bon créneau', () => {
+    const o = occurrencesAgenda([], '2026-10-19', '2026-10-23', [sc('s1', { matiere: 'Mathématiques' })]);
+    assert.equal(o.length, 1);
+    assert.equal(o[0]!.statut, 'realise');
+    assert.equal(o[0]!.seanceId, 's1');
+    assert.deepEqual([o[0]!.date, o[0]!.debut, o[0]!.fin, o[0]!.activite.eleveId, o[0]!.activite.matiere], ['2026-10-21', 1, 1, 'alpha', 'Mathématiques']);
+  });
+  it('fonctionne rétroactivement, sur n’importe quelle date de la fenêtre', () => {
+    const o = occurrencesAgenda([], '2025-09-01', '2025-09-05', [sc('vieille', { date: '2025-09-02' })]);
+    assert.equal(o.length, 1);
+  });
+  it('une séance déjà couverte par une planification n’est pas affichée en double', () => {
+    const a = creer({ type: 'eleve', eleveId: 'alpha', date: '2026-10-21', debut: 1, fin: 2 });
+    const o = occurrencesAgenda([a], '2026-10-19', '2026-10-23', [sc('s1')]);
+    assert.equal(o.length, 1);
+    assert.equal(o[0]!.seanceId, undefined);
+    assert.equal(o[0]!.statut, 'realise');
+  });
+  it('la planification d’un autre élève ou d’un autre jour ne cache pas la séance', () => {
+    const autre = creer({ type: 'eleve', eleveId: 'beta', date: '2026-10-21', debut: 1, fin: 1 });
+    const autreJour = creer({ type: 'eleve', eleveId: 'alpha', date: '2026-10-22', debut: 1, fin: 1 });
+    const o = occurrencesAgenda([autre, autreJour], '2026-10-19', '2026-10-23', [sc('s1')]);
+    assert.equal(o.filter((x) => x.seanceId === 's1').length, 1);
+    assert.equal(o.length, 3);
+  });
+  it('une séance en dehors de la fenêtre, ou sur des périodes inconnues, n’est pas affichée', () => {
+    assert.equal(occurrencesAgenda([], '2026-10-26', '2026-10-30', [sc('s1')]).length, 0);
+    assert.equal(occurrencesAgenda([], '2026-10-19', '2026-10-23', [sc('s2', { periodeDebut: 'Étude', periodeFin: 'Étude' })]).length, 0);
+  });
+  it('une séance sur plusieurs périodes occupe tout le créneau', () => {
+    const o = occurrencesAgenda([], '2026-10-19', '2026-10-23', [sc('s1', { periodeDebut: '3e H', periodeFin: '4e H' })]);
+    assert.deepEqual([o[0]!.debut, o[0]!.fin], [2, 3]);
+  });
+  it('rien n’est enregistré : `occurrences` seule reste inchangée (semaine type, Outlook)', () => {
+    assert.equal(occurrences([], '2026-10-19', '2026-10-23', [sc('s1')]).length, 0);
   });
 });

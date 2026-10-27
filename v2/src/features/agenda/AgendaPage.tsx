@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ajouterJours, ajouterMois, annuler, calendrierConnu, couleursEleves, deplacer, dupliquer, indexJour, jourMois, lundiDe, marquerRealisee, nomJour,
-  occurrences as calculer, redimensionner, semaine, semainesDuMois, supprimer, titreMois, titreSemaine, versISO
+  occurrencesAgenda as calculer, redimensionner, semaine, semainesDuMois, supprimer, titreMois, titreSemaine, versISO
 } from '../../domain/agenda/index.ts';
 import type { Changement, Occurrence, Portee } from '../../domain/agenda/index.ts';
 import { defautsSeance } from '../../domain/referentiel/index.ts';
@@ -15,6 +15,7 @@ import { Mois } from './Mois.tsx';
 import { SemaineTypeDialog } from './SemaineTypeDialog.tsx';
 import type { Cible, ModeGeste } from './Grille.tsx';
 import { Panneau } from './Panneau.tsx';
+import { PanneauSeance } from './PanneauSeance.tsx';
 import type { Brouillon } from './Panneau.tsx';
 
 const ETROIT = '(max-width: 759px)';
@@ -81,6 +82,7 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
   const fermer = () => { setSelection(null); setBrouillon(null); };
 
   const geste = (o: Occurrence, mode: ModeGeste, c: Cible) => {
+    if (o.seanceId) return;
     if (mode === 'etirer') appliquer(redimensionner(o, c.fin ?? o.fin), 'Durée modifiée');
     else if (mode === 'dupliquer') appliquer(dupliquer(o, c.date, c.debut), 'Activité dupliquée');
     else appliquer(deplacer(o, c.date, c.debut), 'Activité déplacée');
@@ -92,6 +94,13 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
       eleveId: o.activite.eleveId ?? '', date: o.date, periodeDebut: horaires[o.debut]!.label, periodeFin: horaires[o.fin]!.label,
       matiere: o.activite.matiere ?? '', ...defautsSeance(el)
     });
+    globalThis.location.hash = '/seance';
+  };
+
+  const ouvrirSeance = (o: Occurrence) => {
+    const s = seances.find((x) => x.id === o.seanceId);
+    if (!s) return;
+    magasin.preparerSeance(s);
     globalThis.location.hash = '/seance';
   };
 
@@ -156,7 +165,7 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
             onSelection={(o) => { setBrouillon(null); setSelection(o.cle); }}
             onJour={(date) => { fermer(); setFocus(date); setVue('jour'); }}
             onCreer={(date) => { setSelection(null); setBrouillon({ date, debut: 0, fin: 0 }); }}
-            onDeplacer={(o, date, copier) => (copier
+            onDeplacer={(o, date, copier) => (o.seanceId ? undefined : copier
               ? appliquer(dupliquer(o, date, o.debut), 'Activité dupliquée')
               : appliquer(deplacer(o, date, o.debut), 'Activité déplacée'))} />
         ) : (
@@ -166,7 +175,9 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
             onCreer={(date, debut, fin) => { setSelection(null); setBrouillon({ date, debut, fin }); }}
             onGeste={geste} />
         )}
-        {occSelection ? (
+        {occSelection?.seanceId ? (
+          <PanneauSeance key={occSelection.cle} occurrence={occSelection} periodes={horaires} eleves={eleves} seance={seances.find((x) => x.id === occSelection.seanceId)} onOuvrir={ouvrirSeance} onFermer={fermer} />
+        ) : occSelection ? (
           <Panneau key={occSelection.cle} occurrence={occSelection} periodes={horaires} nouveau={null} eleves={eleves}
             onChanger={(c) => appliquer(c, 'Activité enregistrée')} onFermer={fermer} onEncoder={encoder}
             onDupliquer={(o) => { appliquer(dupliquer(o, ajouterJours(o.date, 7), o.debut), 'Dupliquée à la semaine suivante'); fermer(); }}

@@ -123,7 +123,7 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
   }, []);
 
   const commencer = (e: { button: number; pointerType: string; clientX: number; clientY: number; stopPropagation(): void }, o: Occurrence, mode: ModeGeste) => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || o.seanceId) return; // une séance sans planification ne se déplace pas : elle suit la séance
     const tactile = e.pointerType === 'touch';
     const s = { o, mode, x: e.clientX, y: e.clientY, actif: false, tactile, minuteur: undefined as number | undefined };
     if (tactile) s.minuteur = window.setTimeout(() => { if (suivi.current === s) { s.actif = true; navigator.vibrate?.(15); } }, APPUI_LONG);
@@ -196,7 +196,7 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
                   onClick={() => { if (!clicIgnore.current) rappel.current!.onSelection(o); }}>
                   <strong>{libelle(o.activite, nom || undefined)}</strong>
                   <small>{periodes[o.debut]!.label}{o.fin > o.debut ? `–${periodes[o.fin]!.label}` : ''}{o.activite.matiere ? ` · ${o.activite.matiere}` : ''}{o.activite.lieu ? ` · ${o.activite.lieu}` : ''}</small>
-                  <span className="evt-poignee" onPointerDown={(e) => commencer(e, o, 'etirer')} aria-hidden="true" />
+                  {o.seanceId ? null : <span className="evt-poignee" onPointerDown={(e) => commencer(e, o, 'etirer')} aria-hidden="true" />}
                 </button>
               );
             })}

@@ -72,4 +72,6 @@ export interface Occurrence {
   debut: number;
   fin: number;
   statut: StatutActivite;
+  /** Renseigné pour une séance réalisée sans planification : l'occurrence est alors calculée à partir de la séance (rien n'est enregistré dans l'agenda). */
+  seanceId?: string;
 }

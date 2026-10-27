@@ -45,6 +45,34 @@ export function occurrences(activites: readonly Activite[], du: string, au: stri
   return out.sort((x, y) => x.date.localeCompare(y.date) || x.debut - y.debut || x.cle.localeCompare(y.cle));
 }
 
+/** Activité « virtuelle » qui représente une séance réalisée sans planification (jamais enregistrée). */
+function activiteDeSeance(s: Seance, debut: number, fin: number): Activite {
+  return {
+    id: `seance:${s.id}`, type: 'eleve', eleveId: s.eleveId, titre: '', lieu: '', note: '', date: s.date, debut, fin, repetition: 'aucune',
+    ...(s.matiere ? { matiere: s.matiere } : {}), creeLe: '', modifieLe: ''
+  };
+}
+
+/**
+ * Ce que l'agenda affiche : les activités planifiées + toute séance réalisée (présente dans le Journalier) qui n'est couverte par aucune
+ * planification de l'élève, même rétroactivement. Une séance dont les périodes ne sont pas celles de l'agenda ne peut pas être placée : elle reste au Journalier.
+ */
+export function occurrencesAgenda(activites: readonly Activite[], du: string, au: string, seances: readonly Seance[]): Occurrence[] {
+  const prevues = occurrences(activites, du, au, seances);
+  const out = [...prevues];
+  for (const s of seances) {
+    if (s.date < du || s.date > au) continue;
+    const debut = indexPeriode(s.periodeDebut);
+    const fin = indexPeriode(s.periodeFin);
+    if (debut < 0 || fin < 0) continue;
+    const d = Math.min(debut, fin);
+    const f = Math.max(debut, fin);
+    if (prevues.some((o) => seanceDuCreneau(o.activite, o.date, o.debut, o.fin, [s]))) continue;
+    out.push({ cle: `seance:${s.id}@${s.date}`, activite: activiteDeSeance(s, d, f), date: s.date, debut: d, fin: f, statut: 'realise', seanceId: s.id });
+  }
+  return out.sort((x, y) => x.date.localeCompare(y.date) || x.debut - y.debut || x.cle.localeCompare(y.cle));
+}
+
 /** Mise en colonnes des activités qui se recouvrent (comme un calendrier) : colonne et nombre de colonnes du groupe. */
 export function disposer(occ: readonly Occurrence[]): Map<string, { colonne: number; colonnes: number }> {
   const res = new Map<string, { colonne: number; colonnes: number }>();
