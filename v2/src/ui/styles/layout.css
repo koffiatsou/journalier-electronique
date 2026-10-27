@@ -5,6 +5,12 @@
    - tablette en paysage et ordinateur (≥ 900 px) : menu large à gauche avec le logo. */
 .shell { min-height: 100dvh; display: grid; grid-template-columns: 1fr; padding-bottom: calc(var(--tabbar) + env(safe-area-inset-bottom)); }
 .contenu { min-width: 0; padding: var(--sp-4) var(--sp-4) var(--sp-7); }
+/* Zones qui reçoivent le focus par programme au changement d'écran : pas de contour (ce ne sont pas des commandes). */
+[tabindex='-1']:focus, [tabindex='-1']:focus-visible { outline: none; }
+
+/* lien d'évitement : caché tant qu'on n'appuie pas sur Tab, puis premier arrêt du clavier */
+.lien-evitement { position: absolute; z-index: 200; left: var(--sp-3); top: -120px; padding: var(--sp-3) var(--sp-4); border-radius: var(--r-m); background: var(--accent); color: var(--on-accent); font-weight: 600; text-decoration: none; box-shadow: var(--shadow-2); }
+.lien-evitement:focus, .lien-evitement:focus-visible { top: var(--sp-3); outline: 2px solid var(--focus); outline-offset: 2px; }
 
 /* barre du haut (téléphone seulement) */
 .barre-haut {

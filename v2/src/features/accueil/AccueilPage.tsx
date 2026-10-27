@@ -195,7 +195,7 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
                     const carte = (
                       <li key={o.cle} className="creneau" data-statut={realise ? 'realise' : attendu ? 'attendu' : 'prevu'} data-ouvert={ouvert}>
                         {aDetail ? (
-                          <button type="button" className="creneau-tete" aria-expanded={ouvert} aria-controls={`detail-${o.cle}`} onClick={() => setChoix(ouvert ? null : o.cle)}>{tete}</button>
+                          <button type="button" className="creneau-tete" aria-expanded={ouvert} aria-controls={ouvert ? `detail-${o.cle}` : undefined} onClick={() => setChoix(ouvert ? null : o.cle)}>{tete}</button>
                         ) : <div className="creneau-tete">{tete}</div>}
                         <div className="creneau-action">
                           {eleveType ? (realise ? <Button onClick={() => ouvrir(o)}>Ouvrir</Button> : <Button variante={attendu ? 'primaire' : 'secondaire'} onClick={() => encoder(o)}>Encoder</Button>) : null}

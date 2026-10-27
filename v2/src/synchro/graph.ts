@@ -4,6 +4,9 @@ import { ajouterJours } from '../domain/agenda/dates.ts';
 import type { ElementOneDrive, LecteurOneDriveV75 } from '../domain/v75/onedrive.ts';
 import { ErreurAcces, ErreurVersion } from './nuage.ts';
 import type { CalendrierNuage, FichierDistant, Nuage } from './nuage.ts';
+import { schemaCalendrier, schemaElementDrive, schemaErreurGraph, schemaEvenement, schemaFichierEcrit, schemaMetaFichier, schemaPage } from './schemas-microsoft.ts';
+import type { EvenementGraph } from './schemas-microsoft.ts';
+import type { z } from 'zod';
 
 /*
  * Microsoft Graph : OneDrive (dossier privé de l'application) et calendrier Outlook.
@@ -62,28 +65,29 @@ function creerClient(o: OptionsGraph) {
       if (reponse.status === 404) throw new Introuvable();
       if (reponse.status === 409 || reponse.status === 412) throw new ErreurVersion();
       let code = '';
-      try { code = ((await reponse.json()) as { error?: { code?: string } }).error?.code ?? ''; } catch { /* corps vide */ }
+      try { code = schemaErreurGraph.parse(await reponse.json()).error?.code ?? ''; } catch { /* corps vide ou inattendu */ }
       throw new ErreurAcces('inconnue', `Microsoft a répondu ${reponse.status}${code ? ` (${code})` : ''}.`);
     }
   }
 
-  /** Lit toutes les pages d'une liste Graph. */
-  async function pages<T>(portee: Portee, premiere: string, entetes: Record<string, string> = {}): Promise<T[]> {
-    const sortie: T[] = [];
+  /** Lit toutes les pages d'une liste Graph ; chaque élément est vérifié par `schema`. */
+  async function pages<S extends z.ZodTypeAny>(portee: Portee, schema: S, premiere: string, entetes: Record<string, string> = {}): Promise<z.infer<S>[]> {
+    const sortie: z.infer<S>[] = [];
     let suite: string | undefined = premiere;
     for (let n = 0; suite && n < 200; n += 1) {
       if (!suite.startsWith(`${BASE}/`)) throw new ErreurAcces('inconnue', 'Adresse de page inattendue.');
-      const r: { value?: T[]; '@odata.nextLink'?: string } = await (await requete(portee, suite, {}, entetes)).json();
-      sortie.push(...(r.value ?? []));
-      suite = r['@odata.nextLink'];
+      const r = schemaPage(schema).safeParse(await (await requete(portee, suite, {}, entetes)).json().catch(() => null));
+      if (!r.success) throw new ErreurAcces('inconnue', 'Microsoft a répondu autre chose que ce que l’application attend (liste illisible).');
+      sortie.push(...(r.data.value ?? []));
+      suite = r.data['@odata.nextLink'];
     }
     return sortie;
   }
 
   /** Texte d'un fichier OneDrive, par son identifiant (adresse pré-signée : on n'y joint JAMAIS le jeton de connexion). */
   async function telecharger(id: string): Promise<string> {
-    const meta = (await (await requete('fichiers', `${BASE}/me/drive/items/${encodeURIComponent(id)}?select=id,@microsoft.graph.downloadUrl`)).json()) as Record<string, unknown>;
-    const adresse = meta['@microsoft.graph.downloadUrl'];
+    const meta = schemaMetaFichier.safeParse(await (await requete('fichiers', `${BASE}/me/drive/items/${encodeURIComponent(id)}?select=id,@microsoft.graph.downloadUrl`)).json().catch(() => null));
+    const adresse = meta.success ? meta.data['@microsoft.graph.downloadUrl'] : undefined;
     if (typeof adresse !== 'string' || !adresseTelechargementSure(adresse)) throw new ErreurAcces('inconnue', 'Microsoft n’a pas donné d’adresse de téléchargement sûre.');
     let reponse: Response;
     try { reponse = await f(adresse, { method: 'GET', cache: 'no-store', credentials: 'omit' }); } catch { throw new ErreurAcces('reseau', 'Pas de connexion à Microsoft. Vérifiez le réseau, puis réessayez.'); }
@@ -95,8 +99,6 @@ function creerClient(o: OptionsGraph) {
   return { requete, pages, telecharger };
 }
 
-interface ElementDrive { id: string; name: string; eTag?: string; file?: object }
-
 export function creerNuageGraph(o: OptionsGraph): Nuage {
   const c = creerClient(o);
   return {
@@ -104,7 +106,7 @@ export function creerNuageGraph(o: OptionsGraph): Nuage {
 
     async lister(dossier) {
       try {
-        const items = await c.pages<ElementDrive>('fichiers', `${BASE}${RACINE}/${dossier}:/children?$select=id,name,eTag,file&$top=200`);
+        const items = await c.pages('fichiers', schemaElementDrive, `${BASE}${RACINE}/${dossier}:/children?$select=id,name,eTag,file&$top=200`);
         return items.filter((i) => i.file && i.eTag).map((i): FichierDistant => ({ chemin: `${dossier}/${i.name}`, id: i.id, etag: i.eTag! }));
       } catch (e) {
         if (e instanceof Introuvable) return []; // le dossier n'existe pas encore
@@ -125,9 +127,9 @@ export function creerNuageGraph(o: OptionsGraph): Nuage {
       const adresse = `${BASE}${RACINE}/${chemin}:/content${etagAttendu ? '' : '?@microsoft.graph.conflictBehavior=fail'}`;
       try {
         const r = await c.requete('fichiers', adresse, { method: 'PUT', body: contenu }, { 'Content-Type': 'text/plain', ...(etagAttendu ? { 'If-Match': etagAttendu } : {}) });
-        const item = (await r.json()) as ElementDrive;
-        if (!item.id || !item.eTag) throw new ErreurAcces('inconnue', 'Réponse de Microsoft incomplète.');
-        return { chemin, id: item.id, etag: item.eTag };
+        const item = schemaFichierEcrit.safeParse(await r.json().catch(() => null));
+        if (!item.success) throw new ErreurAcces('inconnue', 'Réponse de Microsoft incomplète.');
+        return { chemin, id: item.data.id, etag: item.data.eTag };
       } catch (e) {
         if (e instanceof Introuvable) throw new ErreurVersion('Le fichier n’existe plus.');
         throw e;
@@ -157,7 +159,7 @@ export function creerLecteurV75Graph(o: OptionsGraph): LecteurOneDriveV75 {
       const complet = segments(chemin);
       const dossier = complet ? `approot:/${complet}:` : 'approot';
       try {
-        const items = await c.pages<ElementDrive & { folder?: object }>('fichiers', `${BASE}/me/drive/special/${dossier}/children?$select=id,name,eTag,file,folder&$top=200`);
+        const items = await c.pages('fichiers', schemaElementDrive, `${BASE}/me/drive/special/${dossier}/children?$select=id,name,eTag,file,folder&$top=200`);
         return items.map((i): ElementOneDrive => ({ nom: i.name, id: i.id, dossier: !!i.folder }));
       } catch (e) {
         if (e instanceof Introuvable) return null;
@@ -166,15 +168,6 @@ export function creerLecteurV75Graph(o: OptionsGraph): LecteurOneDriveV75 {
     },
     lire: (id) => c.telecharger(id)
   };
-}
-
-interface EvenementGraph {
-  id: string;
-  subject?: string;
-  start?: { dateTime?: string };
-  end?: { dateTime?: string };
-  location?: { displayName?: string };
-  body?: { content?: string };
 }
 
 const corps = (e: EvenementSouhaite) => ({
@@ -191,11 +184,12 @@ export function creerCalendrierGraph(o: OptionsGraph): CalendrierNuage {
   const json = { 'Content-Type': 'application/json' };
   return {
     async trouverOuCreer(nom) {
-      const liste = await c.pages<{ id: string; name: string }>('calendrier', `${BASE}/me/calendars?$select=id,name&$top=100`);
+      const liste = await c.pages('calendrier', schemaCalendrier, `${BASE}/me/calendars?$select=id,name&$top=100`);
       const trouve = liste.find((x) => x.name === nom);
       if (trouve) return trouve.id;
-      const cree = (await (await c.requete('calendrier', `${BASE}/me/calendars`, { method: 'POST', body: JSON.stringify({ name: nom }) }, json)).json()) as { id: string };
-      return cree.id;
+      const cree = schemaCalendrier.pick({ id: true }).safeParse(await (await c.requete('calendrier', `${BASE}/me/calendars`, { method: 'POST', body: JSON.stringify({ name: nom }) }, json)).json().catch(() => null));
+      if (!cree.success) throw new ErreurAcces('inconnue', 'Microsoft n’a pas confirmé la création du calendrier.');
+      return cree.data.id;
     },
 
     async evenements(calendrier, du, au) {
@@ -203,9 +197,9 @@ export function creerCalendrierGraph(o: OptionsGraph): CalendrierNuage {
       const debut = `${ajouterJours(du, -1)}T00:00:00Z`;
       const fin = `${ajouterJours(au, 1)}T23:59:59Z`;
       const adresse = `${BASE}/me/calendars/${encodeURIComponent(calendrier)}/calendarView?startDateTime=${debut}&endDateTime=${fin}&$select=id,subject,start,end,location,body&$top=100`;
-      const liste = await c.pages<EvenementGraph>('calendrier', adresse, { Prefer: `outlook.timezone="${FUSEAU_OUTLOOK}", outlook.body-content-type="text"` });
+      const liste = await c.pages('calendrier', schemaEvenement, adresse, { Prefer: `outlook.timezone="${FUSEAU_OUTLOOK}", outlook.body-content-type="text"` });
       return liste
-        .map((e): EvenementExistant => ({
+        .map((e: EvenementGraph): EvenementExistant => ({
           id: e.id, cle: repereDans(e.body?.content ?? ''), sujet: e.subject ?? '',
           debut: (e.start?.dateTime ?? '').slice(0, 16), fin: (e.end?.dateTime ?? '').slice(0, 16), lieu: e.location?.displayName ?? ''
         }))

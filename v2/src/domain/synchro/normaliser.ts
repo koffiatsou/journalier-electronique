@@ -6,6 +6,7 @@ import { normaliserPia } from '../pia/pia.ts';
 import { normaliserMemos } from '../accueil/memos.ts';
 import { REGLAGES_SYNCHRONISES } from './cles.ts';
 import type { TypeObjet } from './cles.ts';
+import { respecte, schemaActivite, schemaEleve, schemaSeance } from './schemas.ts';
 
 /*
  * Un objet reçu de OneDrive (ou d'une copie) est relu avec les mêmes règles que celui qu'on lit dans la base :
@@ -22,12 +23,12 @@ export function normaliserObjet(type: TypeObjet, donnees: unknown): unknown | nu
   if (!o) return null;
   switch (type) {
     case 'eleve':
-      if (!texte(o.id) || typeof o.nom !== 'string' || typeof o.prenom !== 'string') return null;
+      if (!respecte(schemaEleve, o)) return null;
       return normaliserEleve(o as unknown as Parameters<typeof normaliserEleve>[0]);
     case 'seance':
-      return texte(o.id) && texte(o.eleveId) && texte(o.date) && Array.isArray(o.observations) ? o : null;
+      return respecte(schemaSeance, o) ? o : null;
     case 'activite':
-      return texte(o.id) && typeof o.type === 'string' && texte(o.date) && typeof o.debut === 'number' && typeof o.fin === 'number' ? o : null;
+      return respecte(schemaActivite, o) ? o : null;
     case 'pia': {
       if (!texte(o.id) || !texte(o.eleveId)) return null;
       return normaliserPia(o);

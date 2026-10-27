@@ -187,35 +187,55 @@ function lireMouvement() {
   return longs;
 }
 
-/** Parcourt la page à la touche Tab : chaque arrêt doit se voir, rien ne doit piéger ni disparaître. */
+/**
+ * Parcourt la page à la touche Tab : chaque arrêt doit se voir, rien ne doit piéger ni disparaître.
+ * Un élément est reconnu par un numéro propre (pas par sa position : elle change quand la page défile). Un champ de date
+ * ou d'heure a plusieurs arrêts internes (jour, mois, année) : plusieurs Tab de suite sur le même champ sont normaux,
+ * mais plus de ARRETS_PAR_CHAMP signale un piège.
+ */
+const ARRETS_PAR_CHAMP = 8;
 async function lireClavier(page, maxArrets) {
   const problemes = [];
   await page.evaluate(() => { document.activeElement?.blur?.(); window.scrollTo(0, 0); });
   await page.keyboard.press('Tab');
-  const vus = [];
+  const vus = new Set();
   let depart = null;
+  let dernier = null;
+  let repetes = 0;
   for (let i = 0; i < maxArrets; i += 1) {
     const arret = await page.evaluate(() => {
       const el = document.activeElement;
       if (!el || el === document.body) return null;
+      window.__a11yIds ??= new WeakMap();
+      window.__a11yN ??= 0;
+      let id = window.__a11yIds.get(el);
+      if (!id) { window.__a11yN += 1; id = window.__a11yN; window.__a11yIds.set(el, id); }
       const s = getComputedStyle(el);
       const r = el.getBoundingClientRect();
       const anneau = (s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) > 0) || s.boxShadow !== 'none';
       const classe = typeof el.className === 'string' && el.className.trim() ? `.${el.className.trim().split(/\s+/)[0]}` : '';
       const nom = (el.getAttribute('aria-label') || el.textContent || el.value || '').replace(/\s+/g, ' ').trim().slice(0, 40);
-      return { cle: `${el.localName}${classe}|${nom}|${Math.round(r.x)}|${Math.round(r.y)}`, lib: `<${el.localName}${classe}>${nom ? ` « ${nom} »` : ''}`, anneau, taille: r.width * r.height, dans: r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth };
+      return { id, lib: `<${el.localName}${classe}>${nom ? ` « ${nom} »` : ''}`, anneau, taille: r.width * r.height, dans: r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth };
     });
     if (!arret) { await page.keyboard.press('Tab'); continue; }
-    if (depart === null) depart = arret.cle;
-    else if (arret.cle === depart) break;
-    if (vus.includes(arret.cle)) { problemes.push({ regle: 'clavier', detail: `focus bloqué ou en boucle sur ${arret.lib}` }); break; }
-    vus.push(arret.cle);
+    if (arret.id === dernier) {
+      repetes += 1;
+      if (repetes > ARRETS_PAR_CHAMP) { problemes.push({ regle: 'clavier', detail: `focus bloqué sur ${arret.lib} (${repetes} Tab de suite)` }); break; }
+      await page.keyboard.press('Tab');
+      continue;
+    }
+    repetes = 0;
+    dernier = arret.id;
+    if (depart === null) depart = arret.id;
+    else if (arret.id === depart) break; // le tour de la page est fini : retour au premier arrêt
+    if (vus.has(arret.id)) { problemes.push({ regle: 'clavier', detail: `focus en boucle : retour sur ${arret.lib} avant la fin du tour` }); break; }
+    vus.add(arret.id);
     if (!arret.anneau) problemes.push({ regle: 'focus visible', detail: `${arret.lib} n’a ni contour ni ombre quand il a le focus` });
     if (arret.taille === 0) problemes.push({ regle: 'clavier', detail: `${arret.lib} reçoit le focus mais n’a aucune taille (invisible)` });
     else if (!arret.dans) problemes.push({ regle: 'clavier', detail: `${arret.lib} reçoit le focus mais reste hors de l’écran` });
     await page.keyboard.press('Tab');
   }
-  return { problemes, arrets: vus.length };
+  return { problemes, arrets: vus.size };
 }
 
 /**
@@ -224,6 +244,9 @@ async function lireClavier(page, maxArrets) {
  */
 export async function auditerEcran(page, nom, options = {}) {
   const trouves = [];
+  // On attend la fin des animations d'ouverture (fenêtre, message) : un contraste mesuré en plein fondu serait faux.
+  await page.evaluate(() => Promise.all(document.getAnimations().filter((a) => a.effect?.getComputedTiming().iterations !== Infinity).map((a) => a.finished.catch(() => undefined))));
+  await page.waitForTimeout(60);
   for (const d of await nomsManquants(page)) trouves.push({ regle: 'nom accessible', detail: `${d} n’a pas de nom` });
   for (const p of await page.evaluate(lirePage, options)) trouves.push(p);
   if (options.clavier) {

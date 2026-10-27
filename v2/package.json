@@ -12,7 +12,8 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test \"tests/**/*.test.ts\"",
-    "check": "npm run typecheck && npm test && npm run build"
+    "check": "npm run typecheck && npm test && npm run build",
+    "navigateur": "node tools/navigateur/tout.mjs"
   },
   "dependencies": {
     "react": "19.2.8",

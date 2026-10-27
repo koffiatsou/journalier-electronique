@@ -19,7 +19,7 @@
   display: flex; align-items: flex-start; gap: var(--sp-3); width: 100%; height: 100%; padding: var(--sp-4);
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-m);
   font: inherit; color: inherit; text-align: left; cursor: pointer;
-  transition: border-color 140ms ease-out, box-shadow 140ms ease-out, transform 140ms ease-out;
+  transition: border-color var(--t-press) ease-out, box-shadow var(--t-press) ease-out, transform var(--t-press) ease-out;
 }
 .carte-eleve:active { transform: scale(0.99); }
 @media (hover: hover) and (pointer: fine) { .carte-eleve:hover { border-color: var(--c-bord, var(--line-strong)); box-shadow: var(--shadow-1); } }
@@ -83,7 +83,7 @@
 .choix-options { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
 .choix-bouton, .choix-pastille {
   padding: 0; border: 2px solid var(--line-strong); background: var(--surface); cursor: pointer; line-height: 0;
-  transition: border-color 140ms ease-out, transform 140ms ease-out;
+  transition: border-color var(--t-press) ease-out, transform var(--t-press) ease-out;
 }
 .choix-bouton { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; }
 .choix-pastille { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; }

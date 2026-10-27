@@ -18,6 +18,8 @@ cd v2
 npm install
 npm run dev        # compile puis sert http://localhost:5173
 npm run check      # typecheck + tests + build (utilisé par la CI)
+npm run navigateur # rejoue TOUS les parcours dans un vrai navigateur (Playwright à installer : voir ci-dessous) ; utilisé par la CI
+LANG=C.UTF-8 node tools/navigateur/accessibilite.mjs # audit d'accessibilité de tous les écrans (clavier, contrastes, mouvement réduit…) (lot Q)
 LANG=C.UTF-8 node tools/navigateur/journalier.mjs   # parcours dans un vrai navigateur (Playwright, serveur sur le port 5199)
 LANG=C.UTF-8 node tools/navigateur/eleves.mjs       # idem pour l'écran Élèves (cartes, archivage, passage d'année, suppression)
 LANG=C.UTF-8 node tools/navigateur/avatars.mjs      # idem pour les avatars dessinés
@@ -33,6 +35,8 @@ LANG=C.UTF-8 node tools/navigateur/coffre.mjs    # coffre chiffré : verrou, mod
 # Depuis le lot 7, ces parcours passent par le mode essai (aide commune : tools/navigateur/_coffre.mjs).
 LANG=C.UTF-8 node --import tsx tools/navigateur/synchro.mjs   # synchronisation : démonstration, conflits, Outlook, copie de secours, connexion Microsoft (faux Microsoft)
 ```
+
+**Playwright** (outil de vérification, jamais une dépendance de l'application) : en local, `npm install --no-save playwright@1.63.0` puis `npx playwright install chromium` dans `v2/` (ou la variable `PLAYWRIGHT=<chemin>/playwright/index.mjs`). La CI le fait toute seule (`.github/workflows/ci.yml`, version épinglée). Les parcours d'un autre nom que `_…` sont tous repris par `npm run navigateur`.
 
 **Sans accès au registre npm** (environnement de travail de Claude) : les paquets aux bonnes versions (esbuild, zod, React, TypeScript, tsx) sont souvent déjà installés sur la machine ; on les relie dans `v2/node_modules` (liens symboliques, dossier ignoré par Git) et on ajoute `@types/react`, `@types/react-dom` (DefinitelyTyped) et `csstype` récupérés depuis GitHub.
 
@@ -58,6 +62,7 @@ Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des l
 | Agenda : les séances réalisées (même non planifiées) apparaissent dans l'agenda | disponible (lot 9c) |
 | Agenda : horaires par école (plusieurs écoles, heures réelles sur les cases, avertissement de chevauchement ou de trajet, heures réelles dans Outlook) | disponible (lot 10) ; **à essayer avec les vraies écoles par l'utilisateur** |
 | Finition visuelle (palette « Encre et papier », menu adapté à la tablette en portrait, logo, icônes) | **lot F terminé** (palette, cadre, logo, icônes ; tous les écrans relus) ; reste le retour de l'utilisateur sur sa tablette |
+| Finitions techniques : accessibilité (lien « Aller au contenu », titre et focus à chaque écran, cibles, mouvement réduit), vérification des données par schémas (zod), parcours navigateur dans la CI | **lot Q terminé** ; reste : première exécution du contrôle GitHub, essai au lecteur d'écran |
 
 ## Outils de build
 `esbuild` compile le TypeScript et React (script `scripts/build.mjs`). Pas de Vite : l'environnement de développement initial n'avait pas accès au registre npm, et `esbuild` suffit à ce stade.

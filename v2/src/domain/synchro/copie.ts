@@ -1,6 +1,7 @@
 import { aPlat } from './objets.ts';
 import type { ObjetsLocaux } from './objets.ts';
 import type { Cle } from './cles.ts';
+import { schemaCopie } from './schemas.ts';
 
 /*
  * Copie de secours : tout le Journalier dans un seul fichier, à enregistrer sur l'ordinateur.
@@ -22,26 +23,14 @@ export function construireCopie(objets: ObjetsLocaux, maintenant: string): Copie
 
 export type LectureCopie = { ok: true; copie: Copie } | { ok: false; erreur: string };
 
-const liste = (v: unknown): v is Record<string, unknown>[] => Array.isArray(v) && v.every((x) => x && typeof x === 'object' && typeof (x as { id?: unknown }).id === 'string');
-
 export function lireCopie(texte: string): LectureCopie {
   let brut: unknown;
   try { brut = JSON.parse(texte); } catch { return { ok: false, erreur: 'Ce fichier n’est pas une copie du Journalier (lecture impossible).' }; }
-  if (!brut || typeof brut !== 'object') return { ok: false, erreur: 'Ce fichier n’est pas une copie du Journalier.' };
-  const o = brut as Record<string, unknown>;
-  const m = typeof o.schema === 'string' ? /^journalier-v2-copie\/(\d+)$/.exec(o.schema) : null;
-  if (!m) return { ok: false, erreur: 'Ce fichier n’est pas une copie du Journalier V2.' };
-  if (Number(m[1]) > 1) return { ok: false, erreur: 'Cette copie vient d’une version plus récente de l’application : mettez-la à jour.' };
-  if (![o.eleves, o.seances, o.activites, o.pias, o.reglages].every(liste)) return { ok: false, erreur: 'La copie est incomplète ou abîmée.' };
-  return {
-    ok: true,
-    copie: {
-      schema: SCHEMA_COPIE, creeLe: typeof o.creeLe === 'string' ? o.creeLe : '',
-      eleves: o.eleves as unknown as ObjetsLocaux['eleves'], seances: o.seances as unknown as ObjetsLocaux['seances'],
-      activites: o.activites as unknown as ObjetsLocaux['activites'], pias: o.pias as unknown as ObjetsLocaux['pias'],
-      reglages: o.reglages as unknown as ObjetsLocaux['reglages']
-    }
-  };
+  const lu = schemaCopie.safeParse(brut);
+  if (!lu.success) return { ok: false, erreur: lu.error.issues[0]?.message ?? 'Ce fichier n’est pas une copie du Journalier.' };
+  // Chaque section est une liste d'objets qui ont un identifiant ; le détail de chaque objet est vérifié à la restauration (`normaliserObjet`).
+  const d = lu.data as unknown as ObjetsLocaux;
+  return { ok: true, copie: { schema: SCHEMA_COPIE, creeLe: lu.data.creeLe, eleves: d.eleves, seances: d.seances, activites: d.activites, pias: d.pias, reglages: d.reglages } };
 }
 
 export interface ComparaisonCopie {

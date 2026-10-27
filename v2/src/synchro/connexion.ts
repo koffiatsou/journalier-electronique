@@ -1,5 +1,7 @@
 import { ErreurAcces } from './nuage.ts';
 import type { FournisseurJeton, Portee } from './graph.ts';
+import { schemaChargeIdentite, schemaReponseJeton, schemaSession } from './schemas-microsoft.ts';
+import type { ReponseJeton } from './schemas-microsoft.ts';
 
 /*
  * Connexion à un compte Microsoft (Entra ID) : « code d'autorisation avec PKCE », la méthode recommandée pour une
@@ -71,12 +73,14 @@ export function lireCompte(jetonIdentite: string, nonceAttendu?: string): Compte
     const charge = jetonIdentite.split('.')[1];
     if (!charge) return null;
     const binaire = atob(charge.replace(/-/g, '+').replace(/_/g, '/'));
-    const c = JSON.parse(new TextDecoder().decode(Uint8Array.from(binaire, (x) => x.charCodeAt(0)))) as Record<string, unknown>;
+    const lu = schemaChargeIdentite.safeParse(JSON.parse(new TextDecoder().decode(Uint8Array.from(binaire, (x) => x.charCodeAt(0)))));
+    if (!lu.success) return null;
+    const c = lu.data;
     if (nonceAttendu !== undefined && c.nonce !== nonceAttendu) return null;
-    const id = typeof c.oid === 'string' ? c.oid : typeof c.sub === 'string' ? c.sub : '';
+    const id = c.oid ?? c.sub ?? '';
     if (!id) return null;
-    const courriel = typeof c.preferred_username === 'string' ? c.preferred_username : typeof c.email === 'string' ? c.email : '';
-    return { id, nom: typeof c.name === 'string' && c.name ? c.name : courriel, courriel };
+    const courriel = c.preferred_username ?? c.email ?? '';
+    return { id, nom: c.name ? c.name : courriel, courriel };
   } catch { return null; }
 }
 
@@ -106,8 +110,6 @@ interface Session {
   acces: Partial<Record<Portee, { jeton: string; expireLe: number }>>;
 }
 
-interface ReponseJeton { access_token?: string; refresh_token?: string; id_token?: string; expires_in?: number; scope?: string; error?: string; error_description?: string }
-
 export class Connexion implements FournisseurJeton {
   private abonnes = new Set<() => void>();
   private renouvellements = new Map<Portee, Promise<string>>();
@@ -126,8 +128,8 @@ export class Connexion implements FournisseurJeton {
   private lire(): Session | null {
     try {
       const brut = this.d.stockage.getItem(CLE_SESSION);
-      const s = brut ? (JSON.parse(brut) as Session) : null;
-      return s && s.compte?.id && typeof s.refresh === 'string' && Array.isArray(s.droits) ? s : null;
+      const lue = brut ? schemaSession.safeParse(JSON.parse(brut)) : null;
+      return lue?.success ? (lue.data as Session) : null;
     } catch { return null; }
   }
   private ecrire(s: Session | null): void {
@@ -201,7 +203,9 @@ export class Connexion implements FournisseurJeton {
         method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: corps.toString()
       });
     } catch { throw new ErreurAcces('reseau', 'Pas de connexion à Microsoft. Vérifiez le réseau, puis réessayez.'); }
-    const rep = (await reponse.json().catch(() => ({}))) as ReponseJeton;
+    // Une réponse qui n'a pas la forme attendue est traitée comme une réponse vide : les messages plus bas disent quoi faire.
+    const lue = schemaReponseJeton.safeParse(await reponse.json().catch(() => ({})));
+    const rep: ReponseJeton = lue.success ? lue.data : {};
     if (!reponse.ok || rep.error) {
       const detail = rep.error_description ?? rep.error ?? `statut ${reponse.status}`;
       if (/consent|AADSTS65001|AADSTS70011|invalid_scope/i.test(`${rep.error} ${detail}`)) throw new ErreurAcces('consentement', 'Microsoft n’a pas autorisé ce droit pour l’application.');
