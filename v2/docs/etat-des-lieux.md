@@ -1,6 +1,6 @@
 # État des lieux de la V2
 
-Mis à jour le 27 octobre 2026 (lots 1 à 9c terminés ; ensuite : vos essais réels, puis lot Q). Le travail est organisé en lots : voir `docs/plan-de-travail.md`. Branche `v2/react-ts`, PR #37 (brouillon, jamais fusionnée sans validation).
+Mis à jour le 27 octobre 2026 (lots 1 à 9c terminés ; ensuite : vos essais réels ; le lot Q est en pause et passera en tout dernier, voir le plan). Le travail est organisé en lots : voir `docs/plan-de-travail.md`. Branche `v2/react-ts`, PR #37 (brouillon, jamais fusionnée sans validation).
 
 ## Fait
 - Séance en 5 étapes, panneau « Feuille » avec rappel de la dernière séance et des aides fréquentes.
