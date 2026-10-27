@@ -4,7 +4,7 @@
 // La date du jour est figée au mardi 27 octobre 2026, 8 h (donc : un accompagnement d'Élève Bêta aujourd'hui, un d'Élève Alpha hier).
 import { mkdirSync } from 'node:fs';
 import os from 'node:os';
-import { aller, recharger } from './_coffre.mjs';
+import { aller, ecrireBase, recharger } from './_coffre.mjs';
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const URL_APP = process.env.URL_APP ?? 'http://localhost:5199/';
 const SORTIE = process.env.SORTIE ?? `${os.tmpdir()}/journalier-navigateur`;
@@ -61,6 +61,22 @@ ok(await page.getByText('Aucun mémo.').isVisible(), 'un mémo se supprime');
 // synchronisation
 ok(await page.getByText('Pas de synchronisation : vos données restent sur cet appareil.').isVisible(), 'l’état de la synchronisation est rappelé');
 await page.screenshot({ path: `${SORTIE}/accueil.png`, fullPage: true });
+
+// journée chargée : six rendez-vous de plus, un seul rappel déplié (le prochain)
+for (let i = 0; i < 6; i += 1) {
+  await ecrireBase(page, 'activites', {
+    id: `demo-charge-${i}`, type: 'eleve', eleveId: i % 2 ? 'demo-beta' : 'demo-alpha', titre: '', lieu: '', note: '', date: '2026-10-27',
+    debut: i, fin: i, repetition: 'aucune', creeLe: '2026-10-27T07:00:00.000Z', modifieLe: '2026-10-27T07:00:00.000Z'
+  });
+}
+await recharger(page);
+await page.locator('.creneau').first().waitFor();
+ok(await page.locator('.creneau').count() >= 7, 'journée chargée : au moins sept rendez-vous');
+ok(await page.locator('.creneau-suite[open]').count() === 1, 'un seul rappel est déplié (le prochain rendez-vous)');
+ok(await page.locator('.creneau-suite:not([open])').count() >= 5, 'les autres sont repliés sur une ligne');
+await page.locator('.creneau-suite:not([open]) summary').first().click();
+ok(await page.locator('.creneau-suite[open]').count() === 2, 'un rappel se déplie d’un toucher');
+await page.screenshot({ path: `${SORTIE}/accueil-chargee.png`, fullPage: true });
 
 // téléphone
 await page.setViewportSize({ width: 390, height: 844 });

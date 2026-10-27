@@ -77,6 +77,8 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
   const changements = useMemo(() => deplacements(jour.creneaux, trajet), [jour.creneaux, trajet]);
   const retard = useMemo(() => aEncoder(aujourdhui, activites, seances), [aujourdhui, activites, seances]);
   const aujourdhuiMeme = jour.date === aujourdhui;
+  /* Seul le prochain rendez-vous d'élève (pas encore passé, pas encore encodé) a son rappel déplié ; les autres se déplient d'un toucher. */
+  const prochain = jour.creneaux.find((c) => c.occ.activite.type === 'eleve' && c.occ.statut !== 'realise' && !(aujourdhuiMeme && c.finMin !== null && c.finMin < maintenantMin()));
   const plusieursEcoles = ecoles.length > 1;
 
   const encoder = (o: Occurrence) => {
@@ -175,10 +177,10 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
                           <p className="creneau-titre">{c.nom}</p>
                           <p className="creneau-detail">{[o.activite.matiere, o.activite.lieu].filter(Boolean).join(' · ') || (o.activite.type === 'eleve' ? '' : 'Hors accompagnement d’élève')}</p>
                           {c.suite && rappel.length ? (
-                            <div className="creneau-suite">
-                              <p className="creneau-suite-titre">Dernière séance : {dateFR(c.suite.date)}{c.suite.matiere ? ` · ${c.suite.matiere}` : ''}</p>
+                            <details className="creneau-suite" open={c === prochain}>
+                              <summary>Dernière séance : {dateFR(c.suite.date)}{c.suite.matiere ? ` · ${c.suite.matiere}` : ''}</summary>
                               {rappel.map((l) => <p key={l.etiquette}><span className="creneau-suite-etiquette">{l.etiquette}</span> {l.texte}</p>)}
-                            </div>
+                            </details>
                           ) : c.suite ? (
                             <p className="creneau-suite-seule">Dernière séance : {dateFR(c.suite.date)}{c.suite.matiere ? ` · ${c.suite.matiere}` : ''}</p>
                           ) : null}

@@ -31,10 +31,16 @@
 .creneau-action { display: grid; gap: var(--sp-2); justify-items: end; align-content: start; }
 
 /* ce qui avait été noté la dernière fois */
-.creneau-suite { margin-top: var(--sp-3); padding: var(--sp-3) var(--sp-4); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-m); display: grid; gap: 2px; font-size: 0.9rem; color: var(--ink); }
+.creneau-suite { margin-top: var(--sp-3); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-m); font-size: 0.9rem; color: var(--ink); }
+.creneau-suite > p { padding: 0 var(--sp-4); margin-bottom: 2px; }
+.creneau-suite > p:last-child { padding-bottom: var(--sp-3); }
+.creneau-suite summary { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); min-height: 44px; padding: 0 var(--sp-4); cursor: pointer; list-style: none; color: var(--ink-2); font-size: 0.82rem; font-weight: 600; }
+.creneau-suite summary::-webkit-details-marker { display: none; }
+.creneau-suite summary::after { content: ''; flex: none; width: 8px; height: 8px; border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3); transform: rotate(45deg); transition: transform var(--t-ui) var(--ease-out); }
+.creneau-suite[open] summary::after { transform: rotate(-135deg); }
+.creneau-suite summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--r-m); }
 .creneau-suite-seule { margin-top: var(--sp-2); color: var(--ink-3); font-size: 0.85rem; }
 .creneau-suite-etiquette { color: var(--ink-3); font-size: 0.8rem; font-weight: 600; margin-right: 4px; }
-.creneau-suite-titre { color: var(--ink-3); font-size: 0.78rem; font-weight: 600; }
 
 /* mémos qui réapparaissent sur le rendez-vous */
 .creneau-memos { list-style: none; margin: var(--sp-3) 0 0; padding: 0; display: grid; gap: var(--sp-1); }
