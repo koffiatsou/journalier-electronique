@@ -1,0 +1,33 @@
+/* ───────── Synchronisation ───────── */
+.synchro { max-width: 760px; margin-inline: 0; } /* aligné à gauche comme les autres écrans */
+.synchro-bloc { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--shadow-1); padding: var(--sp-5); display: grid; gap: var(--sp-3); }
+.synchro-bloc h2 { font-size: 1.1rem; }
+.synchro-bloc p { color: var(--ink-2); overflow-wrap: anywhere; }
+.synchro-bloc p strong { color: var(--ink); }
+.synchro-discret { color: var(--ink-3) !important; font-size: 0.85rem; }
+.synchro-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.synchro-case { display: flex; align-items: flex-start; gap: var(--sp-2); color: var(--ink-2); cursor: pointer; }
+.synchro-case input { margin-top: 4px; width: 18px; height: 18px; flex: none; }
+.synchro-champs { display: grid; gap: var(--sp-3); }
+.synchro-message { padding: var(--sp-3) var(--sp-4); border-radius: var(--r-m); border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); overflow-wrap: anywhere; }
+.synchro-message-ok { background: var(--ok-soft); border-color: var(--ok); }
+.synchro-message-erreur { background: var(--danger-soft); border-color: var(--danger); }
+.synchro-message-info { background: var(--peda-soft); border-color: var(--peda); }
+.synchro-aide { color: var(--ink-2); }
+.synchro-aide summary { cursor: pointer; font-weight: 600; }
+.synchro-aide code { overflow-wrap: anywhere; background: var(--surface-2); padding: 2px 6px; border-radius: 6px; }
+.synchro-restauration { display: grid; gap: var(--sp-2); background: var(--surface-2); border-radius: var(--r-m); padding: var(--sp-4); }
+.conflits { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); }
+.conflit { display: grid; gap: var(--sp-3); padding: var(--sp-4); border: 1px solid var(--attention); background: var(--attention-soft); border-radius: var(--r-m); }
+.conflit p { margin: 2px 0 0; }
+.conflit-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+
+/* Bandeau de démonstration sur l'accueil */
+.bandeau-demo { background: var(--peda-soft); border: 1px solid var(--peda); border-radius: var(--r-l); padding: var(--sp-4) var(--sp-5); display: grid; gap: var(--sp-3); }
+.bandeau-demo p { color: var(--ink-2); }
+.bandeau-demo-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+
+@media (max-width: 759px) {
+  .synchro-bloc { padding: var(--sp-4); }
+  .synchro-actions .btn, .conflit-actions .btn { flex: 1 1 100%; }
+}

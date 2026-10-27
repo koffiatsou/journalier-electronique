@@ -1,0 +1,204 @@
+/* ───────── Agenda ───────── */
+.c-0 { --c-bord: #3b6fe0; } .c-1 { --c-bord: #e8820c; } .c-2 { --c-bord: #2f9e55; } .c-3 { --c-bord: #d6407f; } .c-4 { --c-bord: #8450d6; }
+.c-5 { --c-bord: #14a3ab; } .c-6 { --c-bord: #c9a100; } .c-7 { --c-bord: #d9443d; } .c-8 { --c-bord: #4a55c4; } .c-9 { --c-bord: #9a6a45; }
+.t-collaboration { --c-bord: #5b86a8; } .t-formation { --c-bord: #8a7f6c; } .t-administratif { --c-bord: #6c7a8c; } .t-libre { --c-bord: #98a3b5; }
+.c-0, .c-1, .c-2, .c-3, .c-4, .c-5, .c-6, .c-7, .c-8, .c-9, .t-collaboration, .t-formation, .t-administratif, .t-libre {
+  --c-fond: color-mix(in srgb, var(--c-bord) 17%, #fff);
+  --c-texte: color-mix(in srgb, var(--c-bord) 52%, #000);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='clair']) :is(.c-0, .c-1, .c-2, .c-3, .c-4, .c-5, .c-6, .c-7, .c-8, .c-9, .t-collaboration, .t-formation, .t-administratif, .t-libre) {
+    --c-fond: color-mix(in srgb, var(--c-bord) 30%, #141b2e);
+    --c-texte: color-mix(in srgb, var(--c-bord) 38%, #fff);
+  }
+}
+:root[data-theme='sombre'] :is(.c-0, .c-1, .c-2, .c-3, .c-4, .c-5, .c-6, .c-7, .c-8, .c-9, .t-collaboration, .t-formation, .t-administratif, .t-libre) {
+  --c-fond: color-mix(in srgb, var(--c-bord) 30%, #141b2e);
+  --c-texte: color-mix(in srgb, var(--c-bord) 38%, #fff);
+}
+
+.agenda { display: grid; gap: var(--sp-4); }
+.agenda-barre { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); }
+.agenda-titre { font-size: 1.15rem; font-weight: 650; margin: 0; min-width: 12ch; }
+.agenda-nav { display: flex; gap: var(--sp-1); }
+.agenda-barre .espace { flex: 1; }
+.agenda-outils { display: flex; flex-wrap: wrap; gap: var(--sp-1); } /* les trois outils restent groupés quand la barre passe à la ligne */
+.agenda-barre .btn-primary { margin-left: auto; } /* si la barre passe sur deux lignes, « Nouvelle activité » reste calé à droite */
+.bascule { display: inline-flex; border: 1px solid var(--line-strong); border-radius: var(--r-s); overflow: hidden; }
+.bascule button { border: 0; background: var(--surface); padding: 8px 14px; font: inherit; cursor: pointer; color: var(--ink-2); min-height: 40px; }
+.bascule button[aria-pressed='true'] { background: var(--peda-soft); color: var(--peda-ink); font-weight: 600; }
+.legende { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.legende button { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 12px 4px 8px; font: inherit; font-size: .875rem; cursor: pointer; color: var(--ink); min-height: 32px; }
+.legende button[aria-pressed='true'] { border-color: var(--c-bord); background: var(--c-fond); color: var(--c-texte); }
+.legende i { width: 12px; height: 12px; border-radius: 50%; background: var(--c-bord); display: inline-block; }
+
+.agenda-corps { display: grid; gap: var(--sp-4); align-items: start; }
+@media (min-width: 1100px) { .agenda-corps.avec-panneau { grid-template-columns: minmax(0, 1fr) 340px; } }
+
+.jours-onglets { display: flex; gap: var(--sp-1); }
+.jours-onglets button { flex: 1; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-s); padding: 6px 0; font: inherit; cursor: pointer; display: grid; line-height: 1.2; min-height: 48px; color: var(--ink-2); }
+.jours-onglets button[aria-pressed='true'] { background: var(--peda-soft); border-color: var(--peda); color: var(--peda-ink); font-weight: 600; }
+.jours-onglets small { font-weight: 400; }
+
+.grille { --PH: 60px; --PAUSE: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--shadow-1); overflow: hidden; }
+.grille-entete, .grille-corps { display: grid; grid-template-columns: 52px repeat(var(--nb-jours), minmax(0, 1fr)); }
+.grille-entete { border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.grille-entete > div { padding: 8px 6px; text-align: center; font-size: .875rem; color: var(--ink-2); border-left: 1px solid var(--line); }
+.grille-entete > div:first-child { border-left: 0; }
+.grille-entete strong { display: block; color: var(--ink); font-size: 1rem; }
+.grille-entete .aujourdhui strong { color: var(--on-accent); background: var(--peda); border-radius: 999px; width: 2rem; height: 2rem; line-height: 2rem; margin: 0 auto; }
+.axe { position: relative; }
+.axe span { position: absolute; right: 6px; font-size: .75rem; color: var(--ink-3); transform: translateY(-50%); background: var(--surface); padding: 0 2px; }
+.axe b { position: absolute; left: 6px; font-weight: 600; font-size: .75rem; color: var(--ink-2); }
+.colonne { position: relative; border-left: 1px solid var(--line); touch-action: pan-y; }
+.cellule { position: absolute; left: 0; right: 0; border: 0; border-top: 1px solid var(--line); background: transparent; cursor: pointer; padding: 0; }
+.cellule:hover { background: color-mix(in srgb, var(--peda) 6%, transparent); }
+.cellule:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.pause { position: absolute; left: 0; right: 0; background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--line-strong) 40%, transparent) 6px 7px); border-top: 1px solid var(--line); pointer-events: none; }
+.pause-axe { position: absolute; left: 0; right: 0; font-size: .6875rem; color: var(--ink-3); text-align: right; padding-right: 6px; display: flex; align-items: center; justify-content: flex-end; }
+
+.evt { position: absolute; z-index: 2; box-sizing: border-box; text-align: left; border: 0; border-left: 4px solid var(--c-bord); border-radius: 8px; background: var(--c-fond); color: var(--c-texte); padding: 4px 8px 6px; font: inherit; font-size: .8125rem; line-height: 1.25; overflow: hidden; cursor: grab; box-shadow: 0 1px 2px rgb(22 35 63 / 10%); user-select: none; -webkit-user-select: none; touch-action: pan-y; }
+.evt:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.evt strong { display: block; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.evt small { display: block; opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.evt[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--c-bord), var(--shadow-2); z-index: 4; }
+.evt.t-libre { background: var(--surface); border: 1px dashed var(--c-bord); border-left: 4px solid var(--c-bord); }
+.evt.annule { opacity: .55; background: repeating-linear-gradient(135deg, var(--c-fond) 0 6px, transparent 6px 12px); }
+.evt.annule strong { text-decoration: line-through; }
+.evt.realise::after { content: '✓'; position: absolute; top: 3px; right: 6px; font-weight: 700; }
+.evt.glisse { opacity: .35; pointer-events: none; }
+.evt.copie-active { cursor: copy; }
+.evt-poignee { position: absolute; left: 0; right: 0; bottom: 0; height: 10px; cursor: ns-resize; touch-action: none; }
+.evt-poignee::after { content: ''; position: absolute; left: 50%; bottom: 3px; width: 24px; height: 3px; margin-left: -12px; border-radius: 2px; background: var(--c-bord); opacity: .55; }
+.fantome { position: absolute; z-index: 5; border: 2px dashed var(--c-bord); background: color-mix(in srgb, var(--c-bord) 14%, transparent); border-radius: 8px; pointer-events: none; }
+.fantome.copie::before { content: '＋ copie'; position: absolute; top: 4px; left: 8px; font-size: .75rem; font-weight: 600; color: var(--c-texte); }
+.maintenant { position: absolute; left: 0; right: 0; height: 2px; background: var(--danger); z-index: 3; pointer-events: none; }
+
+.panneau { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--shadow-2); display: grid; gap: var(--sp-3); padding: var(--sp-4); }
+.panneau h2 { margin: 0; font-size: 1.05rem; }
+.panneau .en-tete { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+.panneau .actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.panneau .portee { background: var(--attention-soft); border-radius: var(--r-s); padding: var(--sp-2) var(--sp-3); display: grid; gap: var(--sp-1); font-size: .875rem; }
+.panneau .portee label { display: flex; gap: var(--sp-2); align-items: center; }
+.panneau .ligne2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+.pastilles-couleur { display: flex; flex-wrap: wrap; gap: 6px; }
+.pastilles-couleur button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; background: var(--c-bord); cursor: pointer; padding: 0; }
+.pastilles-couleur button[aria-pressed='true'] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--surface) inset; }
+.pastilles-couleur .auto { width: auto; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line-strong); padding: 0 10px; font: inherit; font-size: .8125rem; color: var(--ink-2); }
+.pastilles-couleur .auto[aria-pressed='true'] { border-color: var(--ink); }
+@media (max-width: 1099px) {
+  .panneau.feuille-bas { position: fixed; left: 8px; right: 8px; bottom: calc(var(--tabbar, 64px) + 8px); max-height: 78vh; overflow: auto; z-index: 30; }
+}
+@media (max-width: 759px) {
+  .grille { --PH: 64px; }
+  .evt { font-size: .875rem; }
+}
+.pastille-eleve { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--c-bord); margin-right: 6px; }
+.lecteur-seul { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ───────── Jours fériés et vacances (semaine, jour, mois) ───────── */
+.marque-jour { display: block; font-size: .6875rem; line-height: 1.25; font-weight: 500; color: var(--ink-3); margin-top: 2px; pointer-events: none; }
+.grille-entete .marque-jour { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grille-entete .jour-ferie, .mois-case.jour-ferie { background: color-mix(in srgb, var(--line-strong) 26%, var(--surface-2)); }
+.grille-entete .jour-vacances, .mois-case.jour-vacances { background: repeating-linear-gradient(135deg, transparent 0 8px, color-mix(in srgb, var(--line-strong) 40%, transparent) 8px 9px), var(--surface-2); }
+.colonne.jour-ferie { background: color-mix(in srgb, var(--line-strong) 14%, transparent); }
+.colonne.jour-vacances { background: repeating-linear-gradient(135deg, transparent 0 10px, color-mix(in srgb, var(--line-strong) 24%, transparent) 10px 11px); }
+.agenda-note { margin: 0; padding: var(--sp-2) var(--sp-3); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-s); font-size: .875rem; color: var(--ink-2); }
+
+/* ───────── Vue Mois ───────── */
+.mois { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--shadow-1); overflow: hidden; }
+.mois-entete, .mois-semaine { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.mois-entete { background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.mois-entete > div { padding: 8px 6px; text-align: center; font-size: .875rem; color: var(--ink-2); border-left: 1px solid var(--line); }
+.mois-entete > div:first-child { border-left: 0; }
+.mois-semaine + .mois-semaine { border-top: 1px solid var(--line); }
+.mois-case { position: relative; min-height: 112px; padding: 4px 6px 6px; border-left: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mois-case:first-child { border-left: 0; }
+.mois-case:hover { background-color: color-mix(in srgb, var(--peda) 5%, transparent); }
+.mois-case.hors-mois .mois-jour, .mois-case.hors-mois .marque-jour { color: var(--ink-3); }
+.mois-case.hors-mois .mois-evts { opacity: .6; }
+.mois-jour { align-self: flex-start; display: inline-flex; align-items: baseline; gap: 4px; border: 0; background: transparent; padding: 2px 8px; margin-left: -4px; border-radius: 999px; color: var(--ink); min-height: 28px; }
+.mois-jour::after { content: ''; position: absolute; inset: 0; border-radius: inherit; }
+.mois-jour:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.mois-jour strong { font-size: .9375rem; }
+.mois-jour small { color: var(--ink-3); font-size: .75rem; }
+.mois-case.aujourdhui .mois-jour { background: var(--peda); color: var(--surface); }
+.mois-case.aujourdhui .mois-jour small { color: inherit; }
+/* Vue Mois : création et glisser-déposer (grand écran) */
+.mois-ajout { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--ink-2); font: inherit; line-height: 1; cursor: pointer; opacity: 0; }
+.mois-case:hover .mois-ajout, .mois-ajout:focus-visible { opacity: 1; }
+.mois-case.depot { outline: 2px dashed var(--peda); outline-offset: -2px; background-color: color-mix(in srgb, var(--peda) 10%, transparent); }
+.mois-evt[draggable="true"] { cursor: grab; }
+.mois-evts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; min-width: 0; pointer-events: none; }
+.mois-evt { pointer-events: auto; position: relative; z-index: 1; display: block; width: 100%; text-align: left; border: 0; border-left: 3px solid var(--c-bord); border-radius: 5px; background: var(--c-fond); color: var(--c-texte); padding: 4px 6px; min-height: 24px; font-size: .75rem; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.mois-evt:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.mois-evt[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--c-bord); }
+.mois-evt.annule { opacity: .55; text-decoration: line-through; }
+.mois-plus { position: relative; z-index: 1; align-self: flex-start; border: 0; background: transparent; color: var(--ink-2); font-size: .75rem; padding: 2px 4px; text-decoration: underline; }
+.mois-pastille { display: block; width: 10px; height: 10px; border-radius: 50%; background: var(--c-bord); }
+.mois-pastille.annule { opacity: .4; }
+.mois-reste { font-size: .6875rem; line-height: 10px; color: var(--ink-2); font-weight: 600; }
+@media (max-width: 759px) {
+  .mois-case { min-height: 76px; padding: 2px 3px 4px; }
+  .mois-entete > div { padding: 6px 2px; font-size: .75rem; }
+  .mois-evts { flex-direction: row; flex-wrap: wrap; gap: 3px; padding-left: 3px; }
+  .mois-case .marque-jour { display: none; }
+  .agenda-barre .bascule button { padding: 8px 10px; }
+}
+
+/* ───────── Fenêtre des horaires ───────── */
+.horaires-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.horaires-ligne { display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--sp-2); align-items: center; }
+.horaires-ligne b { color: var(--ink-2); }
+.horaires-pause { display: block; font-size: .75rem; color: var(--ink-3); margin: 6px 0 2px calc(3rem + var(--sp-2)); }
+.horaires-ligne .input[aria-invalid='true'] { border-color: var(--danger); }
+.horaires-erreurs { margin: 0; padding: var(--sp-2) var(--sp-3) var(--sp-2) 28px; background: var(--danger-soft); border-left: 4px solid var(--danger); border-radius: var(--r-s); color: var(--ink); font-size: .875rem; }
+.horaires-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
+.horaires-actions .espace { flex: 1; }
+.horaires-inutilisee { grid-column: 2 / -1; font-size: .8125rem; color: var(--ink-3); }
+.ecoles-choix { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
+.input-court { max-width: 8rem; }
+.agenda-ecole-filtre .select { min-height: 40px; max-width: 14rem; }
+.agenda-alertes { margin: 0; padding: var(--sp-2) var(--sp-3); background: var(--attention-soft); border: 1px solid var(--attention); border-left-width: 4px; border-radius: var(--r-s); font-size: .875rem; color: var(--ink); }
+.agenda-alertes ul { margin: 4px 0 0; padding-left: 1.1rem; }
+.agenda-alertes small { color: var(--ink-2); }
+.evt.alerte { box-shadow: 0 0 0 2px var(--attention); }
+.evt .evt-ecole { font-weight: 600; }
+.mois-evt.alerte { box-shadow: inset 0 0 0 2px var(--attention); }
+@media (max-width: 759px) {
+  .horaires-ligne { grid-template-columns: 2.6rem minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; }
+  .horaires-pause { margin-left: calc(2.6rem + 6px); }
+  .horaires-ligne .input { padding-inline: 8px; }
+  /* Sur téléphone, on touche le champ lui-même pour choisir l'heure : l'icône d'horloge ne sert qu'à prendre de la place. */
+  .horaires-ligne input[type='time']::-webkit-calendar-picker-indicator { display: none; }
+}
+
+/* ───────── Semaine type ───────── */
+.semaine-type-bloc { display: grid; gap: var(--sp-2); padding-bottom: var(--sp-3); border-bottom: 1px solid var(--line); }
+.semaine-type-bloc h3 { margin: 0; font-size: .95rem; }
+.semaine-type-liste { margin: 0; display: grid; gap: var(--sp-2); }
+.semaine-type-liste > div { display: grid; grid-template-columns: 6.5rem 1fr; gap: var(--sp-2); font-size: .875rem; }
+.semaine-type-liste dt { font-weight: 600; text-transform: capitalize; color: var(--ink-2); }
+.semaine-type-liste dd { margin: 0; display: grid; gap: 2px; }
+.semaine-type-apercu { margin: 0; padding: var(--sp-2) var(--sp-3); background: var(--surface-2); border-radius: var(--r-s); font-size: .875rem; }
+.case-a-cocher { display: flex; gap: var(--sp-2); align-items: flex-start; font-size: .875rem; }
+.fantome.creation { border-style: solid; }
+
+/* ───────── Impression de l'agenda (la vue affichée : semaine, jour ou mois) ───────── */
+@page agenda { size: A4 landscape; margin: 10mm; }
+.agenda-impression-titre { display: none; }
+@media print {
+  .agenda { page: agenda; }
+  .nav, .agenda-barre, .agenda-note, .agenda-alertes, .jours-onglets, .panneau, .toasts, .page-entete, .cellule { display: none !important; }
+  .shell { display: block; padding: 0; min-height: 0; }
+  .contenu { padding: 0; }
+  .agenda { gap: 6pt; color: #000; }
+  .agenda-impression-titre { display: block; margin: 0; font-size: 14pt; font-weight: 700; text-transform: capitalize; }
+  .legende button { border-color: #888; font-size: 9pt; min-height: 0; padding: 1pt 8pt 1pt 5pt; }
+  .grille, .mois { box-shadow: none; border-radius: 0; break-inside: avoid; border-color: #888; }
+  .mois-case { min-height: 84px; }
+  .evt, .mois-evt, .grille-entete > div, .mois-case, .colonne, .legende i { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .evt { cursor: default; box-shadow: none; }
+  .evt-poignee { display: none; }
+  .mois-plus { display: none; }
+}

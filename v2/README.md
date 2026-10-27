@@ -1,0 +1,71 @@
+# Journalier V2 — React + TypeScript
+
+Réécriture du Journalier électronique. **Depuis le lot S, la V2 est la version définitive : elle occupe l'adresse principale du site ; la V75 reste en secours dans `/v75/`** (voir `docs/plan-de-bascule.md`). Le site publié est assemblé par `npm run site` : V2 à la racine, V75 compilée avec `--base=/journalier-electronique/v75/`.
+
+## Pourquoi une réécriture
+La V75 est née par ajouts successifs (≈ 33 000 lignes de JavaScript sans structure imposée). La V2 repart d'une architecture claire, vérifiée par le compilateur et par des tests, avec un design soigné et fluide.
+
+## Principes
+- **Domaine pur** (`src/domain`) : types du Journalier et règles de rédaction. Aucune dépendance au navigateur, entièrement testé.
+- **Données locales** (`src/data`) : une interface `Depot` ; IndexedDB chiffré (AES-GCM, lot 7), mémoire pour les tests.
+- **Interface** (`src/ui`, `src/features`) : composants React accessibles, un seul style (jetons CSS), mouvement réduit respecté.
+- **Sécurité** : aucun HTML construit à la main (React échappe le texte), politique CSP stricte (`script-src 'self'`), aucun script intégré.
+- **Garde-fous** : TypeScript strict, tests automatiques, `npm run check` obligatoire avant fusion (typecheck + tests + build).
+
+## Commandes
+```bash
+cd v2
+npm install
+npm run dev        # compile puis sert http://localhost:5173
+npm run check      # typecheck + tests + build (utilisé par la CI)
+npm run site       # lot S : assemble ../site (V2 à la racine + V75 de ../dist dans v75/) et vérifie toutes les adresses ; la V75 doit avoir été compilée à la racine du dépôt avec : npm run build -- --base=/journalier-electronique/v75/
+npm run navigateur # rejoue TOUS les parcours dans un vrai navigateur (Playwright à installer : voir ci-dessous) ; utilisé par la CI
+LANG=C.UTF-8 node tools/navigateur/accessibilite.mjs # audit d'accessibilité de tous les écrans (clavier, contrastes, mouvement réduit…) (lot Q)
+LANG=C.UTF-8 node tools/navigateur/journalier.mjs   # parcours dans un vrai navigateur (Playwright, serveur sur le port 5199)
+LANG=C.UTF-8 node tools/navigateur/eleves.mjs       # idem pour l'écran Élèves (cartes, archivage, passage d'année, suppression)
+LANG=C.UTF-8 node tools/navigateur/avatars.mjs      # idem pour les avatars dessinés
+LANG=C.UTF-8 node tools/navigateur/pia.mjs          # idem pour l'écran PIA (onglets, enregistrement, export Word)
+LANG=C.UTF-8 node tools/navigateur/pia-4b.mjs       # idem pour le PV 2, l'export par partie, dé-identifié, impression
+LANG=C.UTF-8 node tools/navigateur/agenda-5.mjs     # idem pour l'agenda : mois, jours fériés, vacances scolaires, horaires réglables
+LANG=C.UTF-8 node tools/navigateur/agenda-6.mjs     # idem : glisser pour créer, semaine type, impression
+LANG=C.UTF-8 node tools/navigateur/theme.mjs     # bouton de thème Automatique / Clair / Sombre
+LANG=C.UTF-8 node tools/navigateur/accueil.mjs     # accueil : ma journée, séances à encoder, mémos (conservés après rechargement), état de la synchro, téléphone (lot A)
+LANG=C.UTF-8 node tools/navigateur/accueil-suite.mjs # de bout en bout : objectif, observation, aide et « Suite » saisis dans l'écran Séance sont repris sur l'accueil (lot A)
+LANG=C.UTF-8 node tools/navigateur/captures.mjs    # captures de tous les écrans (4 tailles × clair/sombre) pour relire l'habillage (lot F)
+LANG=C.UTF-8 node tools/navigateur/site.mjs      # la V2 servie sous /journalier-electronique/ comme sur GitHub Pages : connexion, adresse de retour Microsoft, modèles Word (lot S)
+LANG=C.UTF-8 node tools/navigateur/coffre.mjs    # coffre chiffré : verrou, mode essai, rien en clair, clé perdue, migration, copie avec mot de passe
+# Depuis le lot 7, ces parcours passent par le mode essai (aide commune : tools/navigateur/_coffre.mjs).
+LANG=C.UTF-8 node --import tsx tools/navigateur/synchro.mjs   # synchronisation : démonstration, conflits, Outlook, copie de secours, connexion Microsoft (faux Microsoft)
+```
+
+**Playwright** (outil de vérification, jamais une dépendance de l'application) : en local, `npm install --no-save playwright@1.63.0` puis `npx playwright install chromium` dans `v2/` (ou la variable `PLAYWRIGHT=<chemin>/playwright/index.mjs`). La CI le fait toute seule (`.github/workflows/ci.yml`, version épinglée). Les parcours d'un autre nom que `_…` sont tous repris par `npm run navigateur`.
+
+**Sans accès au registre npm** (environnement de travail de Claude) : les paquets aux bonnes versions (esbuild, zod, React, TypeScript, tsx) sont souvent déjà installés sur la machine ; on les relie dans `v2/node_modules` (liens symboliques, dossier ignoré par Git) et on ajoute `@types/react`, `@types/react-dom` (DefinitelyTyped) et `csstype` récupérés depuis GitHub.
+
+## Organisation du travail
+Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des lots, fin de lot) et `docs/etat-des-lieux.md`.
+
+## État d'avancement
+| Domaine | État |
+| --- | --- |
+| Moteur de rédaction (blocs, synthèse, absences, dé-identification) | porté et testé |
+| Écran Séance (5 étapes, feuille vivante) | disponible |
+| Référentiel de compétences (pistes) | partiel (lots R1–R3) |
+| Élèves (cartes, recherche, fiche, archivage, suppression, passage d'année, plusieurs langues) | disponible (lots 2 et 2b, avatars dessinés compris) |
+| Écran Journalier (période, modifier/supprimer, export Word élève ou tous) | disponible (lot 1) |
+| Agenda (semaine / jour / mois, couleurs, glisser‑déplacer, jours fériés et vacances scolaires FWB, horaires des périodes réglables) | disponible (lots 5 et 6 : + semaine type, création en glissant sur plusieurs périodes, impression) |
+| Réunion (résumé par matière, objectifs à valider, texte à copier) | disponible (lot 3), maintenant onglet « Préparer » du PIA |
+| PIA (profil, procès-verbaux 1 et 2, aménagements, export Word entier ou par partie ; onglet Préparer = ex-Réunion) | disponible (lots 4a et 4b : PV 2, export par partie, version dé-identifiée, impression / PDF) |
+| OneDrive / Outlook (synchronisation sûre, conflits, copie de secours, mode démonstration) | disponible (lot 8) ; **première vraie connexion à essayer par l'utilisateur** |
+| Données de démonstration (bouton sur l'accueil, effaçables) | disponible (lot 8) |
+| Coffre chiffré (écran verrouillé, mode essai, migration de l'ancienne base, copie de secours avec mot de passe) | disponible (lot 7) |
+| Reprise V75 (lecture du stockage local de la V75, vérification élève par élève, contrôle après import ; plan de bascule dans `docs/plan-de-bascule.md`) | disponible (lot 9) ; **à essayer avec de vraies données par l'utilisateur** |
+| Reprise depuis OneDrive (lecture des dossiers de la V75, en lecture seule) et « Repartir de OneDrive » (nouvel ordinateur) | disponible (lot 9b) ; **à essayer avec un vrai compte par l'utilisateur** |
+| Agenda : les séances réalisées (même non planifiées) apparaissent dans l'agenda | disponible (lot 9c) |
+| Agenda : horaires par école (plusieurs écoles, heures réelles sur les cases, avertissement de chevauchement ou de trajet, heures réelles dans Outlook) | disponible (lot 10) ; **à essayer avec les vraies écoles par l'utilisateur** |
+| Finition visuelle (palette « Encre et papier », menu adapté à la tablette en portrait, logo, icônes) | **lot F terminé** (palette, cadre, logo, icônes ; tous les écrans relus) ; reste le retour de l'utilisateur sur sa tablette |
+| Finitions techniques : accessibilité (lien « Aller au contenu », titre et focus à chaque écran, cibles, mouvement réduit), vérification des données par schémas (zod), parcours navigateur dans la CI | **lot Q terminé** ; reste : première exécution du contrôle GitHub, essai au lecteur d'écran |
+| Mise en service : la V2 à l'adresse principale, la V75 en secours dans `/v75/`, assemblage du site vérifié (chaque page appelle des fichiers existants de sa propre version), adresse de retour Microsoft de la V2 = celle de la V75 | **lot S terminé** ; reste : déclarer l'adresse `/v75/` chez Entra, regarder le contrôle GitHub, essais réels, puis fusionner la demande #37 (= la bascule) |
+
+## Outils de build
+`esbuild` compile le TypeScript et React (script `scripts/build.mjs`). Pas de Vite : l'environnement de développement initial n'avait pas accès au registre npm, et `esbuild` suffit à ce stade.

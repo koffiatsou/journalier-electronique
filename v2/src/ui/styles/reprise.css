@@ -1,0 +1,15 @@
+.reprise-fiches, .reprise-comptes { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: .75rem; }
+.reprise-fiche { border: 1px solid var(--bordure, #d0d5dd); border-radius: .5rem; padding: .75rem 1rem; }
+.reprise-fiche-entete { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; cursor: pointer; }
+.reprise-fiche-entete input { width: 1.2rem; height: 1.2rem; }
+.reprise-fiche-nom { flex: 1 1 12rem; }
+.reprise-fiche-chiffres { margin: .4rem 0; }
+.reprise-alertes { margin: .4rem 0; padding-left: 1.2rem; }
+.reprise-comptes li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .75rem; border: 1px solid var(--bordure, #d0d5dd); border-radius: .5rem; padding: .6rem 1rem; }
+.reprise-tableau { overflow-x: auto; margin: .5rem 0; }
+.reprise-tableau table { border-collapse: collapse; width: 100%; }
+.reprise-tableau th, .reprise-tableau td { text-align: left; padding: .3rem .6rem; border-bottom: 1px solid var(--bordure, #e4e7ec); }
+.reprise-tableau td.num { font-variant-numeric: tabular-nums; }
+.reprise-pia { white-space: pre-wrap; background: var(--fond-doux, #f5f6f8); border-radius: .4rem; padding: .75rem; max-height: 22rem; overflow: auto; font: inherit; }
+.reprise-source { border: 1px solid var(--bordure, #d0d5dd); border-radius: .5rem; padding: .6rem 1rem; margin: .75rem 0; }
+.reprise-source h3 { margin: 0 0 .3rem; font-size: 1rem; }

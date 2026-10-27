@@ -1,0 +1,18 @@
+/* ───────── Verrouillage (écran fermé), mode essai, bandeaux ───────── */
+.verrou { min-height: 100dvh; display: grid; place-items: center; padding: var(--sp-5) var(--sp-4); background: var(--ground); }
+.verrou-carte { width: min(100%, 520px); display: grid; gap: var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--shadow-2); padding: var(--sp-6) var(--sp-5); }
+.verrou-carte h1 { font-size: 1.4rem; }
+.verrou-carte p { color: var(--ink-2); overflow-wrap: anywhere; }
+.verrou-carte p strong { color: var(--ink); }
+.verrou-logo { width: 168px; height: auto; justify-self: center; box-sizing: content-box; background: #fff; border: 1px solid var(--line); border-radius: var(--r-m); padding: var(--sp-2) var(--sp-3); }
+.verrou-marque { text-align: center; font-size: 0.9rem; }
+.verrou-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.verrou-separation { width: 100%; border: 0; border-top: 1px solid var(--line); margin: var(--sp-2) 0; }
+.verrou-sous-titre { font-size: 1rem; }
+
+/* Le bouton « Verrouiller » et le bouton de thème sont décrits dans layout.css (bloc « outils »). */
+@media print { .bandeau-essai { display: none; } }
+
+.bandeau-essai { margin: 0 0 var(--sp-4); padding: var(--sp-2) var(--sp-4); border-radius: var(--r-m); border: 1px solid var(--attention); background: var(--attention-soft); color: var(--ink); }
+.bandeau { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-4); }
+.bandeau > span { flex: 1 1 280px; }

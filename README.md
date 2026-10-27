@@ -4,6 +4,8 @@
 
 **Version actuelle : V75** (octobre 2026, `package.json` 0.75.0).
 
+> **Mise en service de la V2 (lot S, octobre 2026).** Une fois la demande de fusion #37 fusionnée, l'adresse principale du site ouvre la **V2** (dossier `v2/`) et cette V75 passe **en secours dans `/v75/`** : elle est alors compilée avec `npm run build -- --base=/journalier-electronique/v75/` (voir `.github/workflows/main.yml`). Son code ne change pas. Détails, étapes et retour arrière : [`v2/docs/plan-de-bascule.md`](v2/docs/plan-de-bascule.md). Le reste de ce document décrit la V75.
+
 Le Journalier électronique est **local-first** : les données de travail sont gérées dans le navigateur (stockage local granulaire chiffré), puis synchronisées vers l'espace OneDrive de l'utilisateur via Microsoft Graph (bidirectionnel, repli manuel possible).
 
 ## Ce que fait la V75

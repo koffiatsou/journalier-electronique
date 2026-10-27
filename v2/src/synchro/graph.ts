@@ -1,0 +1,225 @@
+import { descriptionEvenement, repereDans } from '../domain/synchro/outlook.ts';
+import type { EvenementExistant, EvenementSouhaite } from '../domain/synchro/outlook.ts';
+import { ajouterJours } from '../domain/agenda/dates.ts';
+import type { ElementOneDrive, LecteurOneDriveV75 } from '../domain/v75/onedrive.ts';
+import { ErreurAcces, ErreurVersion } from './nuage.ts';
+import type { CalendrierNuage, FichierDistant, Nuage } from './nuage.ts';
+import { schemaCalendrier, schemaElementDrive, schemaErreurGraph, schemaEvenement, schemaFichierEcrit, schemaMetaFichier, schemaPage } from './schemas-microsoft.ts';
+import type { EvenementGraph } from './schemas-microsoft.ts';
+import type { z } from 'zod';
+
+/*
+ * Microsoft Graph : OneDrive (dossier privé de l'application) et calendrier Outlook.
+ * Les fichiers sont dans « Applications/<nom de l'application>/v2/… » : jamais dans les dossiers de la V75.
+ */
+
+const BASE = 'https://graph.microsoft.com/v1.0';
+const RACINE = '/me/drive/special/approot:/v2';
+/** Brussels, en nom Windows (celui que Graph connaît sans doute possible). */
+export const FUSEAU_OUTLOOK = 'Romance Standard Time';
+
+export type Portee = 'fichiers' | 'calendrier';
+export interface FournisseurJeton { jeton(portee: Portee): Promise<string> }
+
+export interface OptionsGraph {
+  jeton: FournisseurJeton;
+  fetchFn?: typeof fetch;
+  /** Pause entre deux essais quand Microsoft demande de ralentir (remplaçable dans les tests). */
+  attendre?: (ms: number) => Promise<void>;
+}
+
+class Introuvable extends Error {}
+
+const pause = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+/** Les adresses de téléchargement pré-signées sont servies par OneDrive ou SharePoint, jamais ailleurs. */
+export function adresseTelechargementSure(url: string): boolean {
+  let u: URL;
+  try { u = new URL(url); } catch { return false; }
+  const h = u.hostname.toLowerCase();
+  return u.protocol === 'https:' && (h === 'files.1drv.com' || h.endsWith('.files.1drv.com') || h === '1drv.com' || h.endsWith('.1drv.com') || h.endsWith('.sharepoint.com'));
+}
+
+function creerClient(o: OptionsGraph) {
+  const f = o.fetchFn ?? ((...a: Parameters<typeof fetch>) => fetch(...a));
+  const attendre = o.attendre ?? pause;
+
+  async function requete(portee: Portee, adresse: string, init: RequestInit = {}, entetes: Record<string, string> = {}): Promise<Response> {
+    for (let essai = 1; ; essai += 1) {
+      const jeton = await o.jeton.jeton(portee);
+      let reponse: Response;
+      try {
+        reponse = await f(adresse, { ...init, headers: { ...entetes, Authorization: `Bearer ${jeton}` } });
+      } catch (e) {
+        if (e instanceof ErreurAcces) throw e;
+        throw new ErreurAcces('reseau', 'Pas de connexion à Microsoft. Vérifiez le réseau, puis réessayez.');
+      }
+      if (reponse.ok) return reponse;
+      if ((reponse.status === 429 || reponse.status === 503 || reponse.status === 504) && essai < 4) {
+        const demande = Number(reponse.headers.get('Retry-After'));
+        await attendre(Math.min(10_000, (Number.isFinite(demande) && demande > 0 ? demande : essai) * 1000));
+        continue;
+      }
+      if (reponse.status === 401) throw new ErreurAcces('non-connecte', 'La connexion Microsoft a expiré : reconnectez-vous.');
+      if (reponse.status === 403) throw new ErreurAcces(portee === 'calendrier' ? 'consentement' : 'refuse', portee === 'calendrier' ? 'Microsoft n’autorise pas encore l’accès à Outlook pour cette application.' : 'Microsoft a refusé l’accès à OneDrive.');
+      if (reponse.status === 404) throw new Introuvable();
+      if (reponse.status === 409 || reponse.status === 412) throw new ErreurVersion();
+      let code = '';
+      try { code = schemaErreurGraph.parse(await reponse.json()).error?.code ?? ''; } catch { /* corps vide ou inattendu */ }
+      throw new ErreurAcces('inconnue', `Microsoft a répondu ${reponse.status}${code ? ` (${code})` : ''}.`);
+    }
+  }
+
+  /** Lit toutes les pages d'une liste Graph ; chaque élément est vérifié par `schema`. */
+  async function pages<S extends z.ZodTypeAny>(portee: Portee, schema: S, premiere: string, entetes: Record<string, string> = {}): Promise<z.infer<S>[]> {
+    const sortie: z.infer<S>[] = [];
+    let suite: string | undefined = premiere;
+    for (let n = 0; suite && n < 200; n += 1) {
+      if (!suite.startsWith(`${BASE}/`)) throw new ErreurAcces('inconnue', 'Adresse de page inattendue.');
+      const r = schemaPage(schema).safeParse(await (await requete(portee, suite, {}, entetes)).json().catch(() => null));
+      if (!r.success) throw new ErreurAcces('inconnue', 'Microsoft a répondu autre chose que ce que l’application attend (liste illisible).');
+      sortie.push(...(r.data.value ?? []));
+      suite = r.data['@odata.nextLink'];
+    }
+    return sortie;
+  }
+
+  /** Texte d'un fichier OneDrive, par son identifiant (adresse pré-signée : on n'y joint JAMAIS le jeton de connexion). */
+  async function telecharger(id: string): Promise<string> {
+    const meta = schemaMetaFichier.safeParse(await (await requete('fichiers', `${BASE}/me/drive/items/${encodeURIComponent(id)}?select=id,@microsoft.graph.downloadUrl`)).json().catch(() => null));
+    const adresse = meta.success ? meta.data['@microsoft.graph.downloadUrl'] : undefined;
+    if (typeof adresse !== 'string' || !adresseTelechargementSure(adresse)) throw new ErreurAcces('inconnue', 'Microsoft n’a pas donné d’adresse de téléchargement sûre.');
+    let reponse: Response;
+    try { reponse = await f(adresse, { method: 'GET', cache: 'no-store', credentials: 'omit' }); } catch { throw new ErreurAcces('reseau', 'Pas de connexion à Microsoft. Vérifiez le réseau, puis réessayez.'); }
+    if (reponse.status === 404) throw new Introuvable();
+    if (!reponse.ok) throw new ErreurAcces('inconnue', `Téléchargement impossible (${reponse.status}).`);
+    return await reponse.text();
+  }
+
+  return { requete, pages, telecharger };
+}
+
+export function creerNuageGraph(o: OptionsGraph): Nuage {
+  const c = creerClient(o);
+  return {
+    nom: 'microsoft',
+
+    async lister(dossier) {
+      try {
+        const items = await c.pages('fichiers', schemaElementDrive, `${BASE}${RACINE}/${dossier}:/children?$select=id,name,eTag,file&$top=200`);
+        return items.filter((i) => i.file && i.eTag).map((i): FichierDistant => ({ chemin: `${dossier}/${i.name}`, id: i.id, etag: i.eTag! }));
+      } catch (e) {
+        if (e instanceof Introuvable) return []; // le dossier n'existe pas encore
+        throw e;
+      }
+    },
+
+    async lire(fichier) {
+      try {
+        return await c.telecharger(fichier.id);
+      } catch (e) {
+        if (e instanceof Introuvable) throw new ErreurVersion('Le fichier n’existe plus.');
+        throw e;
+      }
+    },
+
+    async ecrire(chemin, contenu, etagAttendu) {
+      const adresse = `${BASE}${RACINE}/${chemin}:/content${etagAttendu ? '' : '?@microsoft.graph.conflictBehavior=fail'}`;
+      try {
+        const r = await c.requete('fichiers', adresse, { method: 'PUT', body: contenu }, { 'Content-Type': 'text/plain', ...(etagAttendu ? { 'If-Match': etagAttendu } : {}) });
+        const item = schemaFichierEcrit.safeParse(await r.json().catch(() => null));
+        if (!item.success) throw new ErreurAcces('inconnue', 'Réponse de Microsoft incomplète.');
+        return { chemin, id: item.data.id, etag: item.data.eTag };
+      } catch (e) {
+        if (e instanceof Introuvable) throw new ErreurVersion('Le fichier n’existe plus.');
+        throw e;
+      }
+    },
+
+    async supprimer(fichier) {
+      try {
+        await c.requete('fichiers', `${BASE}/me/drive/items/${encodeURIComponent(fichier.id)}`, { method: 'DELETE' }, { 'If-Match': fichier.etag });
+      } catch (e) {
+        if (!(e instanceof Introuvable)) throw e; // déjà supprimé : tant mieux
+      }
+    }
+  };
+}
+
+/**
+ * Lecture seule des données de la V75 : elle range ses dossiers (eleves, agenda, pia…) directement à la RACINE du dossier privé
+ * de l'application (« Journalier » n'est que son nom interne pour cette racine, voir `graphRelativeAppPath` dans la V75) ;
+ * la V2 range les siens dans le sous-dossier « v2 », à côté. Seules des requêtes GET sont faites : la V75 n'est jamais modifiée.
+ */
+export function creerLecteurV75Graph(o: OptionsGraph): LecteurOneDriveV75 {
+  const c = creerClient(o);
+  const segments = (chemin: string): string => chemin.split('/').filter(Boolean).map(encodeURIComponent).join('/');
+  return {
+    async lister(chemin) {
+      const complet = segments(chemin);
+      const dossier = complet ? `approot:/${complet}:` : 'approot';
+      try {
+        const items = await c.pages('fichiers', schemaElementDrive, `${BASE}/me/drive/special/${dossier}/children?$select=id,name,eTag,file,folder&$top=200`);
+        return items.map((i): ElementOneDrive => ({ nom: i.name, id: i.id, dossier: !!i.folder }));
+      } catch (e) {
+        if (e instanceof Introuvable) return null;
+        throw e;
+      }
+    },
+    lire: (id) => c.telecharger(id)
+  };
+}
+
+const corps = (e: EvenementSouhaite) => ({
+  subject: e.sujet,
+  body: { contentType: 'text', content: descriptionEvenement(e.cle) },
+  start: { dateTime: `${e.debut.slice(0, 16)}:00`, timeZone: FUSEAU_OUTLOOK },
+  end: { dateTime: `${e.fin.slice(0, 16)}:00`, timeZone: FUSEAU_OUTLOOK },
+  location: { displayName: e.lieu },
+  isReminderOn: false
+});
+
+export function creerCalendrierGraph(o: OptionsGraph): CalendrierNuage {
+  const c = creerClient(o);
+  const json = { 'Content-Type': 'application/json' };
+  return {
+    async trouverOuCreer(nom) {
+      const liste = await c.pages('calendrier', schemaCalendrier, `${BASE}/me/calendars?$select=id,name&$top=100`);
+      const trouve = liste.find((x) => x.name === nom);
+      if (trouve) return trouve.id;
+      const cree = schemaCalendrier.pick({ id: true }).safeParse(await (await c.requete('calendrier', `${BASE}/me/calendars`, { method: 'POST', body: JSON.stringify({ name: nom }) }, json)).json().catch(() => null));
+      if (!cree.success) throw new ErreurAcces('inconnue', 'Microsoft n’a pas confirmé la création du calendrier.');
+      return cree.data.id;
+    },
+
+    async evenements(calendrier, du, au) {
+      // Fenêtre élargie d'un jour de chaque côté (fuseaux), puis on ne garde que les dates demandées.
+      const debut = `${ajouterJours(du, -1)}T00:00:00Z`;
+      const fin = `${ajouterJours(au, 1)}T23:59:59Z`;
+      const adresse = `${BASE}/me/calendars/${encodeURIComponent(calendrier)}/calendarView?startDateTime=${debut}&endDateTime=${fin}&$select=id,subject,start,end,location,body&$top=100`;
+      const liste = await c.pages('calendrier', schemaEvenement, adresse, { Prefer: `outlook.timezone="${FUSEAU_OUTLOOK}", outlook.body-content-type="text"` });
+      return liste
+        .map((e: EvenementGraph): EvenementExistant => ({
+          id: e.id, cle: repereDans(e.body?.content ?? ''), sujet: e.subject ?? '',
+          debut: (e.start?.dateTime ?? '').slice(0, 16), fin: (e.end?.dateTime ?? '').slice(0, 16), lieu: e.location?.displayName ?? ''
+        }))
+        .filter((e) => e.debut.slice(0, 10) >= du && e.debut.slice(0, 10) <= au);
+    },
+
+    async creer(calendrier, e) {
+      await c.requete('calendrier', `${BASE}/me/calendars/${encodeURIComponent(calendrier)}/events`, { method: 'POST', body: JSON.stringify(corps(e)) }, json);
+    },
+
+    async modifier(calendrier, id, e) {
+      await c.requete('calendrier', `${BASE}/me/calendars/${encodeURIComponent(calendrier)}/events/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(corps(e)) }, json);
+    },
+
+    async supprimerEvenement(calendrier, id) {
+      try { await c.requete('calendrier', `${BASE}/me/calendars/${encodeURIComponent(calendrier)}/events/${encodeURIComponent(id)}`, { method: 'DELETE' }); } catch (e) { if (!(e instanceof Introuvable)) throw e; }
+    },
+
+    async supprimerCalendrier(calendrier) {
+      try { await c.requete('calendrier', `${BASE}/me/calendars/${encodeURIComponent(calendrier)}`, { method: 'DELETE' }); } catch (e) { if (!(e instanceof Introuvable)) throw e; }
+    }
+  };
+}

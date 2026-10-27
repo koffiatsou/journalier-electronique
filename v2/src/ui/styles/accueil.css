@@ -1,0 +1,91 @@
+/* ---------- accueil : ma journée, mémos, synchro ---------- */
+.accueil-grille { display: grid; gap: var(--sp-5); align-items: start; }
+@media (min-width: 900px) { .accueil-grille { grid-template-columns: minmax(0, 1.75fr) minmax(280px, 1fr); } }
+
+/* séances passées à encoder : une ligne discrète, qui s'ouvre */
+.rattrapage { background: var(--attention-soft); border: 1px solid var(--line-strong); border-radius: var(--r-m); }
+.rattrapage summary { display: flex; align-items: center; gap: var(--sp-3); min-height: 48px; padding: 0 var(--sp-4); cursor: pointer; font-weight: 600; color: var(--ink); list-style: none; }
+.rattrapage summary::-webkit-details-marker { display: none; }
+.rattrapage summary::after { content: ''; margin-left: auto; width: 8px; height: 8px; border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3); transform: rotate(45deg); transition: transform var(--t-ui) var(--ease-out); }
+.rattrapage[open] summary::after { transform: rotate(-135deg); }
+.rattrapage summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--r-m); }
+.rattrapage-liste { list-style: none; margin: 0; padding: 0 var(--sp-4) var(--sp-3); display: grid; gap: 2px; }
+.rattrapage-liste li { display: grid; grid-template-columns: 5.5rem 1fr auto; gap: var(--sp-3); align-items: center; padding: var(--sp-2) 0; border-top: 1px solid var(--line); }
+.rattrapage-liste .num { color: var(--ink-2); }
+
+/* ma journée : une ligne par rendez-vous, un seul déplié à la fois */
+.journee-date { color: var(--ink-2); font-size: 0.9rem; margin-top: 2px; }
+.creneaux { list-style: none; margin: 0; padding: 0; }
+.creneau { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; border-bottom: 1px solid var(--line); padding-right: var(--sp-5); }
+.creneau:last-child { border-bottom: 0; }
+.creneau[data-statut='realise'] .creneau-titre { color: var(--ink-2); }
+.creneau[data-statut='attendu'] { background: color-mix(in srgb, var(--attention-soft) 55%, transparent); }
+.creneau[data-ouvert='true'] { background: var(--surface-2); }
+.creneau[data-ouvert='true'][data-statut='attendu'] { background: color-mix(in srgb, var(--attention-soft) 70%, var(--surface-2)); }
+.creneau-tete {
+  display: grid; grid-template-columns: 7rem minmax(0, 1fr) auto; gap: var(--sp-3); align-items: center; width: 100%; min-height: 56px;
+  padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-5); border: 0; background: transparent; color: inherit; font: inherit; text-align: left;
+}
+button.creneau-tete { cursor: pointer; transition: background-color var(--t-ui) ease-out; }
+button.creneau-tete:hover { background: color-mix(in srgb, var(--surface-2) 70%, transparent); }
+button.creneau-tete:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: var(--r-m); }
+.creneau-heure { display: grid; gap: 2px; font-weight: 650; color: var(--ink); }
+.creneau-heure small { color: var(--ink-3); font-weight: 500; font-size: 0.78rem; }
+.creneau-corps { display: grid; gap: 1px; min-width: 0; }
+.creneau-titre { font-weight: 650; overflow-wrap: anywhere; }
+.creneau-detail { color: var(--ink-2); font-size: 0.85rem; }
+.creneau-signes { display: flex; align-items: center; gap: var(--sp-2); }
+.creneau-chevron { color: var(--ink-3); transition: transform var(--t-ui) var(--ease-out); }
+.creneau[data-ouvert='true'] .creneau-chevron { transform: rotate(180deg); }
+.creneau-action { display: flex; align-items: center; }
+
+/* détail déplié : ce qu'on avait noté la dernière fois, et les mémos */
+.creneau-ouvert { grid-column: 1 / -1; margin: 0 calc(-1 * var(--sp-5)) 0 0; padding: 0 var(--sp-5) var(--sp-4) calc(var(--sp-5) + 7rem + var(--sp-3)); display: grid; gap: var(--sp-3); }
+.creneau-suite { padding: var(--sp-3) var(--sp-4); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-m); display: grid; gap: 2px; font-size: 0.9rem; color: var(--ink); }
+.creneau-suite-titre { color: var(--ink-3); font-size: 0.78rem; font-weight: 600; }
+.creneau-suite-etiquette { color: var(--ink-3); font-size: 0.8rem; font-weight: 600; margin-right: 4px; }
+.creneau-memos { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-1); }
+.creneau-memos label { display: flex; align-items: flex-start; gap: var(--sp-2); min-height: 32px; padding: 4px var(--sp-3); background: var(--attention-soft); border-radius: var(--r-s); color: var(--ink); font-size: 0.9rem; cursor: pointer; }
+.creneau-memos input { margin-top: 3px; }
+@media (pointer: coarse) { .creneau-memos label { min-height: 44px; align-items: center; } }
+
+/* trajet entre deux écoles */
+.trajet { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-3) var(--sp-5); background: var(--surface-2); border-bottom: 1px solid var(--line); color: var(--ink-2); font-size: 0.88rem; }
+.trajet[data-serre='true'] { background: var(--attention-soft); color: var(--ink); }
+.trajet-fleche { color: var(--ink-3); }
+.trajet-texte { flex: 1 1 18rem; }
+.journee-vide { padding: var(--sp-5); }
+
+/* mémos */
+.memo-ajout { display: grid; gap: var(--sp-2); padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--line); }
+.memo-liste { list-style: none; margin: 0; padding: 0; }
+.memo-liste li { display: flex; align-items: flex-start; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3) var(--sp-2) var(--sp-5); border-bottom: 1px solid var(--line); }
+.memo-liste li:last-child { border-bottom: 0; }
+.memo-liste label { flex: 1; display: flex; align-items: flex-start; gap: var(--sp-3); min-height: 40px; padding: 8px 0; cursor: pointer; }
+.memo-liste input { margin-top: 3px; flex: none; }
+.memo-texte { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.memo-texte small { color: var(--ink-3); font-size: 0.78rem; }
+.memo-liste li[data-fait='true'] .memo-texte { color: var(--ink-3); text-decoration: line-through; }
+.memo-retirer { flex: none; width: 40px; height: 40px; border: 0; border-radius: 999px; background: transparent; color: var(--ink-3); font-size: 1.3rem; line-height: 1; cursor: pointer; transition: background-color var(--t-ui) ease-out, color var(--t-ui) ease-out; }
+.memo-retirer:hover { background: var(--surface-2); color: var(--danger); }
+.memo-retirer:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.memo-vide { padding: var(--sp-4) var(--sp-5); }
+.memo-pied { padding: var(--sp-2) var(--sp-3); border-top: 1px solid var(--line); }
+@media (pointer: coarse) { .memo-liste input, .creneau-memos input { width: 22px; height: 22px; } }
+
+/* état de la synchronisation, en pied de page */
+.accueil-synchro { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-3) var(--sp-5); border: 1px solid var(--line); border-radius: var(--r-m); background: var(--surface); color: var(--ink-2); font-size: 0.9rem; }
+.accueil-synchro p { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+
+/* téléphone : l'heure passe au-dessus du nom */
+@media (max-width: 599px) {
+  .creneau { padding-right: var(--sp-3); }
+  .creneau-tete { grid-template-columns: minmax(0, 1fr) auto; padding-left: var(--sp-4); row-gap: 2px; }
+  .creneau-heure { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2); font-size: 0.85rem; }
+  .creneau-ouvert { padding-left: var(--sp-4); margin-right: calc(-1 * var(--sp-3)); padding-right: var(--sp-3); }
+  .trajet { padding: var(--sp-3) var(--sp-4); }
+  .rattrapage-liste li { grid-template-columns: 1fr auto; }
+  .rattrapage-liste .num { grid-column: 1 / -1; }
+  .memo-ajout, .memo-vide { padding-inline: var(--sp-4); }
+  .memo-liste li { padding-left: var(--sp-4); }
+}

@@ -1,0 +1,94 @@
+/* ───────── Élèves : cartes, dossier, passage d'année ───────── */
+
+/* Pastille d'initiales (couleur de l'élève = celle de l'agenda, voir .c-0 … .c-9) */
+.avatar {
+  display: inline-grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 50%;
+  background: var(--c-fond); color: var(--c-texte); border: 2px solid var(--c-bord);
+  font-weight: 700; font-size: 0.95rem; letter-spacing: 0.02em; user-select: none;
+}
+.avatar-l { width: 72px; height: 72px; font-size: 1.5rem; }
+
+.liste-entete-titre { white-space: nowrap; }
+.liste-entete-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); justify-content: flex-end; }
+.eleves-recherche { display: grid; gap: var(--sp-1); padding: var(--sp-4) var(--sp-5) 0; }
+.vide-pad { padding-inline: var(--sp-5); }
+
+/* Cartes d'élèves */
+.cartes-eleves { list-style: none; margin: 0; padding: var(--sp-5); display: grid; gap: var(--sp-4); grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); }
+.carte-eleve {
+  display: flex; align-items: flex-start; gap: var(--sp-3); width: 100%; height: 100%; padding: var(--sp-4);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-m);
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+  transition: border-color var(--t-press) ease-out, box-shadow var(--t-press) ease-out, transform var(--t-press) ease-out;
+}
+.carte-eleve:active { transform: scale(0.99); }
+@media (hover: hover) and (pointer: fine) { .carte-eleve:hover { border-color: var(--c-bord, var(--line-strong)); box-shadow: var(--shadow-1); } }
+.carte-eleve[data-archive='true'] { background: var(--surface-2); }
+.carte-corps { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.carte-nom { font-size: 1.02rem; overflow-wrap: anywhere; }
+.carte-detail { color: var(--ink-2); font-size: 0.875rem; overflow-wrap: anywhere; }
+.carte-pied { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin-top: var(--sp-2); color: var(--ink-3); font-size: 0.8125rem; }
+
+.archives summary { padding: var(--sp-4) var(--sp-5); cursor: pointer; font-weight: 600; color: var(--ink-2); }
+.archives[open] summary { border-bottom: 1px solid var(--line); }
+
+/* Dossier d'un élève */
+.dossier { display: grid; gap: var(--sp-5); padding: var(--sp-5); }
+.dossier-entete { margin: calc(var(--sp-2) * -1) 0 calc(var(--sp-3) * -1) calc(var(--sp-3) * -1); }
+.dossier-identite { display: flex; align-items: center; gap: var(--sp-4); }
+.dossier-identite h2 { overflow-wrap: anywhere; }
+.dossier-infos { display: grid; grid-template-columns: max-content 1fr; gap: var(--sp-2) var(--sp-5); margin: 0; }
+.dossier-infos dt { color: var(--ink-3); }
+.dossier-infos dd { margin: 0; overflow-wrap: anywhere; }
+.dossier-note { color: var(--ink-2); background: var(--surface-2); border-radius: var(--r-s); padding: var(--sp-3) var(--sp-4); }
+.dossier-seances { display: grid; gap: var(--sp-2); }
+.dossier-seances h3 { font-size: 1rem; }
+
+/* Fiche : ajout d'une matière libre */
+.ajout-libre { display: flex; gap: var(--sp-2); margin-top: var(--sp-3); }
+.ajout-libre .input { flex: 1; min-width: 0; }
+.ajout-libre .btn { white-space: nowrap; }
+
+/* Passage d'année */
+.passage-corps { display: grid; gap: var(--sp-4); padding: var(--sp-5); }
+.passage-outils { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); }
+.passage-liste { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.passage-ligne { display: grid; grid-template-columns: minmax(190px, 1.3fr) minmax(200px, 1fr) 110px minmax(0, 1.2fr); gap: var(--sp-3); align-items: center; padding: var(--sp-3) 0; border-bottom: 1px solid var(--line); }
+.passage-eleve { display: flex; align-items: center; gap: var(--sp-3); min-width: 0; }
+.passage-eleve > span { display: grid; min-width: 0; }
+.passage-note { font-size: 0.8125rem; }
+@media (max-width: 899px) {
+  .passage-ligne { grid-template-columns: 1fr 1fr; }
+  .passage-eleve, .passage-note { grid-column: 1 / -1; }
+}
+@media (max-width: 559px) {
+  .cartes-eleves { padding: var(--sp-4); grid-template-columns: 1fr; }
+  .dossier, .passage-corps { padding: var(--sp-4); }
+  .passage-ligne { grid-template-columns: 1fr; }
+  .ajout-libre { flex-direction: column; }
+}
+
+/* ───────── Avatars dessinés ───────── */
+.avatar-dessin { background: var(--c-fond); overflow: hidden; }
+.avatar-svg { display: block; width: 100%; height: 100%; }
+.av-fond { fill: var(--c-fond); }
+.av-haut { fill: var(--c-bord); }
+
+/* Choix dans la fiche élève */
+.choix-avatar { gap: var(--sp-3); }
+.choix-avatar-tete { display: flex; align-items: center; gap: var(--sp-4); flex-wrap: wrap; }
+.choix-detail { display: grid; gap: var(--sp-4); padding: var(--sp-4); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-m); }
+.choix-groupe { display: grid; gap: var(--sp-2); }
+.choix-titre { font-size: 0.8125rem; font-weight: 600; color: var(--ink-2); }
+.choix-options { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.choix-bouton, .choix-pastille {
+  padding: 0; border: 2px solid var(--line-strong); background: var(--surface); cursor: pointer; line-height: 0;
+  transition: border-color var(--t-press) ease-out, transform var(--t-press) ease-out;
+}
+.choix-bouton { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; }
+.choix-pastille { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; }
+.choix-pastille svg { width: 24px; height: 24px; }
+.choix-bouton:active, .choix-pastille:active { transform: scale(0.95); }
+@media (hover: hover) and (pointer: fine) { .choix-bouton:hover, .choix-pastille:hover { border-color: var(--ink-3); } }
+.choix-bouton[aria-checked='true'], .choix-pastille[aria-checked='true'] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--surface) inset; }
+.choix-bouton:focus-visible, .choix-pastille:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
