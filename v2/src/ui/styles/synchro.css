@@ -1,5 +1,5 @@
 /* ───────── Synchronisation ───────── */
-.synchro { max-width: 760px; }
+.synchro { max-width: 760px; margin-inline: 0; } /* aligné à gauche comme les autres écrans */
 .synchro-bloc { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--shadow-1); padding: var(--sp-5); display: grid; gap: var(--sp-3); }
 .synchro-bloc h2 { font-size: 1.1rem; }
 .synchro-bloc p { color: var(--ink-2); overflow-wrap: anywhere; }

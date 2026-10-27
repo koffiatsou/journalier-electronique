@@ -149,9 +149,11 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
             </select>
           </label>
         ) : null}
-        <Button variante="discret" onClick={() => setHorairesOuverts(true)}>Horaires</Button>
-        <Button variante="discret" onClick={() => setSemaineTypeOuverte(true)}>Semaine type</Button>
-        <Button variante="discret" onClick={() => globalThis.print()}>Imprimer</Button>
+        <div className="agenda-outils">
+          <Button variante="discret" onClick={() => setHorairesOuverts(true)}>Horaires</Button>
+          <Button variante="discret" onClick={() => setSemaineTypeOuverte(true)}>Semaine type</Button>
+          <Button variante="discret" onClick={() => globalThis.print()}>Imprimer</Button>
+        </div>
         <Button variante="primaire" onClick={() => { setSelection(null); setBrouillon({ date: jourCourant, debut: 0, fin: 0 }); }}>Nouvelle activité</Button>
       </div>
 
