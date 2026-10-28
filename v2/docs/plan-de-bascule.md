@@ -1,5 +1,7 @@
 # Plan de bascule : de la V75 à la V2
 
+> **État au 28/10/2026 : la bascule est faite.** La demande #37 a été fusionnée le 27/10/2026 à 22 h 51 ; la #39 (lot SP, sécurité, verrou npm) l'a été le 28/10/2026. Les passages ci-dessous qui parlent « d'avant la fusion » restent valables pour l'historique et le retour arrière.
+
 Document pour l'utilisateur, à adapter avant de le donner à l'équipe. Rien n'est supprimé dans la V75 : elle reste utilisable en secours, à une autre adresse (lot S).
 
 ## Ce qui change le jour de la mise en service (lot S)
