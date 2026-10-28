@@ -5,7 +5,7 @@
 ## Méthode : un lot = une conversation
 - Au démarrage d'une conversation : lire ce fichier, `docs/plan-de-travail.md` et `docs/etat-des-lieux.md`, puis ne traiter QUE le lot demandé (ou le lot « 🔜 conseillé » si l'utilisateur dit « lot suivant »). Ne pas relire tout le dépôt : ouvrir seulement les fichiers du lot.
 - Toute idée hors lot va dans « Idées en attente » du plan, pas dans le code.
-- Fin de lot obligatoire (liste dans le plan) : vérifs vertes, docs à jour (état des lieux, plan, AGENTS, decisions, README), commit + push sur `v2/react-ts`, message final en français simple avec le lot suivant conseillé.
+- Fin de lot obligatoire (liste dans le plan) : vérifs vertes, docs à jour (état des lieux, plan, AGENTS, decisions, README), commit + push sur `v2/react-ts` puis demande de fusion vers `main` (voir « Flux de travail Git » ci-dessous), message final en français simple avec le lot suivant conseillé.
 
 Application web pour les agents des Pôles territoriaux (WBE) qui accompagnent des élèves intégrés. Propriétaire : non-développeur, francophone. Le code de la V75 reste à la racine du dépôt (intact) ; celui de la V2 vit dans `v2/`. **Depuis le lot S, sur le site publié : la V2 est à l'adresse principale, la V75 en secours dans `/v75/`.**
 
@@ -47,7 +47,8 @@ PRODUCT.md (qui, pourquoi) · DESIGN.md (look & mouvement) · ARCHITECTURE.md ·
 - **Le dossier OneDrive `v2/` (dans le dossier de l'application) n'a rien à voir avec l'adresse du site** : il garde son nom (renommer = perdre le lien avec les données déjà envoyées).
 - **La V75 en secours** : elle calcule son adresse de retour avec `document.baseURI` → `<site>/v75/msal-redirect.html`, à déclarer chez Entra (SPA) ; elle verrouille ses données tant qu'on n'est pas connecté (`storage-vault.js`). Ses chargements de fichiers de référence essaient d'abord un chemin à la racine (404 sans conséquence). La V2 relit le stockage de la V75 sans passer par la page de la V75 (même site).
 - **Pas de service worker** (ni V75 ni V2) : aucun ancien code ne reste en mémoire après la bascule. Si on en ajoute un un jour, penser à la mise à jour de la V2 à la racine.
-- Fusionner la demande #37 = bascule (l'utilisateur seul fusionne). Documents : `docs/plan-de-bascule.md` (étapes, retour arrière), lot S dans `docs/plan-de-travail.md`.
+- **Bascule faite** : la demande #37 a été fusionnée le 27/10/2026 (la V2 est à l'adresse principale, la V75 en secours dans `/v75/`). Documents : `docs/plan-de-bascule.md` (étapes, retour arrière), lot S dans `docs/plan-de-travail.md`.
+- **Flux de travail Git** : Départ d'une session : `git checkout v2/react-ts && git pull && git merge origin/main` (en général une simple avance rapide). Fin de lot : push sur `v2/react-ts`, puis **une nouvelle demande de fusion vers `main`** (`gh pr create`) ; la fusion publie le site, donc elle se fait avec l'accord de l'utilisateur, une fois les contrôles GitHub verts. Jamais de commit direct sur `main`. (La demande #37, la bascule de la V2, a été fusionnée le 27/10/2026 ; la #39 le 28/10/2026.)
 
 ## Référentiel / étape « Compétence travaillée » (en cours, rien d'intégré dans l'app)
 - Principe : Q2 (Fonctionnement) = transversal ; Q3 (Compétence) = contenu disciplinaire précis tiré des référentiels, sans doublon avec Q2. Nom de l'étape inchangé (« Compétence travaillée », au sens large : savoirs + savoir-faire + compétences ; ces mots techniques ne s'affichent pas).

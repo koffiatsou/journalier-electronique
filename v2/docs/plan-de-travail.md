@@ -1,6 +1,6 @@
 # Plan de travail de la V2 (un lot = une conversation)
 
-Mis à jour le 27 octobre 2026 (lots 1 à 10, A, F, Q et **S terminés** ; ensuite : vos essais réels, la fusion de la demande #37 = la bascule, puis le lot R si vous le décidez). Ce fichier est la **liste des lots**. Pour démarrer : ouvrir une nouvelle conversation, écrire « Lot N » (ou « le lot suivant ») ; Claude lit `AGENTS.md`, ce plan et `docs/etat-des-lieux.md`, puis travaille uniquement sur ce lot.
+Mis à jour le 28 octobre 2026 (lots 1 à 10, A, F, Q, S et SP **terminés**, **bascule faite** : demande #37 fusionnée le 27/10/2026, demande #39 le 28/10/2026 ; ensuite : vos essais réels sur la tablette, puis le lot R (référentiel) si vous le décidez). Ce fichier est la **liste des lots**. Pour démarrer : ouvrir une nouvelle conversation, écrire « Lot N » (ou « le lot suivant ») ; Claude lit `AGENTS.md`, ce plan et `docs/etat-des-lieux.md`, puis travaille uniquement sur ce lot.
 
 ## Principe
 - Une conversation = un lot. Pas de dérive vers un autre lot : toute idée en plus va dans « Idées en attente » ci‑dessous.
@@ -11,7 +11,7 @@ Mis à jour le 27 octobre 2026 (lots 1 à 10, A, F, Q et **S terminés** ; ensui
 1. `cd v2 && npm run check` vert (typecheck + tests + build). Si le registre npm est bloqué, relier les paquets déjà présents sur la machine dans `v2/node_modules` (voir README, « Sans accès au registre »).
 2. Vérification dans un vrai navigateur : scripts Playwright dans `v2/tools/navigateur/` (en ajouter un par lot) ; aucune erreur console.
 3. Mettre à jour : `docs/etat-des-lieux.md` (Fait / Reste), ce plan (statut du lot, lot suivant conseillé), `AGENTS.md` (décisions durables, nouveaux dossiers), `docs/decisions.md` (une ligne par décision), `README.md` (tableau d'avancement).
-4. Commit + push sur `v2/react-ts` (jamais `main`), PR #37 mise à jour.
+4. Commit + push sur `v2/react-ts` (jamais `main`), puis **nouvelle demande de fusion vers `main`** (la #37 est fusionnée depuis le 27/10/2026). Départ d'une session : `git checkout v2/react-ts && git pull && git merge origin/main`. La fusion publie le site : elle se fait avec l'accord de l'utilisateur, contrôles GitHub verts.
 5. Dire à l'utilisateur en français simple : ce qui marche, ce qui reste, **quel lot lancer ensuite**.
 
 ## Statuts
