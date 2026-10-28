@@ -116,7 +116,7 @@
 .mois-case:first-child { border-left: 0; }
 .mois-case:hover { background-color: color-mix(in srgb, var(--peda) 5%, transparent); }
 .mois-case.hors-mois .mois-jour, .mois-case.hors-mois .marque-jour { color: var(--ink-3); }
-.mois-case.hors-mois .mois-evts { opacity: .6; }
+.mois-case.hors-mois .mois-evts { opacity: .85; }
 .mois-jour { align-self: flex-start; display: inline-flex; align-items: baseline; gap: 4px; border: 0; background: transparent; padding: 2px 8px; margin-left: -4px; border-radius: 999px; color: var(--ink); min-height: 28px; }
 .mois-jour::after { content: ''; position: absolute; inset: 0; border-radius: inherit; }
 .mois-jour:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
