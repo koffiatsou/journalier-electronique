@@ -55,6 +55,10 @@ export function Apercu({ seance, eleve, precedentes, tiroirOuvert, onFermer }: P
         <h2>Feuille du Journalier</h2>
         <button type="button" className="apercu-fermer" onClick={onFermer}>Fermer</button>
       </header>
+      <p className="legende-zones">
+        <span className="legende-zone" data-zone="peda">Bleu : partie pédagogique</span>
+        <span className="legende-zone" data-zone="ortho">Vert-bleu : partie orthopédagogique</span>
+      </p>
       <div className="feuille" role="document">
         <p className="feuille-ligne feuille-tete">
           <span>Date : <strong>{vide(bloc.entete.date)}</strong></span>

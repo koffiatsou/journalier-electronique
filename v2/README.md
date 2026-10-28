@@ -32,6 +32,7 @@ LANG=C.UTF-8 node tools/navigateur/theme.mjs     # bouton de thème Automatique 
 LANG=C.UTF-8 node tools/navigateur/accueil.mjs     # accueil : ma journée, séances à encoder, mémos (conservés après rechargement), état de la synchro, téléphone (lot A)
 LANG=C.UTF-8 node tools/navigateur/accueil-suite.mjs # de bout en bout : objectif, observation, aide et « Suite » saisis dans l'écran Séance sont repris sur l'accueil (lot A)
 LANG=C.UTF-8 node tools/navigateur/captures.mjs    # captures de tous les écrans (4 tailles × clair/sombre) pour relire l'habillage (lot F)
+LANG=C.UTF-8 node tools/navigateur/seance-sp.mjs     # lot SP : barre d'étapes, jauge, résumés, « Étape suivante », zones de texte
 LANG=C.UTF-8 node tools/navigateur/site.mjs      # la V2 servie sous /journalier-electronique/ comme sur GitHub Pages : connexion, adresse de retour Microsoft, modèles Word (lot S)
 LANG=C.UTF-8 node tools/navigateur/coffre.mjs    # coffre chiffré : verrou, mode essai, rien en clair, clé perdue, migration, copie avec mot de passe
 # Depuis le lot 7, ces parcours passent par le mode essai (aide commune : tools/navigateur/_coffre.mjs).
@@ -65,6 +66,7 @@ Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des l
 | Agenda : horaires par école (plusieurs écoles, heures réelles sur les cases, avertissement de chevauchement ou de trajet, heures réelles dans Outlook) | disponible (lot 10) ; **à essayer avec les vraies écoles par l'utilisateur** |
 | Finition visuelle (palette « Encre et papier », menu adapté à la tablette en portrait, logo, icônes) | **lot F terminé** (palette, cadre, logo, icônes ; tous les écrans relus) ; reste le retour de l'utilisateur sur sa tablette |
 | Finitions techniques : accessibilité (lien « Aller au contenu », titre et focus à chaque écran, cibles, mouvement réduit), vérification des données par schémas (zod), parcours navigateur dans la CI | **lot Q terminé** ; reste : première exécution du contrôle GitHub, essai au lecteur d'écran |
+| Séance : barre d'étapes, jauge, résumés par rubrique, couleur par zone, « Étape suivante » | **lot SP terminé** ; reste : relire l'écran sur la tablette |
 | Mise en service : la V2 à l'adresse principale, la V75 en secours dans `/v75/`, assemblage du site vérifié (chaque page appelle des fichiers existants de sa propre version), adresse de retour Microsoft de la V2 = celle de la V75 | **lot S terminé** ; reste : déclarer l'adresse `/v75/` chez Entra, regarder le contrôle GitHub, essais réels, puis fusionner la demande #37 (= la bascule) |
 
 ## Outils de build

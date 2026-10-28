@@ -1,4 +1,5 @@
 import type { Presence, Seance } from '../../domain/types.ts';
+import { SITUATION_AIDE_LIBELLES } from '../../domain/types.ts';
 
 export const nouvelId = (): string =>
   (globalThis.crypto?.randomUUID?.() ?? `s-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
@@ -63,4 +64,42 @@ export function verifier(s: Seance): Verification {
   const manquants = niveauxManquants(s);
   if (manquants.length) raisons.push(`Choisissez un niveau pour : ${manquants.join(', ')}.`);
   return { ok: raisons.length === 0, raisons };
+}
+
+/** Au plus deux points cités, puis « et N autre(s) » : une ligne lisible sous le titre d'une rubrique fermée. */
+function enumerer(textes: readonly string[]): string {
+  const [premier, deuxieme] = textes;
+  if (premier === undefined) return '';
+  if (textes.length === 1 || deuxieme === undefined) return premier;
+  if (textes.length === 2) return `${premier}, ${deuxieme}`;
+  const reste = textes.length - 2;
+  return `${premier}, ${deuxieme} et ${reste} autre${reste > 1 ? 's' : ''}`;
+}
+
+const periodeDuCreneau = (s: Seance): string =>
+  (s.periodeDebut === s.periodeFin ? s.periodeDebut : `${s.periodeDebut} à ${s.periodeFin}`);
+
+/**
+ * Résumé d'une ligne de chaque rubrique (sous son titre quand elle est fermée) ; `null` quand la rubrique est vide
+ * ou sans objet : l'écran n'affiche alors rien.
+ */
+export function resumesEtapes(s: Seance): (string | null)[] {
+  const etats = etatsEtapes(s);
+  const suite = s.suite;
+  const textes: string[] = [
+    [s.matiere, periodeDuCreneau(s)].filter((t) => t.trim() !== '').join(' · '),
+    s.observations.length ? enumerer(s.observations.map((o) => o.texte)) : s.remarque.trim(),
+    s.competences.length ? enumerer(s.competences.map((c) => c.texte)) : s.precisionCompetence.trim(),
+    s.aides.length ? enumerer(s.aides.map((a) => a.nom)) : s.situationAide !== 'none' ? `Adaptations : ${SITUATION_AIDE_LIBELLES[s.situationAide].toLowerCase()}` : s.precisionAide.trim(),
+    suite.objectif.trim() || enumerer(suite.actions) || enumerer(suite.collaborations) || suite.modalite || suite.precision.trim()
+  ];
+  return textes.map((t, i) => (etats[i] === 'remplie' && t !== '' ? t : null));
+}
+
+export interface Progression { faites: number; total: number }
+
+/** « N rubriques renseignées sur M » : les rubriques sans objet (élève absent) ne comptent pas dans M. */
+export function progression(s: Seance): Progression {
+  const etats = etatsEtapes(s);
+  return { faites: etats.filter((e) => e === 'remplie').length, total: etats.filter((e) => e !== 'sans-objet').length };
 }

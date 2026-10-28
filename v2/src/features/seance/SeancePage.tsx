@@ -8,17 +8,19 @@ import type { Aller } from '../../app/useRoute.ts';
 import { dateFR } from '../../domain/redaction/langue.ts';
 import { Apercu } from './Apercu.tsx';
 import { Etape } from './Etape.tsx';
-import { etatsEtapes, seanceVide, verifier } from './brouillon.ts';
+import { BarreEtapes } from './BarreEtapes.tsx';
+import { etatsEtapes, progression, resumesEtapes, seanceVide, verifier } from './brouillon.ts';
 import {
   FormulaireAides, FormulaireCompetence, FormulaireCreneau, FormulaireFonctionnement, FormulaireSuite
 } from './formulaires.tsx';
 
+/** `zone` : bleu = partie pédagogique (1 et 3), vert-bleu = partie orthopédagogique (2, 4 et 5) ; `court` : nom dans la barre d'étapes. */
 const ETAPES = [
-  { titre: 'Créneau et partie pédagogique', zone: 'peda' },
-  { titre: 'Fonctionnement observé', zone: 'ortho' },
-  { titre: 'Compétence travaillée', zone: 'ortho' },
-  { titre: 'Ce qui a aidé', zone: 'ortho' },
-  { titre: 'Suite', zone: 'ortho' }
+  { titre: 'Créneau et partie pédagogique', court: 'Créneau', zone: 'peda' },
+  { titre: 'Fonctionnement observé', court: 'Fonctionnement', zone: 'ortho' },
+  { titre: 'Compétence travaillée', court: 'Compétence', zone: 'peda' },
+  { titre: 'Ce qui a aidé', court: 'Ce qui a aidé', zone: 'ortho' },
+  { titre: 'Suite', court: 'Suite', zone: 'ortho' }
 ] as const;
 
 const reduireMouvement = (): boolean => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
@@ -44,6 +46,7 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
   const eleve = eleves.find((e) => e.id === s.eleveId);
   const precedentes = useMemo(() => seances.filter((x) => x.eleveId === s.eleveId), [seances, s.eleveId]);
   const etats = etatsEtapes(s);
+  const resumes = resumesEtapes(s);
   const notes = s.observations.length + s.competences.length + s.aides.length;
 
   const aller = (i: number) => {
@@ -85,15 +88,17 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
           : 'Remplissez la feuille comme sur le Journalier papier : la partie pédagogique, puis la partie orthopédagogique.'}</p>
       </header>
 
+      <BarreEtapes etapes={ETAPES} etats={etats} ouvert={ouvert} progression={progression(s)} onAller={aller} />
+
       <div className="seance-colonnes">
         <div className="seance-formulaire">
           {ETAPES.map((e, i) => (
-            <Etape key={e.titre} numero={i + 1} titre={e.titre} zone={e.zone} etat={etats[i] ?? 'vide'}
+            <Etape key={e.titre} numero={i + 1} titre={e.titre} zone={e.zone} etat={etats[i] ?? 'vide'} resume={resumes[i] ?? null}
               ouvert={ouvert === i} onBascule={() => (ouvert === i ? setOuvert(-1) : aller(i))}>
               {formulaires[i]}
               {i < ETAPES.length - 1 ? (
                 <div className="etape-pied">
-                  <Button onClick={() => aller(i + 1)}>Étape suivante : {ETAPES[i + 1]?.titre}</Button>
+                  <Button onClick={() => aller(i + 1)}>Étape suivante : {i + 2} {ETAPES[i + 1]?.titre} ↓</Button>
                 </div>
               ) : null}
             </Etape>
