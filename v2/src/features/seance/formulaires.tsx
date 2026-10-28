@@ -160,7 +160,7 @@ export function FormulaireFonctionnement({ s, maj }: PropsFormulaire) {
           <Button type="submit">Ajouter</Button>
         </form>
       </div>
-      <Field label="Remarque" optionnel>
+      <Field label="Remarque" optionnel aide="Astuce : le micro du clavier de la tablette dicte directement dans ce champ.">
         {(id) => <Textarea id={id} value={s.remarque} placeholder="Ce qui a été observé, en quelques mots" onChange={(e) => maj({ remarque: e.target.value })} />}
       </Field>
     </>

@@ -1,9 +1,9 @@
 # État des lieux de la V2
 
-Mis à jour le 27 octobre 2026 (lots 1 à 10 terminés ; **lot A (accueil), lot F (finition visuelle), lot Q (finitions techniques) et lot S (la V2 devient la version définitive) terminés** ; ensuite : vos essais réels, la fusion de la demande #37 (= la bascule), puis le lot R (référentiel) si vous le décidez). Le travail est organisé en lots : voir `docs/plan-de-travail.md`. Branche `v2/react-ts`, PR #37 (brouillon, jamais fusionnée sans validation).
+Mis à jour le 28 octobre 2026 (**lot SP, Séance : repères et progression, terminé** ; lots 1 à 10 terminés ; **lot A (accueil), lot F (finition visuelle), lot Q (finitions techniques) et lot S (la V2 devient la version définitive) terminés** ; ensuite : vos essais réels, la fusion de la demande #37 (= la bascule), puis le lot R (référentiel) si vous le décidez). Le travail est organisé en lots : voir `docs/plan-de-travail.md`. Branche `v2/react-ts`, PR #37 (brouillon, jamais fusionnée sans validation).
 
 ## Fait
-- Séance en 5 étapes, panneau « Feuille » avec rappel de la dernière séance et des aides fréquentes.
+- Séance en 5 étapes, panneau « Feuille » avec rappel de la dernière séance et des aides fréquentes. **Lot SP (28/10/2026)** : barre d'étapes collée en haut avec jauge de progression, résumé d'une ligne sous chaque rubrique fermée et renseignée, ✓ vert, bouton « Étape suivante », couleur par zone (bleu pédagogique : rubriques 1 et 3 ; vert-bleu orthopédagogique : 2, 4, 5) avec légende, zones de texte plus grandes et astuce de dictée.
 - Texte du Journalier produit automatiquement (zones pédagogique / orthopédagogique, aides classées par effet).
 - Pistes de compétences issues des référentiels officiels (voir ci-dessous).
 - Agenda (semainier) : semaine et jour (jour seul sur téléphone), périodes en lignes avec récré/midi, couleur par élève (palette de 10, modifiable dans la fiche) et couleur par type, glisser-déplacer, étirer, Alt+glisser pour dupliquer, appui long sur tablette, panneau d'édition (champs libres : titre, lieu, note, nom libre), répétition hebdomadaire (cette date / toute la série), annuler, réalisé automatique via la séance, bouton « Encoder la séance » (séance préremplie), filtre par élève. Pas d'année scolaire figée.

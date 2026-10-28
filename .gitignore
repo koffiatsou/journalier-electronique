@@ -19,3 +19,6 @@ yarn-debug.log*
 yarn-error.log*
 # Fichiers archives et sauvegardes locales
 *.zip
+
+# Configuration locale des outils (aperçu, préférences) : propre à chaque machine
+.claude/

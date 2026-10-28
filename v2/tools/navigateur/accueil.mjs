@@ -4,7 +4,7 @@
 // La date du jour est figée au mardi 27 octobre 2026, 8 h (donc : un accompagnement d'Élève Bêta aujourd'hui, un d'Élève Alpha hier).
 import { mkdirSync } from 'node:fs';
 import os from 'node:os';
-import { aller, ecrireBase, recharger } from './_coffre.mjs';
+import { aller, ecrireBase, lireBase, recharger } from './_coffre.mjs';
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const URL_APP = process.env.URL_APP ?? 'http://localhost:5199/';
 const SORTIE = process.env.SORTIE ?? `${os.tmpdir()}/journalier-navigateur`;
@@ -47,6 +47,11 @@ const liste = page.locator('.memo-liste');
 ok(await liste.locator('li').count() === 2, 'deux mémos dans la liste');
 ok(await page.locator('.creneau-memos').getByText('Apporter le jeu de cartes').isVisible(), 'le mémo d’Élève Bêta réapparaît sur son rendez-vous');
 ok(await page.locator('.creneau-memos li').count() === 1, 'le mémo libre n’y est pas');
+// L'écriture dans le coffre chiffré est asynchrone : on attend qu'elle soit finie dans la base avant de recharger
+// (un rechargement dans la milliseconde qui suit un clic interrompt l'écriture en cours).
+const memosEnregistres = async () => (await lireBase(page, 'reglages')).find((r) => r.id === 'memos')?.valeur?.length ?? 0;
+for (let i = 0; i < 50 && await memosEnregistres() < 2; i += 1) await page.waitForTimeout(100);
+ok(await memosEnregistres() === 2, 'les deux mémos sont écrits dans le coffre');
 await recharger(page);
 await page.getByRole('heading', { name: 'Ma journée' }).waitFor();
 ok(await page.locator('.memo-liste li').count() === 2, 'les mémos survivent au rechargement');

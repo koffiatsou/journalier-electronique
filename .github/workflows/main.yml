@@ -28,6 +28,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            v2/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -40,7 +43,7 @@ jobs:
       - name: Vérifier et compiler la V2 (React + TypeScript)
         working-directory: v2
         run: |
-          npm install --no-audit --no-fund
+          npm ci --no-audit --no-fund
           npm run check
 
       - name: Assembler le site (V2 à la racine, V75 dans /v75/) et vérifier toutes les adresses

@@ -7,8 +7,29 @@
   .apercu { position: sticky; top: var(--sp-5); max-height: calc(100dvh - 2 * var(--sp-5) - 76px); overflow: auto; }
 }
 
+/* barre d'étapes collée en haut, avec la jauge de progression */
+.barre-etapes { position: sticky; top: var(--barre-haut, 0px); z-index: 30; display: grid; gap: var(--sp-2); margin-bottom: var(--sp-4); padding: var(--sp-2) var(--sp-3);
+  background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(14px); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--shadow-1); }
+.barre-etapes, .barre-etapes > * { min-width: 0; max-width: 100%; }
+.barre-etapes-liste { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--sp-2); overflow-x: auto; scrollbar-width: none; }
+.barre-etapes-liste li { flex: none; }
+.barre-etape { --zone: var(--peda); --zone-soft: var(--peda-soft); --zone-ink: var(--peda-ink); display: inline-flex; align-items: center; gap: var(--sp-2); min-height: 40px; padding: 0 var(--sp-3) 0 6px;
+  border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); color: var(--ink-2); font-size: 0.88rem; font-weight: 550; white-space: nowrap;
+  transition: background-color var(--t-ui) ease-out, border-color var(--t-ui) ease-out, transform var(--t-press) var(--ease-out); }
+.barre-etape:active { transform: scale(0.97); }
+.barre-etape[data-zone="ortho"] { --zone: var(--ortho); --zone-soft: var(--ortho-soft); --zone-ink: var(--ortho-ink); }
+.barre-etape-num { width: 26px; height: 26px; flex: none; display: grid; place-items: center; border-radius: 50%; font-size: 0.8rem; font-weight: 700; background: var(--zone-soft); color: var(--zone-ink); }
+.barre-etape[data-etat="remplie"] .barre-etape-num { background: var(--ok-soft); color: var(--ok); }
+.barre-etape[data-etat="sans-objet"] { opacity: 0.6; }
+.barre-etape[data-ouvert="true"] { background: var(--zone); border-color: var(--zone); color: var(--on-accent); }
+.barre-etape[data-ouvert="true"] .barre-etape-num { background: var(--on-accent); color: var(--zone); }
+.jauge { display: flex; align-items: center; gap: var(--sp-3); }
+.jauge .progres { flex: 1; background: var(--line); }
+.jauge .progres span { background: var(--ok); }
+.jauge-texte { font-size: 0.8rem; color: var(--ink-2); white-space: nowrap; }
+
 /* étapes */
-.etape { --zone: var(--peda); --zone-soft: var(--peda-soft); --zone-ink: var(--peda-ink); scroll-margin-top: var(--sp-4);
+.etape { --zone: var(--peda); --zone-soft: var(--peda-soft); --zone-ink: var(--peda-ink); scroll-margin-top: calc(var(--barre-haut, 0px) + 108px);
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--shadow-1);
   transition: border-color var(--t-ui) ease-out, box-shadow var(--t-ui) ease-out; }
 .etape[data-zone="ortho"] { --zone: var(--ortho); --zone-soft: var(--ortho-soft); --zone-ink: var(--ortho-ink); }
@@ -18,7 +39,10 @@
 .etape-bouton { width: 100%; display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-4) var(--sp-5); border: 0; background: none; text-align: left; border-radius: var(--r-l); min-height: 60px; }
 .etape-num { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 50%; font-size: 0.85rem; font-weight: 700; background: var(--zone-soft); color: var(--zone-ink); transition: background-color var(--t-ui) ease-out, color var(--t-ui) ease-out; }
 .etape[data-ouvert="true"] .etape-num { background: var(--zone); color: var(--on-accent); }
-.etape-nom { flex: 1; font-weight: 650; font-size: 1.02rem; }
+.etape-texte { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.etape-nom { font-weight: 650; font-size: 1.02rem; }
+.etape-resume { color: var(--ink-2); font-size: 0.86rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.etape-fait { flex: none; color: var(--ok); }
 .etape-chevron { flex: none; color: var(--ink-3); transition: transform var(--t-panel) var(--ease-out); }
 .etape[data-ouvert="true"] .etape-chevron { transform: rotate(180deg); }
 .etape-corps { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--t-panel) var(--ease-out); }
@@ -26,6 +50,8 @@
 .etape-interieur { overflow: hidden; min-height: 0; }
 .etape-contenu { padding: 0 var(--sp-5) var(--sp-5); display: grid; gap: var(--sp-4); opacity: 0; transform: translateY(4px); transition: opacity var(--t-ui) ease-out, transform var(--t-panel) var(--ease-out); }
 .etape[data-ouvert="true"] .etape-contenu { opacity: 1; transform: none; transition-delay: 60ms; }
+/* zones de texte plus grandes : le curseur reste dans le champ, la dictée du clavier de la tablette y écrit à l'aise */
+.seance .textarea { min-height: 120px; }
 .etape-aide { color: var(--ink-2); font-size: 0.9rem; }
 .etape-pied { display: flex; justify-content: flex-end; padding-top: var(--sp-3); border-top: 1px solid var(--line); }
 .etape .chip { --zone-soft: var(--zone-soft); }
@@ -53,6 +79,12 @@
 .ajout { display: flex; gap: var(--sp-2); align-items: end; }
 .ajout > :first-child { flex: 1; }
 .ajout-champ { flex: 1; }
+
+/* légende des deux zones, au-dessus de la feuille */
+.legende-zones { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); margin: 0; font-size: 0.82rem; color: var(--ink-2); }
+.legende-zone { display: inline-flex; align-items: center; gap: 6px; }
+.legende-zone::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--peda); }
+.legende-zone[data-zone="ortho"]::before { background: var(--ortho); }
 
 /* aperçu : la feuille du Journalier */
 .apercu { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--shadow-1); padding: var(--sp-4); display: grid; gap: var(--sp-3); }

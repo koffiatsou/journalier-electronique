@@ -63,7 +63,8 @@ export type ReponseJeton = z.infer<typeof schemaReponseJeton>;
 /** Ce qu'on lit dans le jeton d'identité : un champ du mauvais type est traité comme absent. */
 const texteOuRien = z.string().optional().catch(undefined);
 export const schemaChargeIdentite = z.object({
-  nonce: z.unknown(),
+  // Zod 4 exige la clé d’un `z.unknown()` ; un jeton sans nonce reste lisible (la comparaison se fait dans `lireCompte`).
+  nonce: z.unknown().optional(),
   oid: texteOuRien,
   sub: texteOuRien,
   preferred_username: texteOuRien,
