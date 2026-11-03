@@ -9,7 +9,7 @@ import { Button } from '../../ui/Button.tsx';
 import { Chips } from '../../ui/Chip.tsx';
 import { Field, Input, Select, Textarea } from '../../ui/Field.tsx';
 import { anneeDeNiveau, cibleDeSeance, defautsSeance, formeDeFiliere } from '../../domain/referentiel/index.ts';
-import { elevesProposes, languesDe } from '../../domain/eleves/index.ts';
+import { elevesProposes, enseignantDuDossier, languesDe } from '../../domain/eleves/index.ts';
 import { ecoleDeEleve, nbPeriodesUtilisees } from '../../domain/agenda/index.ts';
 import type { Ecole } from '../../domain/agenda/index.ts';
 import type { Piste } from '../../domain/referentiel/index.ts';
@@ -88,6 +88,9 @@ export function FormulaireCreneau({ s, maj, eleves, ecoles = [] }: PropsFormulai
               <datalist id={`${id}-liste`}>{matieres.map((m) => <option key={m} value={m} />)}</datalist>
             </>
           )}
+        </Field>
+        <Field label="Enseignant du cours" optionnel aide="Laissez vide : le nom du dossier de l’élève sera gardé. Écrivez un nom pour un remplacement.">
+          {(id) => <Input id={id} value={s.enseignant ?? ''} placeholder={enseignantDuDossier(eleve, s.matiere) || 'Nom de l’enseignant'} onChange={(e) => maj({ enseignant: e.target.value })} />}
         </Field>
         <Field label="Classe ou niveau" optionnel>
           {(id) => <Input id={id} value={s.niveauScolaire} placeholder="3CB, 4TQ, S2…" onChange={(e) => maj({ niveauScolaire: e.target.value })} />}

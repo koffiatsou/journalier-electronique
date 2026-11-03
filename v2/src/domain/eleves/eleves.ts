@@ -8,6 +8,7 @@ import { analyserClasse } from '../referentiel/contexte.ts';
 import { sansAccents } from '../referentiel/texte.ts';
 import { FILIERES_LIBELLES } from '../types.ts';
 import type { Eleve, Seance } from '../types.ts';
+import { normaliserEnseignants } from './enseignants.ts';
 
 /** Langues du référentiel « Langues modernes » (voir src/data/referentiel). */
 export const LANGUES_MODERNES = ['Néerlandais', 'Anglais', 'Allemand', 'Espagnol', 'Italien'] as const;
@@ -22,10 +23,11 @@ export function languesDe(e: Pick<Eleve, 'langues' | 'langue'>): string[] {
 
 /** Dossier tel que l'application l'attend : l'ancien champ `langue` devient `langues`. */
 export function normaliserEleve(e: Eleve): Eleve {
-  const { langue: _ancienne, langues: _l, avatar: brut, ...reste } = e;
+  const { langue: _ancienne, langues: _l, avatar: brut, enseignants: _e, ...reste } = e;
   const langues = languesDe(e);
   const avatar = normaliserAvatar(brut);
-  return { ...reste, ...(langues.length ? { langues } : {}), ...(avatar ? { avatar } : {}) };
+  const enseignants = normaliserEnseignants(e.enseignants);
+  return { ...reste, ...(langues.length ? { langues } : {}), ...(enseignants.length ? { enseignants } : {}), ...(avatar ? { avatar } : {}) };
 }
 
 /* ───────── Archivage ───────── */
@@ -73,7 +75,7 @@ export function texteDossier(e: Eleve): string {
   const filiere = e.filiere ?? analyserClasse(e.classe)?.filiere;
   return sansAccents([
     e.nom, e.prenom, e.classe, e.niveau ?? '', filiere ? FILIERES_LIBELLES[filiere] : '', e.ecole, e.titulaire,
-    ...e.matieres, ...languesDe(e), e.archiveLe ? 'archivé archive' : ''
+    ...e.matieres, ...languesDe(e), ...(e.enseignants ?? []).map((x) => x.nom), e.archiveLe ? 'archivé archive' : ''
   ].join(' '));
 }
 
@@ -183,9 +185,10 @@ export function appliquerPassage(e: Eleve, ligne: LignePassage, cible: string, o
   if (ligne.action === 'laisser') return e;
   if (ligne.action === 'archiver') return archiver(e, options.aujourdhui);
   const classe = ligne.classe.trim();
-  const { niveau: ancien, ...reste } = e;
+  const { niveau: ancien, enseignants, ...reste } = e;
   const changeDeClasse = classe !== e.classe.trim();
   const suivant = ancien && changeDeClasse ? niveauSuivant(ancien) : undefined;
   const garde = ancien && !changeDeClasse ? { niveau: ancien } : suivant ? { niveau: suivant } : {};
-  return { ...reste, ...garde, classe, anneeDossier: cible, titulaire: options.viderTitulaire ? '' : e.titulaire };
+  const gardeEnseignants = !options.viderTitulaire && enseignants?.length ? { enseignants } : {};
+  return { ...reste, ...garde, ...gardeEnseignants, classe, anneeDossier: cible, titulaire: options.viderTitulaire ? '' : e.titulaire };
 }

@@ -5,7 +5,7 @@ import { LANGUES_MODERNES, languesDe } from '../../domain/eleves/index.ts';
 import { analyserClasse } from '../../domain/referentiel/index.ts';
 import { sansAccents } from '../../domain/referentiel/texte.ts';
 import { FILIERES_LIBELLES } from '../../domain/types.ts';
-import type { Eleve, Filiere } from '../../domain/types.ts';
+import type { EnseignantCours, Eleve, Filiere } from '../../domain/types.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Chips } from '../../ui/Chip.tsx';
 import { Field, Input, Select } from '../../ui/Field.tsx';
@@ -53,6 +53,8 @@ export function FicheEleve({ eleve, couleurParDefaut, ecoles, onEnregistrer, onA
   };
 
   const langues = languesDe(e);
+  const enseignants = e.enseignants ?? [];
+  const majEnseignant = (i: number, p: Partial<EnseignantCours>) => maj({ enseignants: enseignants.map((x, k) => (k === i ? { ...x, ...p } : x)) });
   const majLangues = (liste: string[]) => {
     const { langue: _ancienne, langues: _l, ...reste } = e;
     setE(liste.length ? { ...reste, langues: liste } : reste);
@@ -94,7 +96,7 @@ export function FicheEleve({ eleve, couleurParDefaut, ecoles, onEnregistrer, onA
         ) : (
           <Field label="École" optionnel>{(id) => <Input id={id} value={e.ecole} onChange={(ev) => maj({ ecole: ev.target.value })} />}</Field>
         )}
-        <Field label="Titulaire" optionnel>{(id) => <Input id={id} value={e.titulaire} onChange={(ev) => maj({ titulaire: ev.target.value })} />}</Field>
+        <Field label="Titulaire(s) de classe" optionnel aide="Repris dans le PIA.">{(id) => <Input id={id} value={e.titulaire} onChange={(ev) => maj({ titulaire: ev.target.value })} />}</Field>
       </div>
 
       <div className="field">
@@ -106,6 +108,25 @@ export function FicheEleve({ eleve, couleurParDefaut, ecoles, onEnregistrer, onA
             onKeyDown={(ev) => { if (ev.key === 'Enter') { ev.preventDefault(); ajouterMatiere(); } }} />
           <Button disabled={!autre.trim()} onClick={ajouterMatiere}>Ajouter la matière</Button>
         </div>
+      </div>
+
+
+      <div className="field">
+        <span className="field-label" id="enseignants-titre">Enseignants par cours <span className="opt">facultatif</span></span>
+        <div role="group" aria-labelledby="enseignants-titre" className="enseignants-liste">
+          {enseignants.map((x, i) => (
+            <div key={i} className="enseignant-ligne">
+              <Input value={x.matiere} list="enseignants-matieres" placeholder="Matière" aria-label={`Matière ${i + 1}`}
+                onChange={(ev) => majEnseignant(i, { matiere: ev.target.value })} />
+              <Input value={x.nom} placeholder="Nom de l’enseignant" aria-label={`Enseignant de la matière ${i + 1}`}
+                onChange={(ev) => majEnseignant(i, { nom: ev.target.value })} />
+              <Button type="button" aria-label={`Retirer la ligne ${i + 1}`} onClick={() => maj({ enseignants: enseignants.filter((_, k) => k !== i) })}>Retirer</Button>
+            </div>
+          ))}
+          <datalist id="enseignants-matieres">{[...new Set([...e.matieres, ...langues])].map((m) => <option key={m} value={m} />)}</datalist>
+          <Button type="button" onClick={() => maj({ enseignants: [...enseignants, { matiere: '', nom: '' }] })}>Ajouter un cours</Button>
+        </div>
+        <p className="field-hint">Le nom s’écrit dans la colonne « Titulaire » du Journalier pour cette matière. Sans ligne pour une matière, on reprend le titulaire de classe.</p>
       </div>
 
       <div className="field">

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   PERIODES_AGENDA, ajouterJours, ajouterMois, annuler, avertissementsEcoles, calendrierConnu, couleursEleves, deplacer, dupliquer, ecoleDeOccurrence,
   ecoleParDefaut, heuresDe, horairesReference, indexJour, jourMois, libelleHeures, lundiDe, marquerRealisee, nomJour,
-  occurrencesAgenda as calculer, redimensionner, semaine, semainesDuMois, supprimer, titreMois, titreSemaine, versISO
+  occurrencesAgenda as calculer, redimensionner, seanceDuCreneau, semaine, semainesDuMois, supprimer, titreMois, titreSemaine, versISO
 } from '../../domain/agenda/index.ts';
 import type { Changement, Occurrence, Portee } from '../../domain/agenda/index.ts';
 import { defautsSeance } from '../../domain/referentiel/index.ts';
@@ -101,6 +101,12 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
   };
 
   const encoder = (o: Occurrence) => {
+    const existante = seanceDuCreneau(o.activite, o.date, o.debut, o.fin, seances);
+    if (existante) {
+      magasin.preparerSeance(existante);
+      globalThis.location.hash = '/seance';
+      return;
+    }
     const el = eleves.find((e) => e.id === o.activite.eleveId);
     magasin.preparerSeance({
       eleveId: o.activite.eleveId ?? '', date: o.date, periodeDebut: PERIODES_AGENDA[o.debut]!.label, periodeFin: PERIODES_AGENDA[o.fin]!.label,

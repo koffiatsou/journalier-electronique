@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { infosJour, jourComplet, jourMois, libelle, memeMois, natureJour, semainesDuMois, teinteDe } from '../../domain/agenda/index.ts';
+import { heuresLibresDe, infosJour, jourComplet, jourMois, libelle, libelleHeures, memeMois, natureJour, semainesDuMois, teinteDe } from '../../domain/agenda/index.ts';
 import type { Occurrence, Periode } from '../../domain/agenda/index.ts';
 import type { Eleve } from '../../domain/types.ts';
 
@@ -79,13 +79,14 @@ export function Mois({ jour, periodes, alertes, occurrences, eleves, couleurs, a
                   {visibles.map((o) => {
                     const t = teinteDe(o.activite, couleurs);
                     const texte = libelle(o.activite, nomDe(o));
-                    const quand = `${periodes[o.debut]?.label ?? ''}${o.fin > o.debut ? ` à ${periodes[o.fin]?.label ?? ''}` : ''}`;
+                    const libres = heuresLibresDe(o.activite);
+                    const quand = libres ? libelleHeures(libres) : `${periodes[o.debut]?.label ?? ''}${o.fin > o.debut ? ` à ${periodes[o.fin]?.label ?? ''}` : ''}`;
                     const teinte = t.kind === 'couleur' ? `c-${t.index}` : `t-${t.type}`;
                     // Sur téléphone : simples pastilles (le détail s'ouvre en touchant le jour).
                     if (etroit) return <li key={o.cle}><span className={`mois-pastille ${teinte} ${o.statut === 'annule' ? 'annule' : ''}`} aria-hidden="true" /></li>;
                     return (
                       <li key={o.cle}>
-                        <button type="button" aria-pressed={selection === o.cle} draggable={!o.seanceId}
+                        <button type="button" aria-pressed={selection === o.cle} draggable={!o.seanceId && !heuresLibresDe(o.activite)}
                           onDragStart={(e) => { e.dataTransfer.setData('text/plain', o.cle); e.dataTransfer.effectAllowed = 'copyMove'; }}
                           onDragEnd={() => setSurvol(null)}
                           className={`mois-evt ${teinte} ${alertes?.has(o.cle) ? 'alerte' : ''} ${o.statut === 'annule' ? 'annule' : ''}`}

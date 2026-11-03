@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import type { Eleve, Seance } from '../../domain/types.ts';
+import { enseignantDeSeance } from '../../domain/eleves/index.ts';
 import { construireBloc } from '../../domain/redaction/index.ts';
 import { IconeFeuille } from '../../ui/icons.tsx';
+import { texteLigne } from '../../ui/LigneEvolution.tsx';
 
 const dateFr = (iso: string): string => iso.split('-').reverse().join('/');
 
@@ -41,7 +43,7 @@ interface Props {
 /** Feuille du Journalier, mise à jour pendant la saisie : ce que contiendra le document Word. */
 export function Apercu({ seance, eleve, precedentes, tiroirOuvert, onFermer }: Props) {
   const bloc = useMemo(
-    () => construireBloc(seance, { titulaire: eleve?.titulaire ?? '', precedentes }),
+    () => construireBloc(seance, { titulaire: enseignantDeSeance(seance, eleve), precedentes }),
     [seance, eleve, precedentes]
   );
   const dernier = useMemo(() => rappel(seance, precedentes), [seance, precedentes]);
@@ -83,7 +85,7 @@ export function Apercu({ seance, eleve, precedentes, tiroirOuvert, onFermer }: P
               {b.lignes ? (
                 <>
                   <p className="etiquette">{b.label}</p>
-                  <ul>{b.lignes.map((l) => <li key={l}>{l.replace(/^•\s*/, '')}</li>)}</ul>
+                  <ul>{b.lignes.map((l, k) => <li key={l}>{texteLigne(l.replace(/^•\s*/, ''), b.tons?.[k])}</li>)}</ul>
                 </>
               ) : (
                 <p>{b.label ? <span className="etiquette">{b.label} : </span> : null}{b.texte}</p>

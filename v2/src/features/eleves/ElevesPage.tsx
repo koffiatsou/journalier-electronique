@@ -196,7 +196,8 @@ export function ElevesPage({ magasin, onAller }: { magasin: Magasin; onAller: Al
 
           <dl className="dossier-infos">
             {ouvert.ecole ? <><dt>École</dt><dd>{ouvert.ecole}</dd></> : null}
-            {ouvert.titulaire ? <><dt>Titulaire</dt><dd>{ouvert.titulaire}</dd></> : null}
+            {ouvert.titulaire ? <><dt>Titulaire(s)</dt><dd>{ouvert.titulaire}</dd></> : null}
+            {ouvert.enseignants?.length ? <><dt>Enseignants</dt><dd>{ouvert.enseignants.map((x) => `${x.matiere} : ${x.nom}`).join(' · ')}</dd></> : null}
             {ouvert.niveau ? <><dt>Année</dt><dd>{ouvert.niveau}</dd></> : null}
             {fil && ouvert.filiere ? <><dt>Niveau d’étude</dt><dd>{FILIERES_LIBELLES[fil]}</dd></> : null}
             <dt>Matières</dt><dd>{ouvert.matieres.length ? ouvert.matieres.join(', ') : 'Aucune précisée'}</dd>

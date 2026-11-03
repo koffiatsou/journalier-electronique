@@ -1,4 +1,4 @@
-import { ajouterJours, avertissementsEcoles, ecoleDeOccurrence, heuresDe, libelle, libelleHeures, occurrences, occurrencesAgenda } from '../agenda/index.ts';
+import { ajouterJours, avertissementsEcoles, ecoleDeOccurrence, heuresOccurrence, libelle, libelleHeures, occurrences, occurrencesAgenda } from '../agenda/index.ts';
 import type { Activite, Ecole, Occurrence } from '../agenda/index.ts';
 import { enMinutes, heureValide } from '../agenda/horaires.ts';
 import type { Eleve, Seance } from '../types.ts';
@@ -79,7 +79,7 @@ export function journeeDu(date: string, activites: readonly Activite[], seances:
     .map((occ): Creneau => {
       const eleve = eleves.find((e) => e.id === occ.activite.eleveId);
       const ecole = ecoleDeOccurrence(occ, eleves, ecoles);
-      const h = heuresDe(ecole, occ.debut, occ.fin);
+      const h = heuresOccurrence(ecole, occ);
       const valide = h && heureValide(h.debut) && heureValide(h.fin);
       return {
         occ, eleve, ecole,

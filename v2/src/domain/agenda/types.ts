@@ -50,9 +50,12 @@ export interface Activite {
   note: string;
   /** AAAA-MM-JJ */
   date: string;
-  /** Index de période (0 = 1e H). */
+  /** Index de période (0 = 1e H). Pour une activité à heures libres : périodes touchées (voir `periodesCouvertes`). */
   debut: number;
   fin: number;
+  /** Heures exactes (« HH:MM ») d'une activité qui ne suit pas les périodes ; jamais pour un accompagnement d'élève. */
+  heureDebut?: string;
+  heureFin?: string;
   /** École d'une activité qui n'est pas pour un élève (collaboration, formation…) ; pour un élève, c'est l'école de son dossier qui compte. */
   ecoleId?: string;
   repetition: 'aucune' | 'hebdomadaire';

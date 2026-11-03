@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Aller } from '../../app/useRoute.ts';
 import { couleursEleves } from '../../domain/agenda/index.ts';
 import { telechargerJournalier, telechargerJournaliers } from '../../domain/export/telecharger.ts';
+import { enseignantDeSeance } from '../../domain/eleves/index.ts';
 import { anneesDisponibles, bornes, construirePeriode, libellePeriode, rechercherSeances, seancesDuJournalier } from '../../domain/journalier/index.ts';
 import type { Periode } from '../../domain/journalier/index.ts';
 import { construireBloc } from '../../domain/redaction/index.ts';
@@ -12,6 +13,7 @@ import { aujourdhuiISO } from '../seance/brouillon.ts';
 import type { Magasin } from '../../state/store.ts';
 import { useMagasin } from '../../state/store.ts';
 import { Badge } from '../../ui/Badge.tsx';
+import { texteLigne } from '../../ui/LigneEvolution.tsx';
 import { Button } from '../../ui/Button.tsx';
 import { Dialog } from '../../ui/Dialog.tsx';
 import { Field, Input, Select } from '../../ui/Field.tsx';
@@ -35,7 +37,7 @@ const creneau = (s: Seance): string => (s.periodeFin && s.periodeFin !== s.perio
 
 /** Texte de la séance tel qu'il ira dans le Journalier (aperçu repliable). */
 function ApercuSeance({ seance, eleve, precedentes }: { seance: Seance; eleve: Eleve | undefined; precedentes: Seance[] }) {
-  const b = construireBloc(seance, { titulaire: eleve?.titulaire ?? '', precedentes });
+  const b = construireBloc(seance, { titulaire: enseignantDeSeance(seance, eleve), precedentes });
   return (
     <div className="journalier-apercu">
       {b.peda ? (
@@ -53,7 +55,7 @@ function ApercuSeance({ seance, eleve, precedentes }: { seance: Seance; eleve: E
           o.lignes ? (
             <div key={i}>
               {o.label ? <p><strong>{o.label}</strong></p> : null}
-              {o.lignes.map((l) => <p key={l} className="apercu-ligne">{l}</p>)}
+              {o.lignes.map((l, k) => <p key={l} className="apercu-ligne">{texteLigne(l, o.tons?.[k])}</p>)}
             </div>
           ) : <p key={i}>{o.label ? <strong>{o.label} : </strong> : null}{o.texte}</p>
         ))}

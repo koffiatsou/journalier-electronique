@@ -13,7 +13,7 @@ import { versFaits } from './faits.ts';
 import {
   NBSP, dateCourte, dateFR, enumeration, finPhrase, majusculePremiere as Maj, minusculePremiere as min
 } from './langue.ts';
-import type { Bloc, Faits, LigneOrtho } from './types.ts';
+import type { Bloc, Faits, LigneOrtho, TonLigne } from './types.ts';
 
 const NIVEAUX = ['Partiellement', 'Suffisamment', 'Totalement'] as const;
 const EFFETS = ['Aucun effet', 'Effet partiel', 'Effet positif'] as const;
@@ -117,11 +117,35 @@ function ligneSuite(f: Faits): string | null {
   return morceaux.length ? morceaux.join(' ') : null;
 }
 
-function ligneEvolution(evo: readonly Evolution[]): string | null {
+interface LignesEvolution { label: string; lignes: string[]; tons: TonLigne[] }
+
+/**
+ * Évolution regroupée par changement de niveau, progressions d'abord :
+ * « • Progression, Partiellement → Suffisamment : a ; b. » puis « • À consolider, … ».
+ * La date de la séance comparée est dans l'intitulé quand elle est unique,
+ * sinon elle suit chaque point (« depuis le 02/10 »).
+ */
+function lignesEvolution(evo: readonly Evolution[]): LignesEvolution | null {
   if (!evo.length) return null;
-  const corps = evo.map((x) =>
-    `${min(x.texte)}${NBSP}: ${min(NIVEAUX[x.de] ?? '')} (${dateCourte(x.dateDe)}) → ${min(NIVEAUX[x.vers] ?? '')}`);
-  return `${enumeration(corps)}.`;
+  const dates = [...new Set(evo.map((x) => x.dateDe))];
+  const uneDate = dates.length === 1;
+  const clefs = [...new Set(evo.map((x) => `${x.de}>${x.vers}`))];
+  const groupes = clefs.map((c) => {
+    const items = evo.filter((x) => `${x.de}>${x.vers}` === c);
+    return { de: items[0]!.de, vers: items[0]!.vers, items };
+  });
+  const progres = (g: { de: number; vers: number }): boolean => g.vers > g.de;
+  groupes.sort((a, b) => Number(progres(b)) - Number(progres(a)) || b.vers - a.vers || a.de - b.de);
+  const lignes: string[] = [];
+  const tons: TonLigne[] = [];
+  for (const g of groupes) {
+    const points = g.items.map((x) => `${min(x.texte)}${uneDate ? '' : ` (depuis le ${dateCourte(x.dateDe)})`}`);
+    const titre = progres(g) ? 'Progression' : 'À consolider';
+    lignes.push(`• ${titre}, ${NIVEAUX[g.de] ?? ''} → ${NIVEAUX[g.vers] ?? ''}${NBSP}: ${enumeration(points)}.`);
+    tons.push(progres(g) ? 'progres' : 'consolider');
+  }
+  const label = uneDate ? `Évolution depuis la séance du ${dateCourte(dates[0] ?? '')}` : 'Évolution depuis les séances précédentes';
+  return { label, lignes, tons };
 }
 
 /* ---------- bloc complet ---------- */
@@ -176,8 +200,8 @@ export function construireBloc(seance: Seance, contexte: ContexteBloc = {}): Blo
   if (tr) l.push({ label: 'Transfert', texte: tr });
   const suite = ligneSuite(faits);
   if (suite) l.push({ label: 'Suite', texte: suite });
-  const evo = ligneEvolution(evolution(faits, (contexte.precedentes ?? []).map((p) => versFaits(p))));
-  if (evo) l.push({ label: 'Évolution depuis la séance précédente', texte: evo });
+  const evo = lignesEvolution(evolution(faits, (contexte.precedentes ?? []).map((p) => versFaits(p))));
+  if (evo) l.push(evo);
   if (!l.length) l.push({ label: null, texte: 'Séance sans observation particulière.' });
   bloc.ortho = l;
   return bloc;
