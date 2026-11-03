@@ -2,6 +2,7 @@ import type { Eleve } from '../types.ts';
 import { jourComplet } from './dates.ts';
 import { enMinutes, heureValide, normaliserHoraires, nbPeriodesUtilisees, periodeUtilisee, verifierHoraires } from './horaires.ts';
 import type { ErreurHoraire } from './horaires.ts';
+import { heuresLibresDe } from './horaireLibre.ts';
 import { libelle } from './planning.ts';
 import { PERIODES_AGENDA } from './types.ts';
 import type { Occurrence, Periode } from './types.ts';
@@ -117,6 +118,11 @@ export function heuresDe(ecole: Ecole, debut: number, fin: number): { debut: str
   return periodeUtilisee(d) && periodeUtilisee(f) ? { debut: d!.debut, fin: f!.fin } : null;
 }
 
+/** Heures réelles d'une occurrence : les heures libres de l'activité, sinon celles des périodes dans l'école. */
+export function heuresOccurrence(ecole: Ecole, o: Pick<Occurrence, 'activite' | 'debut' | 'fin'>): { debut: string; fin: string } | null {
+  return heuresLibresDe(o.activite) ?? heuresDe(ecole, o.debut, o.fin);
+}
+
 export const libelleHeures = (h: { debut: string; fin: string } | null): string => (h ? `${h.debut} – ${h.fin}` : '');
 
 /**
@@ -152,7 +158,7 @@ export function avertissementsEcoles(occ: readonly Occurrence[], eleves: readonl
   for (const o of occ) {
     if (o.statut === 'annule') continue;
     const ecole = ecoleDeOccurrence(o, eleves, ecoles);
-    const h = heuresDe(ecole, o.debut, o.fin);
+    const h = heuresOccurrence(ecole, o);
     if (!h || !heureValide(h.debut) || !heureValide(h.fin)) continue;
     const el = eleves.find((e) => e.id === o.activite.eleveId);
     const cas: Cas = { o, ecole, du: enMinutes(h.debut), au: enMinutes(h.fin), heures: libelleHeures(h), nom: libelle(o.activite, el ? `${el.prenom} ${el.nom}`.trim() : undefined) };

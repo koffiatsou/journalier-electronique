@@ -100,8 +100,17 @@ export interface Seance {
     precision: string;
   };
 
+  /** Enseignant du cours, gardé à l'encodage (ou saisi pour un remplacement) ; sinon on lit le dossier de l'élève. */
+  enseignant?: string;
+
   creeLe: string;
   modifieLe: string;
+}
+
+/** Enseignant qui donne une matière à l'élève (différent du titulaire de classe). */
+export interface EnseignantCours {
+  matiere: string;
+  nom: string;
 }
 
 export interface Eleve {
@@ -113,7 +122,10 @@ export interface Eleve {
   ecole: string;
   /** École de l'agenda à laquelle l'élève est rattaché (choisie dans la fiche) ; sinon on cherche une école du même nom, sinon l'école par défaut. */
   ecoleId?: string;
+  /** Titulaire(s) de la classe : repris dans l'identité du PIA. */
   titulaire: string;
+  /** Enseignants par cours : colonne « Titulaire » des séances du Journalier (à défaut, le titulaire de classe). */
+  enseignants?: EnseignantCours[];
   dateNaissance: string;
   /** Matières suivies, proposées en priorité dans le formulaire de séance. */
   matieres: string[];

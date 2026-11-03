@@ -3,6 +3,7 @@ import { occurrences } from '../agenda/planning.ts';
 import { TYPES_LIBELLES } from '../agenda/types.ts';
 import type { Activite, Occurrence, Periode } from '../agenda/types.ts';
 import { heureValide } from '../agenda/horaires.ts';
+import { heuresLibresDe } from '../agenda/horaireLibre.ts';
 import { initiales } from '../eleves/eleves.ts';
 import { anneeScolaire } from '../export/journalier.ts';
 import type { Eleve, Seance } from '../types.ts';
@@ -86,8 +87,9 @@ export function evenementsSouhaites(activites: readonly Activite[], eleves: read
   for (const o of occurrences(activites, du, au, seances)) {
     if (o.statut === 'annule') continue;
     const periodes = typeof horaires === 'function' ? horaires(o) : horaires;
-    const debut = periodes[o.debut];
-    const fin = periodes[o.fin];
+    const libres = heuresLibresDe(o.activite);
+    const debut = libres ? { debut: libres.debut } : periodes[o.debut];
+    const fin = libres ? { fin: libres.fin } : periodes[o.fin];
     if (!debut || !fin || !heureValide(debut.debut) || !heureValide(fin.fin)) continue;
     sortie.push({
       cle: o.cle, sujet: sujetDe(o.activite, eleves, reglages.nom),

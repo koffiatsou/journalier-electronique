@@ -78,6 +78,9 @@
 .panneau h2 { margin: 0; font-size: 1.05rem; }
 .panneau .en-tete { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
 .panneau .actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.panneau .encoder-haut .btn { flex: 1; }
+.panneau .barre-fixe { position: sticky; bottom: 0; z-index: 1; background: var(--surface); border-top: 1px solid var(--line); margin-inline: calc(-1 * var(--sp-4)); padding: var(--sp-2) var(--sp-4); }
+.panneau .horaire-libre { display: flex; gap: var(--sp-2); align-items: center; font-size: .9rem; }
 .panneau .portee { background: var(--attention-soft); border-radius: var(--r-s); padding: var(--sp-2) var(--sp-3); display: grid; gap: var(--sp-1); font-size: .875rem; }
 .panneau .portee label { display: flex; gap: var(--sp-2); align-items: center; }
 .panneau .ligne2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }

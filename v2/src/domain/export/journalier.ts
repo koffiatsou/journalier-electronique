@@ -3,6 +3,7 @@
  * pour chaque séance au lieu de reconstruire le document. Le texte vient du moteur de rédaction ;
  * ici, on ne rédige rien. Fonctions pures (testables sans navigateur).
  */
+import { enseignantDeSeance } from '../eleves/enseignants.ts';
 import { construireBloc } from '../redaction/index.ts';
 import { deIdentifier } from '../redaction/deidentifier.ts';
 import type { Bloc } from '../redaction/index.ts';
@@ -145,7 +146,7 @@ const chronologie = (a: Seance, b: Seance): number => a.date.localeCompare(b.dat
 
 export function preparerBlocs(seances: readonly Seance[], eleve: Eleve, deidentifie: boolean): Bloc[] {
   const tri = [...seances].sort(chronologie);
-  const blocs = tri.map((s, i) => construireBloc(s, { titulaire: eleve.titulaire, precedentes: tri.slice(0, i) }));
+  const blocs = tri.map((s, i) => construireBloc(s, { titulaire: enseignantDeSeance(s, eleve), precedentes: tri.slice(0, i) }));
   if (!deidentifie) return blocs;
   const liste = noms(eleve);
   const nettoyer = (t: string): string => deIdentifier(t, liste);

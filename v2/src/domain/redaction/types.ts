@@ -39,7 +39,12 @@ export interface LigneOrtho {
   label: string | null;
   texte?: string;
   lignes?: string[];
+  /** Ton de chaque ligne (même ordre que `lignes`), pour colorer l'écran ; Word reste sans couleur. */
+  tons?: (TonLigne | null)[];
 }
+
+/** Sens d'un changement de niveau dans l'évolution : progression ou point à consolider. */
+export type TonLigne = 'progres' | 'consolider';
 
 export interface Bloc {
   type: 'seance' | 'absence';

@@ -56,7 +56,37 @@ test('observation sans niveau : regroupée sous « Observé »', () => {
 test('évolution : même point, même matière, niveau différent', () => {
   const avant = seance({ date: '2026-09-15', observations: [{ texte: 'Maintient son attention', niveau: 0 }] });
   const t = texte(seance(), { precedentes: [avant] });
-  assert.ok(t.includes(`Évolution depuis la séance précédente${N}: maintient son attention${N}: partiellement (15/09) → totalement.`));
+  assert.ok(t.includes('Évolution depuis la séance du 15/09\n'));
+  assert.ok(t.includes(`• Progression, Partiellement → Totalement${N}: maintient son attention.`));
+});
+
+test('évolution : progressions regroupées par changement de niveau, puis points à consolider', () => {
+  const avant = seance({
+    date: '2026-09-15',
+    observations: [
+      { texte: 'Entre dans la tâche', niveau: 0 },
+      { texte: 'Maintient son attention', niveau: 0 },
+      { texte: 'Repère les informations pertinentes', niveau: 2 },
+      { texte: 'Contrôle sa production', niveau: 0 }
+    ]
+  });
+  // « Contrôle sa production » reste à « Partiellement » : rien à signaler.
+  const bloc = construireBloc(seance(), { precedentes: [avant] });
+  const evo = bloc.ortho.find((o) => o.label?.startsWith('Évolution'));
+  assert.deepEqual(evo?.lignes, [
+    `• Progression, Partiellement → Totalement${N}: entre dans la tâche${N}; maintient son attention.`,
+    `• À consolider, Totalement → Suffisamment${N}: repère les informations pertinentes.`
+  ]);
+  assert.deepEqual(evo?.tons, ['progres', 'consolider']);
+});
+
+test('évolution : dates différentes, chaque point dit depuis quand', () => {
+  const a = seance({ date: '2026-09-10', observations: [{ texte: 'Entre dans la tâche', niveau: 0 }] });
+  const b = seance({ date: '2026-09-15', observations: [{ texte: 'Maintient son attention', niveau: 0 }] });
+  const bloc = construireBloc(seance(), { precedentes: [a, b] });
+  const evo = bloc.ortho.find((o) => o.label?.startsWith('Évolution'));
+  assert.equal(evo?.label, 'Évolution depuis les séances précédentes');
+  assert.deepEqual(evo?.lignes, [`• Progression, Partiellement → Totalement${N}: entre dans la tâche (depuis le 10/09)${N}; maintient son attention (depuis le 15/09).`]);
 });
 
 test('évolution : ignorée si autre matière ou niveau inchangé', () => {

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
-  NB_COULEURS, NOMS_COULEURS, TYPES_LIBELLES, creer, ecoleDeEleve, ecoleParDefaut, editer, jourComplet, libelle, nbPeriodesUtilisees
+  NB_COULEURS, NOMS_COULEURS, TYPES_LIBELLES, creer, ecoleDeEleve, ecoleParDefaut, editer, heuresLibresDe, jourComplet, libelle, nbPeriodesUtilisees,
+  periodesCouvertes, verifierHeuresLibres
 } from '../../domain/agenda/index.ts';
 import type { Activite, Changement, Ecole, Edition, Occurrence, Portee, TypeActivite } from '../../domain/agenda/index.ts';
 import { elevesProposes, languesDe } from '../../domain/eleves/index.ts';
@@ -45,6 +46,10 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
   const [couleur, setCouleur] = useState<number | undefined>(base.couleur);
   const [ecoleId, setEcoleId] = useState(base.ecoleId ?? '');
   const [portee, setPortee] = useState<Portee>('occurrence');
+  const libresDeBase = heuresLibresDe(base);
+  const [libre, setLibre] = useState(Boolean(libresDeBase));
+  const [heureDebut, setHeureDebut] = useState(libresDeBase?.debut ?? '');
+  const [heureFin, setHeureFin] = useState(libresDeBase?.fin ?? '');
   const serie = a?.repetition === 'hebdomadaire';
   const eleve = eleves.find((e) => e.id === eleveId);
   // Les heures affichées sont celles de l'école de l'élève (ou de l'école choisie pour une autre activité).
@@ -56,12 +61,17 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
     return ecole.periodes.slice(0, n).map((p, i) => ({ i, texte: p.debut && p.fin ? `${p.label} (${p.debut} – ${p.fin})` : `${p.label} (pas d’horaire pour cette école)` }));
   }, [ecole, debut, fin]);
   const matieres = eleve ? [...eleve.matieres, ...languesDe(eleve).filter((l) => !eleve.matieres.includes(l))] : [];
-  const valide = type === 'eleve' ? Boolean(eleveId || nomLibre.trim()) : Boolean(titre.trim()) && date !== '';
+  // Les heures libres ne concernent pas un accompagnement d'élève (il suit les périodes, comme sa séance).
+  const libreActif = libre && type !== 'eleve';
+  const erreurHeures = libreActif ? verifierHeuresLibres(heureDebut, heureFin) : null;
+  const valide = (type === 'eleve' ? Boolean(eleveId || nomLibre.trim()) : Boolean(titre.trim()) && date !== '') && !erreurHeures;
 
   const enregistrer = () => {
     if (!valide) return;
+    const couvertes = libreActif ? periodesCouvertes(ecole.periodes, { debut: heureDebut, fin: heureFin }) : { debut, fin: Math.max(debut, fin) };
     const champs: Edition & { type: TypeActivite } = {
-      type, titre: titre.trim(), lieu: lieu.trim(), note: note.trim(), date, debut, fin: Math.max(debut, fin), repetition,
+      type, titre: titre.trim(), lieu: lieu.trim(), note: note.trim(), date, debut: couvertes.debut, fin: couvertes.fin, repetition,
+      ...(libreActif ? { heureDebut, heureFin } : {}),
       ...(type === 'eleve' ? (eleveId ? { eleveId } : { nomLibre: nomLibre.trim() }) : {}),
       ...(matiere.trim() ? { matiere: matiere.trim() } : {}),
       ...(repetition === 'hebdomadaire' && jusquau ? { jusquau } : {}),
@@ -78,6 +88,7 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
         if (couleur === undefined) delete act.couleur;
         if (type === 'eleve' || !ecoleId) delete act.ecoleId;
         if (repetition === 'aucune') { delete act.jusquau; }
+        if (!libreActif) { delete act.heureDebut; delete act.heureFin; }
       }
       onChanger(c);
     } else {
@@ -94,6 +105,11 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
         <h2>{occurrence ? libelle(base, nom) : 'Nouvelle activité'}</h2>
         <Button onClick={onFermer} aria-label="Fermer le panneau">Fermer</Button>
       </div>
+      {occurrence && occurrence.activite.type === 'eleve' && occurrence.statut !== 'annule' ? (
+        <div className="actions encoder-haut">
+          <Button variante="primaire" onClick={() => onEncoder(occurrence)}>{occurrence.statut === 'realise' ? 'Ouvrir la séance' : 'Encoder la séance'}</Button>
+        </div>
+      ) : null}
       {occurrence ? <p className="liste-detail">{jourComplet(occurrence.date)} · {occurrence.statut === 'annule' ? 'Annulé' : occurrence.statut === 'realise' ? 'Réalisé' : 'Prévu'}</p> : null}
 
       <div className="field">
@@ -140,14 +156,29 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
         <Field label="Jour">{(id) => <Input id={id} type="date" value={date} onChange={(e) => setDate(e.target.value)} />}</Field>
         <Field label="Lieu" optionnel>{(id) => <Input id={id} value={lieu} onChange={(e) => setLieu(e.target.value)} placeholder="Local, visio…" />}</Field>
       </div>
-      <div className="ligne2">
-        <Field label="De">
-          {(id) => <Select id={id} value={debut} onChange={(e) => { const v = Number(e.target.value); setDebut(v); if (fin < v) setFin(v); }}>{OPTIONS_PERIODES.map((p) => <option key={p.i} value={p.i}>{p.texte}</option>)}</Select>}
-        </Field>
-        <Field label="À">
-          {(id) => <Select id={id} value={fin} onChange={(e) => setFin(Number(e.target.value))}>{OPTIONS_PERIODES.filter((p) => p.i >= debut).map((p) => <option key={p.i} value={p.i}>{p.texte}</option>)}</Select>}
-        </Field>
-      </div>
+      {type !== 'eleve' ? (
+        <label className="horaire-libre">
+          <input type="checkbox" checked={libre} onChange={(e) => setLibre(e.target.checked)} /> Horaire libre (en dehors des périodes)
+        </label>
+      ) : null}
+      {libreActif ? (
+        <>
+          <div className="ligne2">
+            <Field label="De">{(id) => <Input id={id} type="time" step={300} value={heureDebut} onChange={(e) => setHeureDebut(e.target.value)} />}</Field>
+            <Field label="À">{(id) => <Input id={id} type="time" step={300} value={heureFin} onChange={(e) => setHeureFin(e.target.value)} />}</Field>
+          </div>
+          {erreurHeures && (heureDebut || heureFin) ? <p className="field-hint" role="alert">{erreurHeures}</p> : null}
+        </>
+      ) : (
+        <div className="ligne2">
+          <Field label="De">
+            {(id) => <Select id={id} value={debut} onChange={(e) => { const v = Number(e.target.value); setDebut(v); if (fin < v) setFin(v); }}>{OPTIONS_PERIODES.map((p) => <option key={p.i} value={p.i}>{p.texte}</option>)}</Select>}
+          </Field>
+          <Field label="À">
+            {(id) => <Select id={id} value={fin} onChange={(e) => setFin(Number(e.target.value))}>{OPTIONS_PERIODES.filter((p) => p.i >= debut).map((p) => <option key={p.i} value={p.i}>{p.texte}</option>)}</Select>}
+          </Field>
+        </div>
+      )}
 
       <Field label="Répétition">
         {(id) => (
@@ -179,9 +210,8 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
         </fieldset>
       ) : null}
 
-      <div className="actions">
+      <div className="actions barre-fixe">
         <Button variante="primaire" disabled={!valide} onClick={enregistrer}>{occurrence ? 'Enregistrer' : 'Ajouter à l’agenda'}</Button>
-        {occurrence && occurrence.activite.type === 'eleve' && occurrence.statut !== 'annule' ? <Button onClick={() => onEncoder(occurrence)}>Encoder la séance</Button> : null}
         {occurrence && occurrence.activite.type !== 'eleve' && occurrence.statut !== 'annule' ? <Button onClick={() => onRealiser(occurrence)}>{occurrence.statut === 'realise' ? 'Remettre à prévu' : 'Marquer réalisé'}</Button> : null}
       </div>
       {occurrence ? (

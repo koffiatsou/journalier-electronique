@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { disposer, heuresDe, infosJour, jourMois, libelle, libelleHeures, natureJour, nomJour, teinteDe } from '../../domain/agenda/index.ts';
+import { disposer, enMinutes, heuresLibresDe, heuresOccurrence, infosJour, jourMois, libelle, libelleHeures, natureJour, nomJour, teinteDe } from '../../domain/agenda/index.ts';
 import type { Ecole, Occurrence, Periode } from '../../domain/agenda/index.ts';
 import type { Eleve } from '../../domain/types.ts';
-import { geometrie, PH } from './geometrie.ts';
+import { geometrie, PH, yDeMinutes } from './geometrie.ts';
 
 export interface Cible { date: string; debut: number; fin?: number }
 export type ModeGeste = 'deplacer' | 'dupliquer' | 'etirer';
@@ -46,6 +46,15 @@ function caseSous(x: number, y: number): Cible | null {
 export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourdhui, selection, ecoleDe, plusieurs, alertes, onSelection, onCreer, onGeste }: Props) {
   const geo = useMemo(() => geometrie(periodes), [periodes]);
   const disp = useMemo(() => disposer(occurrences), [occurrences]);
+  // Une activité à heures libres peut finir après la dernière période : la grille se prolonge pour la montrer en entier.
+  const total = useMemo(() => {
+    let bas = geo.total;
+    for (const o of occurrences) {
+      const h = heuresLibresDe(o.activite);
+      if (h) bas = Math.max(bas, Math.ceil(yDeMinutes(geo, periodes, enMinutes(h.fin))) + 4);
+    }
+    return bas;
+  }, [geo, periodes, occurrences]);
   const [geste, setGeste] = useState<Geste | null>(null);
   const [creation, setCreation] = useState<Selection | null>(null);
   const suiviCreation = useRef<{ date: string; depart: number; courant: number; x: number; y: number; actif: boolean; tactile: boolean; minuteur: number | undefined } | null>(null);
@@ -129,7 +138,7 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
   }, []);
 
   const commencer = (e: { button: number; pointerType: string; clientX: number; clientY: number; stopPropagation(): void }, o: Occurrence, mode: ModeGeste) => {
-    if (e.button !== 0 || o.seanceId) return; // une séance sans planification ne se déplace pas : elle suit la séance
+    if (e.button !== 0 || o.seanceId || heuresLibresDe(o.activite)) return; // une séance sans planification suit la séance ; des heures libres se changent dans le panneau
     const tactile = e.pointerType === 'touch';
     const s = { o, mode, x: e.clientX, y: e.clientY, actif: false, tactile, minuteur: undefined as number | undefined };
     if (tactile) s.minuteur = window.setTimeout(() => { if (suivi.current === s) { s.actif = true; navigator.vibrate?.(15); } }, APPUI_LONG);
@@ -147,7 +156,7 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
 
   const style = (o: Occurrence, yDeb: number, yFin: number): Record<string, string | number> => {
     const d = disp.get(o.cle) ?? { colonne: 0, colonnes: 1 };
-    return { top: yDeb + 2, height: yFin - yDeb - 4, left: `calc(${(d.colonne * 100) / d.colonnes}% + 2px)`, width: `calc(${100 / d.colonnes}% - 4px)` };
+    return { top: yDeb + 2, height: Math.max(28, yFin - yDeb - 4), left: `calc(${(d.colonne * 100) / d.colonnes}% + 2px)`, width: `calc(${100 / d.colonnes}% - 4px)` };
   };
   const finY = (i: number): number => geo.y[i]! + PH;
 
@@ -168,7 +177,7 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
         })}
       </div>
       <div className="grille-corps">
-        <div className="axe" style={{ height: geo.total }} aria-hidden="true">
+        <div className="axe" style={{ height: total }} aria-hidden="true">
           {periodes.map((p, i) => (
             <div key={p.label}>
               <b style={{ position: 'absolute', top: geo.y[i]! + 4 }}>{p.label}</b>
@@ -178,7 +187,7 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
           {geo.pauses.map((p) => <div key={p.y} className="pause-axe" style={{ top: p.y, height: p.h }}>{p.libelle}</div>)}
         </div>
         {jours.map((j) => (
-          <div key={j} className={`colonne ${natureJour(infosJour(j)) ? `jour-${natureJour(infosJour(j))}` : ''}`.trim()} style={{ height: geo.total }} role="gridcell">
+          <div key={j} className={`colonne ${natureJour(infosJour(j)) ? `jour-${natureJour(infosJour(j))}` : ''}`.trim()} style={{ height: total }} role="gridcell">
             {geo.pauses.map((p) => <div key={p.y} className="pause" style={{ top: p.y, height: p.h }} />)}
             {periodes.map((p, i) => (
               <button key={p.label} type="button" className="cellule" data-date={j} data-periode={i}
@@ -194,19 +203,22 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
               const nom = nomDe(o);
               const etire = enCours && geste?.mode === 'etirer' ? geste.cible.fin ?? o.fin : o.fin;
               const ecole = plusieurs ? ecoleDe(o) : null;
-              const heures = ecole ? libelleHeures(heuresDe(ecole, o.debut, o.fin)) : '';
+              const libres = heuresLibresDe(o.activite);
+              const heures = libres ? libelleHeures(libres) : ecole ? libelleHeures(heuresOccurrence(ecole, o)) : '';
+              const yDeb = libres ? yDeMinutes(geo, periodes, enMinutes(libres.debut)) : geo.y[o.debut]!;
+              const yFin = libres ? yDeMinutes(geo, periodes, enMinutes(libres.fin)) : finY(etire);
               const alerte = alertes.has(o.cle);
               return (
                 <button key={o.cle} type="button" aria-pressed={selection === o.cle}
                   className={`evt ${cls} ${alerte ? 'alerte' : ''} ${o.statut === 'annule' ? 'annule' : ''} ${o.statut === 'realise' ? 'realise' : ''} ${enCours && geste?.mode !== 'etirer' ? 'glisse' : ''}`}
-                  style={style(o, geo.y[o.debut]!, finY(etire))}
-                  aria-label={`${libelle(o.activite, nom || undefined)}, ${nomJour(o.date)} ${jourMois(o.date)}, ${periodes[o.debut]!.label}${o.fin > o.debut ? ` à ${periodes[o.fin]!.label}` : ''}${heures ? `, ${heures}` : ''}${ecole ? `, ${ecole.nom}` : ''}${o.statut === 'annule' ? ', annulé' : o.statut === 'realise' ? ', réalisé' : ''}${alerte ? ', attention : chevauchement ou trajet trop court' : ''}`}
+                  style={style(o, yDeb, yFin)}
+                  aria-label={`${libelle(o.activite, nom || undefined)}, ${nomJour(o.date)} ${jourMois(o.date)}, ${libres ? '' : `${periodes[o.debut]!.label}${o.fin > o.debut ? ` à ${periodes[o.fin]!.label}` : ''}`}${heures ? `${libres ? '' : ', '}${heures}` : ''}${ecole ? `, ${ecole.nom}` : ''}${o.statut === 'annule' ? ', annulé' : o.statut === 'realise' ? ', réalisé' : ''}${alerte ? ', attention : chevauchement ou trajet trop court' : ''}`}
                   onPointerDown={(e) => commencer(e, o, 'deplacer')}
                   onClick={() => { if (!clicIgnore.current) rappel.current!.onSelection(o); }}>
                   <strong>{libelle(o.activite, nom || undefined)}</strong>
-                  <small>{periodes[o.debut]!.label}{o.fin > o.debut ? `–${periodes[o.fin]!.label}` : ''}{o.activite.matiere ? ` · ${o.activite.matiere}` : ''}{o.activite.lieu ? ` · ${o.activite.lieu}` : ''}</small>
-                  {ecole ? <small className="evt-ecole">{heures ? `${heures} · ` : ''}{ecole.nom}</small> : null}
-                  {o.seanceId ? null : <span className="evt-poignee" onPointerDown={(e) => commencer(e, o, 'etirer')} aria-hidden="true" />}
+                  <small>{libres ? heures : `${periodes[o.debut]!.label}${o.fin > o.debut ? `–${periodes[o.fin]!.label}` : ''}`}{o.activite.matiere ? ` · ${o.activite.matiere}` : ''}{o.activite.lieu ? ` · ${o.activite.lieu}` : ''}</small>
+                  {ecole ? <small className="evt-ecole">{heures && !libres ? `${heures} · ` : ''}{ecole.nom}</small> : null}
+                  {o.seanceId || libres ? null : <span className="evt-poignee" onPointerDown={(e) => commencer(e, o, 'etirer')} aria-hidden="true" />}
                 </button>
               );
             })}

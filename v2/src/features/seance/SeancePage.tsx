@@ -5,6 +5,7 @@ import { useMagasin } from '../../state/store.ts';
 import { Button } from '../../ui/Button.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import type { Aller } from '../../app/useRoute.ts';
+import { fixerEnseignant } from '../../domain/eleves/index.ts';
 import { dateFR } from '../../domain/redaction/langue.ts';
 import { Apercu } from './Apercu.tsx';
 import { Etape } from './Etape.tsx';
@@ -59,7 +60,7 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
   const enregistrer = async () => {
     const v = verifier(s);
     if (!v.ok) { setRaisons(v.raisons); return; }
-    await magasin.enregistrerSeance(s);
+    await magasin.enregistrerSeance(fixerEnseignant(s, eleve));
     if (edition) {
       annoncer('Séance modifiée');
       onAller('journalier', { eleve: s.eleveId });

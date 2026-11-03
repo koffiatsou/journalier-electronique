@@ -45,6 +45,9 @@
 .dossier-seances h3 { font-size: 1rem; }
 
 /* Fiche : ajout d'une matière libre */
+.enseignants-liste { display: grid; gap: var(--sp-2); justify-items: start; }
+.enseignant-ligne { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; gap: var(--sp-2); width: 100%; }
+@media (max-width: 640px) { .enseignant-ligne { grid-template-columns: 1fr; } }
 .ajout-libre { display: flex; gap: var(--sp-2); margin-top: var(--sp-3); }
 .ajout-libre .input { flex: 1; min-width: 0; }
 .ajout-libre .btn { white-space: nowrap; }

@@ -1,6 +1,7 @@
 import { ajouterJours, ecartJours, indexJour, lundiDe } from './dates.ts';
 import { infosJour } from './calendrier.ts';
 import { NB_PERIODES } from './horaires.ts';
+import { heuresLibresDe } from './horaireLibre.ts';
 import { creer } from './planning.ts';
 import type { Changement } from './planning.ts';
 import { TYPES_LIBELLES } from './types.ts';
@@ -24,6 +25,9 @@ export interface ElementType {
   lieu: string;
   note: string;
   couleur?: number;
+  /** Heures libres (hors périodes), gardées telles quelles. */
+  heureDebut?: string;
+  heureFin?: string;
 }
 
 export interface SemaineType {
@@ -50,10 +54,12 @@ export function semaineTypeDepuis(occ: readonly Occurrence[], date: string, aujo
     const jour = ecartJours(lundi, o.date);
     if (jour < 0 || jour > 4 || o.statut === 'annule') continue;
     const a = o.activite;
+    const libres = heuresLibresDe(a);
     elements.push({
       jour, debut: o.debut, fin: o.fin, type: a.type, titre: a.titre, lieu: a.lieu, note: a.note,
       ...(a.eleveId ? { eleveId: a.eleveId } : {}), ...(a.nomLibre ? { nomLibre: a.nomLibre } : {}),
-      ...(a.matiere ? { matiere: a.matiere } : {}), ...(typeof a.couleur === 'number' ? { couleur: a.couleur } : {})
+      ...(a.matiere ? { matiere: a.matiere } : {}), ...(typeof a.couleur === 'number' ? { couleur: a.couleur } : {}),
+      ...(libres ? { heureDebut: libres.debut, heureFin: libres.fin } : {})
     });
   }
   return { elements: elements.sort(trier), enregistreeLe: aujourdhui };
@@ -81,6 +87,8 @@ export function normaliserSemaineType(brut: unknown): SemaineType | null {
     if (typeof x.matiere === 'string' && x.matiere) e.matiere = x.matiere;
     const couleur = entier(x.couleur, 0, 9);
     if (couleur !== null) e.couleur = couleur;
+    const libres = heuresLibresDe({ heureDebut: x.heureDebut as string, heureFin: x.heureFin as string });
+    if (libres) { e.heureDebut = libres.debut; e.heureFin = libres.fin; }
     elements.push(e);
   }
   if (!elements.length) return null;
@@ -114,7 +122,7 @@ export interface PlanApplication {
 
 /** Même activité : mêmes périodes et même type, puis même élève (ou même nom libre) pour un accompagnement, même titre pour le reste. */
 const memeActivite = (a: Activite, e: ElementType): boolean =>
-  a.type === e.type && a.debut === e.debut && a.fin === e.fin &&
+  a.type === e.type && a.debut === e.debut && a.fin === e.fin && (a.heureDebut ?? '') === (e.heureDebut ?? '') && (a.heureFin ?? '') === (e.heureFin ?? '') &&
   (e.type === 'eleve' ? (e.eleveId ? a.eleveId === e.eleveId : (a.nomLibre ?? '') === (e.nomLibre ?? '')) : a.titre === e.titre);
 
 /**
@@ -134,7 +142,8 @@ export function planifierSemaineType(modele: SemaineType, lundis: readonly strin
       plan.aCreer.push(creer({
         type: e.type, date, debut: e.debut, fin: e.fin, titre: e.titre, lieu: e.lieu, note: e.note,
         ...(e.eleveId ? { eleveId: e.eleveId } : {}), ...(e.nomLibre ? { nomLibre: e.nomLibre } : {}),
-        ...(e.matiere ? { matiere: e.matiere } : {}), ...(typeof e.couleur === 'number' ? { couleur: e.couleur } : {})
+        ...(e.matiere ? { matiere: e.matiere } : {}), ...(typeof e.couleur === 'number' ? { couleur: e.couleur } : {}),
+        ...(e.heureDebut && e.heureFin ? { heureDebut: e.heureDebut, heureFin: e.heureFin } : {})
       }));
     }
   }
