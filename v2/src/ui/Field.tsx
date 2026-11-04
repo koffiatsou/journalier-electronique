@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
+import type { ComponentProps, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
 
 interface FieldProps {
   label: string;
@@ -24,6 +24,6 @@ export function Field({ label, optionnel, aide, children, className }: FieldProp
   );
 }
 
-export const Input = (p: InputHTMLAttributes<HTMLInputElement>) => <input className="input" {...p} />;
+export const Input = (p: ComponentProps<'input'>) => <input className="input" {...p} />;
 export const Select = (p: SelectHTMLAttributes<HTMLSelectElement>) => <select className="select" {...p} />;
 export const Textarea = (p: TextareaHTMLAttributes<HTMLTextAreaElement>) => <textarea className="textarea" {...p} />;

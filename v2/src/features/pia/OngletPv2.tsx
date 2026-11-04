@@ -78,6 +78,7 @@ export function OngletPv2({ pia, seances, changer }: PropsOnglet) {
                         </p>
                         {r.appuis.length ? <><h4>Points d’appui</h4><ul>{r.appuis.map((x) => <li key={x}>{x}</li>)}</ul></> : null}
                         {r.aTravailler.length ? <><h4>À travailler</h4><ul>{r.aTravailler.map((x) => <li key={x}>{x}</li>)}</ul></> : null}
+                        {r.vigilances.length ? <><h4>Points de vigilance</h4><ul>{r.vigilances.map((x) => <li key={x}>{x}</li>)}</ul></> : null}
                         {r.competences.length ? <><h4>Compétence travaillée</h4><ul>{r.competences.map((x) => <li key={x}>{x}</li>)}</ul></> : null}
                       </div>
                     </details>

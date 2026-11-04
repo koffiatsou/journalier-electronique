@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import {
   ACTIONS_SUITE_SUGGEREES, AIDES_SUGGEREES, COLLABORATIONS_SUGGEREES, EFFETS_LIBELLES, INTERVENTIONS_SUGGEREES,
-  FILIERES_LIBELLES, MODALITES_SUITE, NIVEAUX_LIBELLES, OBSERVATIONS_SUGGEREES, PERIODES_DEFAUT, PRESENCE_LIBELLES, SITUATION_AIDE_LIBELLES,
-  TRANSFERT_LIBELLES
+  FILIERES_LIBELLES, MODALITES_SUITE, NIVEAUX_LIBELLES, NIVEAUX_VIGILANCE, OBSERVATIONS_SUGGEREES, PERIODES_DEFAUT, PRESENCE_LIBELLES, SITUATION_AIDE_LIBELLES, VIGILANCES_SUGGEREES, estVigilance
 } from '../../domain/types.ts';
-import type { Aide, Eleve, Effet, Niveau, Observation, Presence, Seance, SituationAide, Transfert } from '../../domain/types.ts';
+import type { Aide, Eleve, Effet, Niveau, Observation, Presence, Seance, SituationAide } from '../../domain/types.ts';
 import { Button } from '../../ui/Button.tsx';
 import { Chips } from '../../ui/Chip.tsx';
+import { ChampSuggestions } from '../../ui/ChampSuggestions.tsx';
 import { Field, Input, Select, Textarea } from '../../ui/Field.tsx';
 import { anneeDeNiveau, cibleDeSeance, defautsSeance, formeDeFiliere } from '../../domain/referentiel/index.ts';
 import { elevesProposes, enseignantDuDossier, languesDe } from '../../domain/eleves/index.ts';
@@ -14,7 +14,7 @@ import { ecoleDeEleve, nbPeriodesUtilisees } from '../../domain/agenda/index.ts'
 import type { Ecole } from '../../domain/agenda/index.ts';
 import type { Piste } from '../../domain/referentiel/index.ts';
 import { indexDe } from '../../domain/referentiel/charger.ts';
-import { Point, TEINTES_EFFET, TEINTES_NIVEAU } from '../../ui/Point.tsx';
+import { Point, TEINTES_EFFET, TEINTES_NIVEAU, TEINTES_VIGILANCE } from '../../ui/Point.tsx';
 
 export interface PropsFormulaire {
   s: Seance;
@@ -83,10 +83,7 @@ export function FormulaireCreneau({ s, maj, eleves, ecoles = [] }: PropsFormulai
       <div className="champs champs-3">
         <Field label="Matière" aide={matieres.length ? 'Les matières du dossier de l’élève sont proposées en priorité.' : undefined}>
           {(id) => (
-            <>
-              <Input id={id} list={`${id}-liste`} value={s.matiere} placeholder="Choisir ou écrire" onChange={(e) => maj({ matiere: e.target.value })} />
-              <datalist id={`${id}-liste`}>{matieres.map((m) => <option key={m} value={m} />)}</datalist>
-            </>
+            <ChampSuggestions id={id} value={s.matiere} placeholder="Choisir ou écrire" suggestions={matieres} onChange={(matiere) => maj({ matiere })} />
           )}
         </Field>
         <Field label="Enseignant du cours" optionnel aide="Laissez vide : le nom du dossier de l’élève sera gardé. Écrivez un nom pour un remplacement.">
@@ -132,18 +129,27 @@ export function FormulaireCreneau({ s, maj, eleves, ecoles = [] }: PropsFormulai
 /* ───────── 2. Fonctionnement observé ───────── */
 export function FormulaireFonctionnement({ s, maj }: PropsFormulaire) {
   const [libre, setLibre] = useState('');
+  const [libreVigilance, setLibreVigilance] = useState('');
   const trouve = (texte: string) => s.observations.find((o) => o.texte === texte);
   const retire = (texte: string) => maj({ observations: s.observations.filter((o) => o.texte !== texte) });
-  const fixe = (texte: string, n: number) =>
+  const fixe = (texte: string, n: number, vigilance: boolean) =>
     maj({ observations: trouve(texte)
       ? s.observations.map((o): Observation => (o.texte === texte ? { ...o, niveau: niveau(n) } : o))
-      : [...s.observations, { texte, niveau: niveau(n) }] });
-  const connus = new Set(OBSERVATIONS_SUGGEREES.flatMap((g) => g.items));
-  const perso = s.observations.filter((o) => !connus.has(o.texte));
+      : [...s.observations, { texte, niveau: niveau(n), ...(vigilance ? { vigilance: true } : {}) }] });
+  const connus = new Set([...OBSERVATIONS_SUGGEREES.flatMap((g) => g.items), ...VIGILANCES_SUGGEREES]);
+  const perso = s.observations.filter((o) => !connus.has(o.texte) && !estVigilance(o));
+  const persoVigilance = s.observations.filter((o) => !connus.has(o.texte) && estVigilance(o));
+  const ajouterLibre = (texte: string, vigilance: boolean, vider: () => void) => {
+    const t = texte.trim();
+    if (!t || trouve(t)) return;
+    maj({ observations: [...s.observations, { texte: t, niveau: null, ...(vigilance ? { vigilance: true } : {}) }] });
+    vider();
+  };
 
-  const carte = (texte: string, personnalise = false) => (
-    <Point key={texte} nom={texte} libelles={NIVEAUX_LIBELLES} teintes={TEINTES_NIVEAU} valeur={trouve(texte)?.niveau}
-      onChoisir={(n) => fixe(texte, n)} onRetirer={retire.bind(null, texte)} libelleRetirer={personnalise ? 'Retirer' : 'Pas observé'} />
+  const carte = (texte: string, personnalise = false, vigilance = false) => (
+    <Point key={texte} nom={texte} libelles={vigilance ? NIVEAUX_VIGILANCE : NIVEAUX_LIBELLES} teintes={vigilance ? TEINTES_VIGILANCE : TEINTES_NIVEAU}
+      valeur={trouve(texte)?.niveau} onChoisir={(n) => fixe(texte, n, vigilance)} onRetirer={retire.bind(null, texte)}
+      libelleRetirer={personnalise ? 'Retirer' : 'Pas observé'} />
   );
 
   return (
@@ -158,8 +164,20 @@ export function FormulaireFonctionnement({ s, maj }: PropsFormulaire) {
       <div className="rubrique">
         <h3>Autre observation</h3>
         {perso.length ? <ul className="points">{perso.map((o) => carte(o.texte, true))}</ul> : null}
-        <form className="ajout" onSubmit={(e) => { e.preventDefault(); const t = libre.trim(); if (t && !trouve(t)) { maj({ observations: [...s.observations, { texte: t, niveau: null }] }); setLibre(''); } }}>
+        <form className="ajout" onSubmit={(e) => { e.preventDefault(); ajouterLibre(libre, false, () => setLibre('')); }}>
           <Input value={libre} placeholder="Une observation qui n’est pas dans la liste" aria-label="Autre observation" onChange={(e) => setLibre(e.target.value)} />
+          <Button type="submit">Ajouter</Button>
+        </form>
+      </div>
+      <div className="rubrique">
+        <h3>Points de vigilance</h3>
+        <p className="etape-aide">Une difficulté observée : indiquez à quelle fréquence, et non si c’est acquis.</p>
+        <ul className="points">
+          {VIGILANCES_SUGGEREES.map((v) => carte(v, false, true))}
+          {persoVigilance.map((o) => carte(o.texte, true, true))}
+        </ul>
+        <form className="ajout" onSubmit={(e) => { e.preventDefault(); ajouterLibre(libreVigilance, true, () => setLibreVigilance('')); }}>
+          <Input value={libreVigilance} placeholder="Une autre difficulté observée" aria-label="Autre point de vigilance" onChange={(e) => setLibreVigilance(e.target.value)} />
           <Button type="submit">Ajouter</Button>
         </form>
       </div>
@@ -275,15 +293,6 @@ export function FormulaireAides({ s, maj }: PropsFormulaire) {
               onChoisir={(n) => fixe(nom, n)} onRetirer={() => retire(nom)} libelleRetirer="Pas utilisée" />
           ))}
         </ul>
-      </div>
-      <div className="field">
-        <span className="field-label">Utilisé ailleurs que pendant la séance ? <span className="opt">facultatif</span></span>
-        <div className="chips" role="radiogroup" aria-label="Utilisé ailleurs">
-          {(Object.keys(TRANSFERT_LIBELLES) as Transfert[]).map((k) => (
-            <button key={k} type="button" role="radio" aria-checked={s.transfert === k} className="chip"
-              onClick={() => maj({ transfert: s.transfert === k ? null : k })}>{TRANSFERT_LIBELLES[k]}</button>
-          ))}
-        </div>
       </div>
       <Field label="Précision" optionnel>
         {(id) => <Textarea id={id} value={s.precisionAide} placeholder="Ce qui a été fait et ce qui a été observé ensuite" onChange={(e) => maj({ precisionAide: e.target.value })} />}

@@ -13,6 +13,9 @@ export type Niveau = 0 | 1 | 2;
 export type Effet = 0 | 1 | 2;
 
 export const NIVEAUX_LIBELLES = ['Partiellement', 'Suffisamment', 'Totalement'] as const;
+/** Échelle d'un point de vigilance : mêmes valeurs 0, 1, 2 que `Niveau`, lues comme une fréquence. */
+export const NIVEAUX_VIGILANCE = ['Ponctuellement', 'Souvent', 'Tout au long'] as const;
+
 export const EFFETS_LIBELLES = ['Aucun effet', 'Effet partiel', 'Effet positif'] as const;
 
 export type Presence =
@@ -47,16 +50,16 @@ export const PRESENCE_LIBELLES: Record<Presence, { titre: string; aide: string }
 
 export type Transfert = 'observed' | 'later' | 'not_observed';
 
-export const TRANSFERT_LIBELLES: Record<Transfert, string> = {
-  observed: 'Oui',
-  later: 'Pas encore',
-  not_observed: 'Pas observé'
-};
-
 export interface Observation {
   texte: string;
   /** null tant que le niveau n'a pas été choisi : rien n'est présélectionné. */
   niveau: Niveau | null;
+  /**
+   * Point de vigilance (une difficulté observée) : son niveau dit « à quelle fréquence » (voir `NIVEAUX_VIGILANCE`),
+   * jamais « à quel point c'est acquis ». Posé pour une observation libre ; les points connus se reconnaissent
+   * à leur texte (`estVigilance`).
+   */
+  vigilance?: boolean;
 }
 
 export interface Aide {
@@ -90,7 +93,7 @@ export interface Seance {
   situationAide: SituationAide;
   aides: Aide[];
   precisionAide: string;
-  /** Stratégie réutilisée ailleurs que pendant la séance (question facultative de l'étape « Ce qui a aidé »). */
+  /** Ancienne question « Utilisé ailleurs ? » : plus posée ni écrite dans le Journalier, mais gardée telle quelle (donnée déjà stockée). */
   transfert: Transfert | null;
   suite: {
     actions: string[];
@@ -197,11 +200,20 @@ export const OBSERVATIONS_SUGGEREES: ReadonlyArray<{ rubrique: string; items: re
       'Accepte l’aide',
       'Utilise l’aide proposée',
       'Poursuit après l’aide',
-      'Persévère dans la tâche',
-      'Se désengage / évite la tâche'
+      'Persévère dans la tâche'
     ]
   }
 ];
+
+/** Points de vigilance proposés (difficultés observées) : échelle de fréquence, jamais classés parmi les acquis. */
+export const VIGILANCES_SUGGEREES: readonly string[] = ['Se désengage / évite la tâche'];
+
+const cleVigilance = (t: string): string => t.replace(/[.\s]+$/, '').replace(/\s+/g, ' ').trim().toLowerCase();
+const VIGILANCES_CONNUES: ReadonlySet<string> = new Set(VIGILANCES_SUGGEREES.map(cleVigilance));
+
+/** Vrai pour un point de vigilance : posé à la saisie, ou point connu (les séances d'avant n'ont pas de marque). */
+export const estVigilance = (o: { texte: string; vigilance?: boolean | undefined }): boolean =>
+  o.vigilance === true || VIGILANCES_CONNUES.has(cleVigilance(o.texte));
 
 export type SituationAide = 'none' | 'existing' | 'new' | 'later';
 

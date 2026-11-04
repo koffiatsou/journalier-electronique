@@ -1,6 +1,7 @@
 import { ajouterJours, avertissementsEcoles, ecoleDeOccurrence, heuresOccurrence, libelle, libelleHeures, occurrences, occurrencesAgenda } from '../agenda/index.ts';
 import type { Activite, Ecole, Occurrence } from '../agenda/index.ts';
 import { enMinutes, heureValide } from '../agenda/horaires.ts';
+import { estVigilance } from '../types.ts';
 import type { Eleve, Seance } from '../types.ts';
 
 /** Ce qu'on sait de la dernière séance avec l'élève, pour reprendre où on s'était arrêté. */
@@ -36,7 +37,7 @@ export function suiteDerniereSeance(eleveId: string | undefined, avant: string, 
     matiere: derniere.matiere,
     monObjectif: derniere.monObjectif.trim(),
     aides: derniere.aides.filter((a) => a.effet === 2).map((a) => a.nom),
-    aRetravailler: derniere.observations.filter((o) => o.niveau === 0).map((o) => o.texte),
+    aRetravailler: derniere.observations.filter((o) => o.niveau === 0 && !estVigilance(o)).map((o) => o.texte),
     objectif: s.objectif.trim(),
     actions: s.actions,
     collaborations: s.collaborations,

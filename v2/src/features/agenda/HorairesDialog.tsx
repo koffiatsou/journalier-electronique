@@ -6,6 +6,7 @@ import {
 import type { Ecole, ErreurEcole } from '../../domain/agenda/index.ts';
 import type { Eleve } from '../../domain/types.ts';
 import { Button } from '../../ui/Button.tsx';
+import { ChampSuggestions } from '../../ui/ChampSuggestions.tsx';
 import { Dialog } from '../../ui/Dialog.tsx';
 
 interface Props {
@@ -96,9 +97,8 @@ function Formulaire({ ecoles, trajet: trajetInitial, eleves, onEnregistrer, onFe
 
       <div className="field">
         <label className="field-label" htmlFor="ecole-nom">Nom de l’école</label>
-        <input id="ecole-nom" ref={nom} className="input" list="ecole-noms" value={ecole.nom} placeholder="Ex. : Institut Saint-Joseph"
-          onChange={(e) => modifier(ecole.id, (x) => ({ ...x, nom: e.target.value }))} />
-        <datalist id="ecole-noms">{suggestions.map((n) => <option key={n} value={n} />)}</datalist>
+        <ChampSuggestions id="ecole-nom" ref={nom} value={ecole.nom} placeholder="Ex. : Institut Saint-Joseph" suggestions={suggestions}
+          onChange={(v) => modifier(ecole.id, (x) => ({ ...x, nom: v }))} />
         <p className="field-hint">Les élèves dont l’école porte ce nom sont rattachés à ces horaires ; sinon, choisissez l’école dans la fiche de l’élève.</p>
       </div>
 

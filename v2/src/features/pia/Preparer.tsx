@@ -44,7 +44,7 @@ function Rubrique({ titre, lignes }: { titre: string; lignes: readonly string[] 
 }
 
 function CarteMatiere({ m }: { m: SyntheseMatiere }) {
-  const vide = !m.appuis.length && !m.aTravailler.length && !m.competences.length && !m.aides.length && !m.aidesSansEffet.length;
+  const vide = !m.appuis.length && !m.aTravailler.length && !m.vigilances.length && !m.competences.length && !m.aides.length && !m.aidesSansEffet.length;
   const dates = !m.dateDebut ? '' : m.dateDebut === m.dateFin ? `le ${dateFR(m.dateDebut)}` : `du ${dateFR(m.dateDebut)} au ${dateFR(m.dateFin)}`;
   return (
     <section className="liste-carte reunion-matiere" aria-label={m.matiere}>
@@ -56,6 +56,7 @@ function CarteMatiere({ m }: { m: SyntheseMatiere }) {
         <div className="reunion-rubriques">
           <Rubrique titre="Points d’appui" lignes={m.appuis} />
           <Rubrique titre="À travailler" lignes={m.aTravailler} />
+          <Rubrique titre="Points de vigilance" lignes={m.vigilances} />
           <Rubrique titre="Compétence travaillée" lignes={m.competences} />
           <Rubrique titre="Aides utilisées" lignes={m.aides.map(majusculePremiere)} />
           <Rubrique titre="Aides sans effet constaté" lignes={m.aidesSansEffet.map(majusculePremiere)} />

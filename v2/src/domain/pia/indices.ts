@@ -3,7 +3,7 @@
  * à cliquer pour s'inspirer, jamais imposées ; et des rapprochements tirés des séances.
  * Rien n'est jamais écrit dans le PIA sans que l'agent le choisisse. Textes à relire par l'utilisateur.
  */
-import { OBSERVATIONS_SUGGEREES } from '../types.ts';
+import { NIVEAUX_VIGILANCE, OBSERVATIONS_SUGGEREES, estVigilance } from '../types.ts';
 import type { Seance } from '../types.ts';
 import { minusculePremiere as min } from '../redaction/langue.ts';
 import type { Aspect, CleRetour, Colonne } from './types.ts';
@@ -210,7 +210,7 @@ const ASPECT_DE_TEXTE: ReadonlyMap<string, Aspect> = new Map(
   })
 );
 
-interface Entree { seanceId: string; date: string; matiere: string; niveau: number }
+interface Entree { seanceId: string; date: string; matiere: string; niveau: number; vigilance: boolean }
 
 /**
  * Observations qui reviennent sur plusieurs séances (de n'importe quelle matière), rangées par aspect.
@@ -225,24 +225,31 @@ export function rapprocher(seances: readonly Seance[]): Rapprochement[] {
       if (o.niveau === null || !o.texte.trim()) continue;
       const cle = norme(o.texte);
       const courant = parTexte.get(cle) ?? { texte: sansPoint(o.texte.trim()), entrees: [] };
-      courant.entrees.push({ seanceId: s.id, date: s.date, matiere: s.matiere || 'Matière non précisée', niveau: o.niveau });
+      courant.entrees.push({ seanceId: s.id, date: s.date, matiere: s.matiere || 'Matière non précisée', niveau: o.niveau, vigilance: estVigilance(o) });
       parTexte.set(cle, courant);
     }
   }
 
   const candidats: (Rapprochement & { poids: number; recent: string })[] = [];
   for (const [cle, { texte, entrees }] of parTexte) {
-    const aspect = ASPECT_DE_TEXTE.get(cle);
+    const fin = entrees[entrees.length - 1];
+    if (!fin) continue;
+    // Une difficulté observée (point de vigilance) est rangée dans « comportement » ; son niveau est une fréquence.
+    const aspect = fin.vigilance ? 'comportement' : ASPECT_DE_TEXTE.get(cle);
     if (!aspect || !ASPECTS_RAPPROCHES.includes(aspect)) continue;
     const nbSeances = new Set(entrees.map((e) => e.seanceId)).size;
     if (nbSeances < MIN_SEANCES) continue;
-    const fin = entrees[entrees.length - 1];
-    if (!fin) continue;
     const matieres = [...new Set(entrees.map((e) => e.matiere))];
-    const raison = `Noté lors de ${nbSeances} séances${matieres.length > 1 ? ` (${matieres.join(', ')})` : ` en ${matieres[0] ?? ''}`} ; dernier niveau : ${MOTS[fin.niveau] ?? ''}.`;
+    const dernier = fin.vigilance ? `dernière fréquence : ${(NIVEAUX_VIGILANCE[fin.niveau] ?? '').toLowerCase()}` : `dernier niveau : ${MOTS[fin.niveau] ?? ''}`;
+    const raison = `Noté lors de ${nbSeances} séances${matieres.length > 1 ? ` (${matieres.join(', ')})` : ` en ${matieres[0] ?? ''}`} ; ${dernier}.`;
     const ajouter = (colonne: Colonne, phrase: string) =>
       candidats.push({ id: `${aspect}|${colonne}|${cle}`, aspect, colonne, texte: phrase, raison, poids: nbSeances, recent: fin.date });
     const t = min(texte);
+    if (fin.vigilance) {
+      // Jamais une ressource : seulement une difficulté, et seulement si elle n'est plus « ponctuelle ».
+      if (fin.niveau >= 1) ajouter('difficultes', `Difficulté observée : ${t}`);
+      continue;
+    }
     if (fin.niveau === 2) ajouter('ressources', `Acquis : ${t}`);
     if (fin.niveau === 0) {
       ajouter('difficultes', `Pas encore acquis : ${t}`);

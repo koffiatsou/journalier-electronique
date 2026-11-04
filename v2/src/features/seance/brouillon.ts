@@ -37,7 +37,7 @@ export function etatsEtapes(s: Seance): EtatEtape[] {
     Boolean(s.eleveId && s.matiere),
     s.observations.length > 0 || s.remarque.trim() !== '',
     s.competences.length > 0 || s.precisionCompetence.trim() !== '',
-    s.aides.length > 0 || s.precisionAide.trim() !== '' || s.situationAide !== 'none' || s.transfert !== null,
+    s.aides.length > 0 || s.precisionAide.trim() !== '' || s.situationAide !== 'none',
     s.suite.actions.length > 0 || s.suite.collaborations.length > 0 || s.suite.modalite !== ''
       || s.suite.objectif.trim() !== '' || s.suite.precision.trim() !== ''
   ];

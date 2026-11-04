@@ -7,6 +7,7 @@ import type { Activite, Changement, Ecole, Edition, Occurrence, Portee, TypeActi
 import { elevesProposes, languesDe } from '../../domain/eleves/index.ts';
 import type { Eleve } from '../../domain/types.ts';
 import { Button } from '../../ui/Button.tsx';
+import { ChampSuggestions } from '../../ui/ChampSuggestions.tsx';
 import { Field, Input, Select, Textarea } from '../../ui/Field.tsx';
 
 export interface Brouillon { date: string; debut: number; fin: number }
@@ -132,7 +133,7 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
           {!eleveId ? <Field label="Nom saisi librement">{(id) => <Input id={id} value={nomLibre} onChange={(e) => setNomLibre(e.target.value)} placeholder="Prénom ou initiales" />}</Field> : null}
           {plusieurs ? <p className="field-hint">École : {ecole.nom} (celle du dossier de l’élève).</p> : null}
           <Field label="Matière" optionnel>
-            {(id) => (<><Input id={id} list={`${id}-m`} value={matiere} onChange={(e) => setMatiere(e.target.value)} placeholder="Choisir ou saisir" /><datalist id={`${id}-m`}>{matieres.map((m) => <option key={m} value={m} />)}</datalist></>)}
+            {(id) => <ChampSuggestions id={id} value={matiere} onChange={setMatiere} suggestions={matieres} placeholder="Choisir ou saisir" />}
           </Field>
         </>
       ) : null}

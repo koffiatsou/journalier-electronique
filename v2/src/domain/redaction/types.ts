@@ -1,4 +1,4 @@
-import type { Effet, NatureAide, Niveau, Presence, Transfert } from '../types.ts';
+import type { Effet, NatureAide, Niveau, Presence } from '../types.ts';
 
 /** Séance nettoyée (textes rognés, valeurs vides retirées) : la seule entrée des règles de rédaction. */
 export interface Faits {
@@ -12,13 +12,13 @@ export interface Faits {
   objectifLecon: string;
   contenuClasse: string;
   monObjectif: string;
-  observations: { texte: string; niveau: Niveau | null }[];
+  /** `vigilance` : difficulté observée, dont le niveau est une fréquence (voir `estVigilance`). */
+  observations: { texte: string; niveau: Niveau | null; vigilance: boolean }[];
   remarque: string;
   competences: { texte: string; niveau: Niveau | null }[];
   precisionCompetence: string;
   aides: { texte: string; effet: Effet | null; nature: NatureAide | null }[];
   precisionAide: string;
-  transfert: Transfert | null;
   actions: string[];
   modalite: string;
   objectifSuite: string;

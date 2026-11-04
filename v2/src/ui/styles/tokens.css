@@ -51,12 +51,14 @@
   --barre-haut: 56px;
 }
 
-/* Tablette en portrait (768 à 899 px) : menu étroit à gauche (icônes + mots), plus de barre du bas ni de barre du haut. */
+/* Tablette en portrait (768 à 899 px) sans choix de l'utilisateur : menu étroit à gauche (icônes + mots), plus de barre du bas ni de barre du haut. */
 @media (min-width: 768px) and (max-width: 899px) {
-  :root { --rail: 88px; }
+  :root:not([data-menu]) { --rail: 88px; }
 }
 @media (min-width: 768px) {
   :root { --tabbar: 0px; --barre-haut: 0px; }
+  /* menu réduit au choix de l'utilisateur (bouton du menu) : icônes seules */
+  :root[data-menu='reduit'] { --rail: 72px; }
 }
 
 @media (prefers-color-scheme: dark) {

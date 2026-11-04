@@ -15,7 +15,8 @@ export const IconeCoche = (p: IconeProps) => trace(<path d="M5 12.5l4.5 4.5L19 7
 export const IconeChevron = (p: IconeProps) => trace(<path d="M6 9l6 6 6-6" />, p);
 export const IconeAccueil = (p: IconeProps) => trace(<><path d="M4 11l8-7 8 7" /><path d="M6 10v9h12v-9" /></>, p);
 export const IconeAgenda = (p: IconeProps) => trace(<><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M4 10h16M9 3v4M15 3v4" /></>, p);
-export const IconeSeance = (p: IconeProps) => trace(<><path d="M5 4h11l3 3v13H5z" /><path d="M9 11h6M9 15h6" /></>, p);
+/** Séance : un crayon (on encode), pour ne pas la confondre avec le Journalier (cahier) ni le PIA (planchette). */
+export const IconeSeance = (p: IconeProps) => trace(<><path d="M4 20l1.2-4.4L16.6 4.2a2.1 2.1 0 0 1 3 3L8.4 18.8z" /><path d="M14.5 6.3l3.2 3.2" /><path d="M13 21h7" /></>, p);
 export const IconeEleves = (p: IconeProps) => trace(<><circle cx="9" cy="8" r="3" /><path d="M3.5 19c.6-3 2.8-4.5 5.5-4.5S13.9 16 14.5 19" /><circle cx="17" cy="9" r="2.3" /><path d="M16.5 14.6c2.2.1 3.6 1.4 4 3.9" /></>, p);
 /** Plan individualisé : une planchette avec une coche (remplace l'ancien histogramme, qui évoquait des statistiques). */
 export const IconePia = (p: IconeProps) => trace(<><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4h6v2.5a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1z" /><path d="M9 12.5l1.8 1.8 3.4-3.6" /><path d="M9 18h6" /></>, p);
@@ -24,6 +25,11 @@ export const IconeSoleil = (p: IconeProps) => trace(<><circle cx="12" cy="12" r=
 export const IconeLune = (p: IconeProps) => trace(<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />, p);
 export const IconeAuto = (p: IconeProps) => trace(<><circle cx="12" cy="12" r="8" /><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" /></>, p);
 export const IconeFeuille = (p: IconeProps) => trace(<><path d="M6 3h9l4 4v14H6z" /><path d="M15 3v4h4M9 12h7M9 16h7" /></>, p);
-export const IconeJournalier = (p: IconeProps) => trace(<><path d="M6 3h11a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6z" /><path d="M6 3v18M10 8h5M10 12h5" /></>, p);
+/** Journalier : un cahier à spirales (les anneaux dépassent à gauche). */
+export const IconeJournalier = (p: IconeProps) => trace(<><rect x="6" y="3" width="13" height="18" rx="2" /><path d="M3 7h5M3 11h5M3 15h5M12 8h4M12 12h4" /></>, p);
+
+/** Menu de gauche : volet avec une flèche vers la gauche (réduire) ou vers la droite (agrandir). */
+export const IconeMenuReduire = (p: IconeProps) => trace(<><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 4v16" /><path d="M16 9l-3 3 3 3" /></>, p);
+export const IconeMenuAgrandir = (p: IconeProps) => trace(<><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 4v16" /><path d="M13 9l3 3-3 3" /></>, p);
 
 export const IconeSynchro = (p: IconeProps) => trace(<><path d="M20 12a8 8 0 0 0-14-5.3L4 9" /><path d="M4 4v5h5" /><path d="M4 12a8 8 0 0 0 14 5.3L20 15" /><path d="M20 20v-5h-5" /></>, p);
