@@ -63,8 +63,10 @@
   .nav-lien, .nav-bascule { height: 48px; }
 }
 
-/* menu étroit : tablette en portrait, tant que l'utilisateur n'a rien choisi */
-@media (min-width: 768px) and (max-width: 899px) {
+/* menu étroit : tablette en portrait, tant que l'utilisateur n'a rien choisi.
+   `screen` : à l'impression ces règles (plus spécifiques que celles de l'impression de l'agenda) redonnaient une marge au contenu
+   et la semaine débordait sur une 2e page. */
+@media screen and (min-width: 768px) and (max-width: 899px) {
   :root:not([data-menu]) .nav { align-items: center; padding-inline: var(--sp-2); }
   :root:not([data-menu]) .nav .marque { align-items: center; padding: 0; }
   :root:not([data-menu]) .marque-logo { width: 52px; padding: 4px 5px; border-radius: 8px; }
@@ -76,8 +78,8 @@
   :root:not([data-menu]) .contenu { padding: var(--sp-5) var(--sp-5) var(--sp-7); }
 }
 
-/* menu réduit au choix : icônes seules (le mot reste lu par les lecteurs d'écran) */
-@media (min-width: 768px) {
+/* menu réduit au choix : icônes seules (le mot reste lu par les lecteurs d'écran) ; `screen` pour la même raison */
+@media screen and (min-width: 768px) {
   :root[data-menu='reduit'] .nav { align-items: center; padding-inline: var(--sp-2); }
   :root[data-menu='reduit'] .nav .marque { align-items: center; padding: 0; }
   :root[data-menu='reduit'] .marque-logo { width: 40px; padding: 3px 4px; border-radius: 8px; }
