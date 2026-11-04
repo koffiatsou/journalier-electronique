@@ -3,10 +3,11 @@
  * Rien n'est décidé ici : on propose, l'agent retient, reformule ou ajoute les siens.
  * Les propositions ne reposent que sur ce qui a été noté dans les séances (aucune invention).
  */
+import { NIVEAUX_VIGILANCE } from '../types.ts';
 import type { SuiviAide, SuiviCompetence, SuiviObservation, Synthese, SyntheseMatiere } from '../redaction/index.ts';
 import { NBSP, dateCourte, majusculePremiere as Maj, minusculePremiere as min } from '../redaction/langue.ts';
 
-export type GenreObjectif = 'progresser' | 'consolider' | 'competence' | 'garder-aide' | 'revoir-aide';
+export type GenreObjectif = 'progresser' | 'consolider' | 'competence' | 'garder-aide' | 'revoir-aide' | 'vigilance';
 
 export interface Proposition {
   /** Stable d'un calcul à l'autre (matière + genre + texte d'origine) : un choix déjà fait est retrouvé. */
@@ -32,6 +33,7 @@ export const MAX_OBSERVATIONS = 3;
 export const MAX_COMPETENCES = 2;
 export const MAX_AIDES_A_GARDER = 2;
 export const MAX_AIDES_A_REVOIR = 1;
+export const MAX_VIGILANCES = 2;
 
 const MOTS = ['partiellement', 'suffisamment', 'totalement'] as const;
 const mot = (n: number): string => MOTS[n] ?? '';
@@ -62,7 +64,7 @@ function raisonObservation(suite: SuiviObservation['suite']): string {
 }
 
 function depuisObservations(matiere: string, suivis: readonly SuiviObservation[]): Proposition[] {
-  const candidates = suivis.flatMap((o) => {
+  const candidates = suivis.filter((o) => !o.vigilance).flatMap((o) => {
     const fin = derniere(o.suite);
     if (!fin || fin.niveau >= 2) return [];
     const recul = o.suite.some((x) => x.niveau > fin.niveau);
@@ -78,6 +80,26 @@ function depuisObservations(matiere: string, suivis: readonly SuiviObservation[]
     texte: `${niveau === 0 ? 'Faire progresser' : 'Consolider'}${NBSP}: ${min(sansPoint(o.texte))}.`,
     raison: raisonObservation(o.suite)
   }));
+}
+
+/** Un point de vigilance « ponctuel » ne se propose pas ; dès « Souvent », on propose de rester attentif. */
+function depuisVigilances(matiere: string, suivis: readonly SuiviObservation[]): Proposition[] {
+  return suivis
+    .filter((o) => o.vigilance)
+    .flatMap((o) => {
+      const fin = derniere(o.suite);
+      if (!fin || fin.niveau < 1) return [];
+      return [{ o, fin }];
+    })
+    .sort((a, b) => b.fin.niveau - a.fin.niveau || b.fin.date.localeCompare(a.fin.date))
+    .slice(0, MAX_VIGILANCES)
+    .map(({ o, fin }) => ({
+      id: idDe(matiere, 'vigilance', o.texte),
+      matiere,
+      genre: 'vigilance' as const,
+      texte: `Rester attentif${NBSP}: ${min(sansPoint(o.texte))}.`,
+      raison: `Noté « ${(NIVEAUX_VIGILANCE[fin.niveau] ?? '').toLowerCase()} » le ${dateCourte(fin.date)}.`
+    }));
 }
 
 function depuisCompetences(matiere: string, suivis: readonly SuiviCompetence[]): Proposition[] {
@@ -125,6 +147,7 @@ function depuisAides(matiere: string, suivis: readonly SuiviAide[]): Proposition
 export function proposerPourMatiere(m: SyntheseMatiere): Proposition[] {
   return [
     ...depuisObservations(m.matiere, m.suivis.observations),
+    ...depuisVigilances(m.matiere, m.suivis.observations),
     ...depuisCompetences(m.matiere, m.suivis.competences),
     ...depuisAides(m.matiere, m.suivis.aides)
   ];

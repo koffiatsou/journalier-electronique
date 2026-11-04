@@ -108,7 +108,7 @@ ok(/Néerlandais, Anglais, Espagnol/.test(infos), 'trois langues conservées apr
 // Séance : les langues sont proposées comme matières
 await aller(page, `${URL_APP}#/seance`);
 await page.getByLabel('Élève accompagné').selectOption({ label: 'Alpha Élève' });
-const propositions = await page.locator('datalist option').evaluateAll((l) => l.map((o) => o.value));
+const propositions = await page.locator('.suggestions .chip').allInnerTexts();
 ok(['Anglais', 'Espagnol', 'Néerlandais', 'Éducation physique'].every((m) => propositions.includes(m)), `matières proposées dans la séance : ${propositions.join(', ')}`);
 
 /* ───────── Archivage ───────── */

@@ -23,7 +23,7 @@ describe('Synthèse : le détail est gardé pour la réunion', () => {
       s('2026-09-15', { observations: obs(['Maintient son attention', 0]), aides: [{ nom: 'Support visuel', effet: 1 }], competences: [{ texte: 'Résoudre un problème', niveau: 0 }] }),
       s('2026-09-22', { observations: obs(['Maintient son attention', 2]), aides: [{ nom: 'Support visuel', effet: 2 }], competences: [{ texte: 'Résoudre un problème', niveau: 1 }] })
     ]).matieres[0];
-    assert.deepEqual(m?.suivis.observations, [{ texte: 'Maintient son attention', suite: [{ date: '2026-09-15', niveau: 0 }, { date: '2026-09-22', niveau: 2 }] }]);
+    assert.deepEqual(m?.suivis.observations, [{ texte: 'Maintient son attention', suite: [{ date: '2026-09-15', niveau: 0 }, { date: '2026-09-22', niveau: 2 }], vigilance: false }]);
     assert.deepEqual(m?.suivis.aides, [{ texte: 'Support visuel', effets: [1, 2] }]);
     assert.deepEqual(m?.suivis.competences, [{ texte: 'Résoudre un problème', niveau: 1 }]);
   });

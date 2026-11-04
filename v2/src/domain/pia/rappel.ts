@@ -7,6 +7,7 @@ export interface Rappel {
   seances: number;
   appuis: string[];
   aTravailler: string[];
+  vigilances: string[];
   competences: string[];
   /** Vrai si la date du PV 1 manque : on a alors pris toutes les séances de l'année. */
   sansDate: boolean;
@@ -24,6 +25,7 @@ export function rappelDepuisPv1(seances: readonly Seance[], datePv1: string, mat
     seances: sy.seances,
     appuis: unique(sy.matieres.flatMap((m) => m.appuis)),
     aTravailler: unique(sy.matieres.flatMap((m) => m.aTravailler)),
+    vigilances: unique(sy.matieres.flatMap((m) => m.vigilances)),
     competences: unique(sy.matieres.flatMap((m) => m.competences)),
     sansDate: !datePv1
   };

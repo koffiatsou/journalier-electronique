@@ -31,6 +31,7 @@ function blocMatiere(m: SyntheseMatiere): string[] {
   };
   rubrique('Points d’appui', m.appuis);
   rubrique('À travailler', m.aTravailler);
+  rubrique('Points de vigilance', m.vigilances);
   rubrique('Compétence travaillée', m.competences);
   rubrique('Aides utilisées', m.aides.map(Maj));
   rubrique('Aides sans effet constaté', m.aidesSansEffet.map(Maj));

@@ -181,7 +181,7 @@ await fenetre.getByRole('button', { name: 'Supprimer cette école' }).click();
 ok((await fenetre.innerText()).includes('1 élève passe à l’école par défaut'), 'la suppression annonce le nombre d’élèves concernés');
 ok((await fenetre.innerText()).includes('Aucune séance ni activité n’est supprimée'), 'et rassure sur les séances et activités');
 await fenetre.getByRole('button', { name: 'Oui, supprimer' }).click();
-ok(await fenetre.getByRole('button', { name: /Notre-Dame/ }).count() === 0, 'l’école disparaît de la liste');
+ok(await fenetre.locator('.ecoles-choix').getByRole('button', { name: /Notre-Dame/ }).count() === 0, 'l’école disparaît de la liste');
 await fenetre.getByRole('button', { name: 'Enregistrer' }).click();
 await fenetre.waitFor({ state: 'hidden' });
 beta = (await lireBase('eleves')).find((e) => e.id === 'demo-beta');

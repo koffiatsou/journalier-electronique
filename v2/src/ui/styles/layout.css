@@ -38,7 +38,11 @@
 .nav-lien:active { transform: scale(0.96); }
 .nav-lien[aria-current="page"] { color: var(--accent); }
 
-/* menu à gauche (tablette, ordinateur) */
+/* menu à gauche (≥ 768 px) : large par défaut. Trois variantes :
+   - tablette en portrait sans choix (768 à 899 px) : étroit, icône + mot dessous ;
+   - « réduit » (bouton du menu, attribut data-menu sur <html>) : icônes seules ;
+   - « ouvert » (même bouton) : large, même en portrait. */
+.nav-bascule { display: none; }
 @media (min-width: 768px) {
   .shell { grid-template-columns: var(--rail) 1fr; padding-bottom: 0; }
   .barre-haut { display: none; }
@@ -48,30 +52,42 @@
   .marque-logo { width: 150px; height: auto; flex: none; box-sizing: content-box; padding: 6px 8px; border-radius: 10px; background: #fff; border: 1px solid var(--line); }
   .marque-texte { display: grid; line-height: 1.2; }
   .marque-texte small { color: var(--ink-3); font-size: 0.72rem; }
-  .nav-lien { transition: background-color var(--t-ui) ease-out, color var(--t-ui) ease-out; }
-  .nav-lien:hover { background: var(--surface-2); color: var(--ink); }
+  .nav-lien, .nav-bascule { flex-direction: row; justify-content: flex-start; gap: 12px; height: 44px; padding: 0 var(--sp-3); border-radius: var(--r-s); font-size: 0.92rem; color: var(--ink-2); transition: background-color var(--t-ui) ease-out, color var(--t-ui) ease-out; }
+  .nav-lien:hover, .nav-bascule:hover { background: var(--surface-2); color: var(--ink); }
   .nav-lien[aria-current="page"] { background: var(--peda-soft); color: var(--peda-ink); }
+  .nav-bascule { display: flex; align-items: center; width: 100%; border: 0; background: transparent; font: inherit; font-size: 0.92rem; font-weight: 600; cursor: pointer; margin-top: auto; }
+  .nav-bascule:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   .contenu { padding: var(--sp-6) var(--sp-6) var(--sp-7); }
 }
-
-/* menu étroit : tablette en portrait */
-@media (min-width: 768px) and (max-width: 899px) {
-  .nav { align-items: center; padding-inline: var(--sp-2); }
-  .nav .marque { align-items: center; padding: 0; }
-  .marque-logo { width: 52px; padding: 4px 5px; border-radius: 8px; }
-  .marque-texte { display: none; }
-  .nav ul { width: 100%; }
-  .nav-lien { flex-direction: column; justify-content: center; gap: 3px; height: 62px; padding: 0 2px; border-radius: var(--r-m); font-size: 0.68rem; }
-  .contenu { padding: var(--sp-5) var(--sp-5) var(--sp-7); }
+@media (min-width: 768px) and (pointer: coarse) {
+  .nav-lien, .nav-bascule { height: 48px; }
 }
 
-/* menu large : tablette en paysage et ordinateur */
-@media (min-width: 900px) {
-  .nav-lien { flex-direction: row; justify-content: flex-start; gap: 12px; height: 44px; padding: 0 var(--sp-3); border-radius: var(--r-s); font-size: 0.92rem; color: var(--ink-2); }
-  .nav-lien[aria-current="page"] { color: var(--peda-ink); }
+/* menu étroit : tablette en portrait, tant que l'utilisateur n'a rien choisi.
+   `screen` : à l'impression ces règles (plus spécifiques que celles de l'impression de l'agenda) redonnaient une marge au contenu
+   et la semaine débordait sur une 2e page. */
+@media screen and (min-width: 768px) and (max-width: 899px) {
+  :root:not([data-menu]) .nav { align-items: center; padding-inline: var(--sp-2); }
+  :root:not([data-menu]) .nav .marque { align-items: center; padding: 0; }
+  :root:not([data-menu]) .marque-logo { width: 52px; padding: 4px 5px; border-radius: 8px; }
+  :root:not([data-menu]) .marque-texte { display: none; }
+  :root:not([data-menu]) .nav ul { width: 100%; }
+  :root:not([data-menu]) .nav-lien { flex-direction: column; justify-content: center; gap: 3px; height: 62px; padding: 0 2px; border-radius: var(--r-m); font-size: 0.68rem; }
+  :root:not([data-menu]) .nav-bascule { justify-content: center; padding: 0; }
+  :root:not([data-menu]) .nav-bascule span { display: none; }
+  :root:not([data-menu]) .contenu { padding: var(--sp-5) var(--sp-5) var(--sp-7); }
 }
-@media (min-width: 900px) and (pointer: coarse) {
-  .nav-lien { height: 48px; }
+
+/* menu réduit au choix : icônes seules (le mot reste lu par les lecteurs d'écran) ; `screen` pour la même raison */
+@media screen and (min-width: 768px) {
+  :root[data-menu='reduit'] .nav { align-items: center; padding-inline: var(--sp-2); }
+  :root[data-menu='reduit'] .nav .marque { align-items: center; padding: 0; }
+  :root[data-menu='reduit'] .marque-logo { width: 40px; padding: 3px 4px; border-radius: 8px; }
+  :root[data-menu='reduit'] .marque-texte { display: none; }
+  :root[data-menu='reduit'] .nav ul { width: 100%; }
+  :root[data-menu='reduit'] .nav-lien, :root[data-menu='reduit'] .nav-bascule { justify-content: center; padding: 0; }
+  :root[data-menu='reduit'] .nav-lien span, :root[data-menu='reduit'] .nav-bascule span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  :root[data-menu='reduit'] .contenu { padding: var(--sp-5) var(--sp-5) var(--sp-7); }
 }
 
 /* ---------- pages ---------- */
@@ -112,12 +128,19 @@
 @media print { .outils, .barre-haut { display: none; } }
 @media (min-width: 768px) {
   .outils { top: auto; right: auto; left: 22px; bottom: 16px; flex-direction: column-reverse; }
+  :root[data-menu='reduit'] .outils { left: 14px; }
 }
+/* menu large (≥ 900 px, ou « ouvert » en portrait) : boutons avec le texte */
 @media (min-width: 900px) {
-  .outils { left: 16px; }
-  .theme-bouton, .verrouiller-bouton { justify-content: flex-start; min-height: 40px; min-width: 0; }
-  .theme-texte { display: inline; }
+  :root:not([data-menu='reduit']) .outils { left: 16px; }
+  :root:not([data-menu='reduit']) :is(.theme-bouton, .verrouiller-bouton) { justify-content: flex-start; min-height: 40px; min-width: 0; }
+  :root:not([data-menu='reduit']) .theme-texte { display: inline; }
 }
-@media (min-width: 900px) and (pointer: coarse) {
-  .theme-bouton, .verrouiller-bouton { min-height: 44px; }
+@media (min-width: 768px) and (max-width: 899px) {
+  :root[data-menu='ouvert'] .outils { left: 16px; }
+  :root[data-menu='ouvert'] :is(.theme-bouton, .verrouiller-bouton) { justify-content: flex-start; min-height: 40px; min-width: 0; }
+  :root[data-menu='ouvert'] .theme-texte { display: inline; }
+}
+@media (min-width: 768px) and (pointer: coarse) {
+  :root:not([data-menu='reduit']) :is(.theme-bouton, .verrouiller-bouton) { min-height: 44px; }
 }

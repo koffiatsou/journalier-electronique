@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { appliquerMenu, menuEnregistre } from '../ui/menu.ts';
+import type { ChoixMenu } from '../ui/menu.ts';
 import { appliquerTheme, themeEnregistre, themeSuivant } from '../ui/theme.ts';
 import type { Theme } from '../ui/theme.ts';
-import { IconeAccueil, IconeAgenda, IconeAuto, IconeCadenas, IconeEleves, IconeJournalier, IconeLune, IconePia, IconeSeance, IconeSoleil, IconeSynchro } from '../ui/icons.tsx';
+import { IconeAccueil, IconeAgenda, IconeAuto, IconeCadenas, IconeEleves, IconeJournalier, IconeLune, IconeMenuAgrandir, IconeMenuReduire, IconePia, IconeSeance, IconeSoleil, IconeSynchro } from '../ui/icons.tsx';
 import type { Aller, Page } from './useRoute.ts';
 
 const NAV: { page: Page; libelle: string; icone: (p: { taille?: number }) => ReactNode }[] = [
@@ -39,6 +41,8 @@ const THEMES: Record<Theme, { icone: (p: { taille?: number }) => ReactNode; libe
 
 export function Shell({ page, onAller, essai, onVerrouiller, children }: { page: Page; onAller: Aller; essai: boolean; onVerrouiller: () => void; children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(themeEnregistre);
+  const [menu, setMenu] = useState<ChoixMenu | null>(menuEnregistre);
+  const reduit = menu === 'reduit';
   const suivant = themeSuivant(theme);
   const IconeTheme = THEMES[theme].icone;
   const ecranPrecedent = useRef<Page | null>(null);
@@ -70,7 +74,7 @@ export function Shell({ page, onAller, essai, onVerrouiller, children }: { page:
         <ul>
           {NAV.map(({ page: p, libelle, icone: Icone }) => (
             <li key={p}>
-              <a href={`#/${p}`} className="nav-lien" aria-current={page === p ? 'page' : undefined}
+              <a href={`#/${p}`} className="nav-lien" title={libelle} aria-current={page === p ? 'page' : undefined}
                 onClick={(e) => { e.preventDefault(); onAller(p); }}>
                 <Icone taille={22} />
                 <span>{libelle}</span>
@@ -78,6 +82,11 @@ export function Shell({ page, onAller, essai, onVerrouiller, children }: { page:
             </li>
           ))}
         </ul>
+        <button type="button" className="nav-bascule" title={reduit ? 'Agrandir le menu' : 'Réduire le menu'}
+          onClick={() => { const choix: ChoixMenu = reduit ? 'ouvert' : 'reduit'; setMenu(choix); appliquerMenu(choix); }}>
+          {reduit ? <IconeMenuAgrandir taille={22} /> : <IconeMenuReduire taille={22} />}
+          <span>{reduit ? 'Agrandir le menu' : 'Réduire le menu'}</span>
+        </button>
       </nav>
       <div className="outils">
         <button type="button" className="theme-bouton" title={`Thème : ${THEMES[theme].libelle}. Passer à : ${THEMES[suivant].libelle}`}

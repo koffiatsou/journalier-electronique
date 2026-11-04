@@ -2,6 +2,7 @@
  * Synthèse par matière pour la réunion : constats datés, sans comptage.
  * Les séances d'absence ne comptent pas dans les observations ; elles sont résumées à part.
  */
+import { NIVEAUX_VIGILANCE } from '../types.ts';
 import type { Seance } from '../types.ts';
 import { versFaits } from './faits.ts';
 import {
@@ -13,7 +14,7 @@ const NIVEAUX = ['Partiellement', 'Suffisamment', 'Totalement'] as const;
 const EFFET_MOT = ['aucun effet', 'effet partiel', 'effet positif'] as const;
 
 /** Une observation suivie séance après séance (niveau 0 partiel, 1 suffisant, 2 total). */
-export interface SuiviObservation { texte: string; suite: { date: string; niveau: number }[] }
+export interface SuiviObservation { texte: string; suite: { date: string; niveau: number }[]; vigilance: boolean }
 /** Une aide et l'effet noté à chaque séance (null = effet non précisé). */
 export interface SuiviAide { texte: string; effets: (number | null)[] }
 /** Une compétence et son dernier niveau (null = notée sans niveau). */
@@ -25,6 +26,8 @@ export interface SyntheseMatiere {
   dateFin: string;
   appuis: string[];
   aTravailler: string[];
+  /** Difficultés observées, avec leur fréquence : jamais dans les points d'appui. */
+  vigilances: string[];
   aides: string[];
   aidesSansEffet: string[];
   competences: string[];
@@ -39,8 +42,9 @@ export interface Synthese {
 }
 
 const mot = (n: number): string => min(NIVEAUX[n] ?? '');
+const motVigilance = (n: number): string => min(NIVEAUX_VIGILANCE[n] ?? '');
 
-function suiteNiveaux(suite: readonly { date: string; niveau: number }[]): string {
+function suiteNiveaux(suite: readonly { date: string; niveau: number }[], mot: (n: number) => string): string {
   const premier = suite[0];
   if (!premier) return '';
   if (suite.length === 1) return `${mot(premier.niveau)}.`;
@@ -64,19 +68,26 @@ export function synthese(seances: readonly Seance[]): Synthese {
   const matieres: SyntheseMatiere[] = [];
   parMatiere.forEach((liste, matiere) => {
     const obs = new Map<string, { date: string; niveau: number }[]>();
+    const vigilanceDe = new Set<string>();
     const aides = new Map<string, (number | null)[]>();
     for (const f of liste) {
       for (const o of f.observations) {
         if (o.niveau === null) continue;
         obs.set(o.texte, [...(obs.get(o.texte) ?? []), { date: f.date, niveau: o.niveau }]);
+        if (o.vigilance) vigilanceDe.add(o.texte);
       }
       for (const a of f.aides) aides.set(a.texte, [...(aides.get(a.texte) ?? []), a.effet]);
     }
 
     const appuis: string[] = [];
     const travail: string[] = [];
+    const vigilances: string[] = [];
     obs.forEach((suite, texte) => {
-      const ligne = `${Maj(texte)}${NBSP}: ${suiteNiveaux(suite)}`;
+      if (vigilanceDe.has(texte)) {
+        vigilances.push(`${Maj(texte)}${NBSP}: ${suiteNiveaux(suite, motVigilance)}`);
+        return;
+      }
+      const ligne = `${Maj(texte)}${NBSP}: ${suiteNiveaux(suite, mot)}`;
       (suite[suite.length - 1]?.niveau === 2 ? appuis : travail).push(ligne);
     });
 
@@ -110,9 +121,9 @@ export function synthese(seances: readonly Seance[]): Synthese {
       matiere,
       dateDebut: premiere?.date ?? '',
       dateFin: derniere?.date ?? '',
-      appuis, aTravailler: travail, aides: lignesAides, aidesSansEffet: sansEffet, competences,
+      appuis, aTravailler: travail, vigilances, aides: lignesAides, aidesSansEffet: sansEffet, competences,
       suivis: {
-        observations: [...obs].map(([texte, suite]) => ({ texte, suite })),
+        observations: [...obs].map(([texte, suite]) => ({ texte, suite, vigilance: vigilanceDe.has(texte) })),
         aides: [...aides].map(([texte, effets]) => ({ texte, effets })),
         competences: [...comps].map(([texte, niveau]) => ({ texte, niveau }))
       }

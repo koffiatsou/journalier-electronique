@@ -72,7 +72,7 @@ await page.getByRole('button', { name: /Modifier/ }).first().click();
 await page.getByText('Enseignants par cours').waitFor();
 ok(await page.getByLabel('Titulaire(s) de classe').isVisible(), 'fiche : « Titulaire(s) de classe » pour le PIA');
 await page.getByRole('button', { name: 'Ajouter un cours' }).click();
-await page.getByLabel('Matière 2', { exact: true }).fill('Français');
+await page.getByLabel('Matière 2', { exact: true }).selectOption('Français');
 await page.getByLabel('Enseignant de la matière 2').fill('Mme Français');
 await page.screenshot({ path: `${SORTIE}/u-fiche-eleve.png` });
 await page.getByRole('button', { name: /^Enregistrer/ }).first().click();

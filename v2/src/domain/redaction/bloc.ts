@@ -8,6 +8,7 @@
  *  - aucun comptage (« six points… ») : les points sont nommés, avec leur niveau ;
  *  - module pur : ne lit ni le DOM, ni le stockage, ni le réseau.
  */
+import { NIVEAUX_VIGILANCE } from '../types.ts';
 import type { Seance } from '../types.ts';
 import { versFaits } from './faits.ts';
 import {
@@ -17,12 +18,6 @@ import type { Bloc, Faits, LigneOrtho, TonLigne } from './types.ts';
 
 const NIVEAUX = ['Partiellement', 'Suffisamment', 'Totalement'] as const;
 const EFFETS = ['Aucun effet', 'Effet partiel', 'Effet positif'] as const;
-const TRANSFERT_MOT: Record<string, string> = {
-  observed: 'réutilisé ailleurs que pendant la séance',
-  later: 'pas encore réutilisé ailleurs'
-  // not_observed : volontairement omis du document
-};
-
 export const TEXTE_ABSENCE = {
   absent_eleve: 'Élève absent — séance non tenue.',
   absent_prof: 'Professeur absent — cours annulé.',
@@ -45,7 +40,7 @@ export function grouperParNiveau<T extends AvecNiveau>(items: readonly T[]): { n
 }
 
 /* ---------- constats : évolution depuis une séance précédente ---------- */
-interface Evolution { texte: string; de: number; dateDe: string; vers: number }
+interface Evolution { texte: string; de: number; dateDe: string; vers: number; vigilance: boolean }
 
 function evolution(faits: Faits, precedentes: readonly Faits[]): Evolution[] {
   const avant = precedentes
@@ -57,7 +52,7 @@ function evolution(faits: Faits, precedentes: readonly Faits[]): Evolution[] {
     for (const p of avant) {
       const trouve = p.observations.find((x) => x.texte === o.texte && x.niveau !== null);
       if (trouve && trouve.niveau !== null) {
-        if (trouve.niveau !== o.niveau) res.push({ texte: o.texte, de: trouve.niveau, dateDe: p.date, vers: o.niveau });
+        if (trouve.niveau !== o.niveau) res.push({ texte: o.texte, de: trouve.niveau, dateDe: p.date, vers: o.niveau, vigilance: o.vigilance });
         break;
       }
     }
@@ -69,9 +64,15 @@ function evolution(faits: Faits, precedentes: readonly Faits[]): Evolution[] {
 const puces = (groupes: ReturnType<typeof grouperParNiveau>, libelle: (n: number | null) => string): string[] =>
   groupes.map((g) => `• ${libelle(g.niveau)}${NBSP}: ${enumeration(g.items.map((i) => min(i.texte)))}.`);
 
+/** Acquis d'abord (par niveau), puis les points de vigilance (par fréquence) : jamais mélangés. */
 function ligneFonctionnement(f: Faits): string[] | null {
   if (!f.observations.length) return null;
-  return puces(grouperParNiveau(f.observations), (n) => (n === null ? 'Observé' : NIVEAUX[n] ?? 'Observé'));
+  const acquis = f.observations.filter((o) => !o.vigilance);
+  const vigilances = f.observations.filter((o) => o.vigilance);
+  return [
+    ...puces(grouperParNiveau(acquis), (n) => (n === null ? 'Observé' : NIVEAUX[n] ?? 'Observé')),
+    ...puces(grouperParNiveau(vigilances), (n) => `Point de vigilance${n === null ? '' : `, ${min(NIVEAUX_VIGILANCE[n] ?? '')}`}`)
+  ];
 }
 
 function ligneCompetence(f: Faits): string | null {
@@ -102,11 +103,6 @@ function blocsAides(f: Faits): { label: string; lignes: string[] }[] {
   ];
 }
 
-function ligneTransfert(f: Faits): string | null {
-  const mot = f.transfert ? TRANSFERT_MOT[f.transfert] : undefined;
-  return mot ? `${Maj(mot)}.` : null;
-}
-
 function ligneSuite(f: Faits): string | null {
   const morceaux: string[] = [];
   if (f.actions.length) morceaux.push(`${Maj(enumeration(f.actions.map(min)))}.`);
@@ -129,19 +125,22 @@ function lignesEvolution(evo: readonly Evolution[]): LignesEvolution | null {
   if (!evo.length) return null;
   const dates = [...new Set(evo.map((x) => x.dateDe))];
   const uneDate = dates.length === 1;
-  const clefs = [...new Set(evo.map((x) => `${x.de}>${x.vers}`))];
+  const cle = (x: Evolution): string => `${x.vigilance ? 'v' : 'a'}${x.de}>${x.vers}`;
+  const clefs = [...new Set(evo.map(cle))];
   const groupes = clefs.map((c) => {
-    const items = evo.filter((x) => `${x.de}>${x.vers}` === c);
-    return { de: items[0]!.de, vers: items[0]!.vers, items };
+    const items = evo.filter((x) => cle(x) === c);
+    return { de: items[0]!.de, vers: items[0]!.vers, vigilance: items[0]!.vigilance, items };
   });
-  const progres = (g: { de: number; vers: number }): boolean => g.vers > g.de;
+  // Pour un point de vigilance, c'est l'inverse : moins fréquent = progression.
+  const progres = (g: { de: number; vers: number; vigilance: boolean }): boolean => (g.vigilance ? g.vers < g.de : g.vers > g.de);
+  const echelle = (g: { vigilance: boolean }, n: number): string => (g.vigilance ? NIVEAUX_VIGILANCE[n] : NIVEAUX[n]) ?? '';
   groupes.sort((a, b) => Number(progres(b)) - Number(progres(a)) || b.vers - a.vers || a.de - b.de);
   const lignes: string[] = [];
   const tons: TonLigne[] = [];
   for (const g of groupes) {
     const points = g.items.map((x) => `${min(x.texte)}${uneDate ? '' : ` (depuis le ${dateCourte(x.dateDe)})`}`);
-    const titre = progres(g) ? 'Progression' : 'À consolider';
-    lignes.push(`• ${titre}, ${NIVEAUX[g.de] ?? ''} → ${NIVEAUX[g.vers] ?? ''}${NBSP}: ${enumeration(points)}.`);
+    const titre = progres(g) ? 'Progression' : g.vigilance ? 'À surveiller' : 'À consolider';
+    lignes.push(`• ${titre}, ${echelle(g, g.de)} → ${echelle(g, g.vers)}${NBSP}: ${enumeration(points)}.`);
     tons.push(progres(g) ? 'progres' : 'consolider');
   }
   const label = uneDate ? `Évolution depuis la séance du ${dateCourte(dates[0] ?? '')}` : 'Évolution depuis les séances précédentes';
@@ -196,8 +195,6 @@ export function construireBloc(seance: Seance, contexte: ContexteBloc = {}): Blo
   if (faits.precisionCompetence) l.push({ label: comp ? 'Précision' : 'Compétence travaillée', texte: finPhrase(faits.precisionCompetence) });
   for (const b of blocsAides(faits)) l.push(b);
   if (faits.precisionAide) l.push({ label: 'Précision sur les aides', texte: finPhrase(faits.precisionAide) });
-  const tr = ligneTransfert(faits);
-  if (tr) l.push({ label: 'Transfert', texte: tr });
   const suite = ligneSuite(faits);
   if (suite) l.push({ label: 'Suite', texte: suite });
   const evo = lignesEvolution(evolution(faits, (contexte.precedentes ?? []).map((p) => versFaits(p))));

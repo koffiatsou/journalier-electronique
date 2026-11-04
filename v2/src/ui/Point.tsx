@@ -6,6 +6,8 @@ export type Teinte = 'faible' | 'moyen' | 'fort' | 'neutre';
 /** Teintes de l'échelle d'observation et de celle de l'effet d'une aide. */
 export const TEINTES_NIVEAU: readonly Teinte[] = ['faible', 'moyen', 'fort'];
 export const TEINTES_EFFET: readonly Teinte[] = ['neutre', 'faible', 'fort'];
+/** Points de vigilance : plus c'est fréquent, plus la teinte d'attention est marquée (jamais la teinte « réussi »). */
+export const TEINTES_VIGILANCE: readonly Teinte[] = ['neutre', 'faible', 'faible'];
 
 interface Props {
   /** Texte du point (observation, compétence, aide…). */

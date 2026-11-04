@@ -110,31 +110,31 @@ export function FicheEleve({ eleve, couleurParDefaut, ecoles, onEnregistrer, onA
         </div>
       </div>
 
-
-      <div className="field">
-        <span className="field-label" id="enseignants-titre">Enseignants par cours <span className="opt">facultatif</span></span>
-        <div role="group" aria-labelledby="enseignants-titre" className="enseignants-liste">
-          {enseignants.map((x, i) => (
-            <div key={i} className="enseignant-ligne">
-              <Input value={x.matiere} list="enseignants-matieres" placeholder="Matière" aria-label={`Matière ${i + 1}`}
-                onChange={(ev) => majEnseignant(i, { matiere: ev.target.value })} />
-              <Input value={x.nom} placeholder="Nom de l’enseignant" aria-label={`Enseignant de la matière ${i + 1}`}
-                onChange={(ev) => majEnseignant(i, { nom: ev.target.value })} />
-              <Button type="button" aria-label={`Retirer la ligne ${i + 1}`} onClick={() => maj({ enseignants: enseignants.filter((_, k) => k !== i) })}>Retirer</Button>
-            </div>
-          ))}
-          <datalist id="enseignants-matieres">{[...new Set([...e.matieres, ...langues])].map((m) => <option key={m} value={m} />)}</datalist>
-          <Button type="button" onClick={() => maj({ enseignants: [...enseignants, { matiere: '', nom: '' }] })}>Ajouter un cours</Button>
-        </div>
-        <p className="field-hint">Le nom s’écrit dans la colonne « Titulaire » du Journalier pour cette matière. Sans ligne pour une matière, on reprend le titulaire de classe.</p>
-      </div>
-
       <div className="field">
         <span className="field-label" id="langues-titre">Langues modernes <span className="opt">facultatif</span></span>
         <div role="group" aria-labelledby="langues-titre">
           <Chips options={LANGUES_MODERNES} valeurs={langues} onChange={majLangues} />
         </div>
         <p className="field-hint">Plusieurs langues possibles. Elles servent aux pistes de compétences et sont proposées comme matières dans la séance.</p>
+      </div>
+
+      <div className="field">
+        <span className="field-label" id="enseignants-titre">Enseignants par cours <span className="opt">facultatif</span></span>
+        <div role="group" aria-labelledby="enseignants-titre" className="enseignants-liste">
+          {enseignants.map((x, i) => (
+            <div key={i} className="enseignant-ligne">
+              <Select value={x.matiere} aria-label={`Matière ${i + 1}`} onChange={(ev) => majEnseignant(i, { matiere: ev.target.value })}>
+                <option value="">Choisir la matière</option>
+                {[...new Set([...e.matieres, ...langues, ...(x.matiere ? [x.matiere] : [])])].map((m) => <option key={m} value={m}>{m}</option>)}
+              </Select>
+              <Input value={x.nom} placeholder="Nom de l’enseignant" aria-label={`Enseignant de la matière ${i + 1}`}
+                onChange={(ev) => majEnseignant(i, { nom: ev.target.value })} />
+              <Button type="button" aria-label={`Retirer la ligne ${i + 1}`} onClick={() => maj({ enseignants: enseignants.filter((_, k) => k !== i) })}>Retirer</Button>
+            </div>
+          ))}
+          <Button type="button" onClick={() => maj({ enseignants: [...enseignants, { matiere: '', nom: '' }] })}>Ajouter un cours</Button>
+        </div>
+        <p className="field-hint">Le nom s’écrit dans la colonne « Titulaire » du Journalier pour cette matière. Sans ligne pour une matière, on reprend le titulaire de classe.</p>
       </div>
 
       <div className="field">

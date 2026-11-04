@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Racine } from './app/Racine.tsx';
+import { appliquerMenu, menuEnregistre } from './ui/menu.ts';
 import { appliquerTheme, themeEnregistre } from './ui/theme.ts';
 import { CANAL_RETOUR, Connexion, IDENTIFIANTS_MICROSOFT } from './synchro/connexion.ts';
 import type { MessageRetour, Stockage } from './synchro/connexion.ts';
@@ -20,6 +21,7 @@ import './ui/styles/verrou.css';
 
 // Thème choisi sur cet appareil, appliqué avant l'affichage pour éviter un éclair clair.
 appliquerTheme(themeEnregistre(), false);
+appliquerMenu(menuEnregistre(), false);
 
 /*
  * Ici on ne lit AUCUNE donnée : on prépare seulement ce qui sert à ouvrir le Journalier (stockages du navigateur,
