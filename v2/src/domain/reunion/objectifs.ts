@@ -112,7 +112,7 @@ function depuisCompetences(matiere: string, suivis: readonly SuiviCompetence[]):
       matiere,
       genre: 'competence' as const,
       texte: `Continuer à travailler la compétence${NBSP}: ${min(sansPoint(c.texte))}.`,
-      raison: c.niveau === null ? 'Compétence notée sans niveau.' : `Niveau noté : ${mot(c.niveau)}.`
+      raison: c.libre ? 'Précision libre notée dans la séance : à relire avant de la retenir.' : c.niveau === null ? 'Compétence notée sans niveau.' : `Niveau noté : ${mot(c.niveau)}.`
     }));
 }
 

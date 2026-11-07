@@ -18,7 +18,8 @@ export interface SuiviObservation { texte: string; suite: { date: string; niveau
 /** Une aide et l'effet noté à chaque séance (null = effet non précisé). */
 export interface SuiviAide { texte: string; effets: (number | null)[] }
 /** Une compétence et son dernier niveau (null = notée sans niveau). */
-export interface SuiviCompetence { texte: string; niveau: number | null }
+/** `libre` : texte venu de la « Précision » libre de la rubrique 3 (pas d'une compétence choisie dans la liste). */
+export interface SuiviCompetence { texte: string; niveau: number | null; libre?: boolean }
 
 export interface SyntheseMatiere {
   matiere: string;
@@ -105,11 +106,12 @@ export function synthese(seances: readonly Seance[]): Synthese {
     });
 
     const comps = new Map<string, number | null>();
+    const precisionsLibres = new Set<string>();
     for (const f of liste) {
       for (const c of f.competences) comps.set(c.texte, c.niveau);
       if (f.precisionCompetence) {
         const t = finPhrase(Maj(f.precisionCompetence));
-        if (!comps.has(t)) comps.set(t, null);
+        if (!comps.has(t)) { comps.set(t, null); precisionsLibres.add(t); }
       }
     }
     const competences = [...comps].map(([t, n]) =>
@@ -125,7 +127,7 @@ export function synthese(seances: readonly Seance[]): Synthese {
       suivis: {
         observations: [...obs].map(([texte, suite]) => ({ texte, suite, vigilance: vigilanceDe.has(texte) })),
         aides: [...aides].map(([texte, effets]) => ({ texte, effets })),
-        competences: [...comps].map(([texte, niveau]) => ({ texte, niveau }))
+        competences: [...comps].map(([texte, niveau]) => ({ texte, niveau, ...(precisionsLibres.has(texte) ? { libre: true } : {}) }))
       }
     });
   });

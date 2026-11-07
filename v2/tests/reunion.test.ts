@@ -88,7 +88,7 @@ describe('Propositions d’objectifs : compétences et aides', () => {
       `Continuer à travailler la compétence${N}: se repérer dans le tableau.`
     ]);
     assert.equal(p[0]?.raison, 'Niveau noté : suffisamment.');
-    assert.equal(p[1]?.raison, 'Compétence notée sans niveau.');
+    assert.equal(p[1]?.raison, 'Précision libre notée dans la séance : à relire avant de la retenir.');
   });
 
   it('pas plus de deux compétences par matière', () => {
@@ -234,5 +234,20 @@ describe('Période choisie à l’écran', () => {
     assert.deepEqual(construirePeriode({ genre: 'a-ce-jour', ...c }), { genre: 'a-ce-jour' });
     assert.deepEqual(construirePeriode({ genre: 'annee', ...c }), { genre: 'annee', annee: '2026-2027' });
     assert.deepEqual(construirePeriode({ genre: 'dates', ...c }), { genre: 'dates', du: '2026-09-01', au: '2026-10-31' });
+  });
+});
+
+describe('« Précision » libre de la rubrique 3 : une note libre n’est pas une compétence choisie', () => {
+  it('la proposition dit que c’est une précision libre à relire, pas « compétence notée sans niveau »', () => {
+    const p = propositions(s('2026-09-15', { precisionCompetence: 'Revoir les fractions à l’oral' }));
+    const prop = p.find((x) => x.genre === 'competence');
+    assert.ok(prop, 'la précision reste proposée (rien n’est retiré)');
+    assert.match(prop.raison, /Précision libre/);
+    assert.doesNotMatch(prop.raison, /sans niveau/);
+  });
+
+  it('une compétence choisie dans la liste, sans niveau, garde son texte d’origine', () => {
+    const p = propositions(s('2026-09-15', { competences: [{ texte: 'Lire un graphique', niveau: null }] }));
+    assert.equal(p.find((x) => x.genre === 'competence')?.raison, 'Compétence notée sans niveau.');
   });
 });
