@@ -89,8 +89,8 @@ export function Mois({ jour, periodes, alertes, occurrences, eleves, couleurs, a
                         <button type="button" aria-pressed={selection === o.cle} draggable={!o.seanceId && !heuresLibresDe(o.activite)}
                           onDragStart={(e) => { e.dataTransfer.setData('text/plain', o.cle); e.dataTransfer.effectAllowed = 'copyMove'; }}
                           onDragEnd={() => setSurvol(null)}
-                          className={`mois-evt ${teinte} ${alertes?.has(o.cle) ? 'alerte' : ''} ${o.statut === 'annule' ? 'annule' : ''}`}
-                          aria-label={`${texte}, ${jourComplet(o.date)}, ${quand}${o.statut === 'annule' ? ', annulé' : o.statut === 'realise' ? ', réalisé' : ''}${alertes?.has(o.cle) ? ', attention : chevauchement ou trajet trop court' : ''}`}
+                          className={`mois-evt ${teinte} ${alertes?.has(o.cle) ? 'alerte' : ''} ${o.statut === 'annule' ? 'annule' : ''} ${o.absence ? 'absence' : ''}`}
+                          aria-label={`${texte}, ${jourComplet(o.date)}, ${quand}${o.statut === 'annule' ? ', annulé' : o.absence ? ', absence : séance non tenue' : o.statut === 'realise' ? ', réalisé' : ''}${alertes?.has(o.cle) ? ', attention : chevauchement ou trajet trop court' : ''}`}
                           title={`${texte} (${quand})`}
                           onClick={() => onSelection(o)}>
                           {texte}

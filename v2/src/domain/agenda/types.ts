@@ -83,4 +83,6 @@ export interface Occurrence {
   statut: StatutActivite;
   /** Renseigné pour une séance réalisée sans planification : l'occurrence est alors calculée à partir de la séance (rien n'est enregistré dans l'agenda). */
   seanceId?: string;
+  /** Vrai quand la séance encodée sur ce créneau est une absence (élève, enseignant ou agent absent) : la séance n'a pas eu lieu. */
+  absence?: boolean;
 }

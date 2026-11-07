@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { disposer, enMinutes, heuresLibresDe, heuresOccurrence, infosJour, jourMois, libelle, libelleHeures, natureJour, nomJour, teinteDe } from '../../domain/agenda/index.ts';
+import { TYPES_LIBELLES, disposer, enMinutes, heuresLibresDe, heuresOccurrence, infosJour, jourMois, libelle, libelleHeures, natureJour, nomJour, teinteDe } from '../../domain/agenda/index.ts';
 import type { Ecole, Occurrence, Periode } from '../../domain/agenda/index.ts';
 import type { Eleve } from '../../domain/types.ts';
 import { geometrie, PH, yDeMinutes } from './geometrie.ts';
@@ -219,13 +219,13 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
               const alerte = alertes.has(o.cle);
               return (
                 <button key={o.cle} type="button" aria-pressed={selection === o.cle}
-                  className={`evt ${cls} ${alerte ? 'alerte' : ''} ${o.statut === 'annule' ? 'annule' : ''} ${o.statut === 'realise' ? 'realise' : ''} ${enCours && geste?.mode !== 'etirer' ? 'glisse' : ''}`}
+                  className={`evt ${cls} ${alerte ? 'alerte' : ''} ${o.statut === 'annule' ? 'annule' : ''} ${o.statut === 'realise' ? 'realise' : ''} ${o.absence ? 'absence' : ''} ${enCours && geste?.mode !== 'etirer' ? 'glisse' : ''}`}
                   style={style(o, yDeb, yFin)}
-                  aria-label={`${libelle(o.activite, nom || undefined)}, ${nomJour(o.date)} ${jourMois(o.date)}, ${libres ? '' : `${periodes[o.debut]!.label}${o.fin > o.debut ? ` à ${periodes[o.fin]!.label}` : ''}`}${heures ? `${libres ? '' : ', '}${heures}` : ''}${ecole ? `, ${ecole.nom}` : ''}${o.statut === 'annule' ? ', annulé' : o.statut === 'realise' ? ', réalisé' : ''}${alerte ? ', attention : chevauchement ou trajet trop court' : ''}`}
+                  aria-label={`${libelle(o.activite, nom || undefined)}, ${nomJour(o.date)} ${jourMois(o.date)}, ${libres ? '' : `${periodes[o.debut]!.label}${o.fin > o.debut ? ` à ${periodes[o.fin]!.label}` : ''}`}${heures ? `${libres ? '' : ', '}${heures}` : ''}${ecole ? `, ${ecole.nom}` : ''}${o.statut === 'annule' ? ', annulé' : o.absence ? ', absence : séance non tenue' : o.statut === 'realise' ? ', réalisé' : ''}${alerte ? ', attention : chevauchement ou trajet trop court' : ''}`}
                   onPointerDown={(e) => commencer(e, o, 'deplacer')}
                   onClick={() => { if (!clicIgnore.current) rappel.current!.onSelection(o); }}>
                   <strong>{libelle(o.activite, nom || undefined)}</strong>
-                  <small>{libres ? heures : `${periodes[o.debut]!.label}${o.fin > o.debut ? `–${periodes[o.fin]!.label}` : ''}`}{o.activite.matiere ? ` · ${o.activite.matiere}` : ''}{o.activite.lieu ? ` · ${o.activite.lieu}` : ''}</small>
+                  <small>{libres ? heures : `${periodes[o.debut]!.label}${o.fin > o.debut ? `–${periodes[o.fin]!.label}` : ''}`}{o.activite.matiere ? ` · ${o.activite.matiere}` : ''}{o.activite.lieu ? ` · ${o.activite.lieu}` : ''}{o.activite.type !== 'eleve' ? ` · ${TYPES_LIBELLES[o.activite.type]}` : ''}{o.absence ? ' · absence' : ''}</small>
                   {ecole ? <small className="evt-ecole">{heures && !libres ? `${heures} · ` : ''}{ecole.nom}</small> : null}
                   {o.seanceId || libres ? null : <span className="evt-poignee" onPointerDown={(e) => commencer(e, o, 'etirer')} aria-hidden="true" />}
                 </button>

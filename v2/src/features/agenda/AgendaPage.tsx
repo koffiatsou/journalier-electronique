@@ -211,6 +211,8 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
         </div>
       ) : null}
 
+
+
       <div className={`agenda-corps ${panneauOuvert && large ? 'avec-panneau' : ''}`}>
         {mois ? (
           <Mois jour={focus} periodes={horaires} alertes={alertes} occurrences={visibles} eleves={eleves} couleurs={couleurs} aujourdhui={aujourdhui}
@@ -243,6 +245,10 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
             onDupliquer={() => undefined} onAnnuler={() => undefined} onRealiser={() => undefined} onSupprimer={() => undefined} />
         ) : null}
       </div>
+
+      <p className="legende-signes" aria-label="Légende des signes">
+        <span>✓ séance réalisée</span> · <span>✕ absence (séance non tenue)</span> · <span>barré et hachuré : annulé</span> · <span>fond uni : jour férié</span> · <span>fond hachuré : vacances</span>
+      </p>
 
       <SemaineTypeDialog ouvert={semaineTypeOuverte} jour={jourCourant} aujourdhui={aujourdhui} modele={semaineType} periodes={horaires}
         eleves={eleves} activites={activites} seances={seances} onFermer={() => setSemaineTypeOuverte(false)}
