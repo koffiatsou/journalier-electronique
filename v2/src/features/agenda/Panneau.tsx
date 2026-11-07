@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   NB_COULEURS, NOMS_COULEURS, TYPES_LIBELLES, creer, ecoleDeEleve, ecoleParDefaut, editer, heuresLibresDe, jourComplet, libelle, nbPeriodesUtilisees,
   periodesCouvertes, verifierHeuresLibres
@@ -9,6 +9,7 @@ import type { Eleve } from '../../domain/types.ts';
 import { Button } from '../../ui/Button.tsx';
 import { ChampSuggestions } from '../../ui/ChampSuggestions.tsx';
 import { Field, Input, Select, Textarea } from '../../ui/Field.tsx';
+import { useTiroir } from '../../ui/useTiroir.ts';
 
 export interface Brouillon { date: string; debut: number; fin: number }
 
@@ -51,6 +52,8 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
   const [libre, setLibre] = useState(Boolean(libresDeBase));
   const [heureDebut, setHeureDebut] = useState(libresDeBase?.debut ?? '');
   const [heureFin, setHeureFin] = useState(libresDeBase?.fin ?? '');
+  const racine = useRef<HTMLElement>(null);
+  const recouvre = useTiroir(racine, { actif: true, onFermer });
   const serie = a?.repetition === 'hebdomadaire';
   const eleve = eleves.find((e) => e.id === eleveId);
   // Les heures affichées sont celles de l'école de l'élève (ou de l'école choisie pour une autre activité).
@@ -101,7 +104,8 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
 
   const nom = eleve ? `${eleve.prenom} ${eleve.nom}` : undefined;
   return (
-    <section className="panneau feuille-bas" aria-label={occurrence ? 'Modifier l’activité' : 'Nouvelle activité'}>
+    <section ref={racine} className="panneau feuille-bas" aria-label={occurrence ? 'Modifier l’activité' : 'Nouvelle activité'}
+      {...(recouvre ? { role: 'dialog', 'aria-modal': true } : {})}>
       <div className="en-tete">
         <h2>{occurrence ? libelle(base, nom) : 'Nouvelle activité'}</h2>
         <Button onClick={onFermer} aria-label="Fermer le panneau">Fermer</Button>
