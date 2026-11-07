@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  PERIODES_AGENDA, ajouterJours, ajouterMois, annuler, avertissementsEcoles, calendrierConnu, couleursEleves, deplacer, dupliquer, ecoleDeOccurrence,
+  PERIODES_AGENDA, ajouterJours, ajouterMois, annuler, avertissementsEcoles, avertissementsVacances, calendrierConnu, couleursEleves, deplacer, dupliquer, ecoleDeOccurrence,
   ecoleParDefaut, heuresDe, horairesReference, indexJour, jourComplet, jourMois, libelle, libelleHeures, lundiDe, marquerRealisee, nomJour,
   occurrencesAgenda as calculer, redimensionner, seanceDuCreneau, semaine, semainesDuMois, supprimer, titreMois, titreSemaine, versISO
 } from '../../domain/agenda/index.ts';
 import type { Changement, Occurrence, Portee } from '../../domain/agenda/index.ts';
+import { nomAffiche } from '../../domain/eleves/index.ts';
 import { defautsSeance } from '../../domain/referentiel/index.ts';
 import type { Magasin } from '../../state/store.ts';
 import { useMagasin } from '../../state/store.ts';
@@ -78,7 +79,10 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
   // Les lignes de la grille : les périodes de l'école choisie, sinon celles de toutes les écoles (heures de l'école par défaut d'abord).
   const jusqua = Math.max(0, ...visibles.map((o) => o.fin));
   const horaires = useMemo(() => horairesReference(ecoleFiltree ? [ecoleFiltree] : ecoles, jusqua), [ecoleFiltree, ecoles, jusqua]);
-  const avertissements = useMemo(() => avertissementsEcoles(toutes, eleves, ecoles, trajet), [toutes, eleves, ecoles, trajet]);
+  const avertissements = useMemo(() => [
+    ...avertissementsEcoles(toutes, eleves, ecoles, trajet),
+    ...avertissementsVacances(toutes, (o) => { const e = eleves.find((x) => x.id === o.activite.eleveId); return e ? nomAffiche(e) : undefined; })
+  ], [toutes, eleves, ecoles, trajet]);
   const alertes = useMemo(() => new Set(avertissements.flatMap((a) => a.cles)), [avertissements]);
   const occSelection = selection ? toutes.find((o) => o.cle === selection) ?? null : null;
   const panneauOuvert = Boolean(occSelection || brouillon);
@@ -185,7 +189,7 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
         <div className="agenda-alertes" role="status">
           <strong>{avertissements.length === 1 ? 'Un point à vérifier' : `${avertissements.length} points à vérifier`}</strong>
           <ul>
-            {avertissements.slice(0, 4).map((a) => <li key={`${a.cles[0]}|${a.cles[1]}`}>{a.texte}</li>)}
+            {avertissements.slice(0, 4).map((a) => <li key={a.cles.join('|')}>{a.texte}</li>)}
           </ul>
           {avertissements.length > 4 ? <small>et {avertissements.length - 4} autre{avertissements.length - 4 > 1 ? 's' : ''} dans les semaines affichées.</small> : null}
         </div>
@@ -235,7 +239,11 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
         ) : occSelection ? (
           <Panneau key={occSelection.cle} occurrence={occSelection} ecoles={ecoles} nouveau={null} eleves={eleves}
             onChanger={(c) => appliquer(c, 'Activité enregistrée')} onFermer={fermer} onEncoder={encoder}
-            onDupliquer={(o) => { appliquer(dupliquer(o, ajouterJours(o.date, 7), o.debut), 'Dupliquée à la semaine suivante'); fermer(); }}
+            onDupliquer={(o) => {
+              // Une série existe déjà la semaine suivante : dupliquer y poserait un doublon exact.
+              if (o.activite.repetition === 'hebdomadaire') { annoncer('Cette activité se répète déjà chaque semaine : rien à dupliquer.'); return; }
+              appliquer(dupliquer(o, ajouterJours(o.date, 7), o.debut), 'Dupliquée à la semaine suivante'); fermer();
+            }}
             onAnnuler={(o) => { appliquer(annuler(o, o.statut !== 'annule'), o.statut === 'annule' ? 'Activité rétablie' : 'Activité annulée'); fermer(); }}
             onRealiser={(o) => { appliquer(marquerRealisee(o, o.statut !== 'realise')); fermer(); }}
             onSupprimer={demanderSuppression} />

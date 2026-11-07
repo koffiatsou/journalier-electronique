@@ -7,3 +7,4 @@ export * from './horaires.ts';
 export * from './semainetype.ts';
 export * from './ecoles.ts';
 export * from './horaireLibre.ts';
+export * from './vacances.ts';

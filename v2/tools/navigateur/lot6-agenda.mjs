@@ -42,6 +42,21 @@ const legende = await page.locator('.legende-signes').innerText();
 ok(/réalisée/.test(legende) && /absence/.test(legende) && /annulé/.test(legende) && /férié/.test(legende) && /vacances/.test(legende), `la légende explique réalisé, absence, annulé, férié, vacances (${legende.slice(0, 60)}…)`);
 const typeNonEleve = await page.locator('.evt:not(.c-0):not(.c-1):not(.c-2):not(.c-3):not(.c-4):not(.c-5):not(.c-6):not(.c-7):not(.c-8):not(.c-9)').first().innerText();
 ok(/Collaboration|Formation|Administratif|Autre|Libre/i.test(typeNonEleve), `le type d'une activité sans élève est écrit (${typeNonEleve.replace(/\n/g, ' · ')})`);
+/* Séries : dupliquer ne crée pas de doublon ; pendant les vacances, la série est signalée. */
+await page.locator('.evt', { hasText: 'Remédiation fractions' }).first().click();
+await page.locator('.panneau').waitFor();
+const avant = await page.locator('.evt').count();
+await page.getByRole('button', { name: 'Dupliquer à la semaine suivante' }).click();
+await page.getByText('rien à dupliquer').first().waitFor({ timeout: 4000 }).catch(() => undefined);
+ok(await page.getByText('rien à dupliquer').count() >= 1, 'dupliquer une série : message, aucun doublon créé');
+await page.getByLabel('Fermer le panneau').click();
+await page.waitForTimeout(300);
+ok(await page.locator('.evt').count() === avant, 'le nombre d’activités affichées ne change pas');
+for (let i = 0; i < 7; i++) await page.getByRole('button', { name: 'Semaine suivante' }).click();
+await page.waitForTimeout(500);
+const alertes = await page.locator('.agenda-alertes').innerText().catch(() => '');
+ok(/Vacances d’hiver/.test(alertes), `la semaine du 21 décembre signale les séries en vacances (${alertes.replace(/\s+/g, ' ').slice(0, 90)})`);
+
 await nav.close();
 ok(erreurs.length === 0, `aucune erreur dans la console${erreurs.length ? ' : ' + erreurs.slice(0, 2).join(' | ') : ''}`);
 if (echecs.length) { console.log(`\n${echecs.length} échec(s)`); process.exit(1); }
