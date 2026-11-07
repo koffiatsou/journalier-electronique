@@ -1,11 +1,14 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   NB_COULEURS, NOMS_COULEURS, TYPES_LIBELLES, creer, ecoleDeEleve, ecoleParDefaut, editer, heuresLibresDe, jourComplet, libelle, nbPeriodesUtilisees,
   periodesCouvertes, verifierHeuresLibres
 } from '../../domain/agenda/index.ts';
 import type { Activite, Changement, Ecole, Edition, Occurrence, Portee, TypeActivite } from '../../domain/agenda/index.ts';
+import { activiteSaisie } from '../../domain/brouillons/index.ts';
+import type { BrouillonFormulaire, ChampsActivite } from '../../domain/brouillons/index.ts';
 import { elevesProposes, languesDe, nomAffiche } from '../../domain/eleves/index.ts';
 import type { Eleve } from '../../domain/types.ts';
+import { BrouillonRetrouve } from '../../ui/BrouillonRetrouve.tsx';
 import { Button } from '../../ui/Button.tsx';
 import { ChampSuggestions } from '../../ui/ChampSuggestions.tsx';
 import { ConfirmerAbandon } from '../../ui/ConfirmerAbandon.tsx';
@@ -26,12 +29,16 @@ interface Props {
   onAnnuler: (o: Occurrence) => void;
   onRealiser: (o: Occurrence) => void;
   onSupprimer: (o: Occurrence, portee: Portee) => void;
+  /** Nouvelle activité seulement : brouillon retrouvé (proposé, jamais appliqué sans accord), garde de la saisie, effacement. */
+  brouillon?: BrouillonFormulaire<ChampsActivite> | null;
+  onSaisie?: (c: ChampsActivite) => void;
+  onEffacerBrouillon?: () => void;
 }
 
 const TYPES = Object.keys(TYPES_LIBELLES) as TypeActivite[];
 
 /** Panneau d'une activité : création et modification, sans fenêtre modale. */
-export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFermer, onEncoder, onDupliquer, onAnnuler, onRealiser, onSupprimer }: Props) {
+export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFermer, onEncoder, onDupliquer, onAnnuler, onRealiser, onSupprimer, brouillon = null, onSaisie, onEffacerBrouillon }: Props) {
   const a: Activite | null = occurrence?.activite ?? null;
   const base = useMemo<Activite>(() => a ?? creer({ type: 'eleve', date: nouveau?.date ?? '', debut: nouveau?.debut ?? 0, fin: nouveau?.fin ?? 0 }), [a, nouveau]);
   const [type, setType] = useState<TypeActivite>(base.type);
@@ -58,6 +65,23 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
   const saisie = JSON.stringify([type, eleveId, nomLibre, titre, matiere, lieu, note, date, debut, fin, repetition, jusquau, couleur ?? null, ecoleId, libre, heureDebut, heureFin]);
   const saisieInitiale = useRef(saisie);
   const [confirmation, setConfirmation] = useState(false);
+  const [proposition, setProposition] = useState(brouillon);
+  const ouverture = useRef(true);
+  // Nouvelle activité : on garde la saisie (jamais avant la première frappe ni avant la réponse à la proposition de reprise).
+  useEffect(() => {
+    if (ouverture.current) { ouverture.current = false; return; }
+    if (occurrence || proposition || !onSaisie) return;
+    const champs: ChampsActivite = {
+      type, eleveId, nomLibre, titre, matiere, lieu, note, date, debut, fin, repetition, jusquau, couleur: couleur ?? null, ecoleId, libre, heureDebut, heureFin
+    };
+    if (activiteSaisie(champs)) onSaisie(champs);
+  }, [saisie]); // eslint-disable-line react-hooks/exhaustive-deps
+  const reprendre = (c: ChampsActivite) => {
+    setType(c.type); setEleveId(eleves.some((e) => e.id === c.eleveId) ? c.eleveId : ''); setNomLibre(c.nomLibre); setTitre(c.titre); setMatiere(c.matiere);
+    setLieu(c.lieu); setNote(c.note); setDate(c.date); setDebut(c.debut); setFin(c.fin); setRepetition(c.repetition); setJusquau(c.jusquau);
+    setCouleur(c.couleur ?? undefined); setEcoleId(c.ecoleId); setLibre(c.libre); setHeureDebut(c.heureDebut); setHeureFin(c.heureFin);
+    setProposition(null);
+  };
   const fermer = () => { if (saisie !== saisieInitiale.current) setConfirmation(true); else onFermer(); };
   const recouvre = useTiroir(racine, { actif: true, onFermer: fermer });
   const serie = a?.repetition === 'hebdomadaire';
@@ -107,6 +131,7 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
       const act = creer({ ...champs });
       onChanger({ enregistrer: [act], supprimer: [] });
     }
+    onEffacerBrouillon?.();
     onFermer();
   };
 
@@ -118,6 +143,10 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
         <h2>{occurrence ? libelle(base, nom) : 'Nouvelle activité'}</h2>
         <Button onClick={fermer} aria-label="Fermer le panneau">Fermer</Button>
       </div>
+      {proposition ? (
+        <BrouillonRetrouve quoi="Une activité" enregistreLe={proposition.enregistreLe} onReprendre={() => reprendre(proposition.donnees)}
+          onRepartir={() => { onEffacerBrouillon?.(); setProposition(null); }} />
+      ) : null}
       {occurrence && occurrence.activite.type === 'eleve' && occurrence.statut !== 'annule' ? (
         <div className="actions encoder-haut">
           <Button variante="primaire" onClick={() => onEncoder(occurrence)}>{occurrence.statut === 'realise' ? 'Ouvrir la séance' : 'Encoder la séance'}</Button>
@@ -234,7 +263,7 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
           <Button variante="discret" onClick={() => onSupprimer(occurrence, portee)}>Supprimer{serie ? (portee === 'serie' ? ' la série' : ' cette date') : ''}</Button>
         </div>
       ) : null}
-      <ConfirmerAbandon ouvert={confirmation} perte="Les changements faits dans ce panneau ne sont pas enregistrés." onContinuer={() => setConfirmation(false)} onAbandonner={onFermer} />
+      <ConfirmerAbandon ouvert={confirmation} perte="Les changements faits dans ce panneau ne sont pas enregistrés." onContinuer={() => setConfirmation(false)} onAbandonner={() => { onEffacerBrouillon?.(); onFermer(); }} />
     </section>
   );
 }

@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NB_COULEURS, NOMS_COULEURS, ecoleParDefaut, rattachement } from '../../domain/agenda/index.ts';
 import type { Ecole } from '../../domain/agenda/index.ts';
+import { eleveSaisi } from '../../domain/brouillons/index.ts';
+import type { BrouillonFormulaire } from '../../domain/brouillons/index.ts';
 import { LANGUES_MODERNES, languesDe } from '../../domain/eleves/index.ts';
 import { analyserClasse } from '../../domain/referentiel/index.ts';
 import { sansAccents } from '../../domain/referentiel/texte.ts';
 import { FILIERES_LIBELLES } from '../../domain/types.ts';
 import type { EnseignantCours, Eleve, Filiere } from '../../domain/types.ts';
 import { Button } from '../../ui/Button.tsx';
+import { BrouillonRetrouve } from '../../ui/BrouillonRetrouve.tsx';
 import { Chips } from '../../ui/Chip.tsx';
 import { Field, Input, Select } from '../../ui/Field.tsx';
 import { ChoixAvatar } from './ChoixAvatar.tsx';
@@ -31,14 +34,26 @@ interface Props {
   ecoles: readonly Ecole[];
   onEnregistrer: (e: Eleve) => void;
   onAnnuler: () => void;
+  /** Nouvel élève seulement : brouillon retrouvé (proposé, jamais appliqué sans accord), garde de la saisie, effacement. */
+  brouillon?: BrouillonFormulaire<Eleve> | null;
+  onSaisie?: (e: Eleve) => void;
+  onEffacerBrouillon?: () => void;
 }
 
-export function FicheEleve({ eleve, couleurParDefaut, ecoles, onEnregistrer, onAnnuler }: Props) {
+export function FicheEleve({ eleve, couleurParDefaut, ecoles, onEnregistrer, onAnnuler, brouillon = null, onSaisie, onEffacerBrouillon }: Props) {
   const [e, setE] = useState(eleve);
+  const [proposition, setProposition] = useState(brouillon);
+  const ouverture = useRef(true);
+  // On ne garde rien tant que la fiche est vierge ni tant que la proposition de reprise n'a pas reçu de réponse.
+  useEffect(() => {
+    if (ouverture.current) { ouverture.current = false; return; }
+    if (proposition || !onSaisie || !eleveSaisi(e)) return;
+    onSaisie(e);
+  }, [e]); // eslint-disable-line react-hooks/exhaustive-deps
   const [autre, setAutre] = useState('');
   const maj = (p: Partial<Eleve>) => setE((x) => ({ ...x, ...p }));
   const valide = e.nom.trim() !== '' && e.prenom.trim() !== '';
-  const soumettre = (ev: { preventDefault(): void }) => { ev.preventDefault(); if (valide) onEnregistrer({ ...e, nom: e.nom.trim(), prenom: e.prenom.trim() }); };
+  const soumettre = (ev: { preventDefault(): void }) => { ev.preventDefault(); if (valide) { onEnregistrer({ ...e, nom: e.nom.trim(), prenom: e.prenom.trim() }); onEffacerBrouillon?.(); } };
   const filiereDeduite = analyserClasse(e.classe)?.filiere;
   const ecoleAttachee = rattachement(e, ecoles);
 
@@ -62,6 +77,11 @@ export function FicheEleve({ eleve, couleurParDefaut, ecoles, onEnregistrer, onA
 
   return (
     <form className="fiche-eleve" onSubmit={soumettre}>
+      {proposition ? (
+        <BrouillonRetrouve quoi="Une fiche d’élève" enregistreLe={proposition.enregistreLe}
+          onReprendre={() => { setE(proposition.donnees); setProposition(null); }}
+          onRepartir={() => { onEffacerBrouillon?.(); setProposition(null); }} />
+      ) : null}
       <div className="champs champs-2">
         <Field label="Nom" obligatoire>{(id, champ) => <Input id={id} {...champ} value={e.nom} onChange={(ev) => maj({ nom: ev.target.value })} autoFocus />}</Field>
         <Field label="Prénom" obligatoire>{(id, champ) => <Input id={id} {...champ} value={e.prenom} onChange={(ev) => maj({ prenom: ev.target.value })} />}</Field>
@@ -160,7 +180,7 @@ export function FicheEleve({ eleve, couleurParDefaut, ecoles, onEnregistrer, onA
 
       <div className="fiche-actions">
         <Button type="submit" variante="primaire" raison={valide ? undefined : 'Écrivez d’abord le nom et le prénom.'}>Enregistrer</Button>
-        <Button type="button" onClick={onAnnuler}>Annuler</Button>
+        <Button type="button" onClick={() => { onEffacerBrouillon?.(); onAnnuler(); }}>Annuler</Button>
       </div>
     </form>
   );

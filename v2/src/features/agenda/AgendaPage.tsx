@@ -50,6 +50,7 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
   const trajet = useMagasin(magasin, (e) => e.trajet);
   const semaineType = useMagasin(magasin, (e) => e.semaineType);
   const { annoncer } = useToast();
+  const brouillonActivite = useMagasin(magasin, (s) => s.brouillonActivite);
   const etroit = useMedia(ETROIT);
   const large = useMedia(LARGE);
   const [focus, setFocus] = useState(jourDeDepart);
@@ -250,7 +251,8 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
         ) : brouillon ? (
           <Panneau key={`n-${brouillon.date}-${brouillon.debut}`} occurrence={null} ecoles={ecoles} nouveau={brouillon} eleves={eleves}
             onChanger={(c) => appliquer(c, 'Activité ajoutée')} onFermer={fermer} onEncoder={encoder}
-            onDupliquer={() => undefined} onAnnuler={() => undefined} onRealiser={() => undefined} onSupprimer={() => undefined} />
+            onDupliquer={() => undefined} onAnnuler={() => undefined} onRealiser={() => undefined} onSupprimer={() => undefined}
+            brouillon={brouillonActivite} onSaisie={(c) => magasin.enregistrerBrouillonActivite(c)} onEffacerBrouillon={() => { void magasin.effacerBrouillonActivite(); }} />
         ) : null}
       </div>
 

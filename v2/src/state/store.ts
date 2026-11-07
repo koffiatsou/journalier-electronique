@@ -13,8 +13,11 @@ import { effetSuppression, normaliserEleve } from '../domain/eleves/index.ts';
 import type { EffetSuppression } from '../domain/eleves/index.ts';
 import { REGLAGE_MEMOS, normaliserMemos } from '../domain/accueil/index.ts';
 import type { Memo } from '../domain/accueil/index.ts';
-import { REGLAGE_BROUILLON_SEANCE, creerBrouillonSeance, normaliserBrouillonSeance } from '../domain/brouillons/index.ts';
-import type { BrouillonSeance } from '../domain/brouillons/index.ts';
+import {
+  REGLAGE_BROUILLON_ACTIVITE, REGLAGE_BROUILLON_ELEVE, REGLAGE_BROUILLON_SEANCE, creerBrouillonFormulaire, creerBrouillonSeance, normaliserBrouillonActivite,
+  normaliserBrouillonEleve, normaliserBrouillonSeance
+} from '../domain/brouillons/index.ts';
+import type { BrouillonFormulaire, BrouillonSeance, ChampsActivite } from '../domain/brouillons/index.ts';
 import { normaliserPia } from '../domain/pia/index.ts';
 import type { Pia } from '../domain/pia/index.ts';
 import { estDemo } from '../domain/synchro/cles.ts';
@@ -58,12 +61,15 @@ export interface Etat {
   preparation: Partial<Seance> | null;
   /** Séance commencée et pas encore enregistrée, gardée sur cet appareil (chiffrée comme le reste) pour survivre à un rechargement. */
   brouillonSeance: BrouillonSeance | null;
+  /** Fiche « nouvel élève » et panneau « nouvelle activité » commencés mais pas enregistrés (même principe que la séance). */
+  brouillonEleve: BrouillonFormulaire<Eleve> | null;
+  brouillonActivite: BrouillonFormulaire<ChampsActivite> | null;
   /** Message d'erreur si le brouillon n'a pas pu être écrit (sinon `null`). */
   erreurBrouillon: string | null;
 }
 
 const initial: Etat = {
-  pret: false, erreur: null, eleves: [], seances: [], activites: [], pias: [], horaires: horairesParDefaut(), ecoles: ecolesParDefaut().ecoles, trajet: ecolesParDefaut().trajet, semaineType: null, memos: [], statutPia: { etat: 'repos', le: '', message: '' }, illisibles: 0, preparation: null, brouillonSeance: null, erreurBrouillon: null
+  pret: false, erreur: null, eleves: [], seances: [], activites: [], pias: [], horaires: horairesParDefaut(), ecoles: ecolesParDefaut().ecoles, trajet: ecolesParDefaut().trajet, semaineType: null, memos: [], statutPia: { etat: 'repos', le: '', message: '' }, illisibles: 0, preparation: null, brouillonSeance: null, brouillonEleve: null, brouillonActivite: null, erreurBrouillon: null
 };
 
 /** Ancien nom du réglage « horaires des périodes » (une seule école) : encore relu tant que `agenda-ecoles` n'existe pas. */
@@ -127,6 +133,35 @@ export function creerMagasin(depot: Depot) {
     return fileBrouillon;
   };
 
+  /* Brouillons des formulaires élève et activité : une file d'écritures par identifiant de réglage (valeur, ou `null` pour effacer). */
+  const formulairesAEcrire = new Map<string, unknown>();
+  let minuteurFormulaires: ReturnType<typeof setTimeout> | null = null;
+  let fileFormulaires: Promise<void> = Promise.resolve();
+
+  /** Écrit les brouillons de formulaires en attente. Ne lève jamais d'erreur : un échec est signalé dans `erreurBrouillon` et réessayé. */
+  const ecrireFormulaires = (): Promise<void> => {
+    if (minuteurFormulaires) { clearTimeout(minuteurFormulaires); minuteurFormulaires = null; }
+    fileFormulaires = fileFormulaires.then(async () => {
+      for (const [id, valeur] of [...formulairesAEcrire]) {
+        formulairesAEcrire.delete(id);
+        try {
+          await depot.enregistrerReglage({ id, valeur });
+          if (etat.erreurBrouillon) maj({ erreurBrouillon: null });
+        } catch (e) {
+          if (!formulairesAEcrire.has(id)) formulairesAEcrire.set(id, valeur);
+          maj({ erreurBrouillon: e instanceof Error ? e.message : 'Enregistrement du brouillon impossible' });
+        }
+      }
+    });
+    return fileFormulaires;
+  };
+
+  const garderFormulaire = (id: string, valeur: unknown): void => {
+    formulairesAEcrire.set(id, valeur);
+    if (minuteurFormulaires) clearTimeout(minuteurFormulaires);
+    minuteurFormulaires = setTimeout(() => { minuteurFormulaires = null; void ecrireFormulaires(); }, DELAI_PIA_MS);
+  };
+
   return {
     lire: () => etat,
     abonner(f: () => void) { abonnes.add(f); return () => { abonnes.delete(f); }; },
@@ -141,6 +176,8 @@ export function creerMagasin(depot: Depot) {
           semaineType: normaliserSemaineType(reglages.find((r) => r.id === REGLAGE_SEMAINE_TYPE)?.valeur),
           memos: normaliserMemos(reglages.find((r) => r.id === REGLAGE_MEMOS)?.valeur),
           brouillonSeance: normaliserBrouillonSeance(reglages.find((r) => r.id === REGLAGE_BROUILLON_SEANCE)?.valeur),
+          brouillonEleve: normaliserBrouillonEleve(reglages.find((r) => r.id === REGLAGE_BROUILLON_ELEVE)?.valeur),
+          brouillonActivite: normaliserBrouillonActivite(reglages.find((r) => r.id === REGLAGE_BROUILLON_ACTIVITE)?.valeur),
           illisibles: depot.illisibles().length
         });
       } catch (e) {
@@ -269,7 +306,7 @@ export function creerMagasin(depot: Depot) {
     /** Écrit tout de suite ce qui attend (changement d'écran, fermeture de la page, tests). */
     async viderEnregistrements(): Promise<void> {
       if (minuteur) { clearTimeout(minuteur); minuteur = null; }
-      await Promise.all([ecrirePias(), ecrireBrouillon()]);
+      await Promise.all([ecrirePias(), ecrireBrouillon(), ecrireFormulaires()]);
     },
 
     /** Garde la séance en cours de saisie : visible tout de suite, écrite après une courte pause, relue après un rechargement. */
@@ -287,6 +324,36 @@ export function creerMagasin(depot: Depot) {
       maj({ brouillonSeance: null });
       brouillonAEcrire = null;
       return ecrireBrouillon();
+    },
+
+    /** Garde la fiche « nouvel élève » en cours de saisie (visible tout de suite, écrite après une courte pause). */
+    enregistrerBrouillonEleve(e: Eleve) {
+      const b = creerBrouillonFormulaire(e);
+      maj({ brouillonEleve: b });
+      garderFormulaire(REGLAGE_BROUILLON_ELEVE, b);
+    },
+
+    /** Efface le brouillon d'élève (élève enregistré, fiche annulée ou « Repartir de zéro »). */
+    effacerBrouillonEleve(): Promise<void> {
+      if (!etat.brouillonEleve && !formulairesAEcrire.has(REGLAGE_BROUILLON_ELEVE)) return Promise.resolve();
+      maj({ brouillonEleve: null });
+      formulairesAEcrire.set(REGLAGE_BROUILLON_ELEVE, null);
+      return ecrireFormulaires();
+    },
+
+    /** Garde le panneau « nouvelle activité » en cours de saisie. */
+    enregistrerBrouillonActivite(c: ChampsActivite) {
+      const b = creerBrouillonFormulaire(c);
+      maj({ brouillonActivite: b });
+      garderFormulaire(REGLAGE_BROUILLON_ACTIVITE, b);
+    },
+
+    /** Efface le brouillon d'activité (activité ajoutée, panneau abandonné ou « Repartir de zéro »). */
+    effacerBrouillonActivite(): Promise<void> {
+      if (!etat.brouillonActivite && !formulairesAEcrire.has(REGLAGE_BROUILLON_ACTIVITE)) return Promise.resolve();
+      maj({ brouillonActivite: null });
+      formulairesAEcrire.set(REGLAGE_BROUILLON_ACTIVITE, null);
+      return ecrireFormulaires();
     },
 
     async enregistrerSeance(s: Seance) {

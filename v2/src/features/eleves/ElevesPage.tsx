@@ -66,6 +66,7 @@ export function ElevesPage({ magasin, onAller, nouveau = false }: { magasin: Mag
   const activites = useMagasin(magasin, (s) => s.activites);
   const pias = useMagasin(magasin, (s) => s.pias);
   const ecoles = useMagasin(magasin, (s) => s.ecoles);
+  const brouillonEleve = useMagasin(magasin, (s) => s.brouillonEleve);
   const { annoncer } = useToast();
   const aujourdhui = aujourdhuiISO();
   const anneeCourante = anneeScolaire(aujourdhui);
@@ -147,7 +148,8 @@ export function ElevesPage({ magasin, onAller, nouveau = false }: { magasin: Mag
         {entete}
         <section className="liste-carte fiche-carte">
           <div className="liste-entete"><h2>{eleves.some((x) => x.id === eleve.id) ? 'Modifier le dossier' : 'Nouvel élève'}</h2></div>
-          <FicheEleve eleve={eleve} ecoles={ecoles} couleurParDefaut={couleurs.get(eleve.id) ?? 0} onEnregistrer={(e) => { void enregistrer(e, retour); }} onAnnuler={() => setVue(retour)} />
+          <FicheEleve eleve={eleve} ecoles={ecoles} couleurParDefaut={couleurs.get(eleve.id) ?? 0} onEnregistrer={(e) => { void enregistrer(e, retour); }} onAnnuler={() => setVue(retour)}
+            {...(eleves.some((x) => x.id === eleve.id) ? {} : { brouillon: brouillonEleve, onSaisie: (e: Eleve) => magasin.enregistrerBrouillonEleve(e), onEffacerBrouillon: () => { void magasin.effacerBrouillonEleve(); } })} />
         </section>
       </div>
     );
