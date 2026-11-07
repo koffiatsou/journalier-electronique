@@ -27,7 +27,7 @@
   padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-5); border: 0; background: transparent; color: inherit; font: inherit; text-align: left;
 }
 button.creneau-tete { cursor: pointer; transition: background-color var(--t-ui) ease-out; }
-button.creneau-tete:hover { background: color-mix(in srgb, var(--surface-2) 70%, transparent); }
+@media (hover: hover) { button.creneau-tete:hover { background: color-mix(in srgb, var(--surface-2) 70%, transparent); } }
 button.creneau-tete:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: var(--r-m); }
 .creneau-heure { display: grid; gap: 2px; font-weight: 650; color: var(--ink); }
 .creneau-heure small { color: var(--ink-3); font-weight: 500; font-size: 0.78rem; }
@@ -67,7 +67,7 @@ button.creneau-tete:focus-visible { outline: 2px solid var(--focus); outline-off
 .memo-texte small { color: var(--ink-3); font-size: 0.78rem; }
 .memo-liste li[data-fait='true'] .memo-texte { color: var(--ink-3); text-decoration: line-through; }
 .memo-retirer { flex: none; width: 40px; height: 40px; border: 0; border-radius: 999px; background: transparent; color: var(--ink-3); font-size: 1.3rem; line-height: 1; cursor: pointer; transition: background-color var(--t-ui) ease-out, color var(--t-ui) ease-out; }
-.memo-retirer:hover { background: var(--surface-2); color: var(--danger); }
+@media (hover: hover) { .memo-retirer:hover { background: var(--surface-2); color: var(--danger); } }
 .memo-retirer:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .memo-vide { padding: var(--sp-4) var(--sp-5); }
 .memo-pied { padding: var(--sp-2) var(--sp-3); border-top: 1px solid var(--line); }

@@ -161,6 +161,35 @@ for (const largeur of [390, 768]) {
   await ctx.close();
 }
 
+/* ───────── H : sur un appareil tactile, un survol ne laisse aucune trace (sinon il « colle » après le toucher) ───────── */
+{
+  const { ctx, page } = await ouvrir(nav, 768, 'light');
+  ok(await page.evaluate(() => matchMedia('(hover: none)').matches), 'tactile : le navigateur annonce « hover: none »');
+  const fond = (sel) => page.evaluate((s) => { const e = document.querySelector(s); return e ? getComputedStyle(e).backgroundColor : null; }, sel);
+  const survolee = async (sel, etiquette) => {
+    const cible = page.locator(sel).first();
+    if (await cible.count() === 0) { ok(false, `survol : ${etiquette} introuvable (${sel})`); return; }
+    await page.mouse.move(0, 0);
+    await attendre(page, 450);
+    const avant = await fond(sel);
+    const b = await cible.boundingBox();
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await attendre(page, 450);
+    const apres = await fond(sel);
+    ok(avant === apres, `survol : ${etiquette} ne change pas de fond au toucher (${avant} → ${apres})`);
+  };
+  await survolee('.nav-lien:not([aria-current="page"])', 'lien du menu');
+  await survolee('.theme-bouton', 'bouton du thème');
+  await aller_(page, '#/accueil');
+  await survolee('button.creneau-tete', 'rendez-vous de « Ma journée »');
+  await aller_(page, '#/agenda');
+  await survolee('button.cellule', 'case de la grille');
+  await page.getByRole('group', { name: 'Affichage' }).getByRole('button', { name: 'Mois', exact: true }).click();
+  await attendre(page, 350);
+  await survolee('.mois-case:not(.aujourdhui):not(.hors-mois)', 'case du mois');
+  await ctx.close();
+}
+
 /* ───────── C : contrastes, clair et sombre ───────── */
 for (const theme of ['light', 'dark']) {
   const { ctx, page } = await ouvrir(nav, 768, theme);

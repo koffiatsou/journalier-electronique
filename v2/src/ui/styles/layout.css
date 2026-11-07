@@ -53,7 +53,7 @@
   .marque-texte { display: grid; line-height: 1.2; }
   .marque-texte small { color: var(--ink-3); font-size: 0.72rem; }
   .nav-lien, .nav-bascule { flex-direction: row; justify-content: flex-start; gap: 12px; height: 44px; padding: 0 var(--sp-3); border-radius: var(--r-s); font-size: 0.92rem; color: var(--ink-2); transition: background-color var(--t-ui) ease-out, color var(--t-ui) ease-out; }
-  .nav-lien:hover, .nav-bascule:hover { background: var(--surface-2); color: var(--ink); }
+  @media (hover: hover) { .nav-lien:hover, .nav-bascule:hover { background: var(--surface-2); color: var(--ink); } }
   .nav-lien[aria-current="page"] { background: var(--peda-soft); color: var(--peda-ink); }
   .nav-bascule { display: flex; align-items: center; width: 100%; border: 0; background: transparent; font: inherit; font-size: 0.92rem; font-weight: 600; cursor: pointer; margin-top: auto; }
   .nav-bascule:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
@@ -122,7 +122,7 @@
   transition: background-color var(--t-ui) ease-out, color var(--t-ui) ease-out, transform var(--t-press) var(--ease-out);
 }
 .theme-bouton:active, .verrouiller-bouton:active { transform: scale(0.97); }
-.theme-bouton:hover, .verrouiller-bouton:hover { color: var(--ink); background: var(--surface-2); }
+@media (hover: hover) { .theme-bouton:hover, .verrouiller-bouton:hover { color: var(--ink); background: var(--surface-2); } }
 .theme-bouton:focus-visible, .verrouiller-bouton:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .theme-texte { display: none; }
 @media print { .outils, .barre-haut { display: none; } }
