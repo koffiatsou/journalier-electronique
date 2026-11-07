@@ -5,13 +5,15 @@ import { useMagasin } from '../../state/store.ts';
 import { Button } from '../../ui/Button.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import type { Aller } from '../../app/useRoute.ts';
-import { fixerEnseignant } from '../../domain/eleves/index.ts';
+import { fixerEnseignant, nomAffiche } from '../../domain/eleves/index.ts';
+import { seanceEnDoublon } from '../../domain/journalier/index.ts';
 import { contenuSaisi } from '../../domain/brouillons/index.ts';
 import type { BrouillonSeance } from '../../domain/brouillons/index.ts';
 import { dateFR } from '../../domain/redaction/langue.ts';
 import { Apercu } from './Apercu.tsx';
 import { Etape } from './Etape.tsx';
 import { ConfirmerAbandon } from '../../ui/ConfirmerAbandon.tsx';
+import { Dialog } from '../../ui/Dialog.tsx';
 import { attendreFinRepli } from './defilement.ts';
 import { BarreEtapes } from './BarreEtapes.tsx';
 import { champsEnErreur, etatsEtapes, progression, resumesEtapes, seanceVide, verifier } from './brouillon.ts';
@@ -106,9 +108,15 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
   /** Annuler la modification d'une séance : on ne demande que si quelque chose a été changé. */
   const annuler = () => { if (modifie) setConfirmerAnnulation(true); else onAller('journalier', { eleve: s.eleveId }); };
 
-  const enregistrer = async () => {
+  const [doublon, setDoublon] = useState<Seance | null>(null);
+
+  /** `confirme` : l'agent a vu l'avertissement de doublon et veut quand même enregistrer. */
+  const enregistrer = async (confirme = false) => {
     const v = verifier(s);
     if (!v.ok) { refuser(); return; }
+    const enConflit = seanceEnDoublon(seances, s);
+    if (enConflit && !confirme) { setDoublon(enConflit); return; }
+    setDoublon(null);
     await magasin.enregistrerSeance(fixerEnseignant(s, eleve));
     await magasin.effacerBrouillonSeance();
     if (edition) {
@@ -183,6 +191,17 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
         {edition ? <Button onClick={annuler}>Annuler</Button> : null}
         <Button variante="primaire" onClick={() => { void enregistrer(); }}>{edition ? 'Enregistrer les modifications' : 'Enregistrer la séance'}</Button>
       </div>
+      <Dialog ouvert={doublon !== null} titre="Il y a déjà une séance sur ce créneau" onFermer={() => setDoublon(null)}>
+        {doublon ? (
+          <>
+            <p>Séance du {dateFR(doublon.date)}, {doublon.periodeDebut}{doublon.matiere ? ` — ${doublon.matiere}` : ''}, pour {eleve ? nomAffiche(eleve) : 'cet élève'}. Si ce n’est pas voulu, revenez à la séance et changez la date ou la période.</p>
+            <div className="fiche-actions">
+              <Button data-focus-initial variante="primaire" onClick={() => setDoublon(null)}>Revenir à la séance</Button>
+              <Button onClick={() => { void enregistrer(true); }}>Enregistrer quand même</Button>
+            </div>
+          </>
+        ) : null}
+      </Dialog>
       <ConfirmerAbandon ouvert={confirmerAnnulation} perte="Les changements faits à cette séance ne sont pas enregistrés." onContinuer={() => setConfirmerAnnulation(false)} onAbandonner={() => onAller('journalier', { eleve: s.eleveId })} />
     </div>
   );
