@@ -166,7 +166,7 @@
 .journalier-apercu > div { padding: var(--sp-3) var(--sp-4); border-radius: var(--r-m); border-left: 3px solid; display: grid; gap: 4px; }
 .journalier-apercu .zone-peda { border-color: var(--peda); background: var(--peda-soft); }
 .journalier-apercu .zone-ortho { border-color: var(--ortho); background: var(--ortho-soft); }
-.journalier-apercu h4 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-2); margin: 0; }
+.journalier-apercu h4 { font-size: 0.78rem; color: var(--ink-2); margin: 0; }
 .journalier-apercu .apercu-ligne { padding-left: 1.2em; text-indent: -0.9em; }
 .evo-titre { font-weight: 650; }
 .evo-progres { color: var(--ok); }

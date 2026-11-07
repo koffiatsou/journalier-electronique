@@ -12,7 +12,7 @@
 .reunion-dates { color: var(--ink-2); font-size: 0.9rem; }
 .reunion-rubriques { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); align-items: start; }
 .reunion-rubrique { display: grid; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); border-left: 3px solid var(--ortho); border-radius: var(--r-m); background: var(--ortho-soft); }
-.reunion-rubrique h3 { margin: 0; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-2); }
+.reunion-rubrique h3 { margin: 0; font-size: 0.78rem; color: var(--ink-2); }
 .reunion-rubrique ul { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-2); }
 .reunion-rubrique li { position: relative; padding-left: 1.1em; }
 .reunion-rubrique li::before { content: "•"; position: absolute; left: 0.2em; color: var(--ortho-ink); }
