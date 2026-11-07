@@ -1,0 +1,25 @@
+/* ---------- au doigt : zones à toucher de 44 px au moins (audit lot 3) ----------
+   Chargé en dernier. Sur ordinateur le pointeur reste fin et rien ne change.
+   `screen` : sur une tablette l'impression peut aussi voir un pointeur « grossier » ; la mise en page papier ne bouge pas.
+   Les sélecteurs sont aussi précis que ceux qu'ils relèvent (`.journalier-actions .btn`…) : ce fichier gagne par son rang, pas par `!important`. */
+@media screen and (pointer: coarse) {
+  :root { --cible-tactile: 44px; }
+  :is(.btn, .chip, .pastille, .input, .select, .barre-etape, .point-retirer, .apercu-fermer, .presence-choix, .case-anonyme,
+    .legende button, .reunion-apercu summary, .jours-onglets button, .bascule button, .journalier-actions .btn,
+    .btn-feuille, .memo-liste label, .mois-jour, .mois-evt, .pastilles-couleur button) {
+    min-height: var(--cible-tactile);
+  }
+  :is(.btn, .chip, .bascule button, .pastilles-couleur button, .mois-jour, .mois-ajout) { min-width: var(--cible-tactile); }
+  .pastilles-couleur button { width: var(--cible-tactile); height: var(--cible-tactile); }
+  .pastilles-couleur { gap: 0; }
+
+  /* Mois : le « + » est toujours visible (il n'y a pas de survol au doigt) et assez grand ; sa bordure se voit. */
+  .mois-ajout { width: var(--cible-tactile); height: var(--cible-tactile); opacity: 1; border-color: var(--ink-3); }
+
+  /* Poignée d'étirement d'une activité : le dessin ne change pas, seule la zone sensible grandit vers le haut. */
+  .evt-poignee { height: 20px; }
+  .evt-poignee::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 32px; }
+
+  /* Lien de reprise des données : une vraie ligne à toucher. */
+  .synchro a { display: inline-flex; align-items: center; min-height: var(--cible-tactile); }
+}
