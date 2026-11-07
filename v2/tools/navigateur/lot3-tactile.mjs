@@ -161,6 +161,20 @@ for (const largeur of [390, 768]) {
   await ctx.close();
 }
 
+/* ───────── L : à 375 px, les sept libellés de la barre du bas tiennent dans leur case, sans être coupés ───────── */
+{
+  const { ctx, page } = await ouvrir(nav, 375, 'light');
+  const mesures = await page.evaluate(() => [...document.querySelectorAll('.nav-lien')].map((a) => {
+    const s = a.querySelector('span');
+    const r = document.createRange();
+    r.selectNodeContents(s);
+    return { texte: s.textContent, texteLarg: r.getBoundingClientRect().width, caseLarg: a.getBoundingClientRect().width };
+  }));
+  ok(mesures.length === 7, `barre du bas : sept onglets (${mesures.length})`);
+  for (const m of mesures) ok(m.texteLarg <= m.caseLarg + 0.5, `barre du bas, 375 px : « ${m.texte} » tient dans sa case (${m.texteLarg.toFixed(1)} sur ${m.caseLarg.toFixed(1)} px)`);
+  await ctx.close();
+}
+
 /* ───────── H : sur un appareil tactile, un survol ne laisse aucune trace (sinon il « colle » après le toucher) ───────── */
 {
   const { ctx, page } = await ouvrir(nav, 768, 'light');

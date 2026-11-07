@@ -20,7 +20,7 @@
 }
 .barre-haut-logo { height: 36px; width: auto; flex: none; box-sizing: content-box; padding: 3px 6px; border-radius: 8px; background: #fff; border: 1px solid var(--line); }
 .barre-haut-texte { display: grid; line-height: 1.15; min-width: 0; }
-.barre-haut-texte small { color: var(--ink-3); font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.barre-haut-texte small { color: var(--ink-3); font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .nav {
   position: fixed; z-index: 50; left: 0; right: 0; bottom: 0; height: calc(var(--tabbar) + env(safe-area-inset-bottom));
@@ -32,7 +32,7 @@
 .nav .marque { display: none; }
 .nav-lien {
   height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  font-size: 0.66rem; font-weight: 600; color: var(--ink-3); text-decoration: none; min-width: 0;
+  font-size: 0.75rem; font-weight: 600; color: var(--ink-3); text-decoration: none; min-width: 0;
   transition: color var(--t-ui) ease-out;
 }
 .nav-lien:active { transform: scale(0.96); }
@@ -51,7 +51,7 @@
   .nav .marque { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 0 var(--sp-2); }
   .marque-logo { width: 150px; height: auto; flex: none; box-sizing: content-box; padding: 6px 8px; border-radius: 10px; background: #fff; border: 1px solid var(--line); }
   .marque-texte { display: grid; line-height: 1.2; }
-  .marque-texte small { color: var(--ink-3); font-size: 0.72rem; }
+  .marque-texte small { color: var(--ink-3); font-size: 0.75rem; }
   .nav-lien, .nav-bascule { flex-direction: row; justify-content: flex-start; gap: 12px; height: 44px; padding: 0 var(--sp-3); border-radius: var(--r-s); font-size: 0.92rem; color: var(--ink-2); transition: background-color var(--t-ui) ease-out, color var(--t-ui) ease-out; }
   @media (hover: hover) { .nav-lien:hover, .nav-bascule:hover { background: var(--surface-2); color: var(--ink); } }
   .nav-lien[aria-current="page"] { background: var(--peda-soft); color: var(--peda-ink); }
@@ -72,7 +72,7 @@
   :root:not([data-menu]) .marque-logo { width: 52px; padding: 4px 5px; border-radius: 8px; }
   :root:not([data-menu]) .marque-texte { display: none; }
   :root:not([data-menu]) .nav ul { width: 100%; }
-  :root:not([data-menu]) .nav-lien { flex-direction: column; justify-content: center; gap: 3px; height: 62px; padding: 0 2px; border-radius: var(--r-m); font-size: 0.68rem; }
+  :root:not([data-menu]) .nav-lien { flex-direction: column; justify-content: center; gap: 3px; height: 62px; padding: 0 2px; border-radius: var(--r-m); font-size: 0.75rem; }
   :root:not([data-menu]) .nav-bascule { justify-content: center; padding: 0; }
   :root:not([data-menu]) .nav-bascule span { display: none; }
   :root:not([data-menu]) .contenu { padding: var(--sp-5) var(--sp-5) var(--sp-7); }

@@ -55,12 +55,12 @@
 @media (hover: hover) { .cellule:hover { background: color-mix(in srgb, var(--peda) 6%, transparent); } }
 .cellule:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 .pause { position: absolute; left: 0; right: 0; background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--line-strong) 40%, transparent) 6px 7px); border-top: 1px solid var(--line); pointer-events: none; }
-.pause-axe { position: absolute; left: 0; right: 0; font-size: .6875rem; color: var(--ink-3); text-align: right; padding-right: 6px; display: flex; align-items: center; justify-content: flex-end; }
+.pause-axe { position: absolute; left: 0; right: 0; font-size: .75rem; color: var(--ink-3); text-align: right; padding-right: 6px; display: flex; align-items: center; justify-content: flex-end; }
 
 .evt { position: absolute; z-index: 2; box-sizing: border-box; text-align: left; border: 0; border-left: 4px solid var(--c-bord); border-radius: 8px; background: var(--c-fond); color: var(--c-texte); padding: 4px 8px 6px; font: inherit; font-size: .8125rem; line-height: 1.25; overflow: hidden; cursor: grab; box-shadow: 0 1px 2px rgb(22 35 63 / 10%); user-select: none; -webkit-user-select: none; touch-action: pan-y; }
 .evt:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 .evt strong { display: block; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.evt small { display: block; opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.evt small { display: block; font-size: .75rem; opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .evt[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--c-bord), var(--shadow-2); z-index: 4; }
 .evt.t-libre { background: var(--surface); border: 1px dashed var(--c-bord); border-left: 4px solid var(--c-bord); }
 .evt.annule { opacity: .55; background: repeating-linear-gradient(135deg, var(--c-fond) 0 6px, transparent 6px 12px); }
@@ -100,7 +100,7 @@
 .lecteur-seul { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ───────── Jours fériés et vacances (semaine, jour, mois) ───────── */
-.marque-jour { display: block; font-size: .6875rem; line-height: 1.25; font-weight: 500; color: var(--ink-3); margin-top: 2px; pointer-events: none; }
+.marque-jour { display: block; font-size: .75rem; line-height: 1.25; font-weight: 500; color: var(--ink-3); margin-top: 2px; pointer-events: none; }
 .grille-entete .marque-jour { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .grille-entete .jour-ferie, .mois-case.jour-ferie { background: color-mix(in srgb, var(--line-strong) 26%, var(--surface-2)); }
 .grille-entete .jour-vacances, .mois-case.jour-vacances { background: repeating-linear-gradient(135deg, transparent 0 8px, color-mix(in srgb, var(--line-strong) 40%, transparent) 8px 9px), var(--surface-2); }
@@ -141,7 +141,7 @@
 .mois-plus { position: relative; z-index: 1; align-self: flex-start; border: 0; background: transparent; color: var(--ink-2); font-size: .75rem; padding: 2px 4px; text-decoration: underline; }
 .mois-pastille { display: block; width: 10px; height: 10px; border-radius: 50%; background: var(--c-bord); }
 .mois-pastille.annule { opacity: .4; }
-.mois-reste { font-size: .6875rem; line-height: 10px; color: var(--ink-2); font-weight: 600; }
+.mois-reste { font-size: .75rem; line-height: 10px; color: var(--ink-2); font-weight: 600; }
 @media (max-width: 759px) {
   .mois-case { min-height: 76px; padding: 2px 3px 4px; }
   .mois-entete > div { padding: 6px 2px; font-size: .75rem; }
