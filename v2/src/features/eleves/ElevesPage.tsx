@@ -60,7 +60,7 @@ function Carte({ eleve, couleur, bilan, aJour, onOuvrir }: { eleve: Eleve; coule
   );
 }
 
-export function ElevesPage({ magasin, onAller }: { magasin: Magasin; onAller: Aller }) {
+export function ElevesPage({ magasin, onAller, nouveau = false }: { magasin: Magasin; onAller: Aller; nouveau?: boolean }) {
   const eleves = useMagasin(magasin, (s) => s.eleves);
   const seances = useMagasin(magasin, (s) => s.seances);
   const activites = useMagasin(magasin, (s) => s.activites);
@@ -70,7 +70,7 @@ export function ElevesPage({ magasin, onAller }: { magasin: Magasin; onAller: Al
   const aujourdhui = aujourdhuiISO();
   const anneeCourante = anneeScolaire(aujourdhui);
 
-  const [vue, setVue] = useState<Vue>({ genre: 'liste' });
+  const [vue, setVue] = useState<Vue>(() => (nouveau ? { genre: 'fiche', eleve: vide(eleves), retour: { genre: 'liste' } } : { genre: 'liste' }));
   const [requete, setRequete] = useState('');
   const [archivesOuvertes, setArchivesOuvertes] = useState(false);
   const [aSupprimer, setASupprimer] = useState<Eleve | null>(null);
