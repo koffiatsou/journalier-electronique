@@ -16,9 +16,9 @@
   /* Mois : le « + » est toujours visible (il n'y a pas de survol au doigt) et assez grand ; sa bordure se voit. */
   .mois-ajout { width: var(--cible-tactile); height: var(--cible-tactile); opacity: 1; border-color: var(--ink-3); }
 
-  /* Poignée d'étirement d'une activité : le dessin ne change pas, seule la zone sensible grandit vers le haut. */
-  .evt-poignee { height: 20px; }
-  .evt-poignee::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 32px; }
+  /* Poignée d'étirement d'une activité : le dessin ne change pas, seule la zone sensible grandit vers le haut, sans dépasser 24 px : une activité d une période (56 px) garde son centre libre pour le déplacer. */
+  .evt-poignee { height: 12px; }
+  .evt-poignee::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 24px; }
 
   /* Lien de reprise des données : une vraie ligne à toucher. */
   .synchro a { display: inline-flex; align-items: center; min-height: var(--cible-tactile); }

@@ -11,6 +11,7 @@
   --surface-2: #f8f5ef;
   --line: #e3ddd2;
   --line-strong: #cfc7b8;
+  --contour-champ: #948c7b; /* bordure d'un champ de saisie : 3:1 au moins sur --surface (WCAG 1.4.11) */
   --ink: #1c2740;
   --ink-2: #4b5670;
   --ink-3: #5d6880;
@@ -68,6 +69,7 @@
     --surface-2: #212636;
     --line: #2d3347;
     --line-strong: #3d445e;
+    --contour-champ: #6a7088;
     --ink: #ece9e2;
     --ink-2: #b9bdcb;
     --ink-3: #98a0b6;
@@ -96,6 +98,7 @@
     --surface-2: #212636;
     --line: #2d3347;
     --line-strong: #3d445e;
+    --contour-champ: #6a7088;
     --ink: #ece9e2;
     --ink-2: #b9bdcb;
     --ink-3: #98a0b6;

@@ -63,7 +63,7 @@
 .evt small { display: block; font-size: .75rem; opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .evt[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--c-bord), var(--shadow-2); z-index: 4; }
 .evt.t-libre { background: var(--surface); border: 1px dashed var(--c-bord); border-left: 4px solid var(--c-bord); }
-.evt.annule { opacity: .55; background: repeating-linear-gradient(135deg, var(--c-fond) 0 6px, transparent 6px 12px); }
+.evt.annule { background: repeating-linear-gradient(135deg, var(--c-fond) 0 6px, transparent 6px 12px); }
 .evt.annule strong { text-decoration: line-through; }
 .evt.realise::after { content: '✓'; position: absolute; top: 3px; right: 6px; font-weight: 700; }
 .evt.glisse { opacity: .35; pointer-events: none; }
@@ -137,7 +137,7 @@
 .mois-evt { pointer-events: auto; position: relative; z-index: 1; display: block; width: 100%; text-align: left; border: 0; border-left: 3px solid var(--c-bord); border-radius: 5px; background: var(--c-fond); color: var(--c-texte); padding: 4px 6px; min-height: 24px; font-size: .75rem; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 .mois-evt:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 .mois-evt[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--c-bord); }
-.mois-evt.annule { opacity: .55; text-decoration: line-through; }
+.mois-evt.annule { text-decoration: line-through; }
 .mois-plus { position: relative; z-index: 1; align-self: flex-start; border: 0; background: transparent; color: var(--ink-2); font-size: .75rem; padding: 2px 4px; text-decoration: underline; }
 .mois-pastille { display: block; width: 10px; height: 10px; border-radius: 50%; background: var(--c-bord); }
 .mois-pastille.annule { opacity: .4; }

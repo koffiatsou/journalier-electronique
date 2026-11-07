@@ -222,15 +222,14 @@ for (const theme of ['light', 'dark']) {
   await aller_(page, '#/agenda');
   await page.getByRole('group', { name: 'Affichage' }).getByRole('button', { name: 'Semaine', exact: true }).click().catch(() => undefined);
   await attendre(page, 350);
-  await page.evaluate(() => { document.querySelector('.evt:not(.annule)')?.classList.add('annule'); });
-  const annules = page.locator('.evt.annule');
-  const nbAnnules = await annules.count();
-  ok(nbAnnules > 0, `${theme} : une activité annulée à mesurer (${nbAnnules})`);
-  if (nbAnnules > 0) {
-    const rapports = await annules.evaluateAll((els) => els.map((e) => window.__contraste.texte(e)));
-    const pire = Math.min(...rapports);
-    ok(pire >= CONTRASTE_TEXTE, `${theme} : texte d'une activité annulée ≥ ${CONTRASTE_TEXTE}:1 (pire : ${pire.toFixed(2)}:1)`);
-  }
+  const textes = (sel) => page.locator(sel).evaluateAll((els) => els.map((e) => window.__contraste.texte(e)));
+  const nbNormaux = await page.locator('.evt:not(.annule)').count();
+  ok(nbNormaux > 0, `${theme} : des activités à mesurer (${nbNormaux})`);
+  const normaux = await textes('.evt:not(.annule) strong, .evt:not(.annule) small');
+  ok(Math.min(...normaux) >= CONTRASTE_TEXTE, `${theme} : texte des activités (titre et 2e ligne) ≥ ${CONTRASTE_TEXTE}:1 (pire : ${Math.min(...normaux).toFixed(2)}:1, ${normaux.length} textes)`);
+  await page.evaluate(() => { for (const e of document.querySelectorAll('.evt')) e.classList.add('annule'); });
+  const annules = await textes('.evt.annule strong, .evt.annule small');
+  ok(Math.min(...annules) >= CONTRASTE_TEXTE, `${theme} : texte d'une activité annulée ≥ ${CONTRASTE_TEXTE}:1 (pire : ${Math.min(...annules).toFixed(2)}:1, ${annules.length} textes)`);
   await ctx.close();
 }
 
