@@ -35,8 +35,8 @@ async function exporter(nomBouton = 'Exporter en Word') {
 // Exemple fictif
 await aller(page, `${URL_APP}#/pia`);
 await page.getByRole('heading', { name: 'PIA', level: 1 }).waitFor();
-await page.getByRole('button', { name: 'Charger un exemple fictif' }).click();
-await page.getByText(/Exemple fictif chargé/).waitFor();
+await page.getByRole('button', { name: 'Charger un exemple d’essai' }).click();
+await page.getByText(/Exemple d’essai chargé/).waitFor();
 await page.getByRole('tab', { name: 'Préparer', selected: true }).waitFor();
 ok(await page.getByLabel('Élève', { exact: true }).inputValue() === 'demo-alpha', 'exemple chargé : on arrive sur le PIA d’Alpha');
 ok(await page.locator('.reunion-retenus li').count() === 2, 'le PIA fictif contient deux objectifs retenus');
@@ -109,7 +109,7 @@ await page.getByRole('button', { name: 'Imprimer / PDF' }).click();
 await page.waitForFunction(() => window.__impressions.length === 1);
 const imprime = await page.evaluate(() => window.__impressions[0]);
 ok(imprime && imprime.includes('Procès-verbal 2') && imprime.includes('Progrès nets depuis octobre.'), 'impression dé-identifiée : contient le PV 2 et l’évaluation');
-ok(!imprime.includes('Alpha') && !imprime.includes('CPMS fictif') && imprime.includes('Élève'), 'impression dé-identifiée : sans nom ni coordonnées');
+ok(!imprime.includes('Alpha') && !imprime.includes('CPMS d’essai') && imprime.includes('Élève'), 'impression dé-identifiée : sans nom ni coordonnées');
 ok(await page.locator('.pia-impression').count() === 0, 'la version imprimable disparaît après l’impression');
 await page.getByLabel(/Version dé-identifiée/).uncheck();
 await page.getByLabel('Profil', { exact: true }).uncheck();

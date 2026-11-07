@@ -19,8 +19,8 @@ function ouvrirSansCreer(): Promise<IDBDatabase | null> {
       // Une base sans les tables de la V75 n'est pas la sienne.
       resolve(['meta', 'students', 'sessions', 'agenda', 'pia', 'keys'].every((n) => base.objectStoreNames.contains(n)) ? base : (base.close(), null));
     };
-    demande.onerror = () => { if (creee) resolve(null); else reject(demande.error ?? new Error('Impossible d’ouvrir le stockage de la V75.')); };
-    demande.onblocked = () => reject(new Error('Le stockage de la V75 est bloqué par un autre onglet : fermez-le puis réessayez.'));
+    demande.onerror = () => { if (creee) resolve(null); else reject(demande.error ?? new Error('Impossible d’ouvrir le stockage de l’ancienne version.')); };
+    demande.onblocked = () => reject(new Error('Le stockage de l’ancienne version est bloqué par un autre onglet : fermez-le puis réessayez.'));
   });
 }
 

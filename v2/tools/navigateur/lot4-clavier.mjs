@@ -22,8 +22,8 @@ async function ouvrir(largeur, hauteur = 900, options = {}) {
   page.on('console', (m) => { if (m.type() === 'error') erreurs.push(m.text()); });
   page.on('pageerror', (e) => erreurs.push(String(e)));
   await aller(page, URL_APP);
-  await page.getByRole('button', { name: 'Charger les données de démonstration' }).click();
-  await page.getByText('Données de démonstration chargées').waitFor();
+  await page.getByRole('button', { name: 'Charger les données d’essai' }).click();
+  await page.getByText('Données d’essai chargées').waitFor();
   return { ctx, page };
 }
 const aller_ = async (page, hash) => { await page.evaluate((h) => { location.hash = h; }, hash); await attendre(page, 500); };

@@ -104,7 +104,7 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
 
   const chargerExemple = async () => {
     await magasin.chargerExemple(exempleDemo(aujourdhui));
-    annoncer('Exemple fictif chargé : élèves Alpha et Bêta, leurs séances et un PIA');
+    annoncer('Exemple d’essai chargé : élèves Alpha et Bêta, leurs séances et un PIA');
     onAller('pia', { eleve: 'demo-alpha', annee: anneeScolaire(aujourdhui), onglet: 'preparer' });
   };
 
@@ -169,8 +169,8 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
         <section className="liste-carte pia-demo">
           <p className="vide-texte reunion-vide">Choisissez un élève pour ouvrir ou commencer son PIA.</p>
           <div className="pia-demo-corps">
-            <p className="field-hint">Pour essayer sans données réelles : deux élèves fictifs (Alpha et Bêta), leurs séances et un PIA d’Alpha à moitié rempli. Vous pourrez les supprimer ensuite depuis l’écran Élèves.</p>
-            <div><Button onClick={() => { void chargerExemple(); }}>Charger un exemple fictif</Button></div>
+            <p className="field-hint">Pour essayer sans données réelles : deux élèves d’essai (Alpha et Bêta), leurs séances et un PIA d’Alpha à moitié rempli. Vous pourrez les supprimer ensuite depuis l’écran Élèves.</p>
+            <div><Button onClick={() => { void chargerExemple(); }}>Charger un exemple d’essai</Button></div>
           </div>
         </section>
       ) : (

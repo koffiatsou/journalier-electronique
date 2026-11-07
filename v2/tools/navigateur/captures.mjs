@@ -26,14 +26,14 @@ for (const [nom, taille] of APPAREILS) {
     page.on('console', (m) => { if (m.type() === 'error') erreurs.push(`${nom}/${theme}: ${m.text()}`); });
     page.on('pageerror', (e) => erreurs.push(`${nom}/${theme}: ${e}`));
     await page.goto(URL_APP);
-    const essai = page.getByRole('button', { name: 'Essayer avec des données fictives' });
+    const essai = page.getByRole('button', { name: 'Essayer avec des données d’essai' });
     await essai.waitFor({ timeout: 15_000 });
     await page.waitForTimeout(300);
     await page.screenshot({ path: `${SORTIE}/${prefixe}-${nom}-${theme}-connexion.png` });
     await essai.click();
     await page.getByRole('link', { name: 'Accueil' }).first().waitFor({ timeout: 15_000 });
     await page.locator('.chargement').waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => undefined);
-    await page.getByRole('button', { name: 'Charger les données de démonstration' }).click();
+    await page.getByRole('button', { name: 'Charger les données d’essai' }).click();
     await page.waitForTimeout(3800); // laisse partir le message de confirmation
     for (const ecran of ECRANS) {
       await page.evaluate((x) => { location.hash = `#/${x}`; }, ecran);

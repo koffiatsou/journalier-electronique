@@ -27,7 +27,7 @@ export const TITRES_PAGES: Record<Page, string> = {
   eleves: 'Élèves',
   pia: 'PIA',
   synchro: 'Synchronisation',
-  reprise: 'Reprise des données de la V75'
+  reprise: 'Reprise des données de l’ancienne version'
 };
 
 /**
@@ -108,7 +108,7 @@ export function Shell({ page, onAller, essai, onVerrouiller, children }: { page:
         </button>
       </div>
       <main className="contenu" id="contenu" tabIndex={-1}>
-        {essai ? <p className="bandeau-essai" role="note"><strong>Mode essai</strong> — données fictives seulement. N’écrivez jamais de vrais noms d’élèves ici.</p> : null}
+        {essai ? <p className="bandeau-essai" role="note"><strong>Mode essai</strong> — données d’essai seulement. N’écrivez jamais de vrais noms d’élèves ici.</p> : null}
         {children}
       </main>
     </div>

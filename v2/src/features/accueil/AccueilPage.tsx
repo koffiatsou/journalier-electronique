@@ -59,12 +59,12 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
 
   const aujourdhui = aujourdhuiISO();
   const nbDemo = eleves.filter((e) => estDemo(e.id)).length + activites.filter((a) => estDemo(a.id)).length;
-  const chargerDemo = async () => { await magasin.chargerExemple(exempleDemo(aujourdhui)); annoncer('Données de démonstration chargées'); };
+  const chargerDemo = async () => { await magasin.chargerExemple(exempleDemo(aujourdhui)); annoncer('Données d’essai chargées'); };
   const effacerDemo = async () => {
     if (!confirmer) { setConfirmer(true); return; }
     const b = await magasin.effacerDemo();
     setConfirmer(false);
-    annoncer(`Démonstration effacée : ${b.eleves} élèves, ${b.seances} séances, ${b.activites} rendez-vous`);
+    annoncer(`Données d’essai effacées : ${b.eleves} élèves, ${b.seances} séances, ${b.activites} rendez-vous`);
   };
 
   /* Le jour affiché : aujourd'hui, ou à défaut le prochain jour où quelque chose est prévu (dans les deux semaines). */
@@ -133,9 +133,9 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
       {!eleves.length ? (
         <section className="vide">
           <h2>Aucun élève pour l’instant</h2>
-          <p>Chargez les données de démonstration (deux élèves fictifs, des séances, un agenda et un PIA) pour tout essayer sans compte et sans données réelles. Rien ne quitte votre appareil.</p>
-          <Button variante="primaire" onClick={() => { void chargerDemo(); }}>Charger les données de démonstration</Button>
-          <p className="synchro-discret">Vous utilisiez la V75 ? <a href="#/reprise">Reprendre mes données de la V75</a>.</p>
+          <p>Chargez les données d’essai (deux élèves d’essai, des séances, un agenda et un PIA) pour tout essayer sans compte et sans données réelles. Rien ne quitte votre appareil.</p>
+          <Button variante="primaire" onClick={() => { void chargerDemo(); }}>Charger les données d’essai</Button>
+          <p className="synchro-discret">Vous utilisiez l’ancienne version ? <a href="#/reprise">Reprendre mes données de l’ancienne version</a>.</p>
         </section>
       ) : (
         <>
@@ -288,7 +288,7 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
             ) : (
               <>
                 <p>
-                  {sync.mode === 'demonstration' ? 'Synchronisation de démonstration. ' : ''}
+                  {sync.mode === 'demonstration' ? 'Synchronisation d’essai. ' : ''}
                   {sync.derniere ? <>Dernière synchronisation : {quand(sync.derniere.le)}.</> : 'Pas encore synchronisé depuis cet appareil.'}
                   {sync.derniere?.erreurs.length ? <> <Badge ton="danger">{sync.derniere.erreurs.length} en erreur</Badge></> : null}
                 </p>
@@ -300,16 +300,16 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
       )}
 
       {nbDemo ? (
-        <section className="bandeau-demo" aria-label="Données de démonstration">
-          <p><strong>Des données de démonstration sont présentes.</strong> Elles sont fictives, n’iront jamais vers votre vrai compte Microsoft, et vous pouvez les effacer sans toucher à vos vraies données.</p>
+        <section className="bandeau-demo" aria-label="Données d’essai">
+          <p><strong>Des données d’essai sont présentes.</strong> Elles ne sont pas réelles, n’iront jamais vers votre vrai compte Microsoft, et vous pouvez les effacer sans toucher à vos vraies données.</p>
           <div className="bandeau-demo-actions">
             <Button onClick={() => onAller('synchro')}>Essayer la synchronisation</Button>
-            <Button variante={confirmer ? 'primaire' : 'discret'} onClick={() => { void effacerDemo(); }}>{confirmer ? 'Oui, effacer la démonstration' : 'Effacer la démonstration'}</Button>
+            <Button variante={confirmer ? 'primaire' : 'discret'} onClick={() => { void effacerDemo(); }}>{confirmer ? 'Oui, effacer les données d’essai' : 'Effacer les données d’essai'}</Button>
             {confirmer ? <Button variante="discret" onClick={() => setConfirmer(false)}>Garder</Button> : null}
           </div>
         </section>
       ) : (
-        eleves.length ? <p className="page-sous-titre"><Button variante="discret" onClick={() => { void chargerDemo(); }}>Ajouter des données de démonstration</Button></p> : null
+        eleves.length ? <p className="page-sous-titre"><Button variante="discret" onClick={() => { void chargerDemo(); }}>Ajouter des données d’essai</Button></p> : null
       )}
     </div>
   );

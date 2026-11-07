@@ -18,7 +18,7 @@ for (const schema of ['light', 'dark']) {
   page.on('console', (m) => { if (m.type() === 'error') erreurs.push(m.text()); });
   page.on('pageerror', (e) => erreurs.push(String(e)));
   await aller(page, URL_APP);
-  await page.getByRole('button', { name: 'Charger les données de démonstration' }).click().catch(() => undefined);
+  await page.getByRole('button', { name: 'Charger les données d’essai' }).click().catch(() => undefined);
   await page.evaluate(() => { location.hash = '#/seance'; });
   await page.locator('.barre-etapes').waitFor();
 

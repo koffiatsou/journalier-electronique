@@ -30,8 +30,8 @@ page.on('console', (m) => { if (m.type() === 'error') erreurs.push(m.text()); })
 page.on('pageerror', (e) => erreurs.push(String(e)));
 
 await aller(page, `${URL_APP}#/reprise`);
-await page.getByRole('heading', { name: 'Reprendre mes données de la V75' }).waitFor();
-ok(await page.getByText('réservé aux données fictives').isVisible(), 'mode essai : la reprise est refusée avec une explication');
+await page.getByRole('heading', { name: 'Reprendre mes données de l’ancienne version' }).waitFor();
+ok(await page.getByText('réservé aux données d’essai').isVisible(), 'mode essai : la reprise est refusée avec une explication');
 ok(!(await page.getByRole('button', { name: /Chercher/ }).count()), 'mode essai : aucun bouton de recherche');
 const bases = await page.evaluate(async () => (await indexedDB.databases()).map((b) => b.name));
 ok(!bases.includes('journalier-secure-v74'), 'aucune base V75 n’a été créée par la V2');

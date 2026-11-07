@@ -41,7 +41,7 @@ await ouvrirApp(page, URL_APP);
 await page.evaluate(() => { localStorage.clear(); });
 await recharger(page);
 await page.getByRole('heading', { name: 'Bonjour', level: 1 }).waitFor();
-await bouton('Charger les données de démonstration').click();
+await bouton('Charger les données d’essai').click();
 await page.locator('.bandeau-demo').waitFor();
 await page.waitForTimeout(800); // l'écriture de tout le jeu de démonstration se termine juste après l'apparition du bandeau
 ok((await lireBase('eleves')).length === 2, 'la démonstration crée deux élèves fictifs');
@@ -51,11 +51,11 @@ ok((await lireBase('seances')).length === 10, 'et dix séances fictives (l’acc
 /* ───────── 2. Synchronisation en démonstration ───────── */
 await aller('Synchro');
 await page.getByRole('heading', { name: 'Synchronisation', level: 1 }).waitFor();
-await bouton(/Essayer en démonstration/).click();
-await page.getByText('Mode démonstration', { exact: false }).first().waitFor();
+await bouton(/Essayer en mode essai/).click();
+await page.getByText('Mode essai', { exact: false }).first().waitFor();
 await bouton('Synchroniser maintenant').click();
 await attendreMessage(/envoyés vers OneDrive/);
-ok(/\d+ fichiers/.test(await page.locator('#synchro-essai ~ *, .synchro-bloc').filter({ hasText: 'Dans le faux OneDrive' }).first().innerText()), 'le faux OneDrive contient des fichiers');
+ok(/\d+ fichiers/.test(await page.locator('#synchro-essai ~ *, .synchro-bloc').filter({ hasText: 'Dans le OneDrive d’essai' }).first().innerText()), 'le faux OneDrive contient des fichiers');
 await bouton('Synchroniser maintenant').click();
 await attendreMessage(/Tout est à jour/);
 ok(true, 'une deuxième synchronisation n’envoie plus rien');
@@ -91,7 +91,7 @@ while (await page.locator('.conflit').count()) {
 /* ───────── 5. Outlook ───────── */
 await page.getByRole('checkbox', { name: /Envoyer mon agenda vers Outlook/ }).click();
 await attendreMessage(/Outlook mis à jour/);
-const texteEssai = await page.locator('.synchro-bloc').filter({ hasText: 'Dans le faux OneDrive' }).innerText();
+const texteEssai = await page.locator('.synchro-bloc').filter({ hasText: 'Dans le OneDrive d’essai' }).innerText();
 const evenements = Number(/(\d+) événement/.exec(texteEssai)?.[1] ?? 0);
 ok(evenements > 10, `Outlook (faux) reçoit les rendez-vous (${evenements} événements)`);
 await page.getByLabel('Nom de l’élève dans Outlook').selectOption('initiales');
@@ -100,7 +100,7 @@ await attendreMessage(/Outlook/);
 ok(true, 'le réglage du nom dans Outlook se met à jour');
 await bouton('Retirer le calendrier d’Outlook').click();
 await attendreMessage(/supprimé d’Outlook/);
-ok(/0 événement/.test(await page.locator('.synchro-bloc').filter({ hasText: 'Dans le faux OneDrive' }).innerText()), 'retirer le calendrier le vide');
+ok(/0 événement/.test(await page.locator('.synchro-bloc').filter({ hasText: 'Dans le OneDrive d’essai' }).innerText()), 'retirer le calendrier le vide');
 
 /* ───────── 6. Copie de secours ───────── */
 const [telechargement] = await Promise.all([page.waitForEvent('download'), bouton('Enregistrer une copie').click()]);
@@ -109,8 +109,8 @@ await telechargement.saveAs(fichierCopie);
 ok(/^journalier-copie-2026-10-26\.json$/.test(telechargement.suggestedFilename()), 'la copie de secours se télécharge avec un nom daté');
 ok(JSON.parse(readFileSync(fichierCopie, 'utf8')).schema === 'journalier-v2-copie/1', 'et porte l’identifiant de format');
 await aller('Accueil');
-await bouton('Effacer la démonstration').click();
-await bouton('Oui, effacer la démonstration').click();
+await bouton('Effacer les données d’essai').click();
+await bouton('Oui, effacer les données d’essai').click();
 await page.getByRole('heading', { name: 'Aucun élève pour l’instant' }).waitFor();
 ok((await lireBase('eleves')).length === 0, 'effacer la démonstration retire les élèves fictifs');
 await aller('Synchro');
@@ -138,7 +138,7 @@ await page.setViewportSize({ width: 1280, height: 900 });
 await page.emulateMedia({ colorScheme: 'light' });
 
 /* ───────── 8. Se déconnecter de la démonstration ───────── */
-await bouton('Quitter la démonstration').click();
+await bouton('Quitter le mode essai').click();
 await page.getByText('mode essai', { exact: false }).first().waitFor();
 ok(await bouton('Se connecter avec Microsoft').count() === 0, 'mode essai : pas de bouton Microsoft (jamais relié à un vrai compte)');
 
@@ -173,7 +173,7 @@ await page.locator('.synchro-aide summary').click();
 ok(/msal-redirect\.html$/.test(await page.locator('.synchro-aide code').innerText()), 'l’adresse de retour à déclarer chez Microsoft est affichée');
 await bouton('Synchroniser maintenant').click();
 await attendreMessage(/envoyés? vers OneDrive|Tout est à jour/);
-ok(faux.chemins().some((c) => c.includes('eleves/')), 'l’élève réel est arrivé dans le faux OneDrive de Microsoft');
+ok(faux.chemins().some((c) => c.includes('eleves/')), 'l’élève réel est arrivé dans le OneDrive d’essai de Microsoft');
 ok(!faux.chemins().some((c) => c.includes('demo-')), 'aucune donnée de démonstration n’est partie chez Microsoft');
 await bouton('Se déconnecter et verrouiller').click();
 await bouton('Se connecter avec Microsoft').waitFor();

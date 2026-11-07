@@ -15,7 +15,7 @@ page.on('console', (m) => { if (m.type() === 'error') erreurs.push(m.text()); })
 page.on('pageerror', (e) => erreurs.push(String(e)));
 
 await aller(page, URL_APP);
-await page.getByRole('button', { name: 'Charger les données de démonstration' }).click();
+await page.getByRole('button', { name: 'Charger les données d’essai' }).click();
 await page.locator('.bandeau-demo').waitFor();
 await page.locator('.creneau').first().waitFor();
 

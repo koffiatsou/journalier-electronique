@@ -90,8 +90,8 @@ async function ouvrir(navigateur, largeur, theme) {
   page.on('console', (m) => { if (m.type() === 'error') erreurs.push(m.text()); });
   page.on('pageerror', (e) => erreurs.push(String(e)));
   await aller(page, URL_APP);
-  await page.getByRole('button', { name: 'Charger les données de démonstration' }).click();
-  await page.getByText('Données de démonstration chargées').waitFor();
+  await page.getByRole('button', { name: 'Charger les données d’essai' }).click();
+  await page.getByText('Données d’essai chargées').waitFor();
   await page.evaluate(installerOutilsContraste);
   return { ctx, page };
 }

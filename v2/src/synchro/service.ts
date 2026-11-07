@@ -42,7 +42,7 @@ export interface EtatSynchro {
   outlookAutorise: boolean;
   dernierOutlook: BilanOutlook | null;
   nuageDemo: { fichiers: number; evenements: number };
-  /** La connexion à un vrai compte Microsoft est-elle permise ? Non dans le mode essai (données fictives seulement). */
+  /** La connexion à un vrai compte Microsoft est-elle permise ? Non dans le mode essai (données d’essai seulement). */
   microsoftPossible: boolean;
   /** Éléments illisibles sur cet appareil : tant qu'il y en a, la synchronisation reste en pause (voir `ecarterIllisibles`). */
   illisibles: number;
@@ -71,7 +71,7 @@ export interface DependancesSynchro {
 export const CLE_MODE_SYNCHRO = 'journalier-synchro-mode';
 const CLE_MODE = CLE_MODE_SYNCHRO;
 const CLE_AUTO = 'journalier-synchro-auto';
-const COMPTE_DEMO: Compte = { id: 'demonstration', nom: 'Démonstration', courriel: '' };
+const COMPTE_DEMO: Compte = { id: 'demonstration', nom: 'Mode essai', courriel: '' };
 
 /** Phrase de bilan d'une synchronisation, en français simple. */
 export function resume(r: ResultatSynchro): string {
@@ -261,7 +261,7 @@ export function creerSynchro(d: DependancesSynchro) {
     /** Essayer sans compte : faux OneDrive et faux Outlook sur cet appareil. */
     utiliserDemonstration() {
       ecrirePref(CLE_MODE, 'demonstration');
-      maj({ mode: 'demonstration', conflits: [], derniere: null, message: { genre: 'info', texte: 'Mode démonstration : rien n’est envoyé à Microsoft. Tout reste sur cet appareil.' } });
+      maj({ mode: 'demonstration', conflits: [], derniere: null, message: { genre: 'info', texte: 'Mode essai : rien n’est envoyé à Microsoft. Tout reste sur cet appareil.' } });
       relire();
     },
 
@@ -344,7 +344,7 @@ export function creerSynchro(d: DependancesSynchro) {
         o.donnees.remarque = `${o.donnees.remarque ?? ''} [modifié sur un autre appareil]`.trim();
         return JSON.stringify(o);
       });
-      maj({ nuageDemo: d.demo.resume(), message: { genre: chemin ? 'info' : 'erreur', texte: chemin ? 'Une séance a été modifiée « sur un autre appareil ». Lancez la synchronisation pour la recevoir.' : 'Aucune séance dans le faux OneDrive : synchronisez d’abord.' } });
+      maj({ nuageDemo: d.demo.resume(), message: { genre: chemin ? 'info' : 'erreur', texte: chemin ? 'Une séance a été modifiée « sur un autre appareil ». Lancez la synchronisation pour la recevoir.' : 'Aucune séance dans le OneDrive d’essai : synchronisez d’abord.' } });
       return chemin !== null;
     },
     /** Comme si un autre appareil avait supprimé une séance dans OneDrive. */
@@ -352,13 +352,13 @@ export function creerSynchro(d: DependancesSynchro) {
       let chemin: string | null = null;
       d.demo.modifierSurAutreAppareil('seances', (_c, p) => { chemin ??= p; return null; });
       const ok = chemin !== null && d.demo.supprimerSurAutreAppareil(chemin);
-      maj({ nuageDemo: d.demo.resume(), message: { genre: ok ? 'info' : 'erreur', texte: ok ? 'Une séance a été supprimée « sur un autre appareil ». Lancez la synchronisation.' : 'Aucune séance dans le faux OneDrive : synchronisez d’abord.' } });
+      maj({ nuageDemo: d.demo.resume(), message: { genre: ok ? 'info' : 'erreur', texte: ok ? 'Une séance a été supprimée « sur un autre appareil ». Lancez la synchronisation.' : 'Aucune séance dans le OneDrive d’essai : synchronisez d’abord.' } });
       return ok;
     },
     async viderNuageDemo(): Promise<void> {
       d.demo.vider();
       await portRegistre(d.depot).vider();
-      maj({ nuageDemo: d.demo.resume(), derniere: null, conflits: [], dernierOutlook: null, message: { genre: 'ok', texte: 'Le faux OneDrive et le faux Outlook sont vides.' } });
+      maj({ nuageDemo: d.demo.resume(), derniere: null, conflits: [], dernierOutlook: null, message: { genre: 'ok', texte: 'Le OneDrive d’essai et l’Outlook d’essai sont vides.' } });
     },
 
     /** Retire de cet appareil les éléments illisibles (et leur trace de synchro) ; OneDrive les renverra à la prochaine synchronisation. */

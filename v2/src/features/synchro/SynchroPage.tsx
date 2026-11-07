@@ -99,7 +99,7 @@ function CopieDeSecours({ synchro }: { synchro: Synchro }) {
 
   return (
     <Section id="synchro-copie" titre="Copie de secours (sans compte)">
-      <p>Un seul fichier avec tout votre Journalier, à garder sur votre ordinateur. Utile si OneDrive n’est pas disponible, ou pour passer d’un appareil à l’autre à la main. Vous venez de la V75 ? <a href="#/reprise">Reprendre mes données de la V75</a>.</p>
+      <p>Un seul fichier avec tout votre Journalier, à garder sur votre ordinateur. Utile si OneDrive n’est pas disponible, ou pour passer d’un appareil à l’autre à la main. Vous venez de l’ancienne version ? <a href="#/reprise">Reprendre mes données de l’ancienne version</a>.</p>
       <label className="synchro-case">
         <input type="checkbox" checked={protegee} onChange={(ev) => { setProtegee(ev.target.checked); setErreurMdp(null); }} />
         <span>Protéger la copie par un mot de passe (recommandé : sans mot de passe, quiconque ouvre le fichier lit les noms et les observations)</span>
@@ -229,21 +229,21 @@ export function SynchroPage({ synchro, adresseRetour }: { synchro: Synchro; adre
             <p>Pas de synchronisation pour l’instant : tout reste sur cet appareil.</p>
             <div className="synchro-actions">
               {e.microsoftPossible ? <Button variante="primaire" disabled={occupe} onClick={() => { void synchro.connecter(); }}>{e.enCours === 'connexion' ? 'Fenêtre Microsoft ouverte…' : 'Se connecter avec Microsoft'}</Button> : null}
-              <Button variante={e.microsoftPossible ? 'secondaire' : 'primaire'} disabled={occupe} onClick={() => synchro.utiliserDemonstration()}>Essayer en démonstration (sans compte)</Button>
+              <Button variante={e.microsoftPossible ? 'secondaire' : 'primaire'} disabled={occupe} onClick={() => synchro.utiliserDemonstration()}>Essayer en mode essai (sans compte)</Button>
               {e.enCours === 'connexion' ? <Button variante="discret" onClick={() => synchro.annulerConnexion()}>Annuler</Button> : null}
             </div>
-            <p className="synchro-discret">La démonstration utilise un faux OneDrive et un faux Outlook, gardés (chiffrés) sur cet appareil. Idéal pour essayer sans risque.</p>
+            <p className="synchro-discret">Le mode essai utilise un OneDrive d’essai et un Outlook d’essai, gardés (chiffrés) sur cet appareil. Idéal pour essayer sans risque.</p>
             {!e.microsoftPossible ? <p className="synchro-discret">Vous êtes dans le mode essai : il n’est jamais relié à un vrai compte Microsoft. Pour synchroniser vos vraies données, verrouillez le Journalier (bouton « Verrouiller ») puis connectez-vous avec votre compte.</p> : null}
           </>
         ) : (
           <>
-            <p>{demo ? <><strong>Mode démonstration</strong> — faux OneDrive et faux Outlook sur cet appareil.</> : <>Connecté : <strong>{e.compte?.nom}</strong>{e.compte?.courriel ? ` (${e.compte.courriel})` : ''}</>}</p>
+            <p>{demo ? <><strong>Mode essai</strong> — OneDrive d’essai et Outlook d’essai sur cet appareil.</> : <>Connecté : <strong>{e.compte?.nom}</strong>{e.compte?.courriel ? ` (${e.compte.courriel})` : ''}</>}</p>
             {e.reconnexion ? <p className="synchro-message synchro-message-info" role="status">Votre session Microsoft a expiré. Reconnectez-vous pour continuer.</p> : null}
             <div className="synchro-actions">
               {e.reconnexion
                 ? <Button variante="primaire" disabled={occupe} onClick={() => { void synchro.connecter(); }}>Se reconnecter</Button>
                 : <Button variante="primaire" disabled={occupe} onClick={() => { void synchro.synchroniser(); }}>{e.enCours === 'synchronisation' ? 'Synchronisation…' : 'Synchroniser maintenant'}</Button>}
-              <Button variante="discret" disabled={occupe} onClick={() => synchro.deconnecter()}>{demo ? 'Quitter la démonstration' : 'Se déconnecter et verrouiller'}</Button>
+              <Button variante="discret" disabled={occupe} onClick={() => synchro.deconnecter()}>{demo ? 'Quitter le mode essai' : 'Se déconnecter et verrouiller'}</Button>
             </div>
             <label className="synchro-case">
               <input type="checkbox" checked={e.auto} onChange={(ev) => synchro.changerAuto(ev.target.checked)} />
@@ -306,11 +306,11 @@ export function SynchroPage({ synchro, adresseRetour }: { synchro: Synchro; adre
 
       {demo ? (
         <Section id="synchro-essai" titre="Pour essayer">
-          <p>Dans le faux OneDrive : {e.nuageDemo.fichiers} fichier{e.nuageDemo.fichiers > 1 ? 's' : ''}, {e.nuageDemo.evenements} événement{e.nuageDemo.evenements > 1 ? 's' : ''} Outlook. Synchronisez d’abord, puis simulez un autre appareil :</p>
+          <p>Dans le OneDrive d’essai : {e.nuageDemo.fichiers} fichier{e.nuageDemo.fichiers > 1 ? 's' : ''}, {e.nuageDemo.evenements} événement{e.nuageDemo.evenements > 1 ? 's' : ''} Outlook. Synchronisez d’abord, puis simulez un autre appareil :</p>
           <div className="synchro-actions">
             <Button disabled={occupe} onClick={() => { synchro.modifierAilleurs(); }}>Une séance est modifiée sur un autre appareil</Button>
             <Button disabled={occupe} onClick={() => { synchro.supprimerAilleurs(); }}>Une séance est supprimée sur un autre appareil</Button>
-            <Button variante="discret" disabled={occupe} onClick={() => { void synchro.viderNuageDemo(); }}>Vider le faux OneDrive</Button>
+            <Button variante="discret" disabled={occupe} onClick={() => { void synchro.viderNuageDemo(); }}>Vider le OneDrive d’essai</Button>
           </div>
           <p className="synchro-discret">Astuce : modifiez la même séance ici avant de synchroniser pour voir apparaître un conflit.</p>
         </Section>

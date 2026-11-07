@@ -45,7 +45,7 @@ const ECRANS = [
 
 async function chargerDemo(page) {
   await route(page, '#/accueil');
-  const bouton = page.getByRole('button', { name: 'Charger les données de démonstration' });
+  const bouton = page.getByRole('button', { name: 'Charger les données d’essai' });
   if (await bouton.isVisible().catch(() => false)) {
     await bouton.click();
     await page.locator('.bandeau-demo').waitFor();
@@ -57,7 +57,7 @@ async function chargerDemo(page) {
 {
   const { ctx, page } = await ouvrir({ width: 1280, height: 800 });
   await page.goto(URL_APP);
-  await page.getByRole('button', { name: 'Essayer avec des données fictives' }).waitFor({ timeout: 15_000 });
+  await page.getByRole('button', { name: 'Essayer avec des données d’essai' }).waitFor({ timeout: 15_000 });
   problemes.push(...await auditerEcran(page, 'verrou', { clavier: 12 }));
   await ctx.close();
 }

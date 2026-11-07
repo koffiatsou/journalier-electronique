@@ -69,7 +69,7 @@ export async function trouverComptes(st: StockageV75): Promise<CompteV75[]> {
     } catch { continue; }
     comptes.push({
       id: compte,
-      nom: texte(identite.displayName) || 'Compte de la V75',
+      nom: texte(identite.displayName) || 'Compte de l’ancienne version',
       adresse: texte(identite.microsoftAccount),
       eleves: eleves.filter((r) => r.ownerId === compte).length,
       seances: seances.filter((r) => r.ownerId === compte).length

@@ -69,7 +69,7 @@ export function fichePiaV75(eleveBrut: unknown, piaBrut: { record: unknown; impo
     ['Coordonnées du responsable', texte(eleve.coordonneesResponsable) || texte(admin.coordonneesResponsable)]
   ];
   const remplies = coordonnees.filter(([, v]) => v);
-  if (remplies.length) { lignes.push('Coordonnées du dossier (V75)'); remplies.forEach(([k, v]) => lignes.push(`  ${k} : ${v}`)); }
+  if (remplies.length) { lignes.push('Coordonnées du dossier (ancienne version)'); remplies.forEach(([k, v]) => lignes.push(`  ${k} : ${v}`)); }
 
   const objectifsDossier = texte(eleve.pia);
   if (objectifsDossier) { contenu = true; lignes.push('Objectifs saisis dans le dossier', ...objectifsDossier.split(/\n/).map((l) => `  ${l.trim()}`).filter((l) => l.trim())); }
@@ -88,11 +88,11 @@ export function fichePiaV75(eleveBrut: unknown, piaBrut: { record: unknown; impo
         blocs.push(`  - (${t || '?'}) ${TYPES_AMENAGEMENT[t] ? `${TYPES_AMENAGEMENT[t]} : ` : ''}${texte(a.texte)}${texte(a.effetDocumente) ? ` — effet : ${texte(a.effetDocumente)}` : ''}${texte(a.suitePrevue) ? ` — suite : ${texte(a.suitePrevue)}` : ''}`);
       });
     }
-    if (blocs.length) { contenu = true; lignes.push(`PIA de la V75${annee ? ` — année ${annee}` : ''}`, ...blocs); }
+    if (blocs.length) { contenu = true; lignes.push(`PIA de l’ancienne version${annee ? ` — année ${annee}` : ''}`, ...blocs); }
   }
   const precedent = objet(imported.extracted);
   const anciens = liste(precedent.objectives).map(objectif).filter(Boolean);
-  if (imported.present !== false && anciens.length) { contenu = true; lignes.push('PIA précédent repris dans la V75 (objectifs)', ...anciens.map((o) => `  - ${o}`)); }
+  if (imported.present !== false && anciens.length) { contenu = true; lignes.push('PIA précédent repris dans l’ancienne version (objectifs)', ...anciens.map((o) => `  - ${o}`)); }
 
   return { contenu, annee, texte: lignes.join('\n') };
 }

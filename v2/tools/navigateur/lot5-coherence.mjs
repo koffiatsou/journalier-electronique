@@ -28,8 +28,8 @@ async function ouvrir(theme = 'light', largeur = 1280, charger = true) {
   page.on('pageerror', (e) => erreurs.push(String(e)));
   await aller(page, URL_APP);
   if (charger) {
-    await page.getByRole('button', { name: /^Charger les données (de démonstration|d.essai)$/ }).click();
-    await page.getByText(/Données (de démonstration|d.essai) chargées/).waitFor();
+    await page.getByRole('button', { name: /^Charger les données d’essai$/ }).click();
+    await page.getByText(/Données d’essai chargées/).waitFor();
   }
   return { ctx, page };
 }
