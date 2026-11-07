@@ -18,7 +18,7 @@
   height: calc(var(--barre-haut) + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 108px 0 var(--sp-4);
   background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line);
 }
-.barre-haut-logo { height: 36px; width: auto; flex: none; box-sizing: content-box; padding: 3px 6px; border-radius: 8px; background: #fff; border: 1px solid var(--line); }
+.barre-haut-logo { height: 36px; width: auto; flex: none; box-sizing: content-box; padding: 3px 6px; border-radius: 8px; background: var(--plaque-logo); border: 1px solid var(--line); }
 .barre-haut-texte { display: grid; line-height: 1.15; min-width: 0; }
 .barre-haut-texte small { color: var(--ink-3); font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -49,7 +49,7 @@
   .nav { position: sticky; top: 0; height: 100dvh; padding: var(--sp-5) var(--sp-3) 140px; border-top: 0; border-right: 1px solid var(--line); background: var(--surface); backdrop-filter: none; display: flex; flex-direction: column; gap: var(--sp-5); overflow-y: auto; }
   .nav ul { display: grid; grid-template-columns: 1fr; height: auto; gap: 4px; }
   .nav .marque { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 0 var(--sp-2); }
-  .marque-logo { width: 150px; height: auto; flex: none; box-sizing: content-box; padding: 6px 8px; border-radius: 10px; background: #fff; border: 1px solid var(--line); }
+  .marque-logo { width: 150px; height: auto; flex: none; box-sizing: content-box; padding: 6px 8px; border-radius: 10px; background: var(--plaque-logo); border: 1px solid var(--line); }
   .marque-texte { display: grid; line-height: 1.2; }
   .marque-texte small { color: var(--ink-3); font-size: 0.75rem; }
   .nav-lien, .nav-bascule { flex-direction: row; justify-content: flex-start; gap: 12px; height: 44px; padding: 0 var(--sp-3); border-radius: var(--r-s); font-size: 0.92rem; color: var(--ink-2); transition: background-color var(--t-ui) ease-out, color var(--t-ui) ease-out; }

@@ -3,7 +3,7 @@
 .pia-choix { display: grid; padding: var(--sp-4) var(--sp-5); overflow: visible; }
 .pia-barre { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3); }
 .pia-statut { margin: 0; color: var(--ink-2); }
-.pia-statut-erreur { color: var(--danger, #b3261e); font-weight: 600; }
+.pia-statut-erreur { color: var(--danger); font-weight: 600; }
 
 .pia-onglets { display: flex; gap: 0; overflow-x: auto; border-bottom: 1px solid var(--line); }
 .pia-onglet { flex: none; min-height: 44px; padding: var(--sp-2) var(--sp-3); border: 0; border-bottom: 3px solid transparent; background: none; color: var(--ink-2); font: inherit; cursor: pointer; }

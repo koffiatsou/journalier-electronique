@@ -39,6 +39,15 @@
   --shadow-1: 0 1px 2px rgb(28 39 64 / 6%), 0 1px 1px rgb(28 39 64 / 4%);
   --shadow-2: 0 8px 28px rgb(28 39 64 / 12%), 0 2px 6px rgb(28 39 64 / 6%);
 
+  --voile: rgb(13 20 36 / 45%); /* fond d'un dialogue ouvert */
+  --plaque-logo: #fff; /* plaque derrière le logo : le logo est dessiné pour un fond blanc, clair ou sombre */
+
+  /* Couleurs de l'agenda (élèves c-0…c-9, types t-*) : identiques en clair et en sombre, seul le mélange change (agenda.css). */
+  --pal-0: #3b6fe0; --pal-1: #e8820c; --pal-2: #2f9e55; --pal-3: #d6407f; --pal-4: #8450d6;
+  --pal-5: #14a3ab; --pal-6: #c9a100; --pal-7: #d9443d; --pal-8: #4a55c4; --pal-9: #9a6a45;
+  --pal-collaboration: #5b86a8; --pal-formation: #8a7f6c; --pal-administratif: #6c7a8c; --pal-libre: #98a3b5;
+  --melange-clair: #fff; --melange-encre: #000; --melange-nuit: #141b2e;
+
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);

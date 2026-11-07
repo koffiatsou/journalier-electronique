@@ -1,20 +1,20 @@
 /* ───────── Agenda ───────── */
-.c-0 { --c-bord: #3b6fe0; } .c-1 { --c-bord: #e8820c; } .c-2 { --c-bord: #2f9e55; } .c-3 { --c-bord: #d6407f; } .c-4 { --c-bord: #8450d6; }
-.c-5 { --c-bord: #14a3ab; } .c-6 { --c-bord: #c9a100; } .c-7 { --c-bord: #d9443d; } .c-8 { --c-bord: #4a55c4; } .c-9 { --c-bord: #9a6a45; }
-.t-collaboration { --c-bord: #5b86a8; } .t-formation { --c-bord: #8a7f6c; } .t-administratif { --c-bord: #6c7a8c; } .t-libre { --c-bord: #98a3b5; }
+.c-0 { --c-bord: var(--pal-0); } .c-1 { --c-bord: var(--pal-1); } .c-2 { --c-bord: var(--pal-2); } .c-3 { --c-bord: var(--pal-3); } .c-4 { --c-bord: var(--pal-4); }
+.c-5 { --c-bord: var(--pal-5); } .c-6 { --c-bord: var(--pal-6); } .c-7 { --c-bord: var(--pal-7); } .c-8 { --c-bord: var(--pal-8); } .c-9 { --c-bord: var(--pal-9); }
+.t-collaboration { --c-bord: var(--pal-collaboration); } .t-formation { --c-bord: var(--pal-formation); } .t-administratif { --c-bord: var(--pal-administratif); } .t-libre { --c-bord: var(--pal-libre); }
 .c-0, .c-1, .c-2, .c-3, .c-4, .c-5, .c-6, .c-7, .c-8, .c-9, .t-collaboration, .t-formation, .t-administratif, .t-libre {
-  --c-fond: color-mix(in srgb, var(--c-bord) 17%, #fff);
-  --c-texte: color-mix(in srgb, var(--c-bord) 52%, #000);
+  --c-fond: color-mix(in srgb, var(--c-bord) 17%, var(--melange-clair));
+  --c-texte: color-mix(in srgb, var(--c-bord) 52%, var(--melange-encre));
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='clair']) :is(.c-0, .c-1, .c-2, .c-3, .c-4, .c-5, .c-6, .c-7, .c-8, .c-9, .t-collaboration, .t-formation, .t-administratif, .t-libre) {
-    --c-fond: color-mix(in srgb, var(--c-bord) 30%, #141b2e);
-    --c-texte: color-mix(in srgb, var(--c-bord) 38%, #fff);
+    --c-fond: color-mix(in srgb, var(--c-bord) 30%, var(--melange-nuit));
+    --c-texte: color-mix(in srgb, var(--c-bord) 38%, var(--melange-clair));
   }
 }
 :root[data-theme='sombre'] :is(.c-0, .c-1, .c-2, .c-3, .c-4, .c-5, .c-6, .c-7, .c-8, .c-9, .t-collaboration, .t-formation, .t-administratif, .t-libre) {
-  --c-fond: color-mix(in srgb, var(--c-bord) 30%, #141b2e);
-  --c-texte: color-mix(in srgb, var(--c-bord) 38%, #fff);
+  --c-fond: color-mix(in srgb, var(--c-bord) 30%, var(--melange-nuit));
+  --c-texte: color-mix(in srgb, var(--c-bord) 38%, var(--melange-clair));
 }
 
 .agenda { display: grid; gap: var(--sp-4); }
@@ -57,7 +57,7 @@
 .pause { position: absolute; left: 0; right: 0; background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--line-strong) 40%, transparent) 6px 7px); border-top: 1px solid var(--line); pointer-events: none; }
 .pause-axe { position: absolute; left: 0; right: 0; font-size: .75rem; color: var(--ink-3); text-align: right; padding-right: 6px; display: flex; align-items: center; justify-content: flex-end; }
 
-.evt { position: absolute; z-index: 2; box-sizing: border-box; text-align: left; border: 0; border-left: 4px solid var(--c-bord); border-radius: 8px; background: var(--c-fond); color: var(--c-texte); padding: 4px 8px 6px; font: inherit; font-size: .8125rem; line-height: 1.25; overflow: hidden; cursor: grab; box-shadow: 0 1px 2px rgb(22 35 63 / 10%); user-select: none; -webkit-user-select: none; touch-action: pan-y; }
+.evt { position: absolute; z-index: 2; box-sizing: border-box; text-align: left; border: 0; border-left: 4px solid var(--c-bord); border-radius: 8px; background: var(--c-fond); color: var(--c-texte); padding: 4px 8px 6px; font: inherit; font-size: .8125rem; line-height: 1.25; overflow: hidden; cursor: grab; box-shadow: var(--shadow-1); user-select: none; -webkit-user-select: none; touch-action: pan-y; }
 .evt:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 .evt strong { display: block; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .evt small { display: block; font-size: .75rem; opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

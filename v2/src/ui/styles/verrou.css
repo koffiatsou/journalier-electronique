@@ -4,7 +4,7 @@
 .verrou-carte h1 { font-size: 1.4rem; }
 .verrou-carte p { color: var(--ink-2); overflow-wrap: anywhere; }
 .verrou-carte p strong { color: var(--ink); }
-.verrou-logo { width: 168px; height: auto; justify-self: center; box-sizing: content-box; background: #fff; border: 1px solid var(--line); border-radius: var(--r-m); padding: var(--sp-2) var(--sp-3); }
+.verrou-logo { width: 168px; height: auto; justify-self: center; box-sizing: content-box; background: var(--plaque-logo); border: 1px solid var(--line); border-radius: var(--r-m); padding: var(--sp-2) var(--sp-3); }
 .verrou-marque { text-align: center; font-size: 0.9rem; }
 .verrou-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
 .verrou-separation { width: 100%; border: 0; border-top: 1px solid var(--line); margin: var(--sp-2) 0; }

@@ -125,6 +125,22 @@ for (const theme of ['dark', 'light']) {
   await ctx.close();
 }
 
+/* ───────── F : les couleurs de l'agenda viennent de jetons (tokens.css), pas de valeurs recopiées ───────── */
+{
+  const { ctx, page } = await ouvrir('light', 1280, false);
+  const r = await page.evaluate(() => {
+    const racine = getComputedStyle(document.documentElement);
+    const sonde = document.createElement('div');
+    sonde.className = 'c-0';
+    document.body.appendChild(sonde);
+    const bord = getComputedStyle(sonde).getPropertyValue('--c-bord').trim();
+    return { palette: racine.getPropertyValue('--pal-0').trim(), voile: racine.getPropertyValue('--voile').trim(), plaque: racine.getPropertyValue('--plaque-logo').trim(), bord };
+  });
+  ok(r.palette !== '' && r.bord === r.palette, `F la couleur c-0 de l'agenda est le jeton --pal-0 (${r.palette || 'jeton absent'})`);
+  ok(r.voile !== '' && r.plaque !== '', 'F jetons du voile des dialogues et de la plaque du logo définis');
+  await ctx.close();
+}
+
 await nav.close();
 ok(erreurs.length === 0, `aucune erreur dans la console${erreurs.length ? ' : ' + erreurs.slice(0, 3).join(' | ') : ''}`);
 if (echecs.length) { console.log(`\n${echecs.length} échec(s)`); process.exit(1); }
