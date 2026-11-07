@@ -13,6 +13,10 @@
 .barre-etapes, .barre-etapes > * { min-width: 0; max-width: 100%; }
 .barre-etapes-liste { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--sp-2); overflow-x: auto; scrollbar-width: none; }
 .barre-etapes-liste li { flex: none; }
+/* Il reste des rubriques cachées d'un côté : le bord s'estompe (la bande a ses barres de défilement masquées). */
+.barre-etapes-liste[data-debord~='droite'] { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); }
+.barre-etapes-liste[data-debord~='gauche'] { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent); }
+.barre-etapes-liste[data-debord='gauche droite'] { -webkit-mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
 .barre-etape { --zone: var(--peda); --zone-soft: var(--peda-soft); --zone-ink: var(--peda-ink); display: inline-flex; align-items: center; gap: var(--sp-2); min-height: 40px; padding: 0 var(--sp-3) 0 6px;
   border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); color: var(--ink-2); font-size: 0.88rem; font-weight: 550; white-space: nowrap;
   transition: background-color var(--t-ui) ease-out, border-color var(--t-ui) ease-out, transform var(--t-press) var(--ease-out); }
@@ -29,7 +33,7 @@
 .jauge-texte { font-size: 0.8rem; color: var(--ink-2); white-space: nowrap; }
 
 /* étapes */
-.etape { --zone: var(--peda); --zone-soft: var(--peda-soft); --zone-ink: var(--peda-ink); scroll-margin-top: calc(var(--barre-haut, 0px) + 108px);
+.etape { --zone: var(--peda); --zone-soft: var(--peda-soft); --zone-ink: var(--peda-ink);
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--shadow-1);
   transition: border-color var(--t-ui) ease-out, box-shadow var(--t-ui) ease-out; }
 .etape[data-zone="ortho"] { --zone: var(--ortho); --zone-soft: var(--ortho-soft); --zone-ink: var(--ortho-ink); }
@@ -124,7 +128,7 @@
 .apercu-fermer { margin-left: auto; min-height: 36px; padding: 0 var(--sp-3); border: 0; background: none; color: var(--ink-2); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 @media (max-width: 1099px) {
   .apercu {
-    position: fixed; z-index: 45; left: 12px; right: 12px; bottom: calc(var(--tabbar) + 12px + 72px + env(safe-area-inset-bottom)); max-height: 58dvh; overflow: auto;
+    position: fixed; z-index: 45; left: 12px; right: 12px; bottom: calc(var(--tabbar) + 12px + 72px + env(safe-area-inset-bottom)); max-height: 58dvh; overflow: auto; overscroll-behavior: contain;
     box-shadow: var(--shadow-2); visibility: hidden; opacity: 0; transform: translateY(12px);
     transition: opacity var(--t-ui) ease-out, transform var(--t-panel) var(--ease-out), visibility 0s linear var(--t-panel);
   }
@@ -181,3 +185,10 @@
   border: 1px solid var(--attention); border-radius: var(--r-m); background: var(--attention-soft);
 }
 .brouillon-retrouve p { margin: 0; }
+
+/* Écran Séance : la barre d'étapes (collée en haut) et la barre « Enregistrer » (fixée en bas) cachent la page ; on réserve leur place.
+   108 px = barre d'étapes (85) + air ; 112 px = barre « Enregistrer » (83) + espace sous elle (12) + air. */
+:root:has(.page.seance) {
+  scroll-padding-top: calc(var(--barre-haut, 0px) + 108px);
+  scroll-padding-bottom: calc(var(--tabbar, 0px) + 112px);
+}

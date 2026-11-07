@@ -57,7 +57,10 @@ export function Shell({ page, onAller, essai, onVerrouiller, children }: { page:
     const zone = document.getElementById('contenu');
     const titre = zone?.querySelector('h1');
     if (titre) titre.setAttribute('tabindex', '-1');
-    (titre ?? zone)?.focus({ preventScroll: false });
+    // Le focus ne fait plus défiler la page tout seul (il la centrait sur le titre, selon la hauteur de l'écran quittée) :
+    // on revient explicitement en haut, comme à l'ouverture d'une nouvelle page.
+    (titre ?? zone)?.focus({ preventScroll: true });
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [page]);
   return (
     <div className="shell">

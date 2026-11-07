@@ -90,7 +90,7 @@
 .pastilles-couleur .auto { width: auto; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line-strong); padding: 0 10px; font: inherit; font-size: .8125rem; color: var(--ink-2); }
 .pastilles-couleur .auto[aria-pressed='true'] { border-color: var(--ink); }
 @media (max-width: 1099px) {
-  .panneau.feuille-bas { position: fixed; left: 8px; right: 8px; bottom: calc(var(--tabbar, 64px) + 8px); max-height: 78vh; overflow: auto; z-index: 30; }
+  .panneau.feuille-bas { position: fixed; left: 8px; right: 8px; bottom: calc(var(--tabbar, 64px) + 8px); max-height: 78dvh; overflow: auto; overscroll-behavior: contain; z-index: 30; }
 }
 @media (max-width: 759px) {
   .grille { --PH: 64px; }

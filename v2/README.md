@@ -35,6 +35,7 @@ LANG=C.UTF-8 node tools/navigateur/captures.mjs    # captures de tous les écran
 LANG=C.UTF-8 node tools/navigateur/ameliorations-u.mjs # lot U : panneau de l'agenda, horaire libre, enseignants, évolution
 LANG=C.UTF-8 node tools/navigateur/lot-v.mjs # lot V : matière en pastilles, points de vigilance, menu réductible
 LANG=C.UTF-8 node tools/navigateur/lot1-donnees.mjs # audit lot 1 : brouillon de séance, suppressions confirmées, « Annuler »
+LANG=C.UTF-8 node tools/navigateur/lot2-defilement.mjs # audit lot 2 : défilement natif (rubriques, focus, bande, dialogues)
 LANG=C.UTF-8 node tools/navigateur/seance-sp.mjs     # lot SP : barre d'étapes, jauge, résumés, « Étape suivante », zones de texte
 LANG=C.UTF-8 node tools/navigateur/site.mjs      # la V2 servie sous /journalier-electronique/ comme sur GitHub Pages : connexion, adresse de retour Microsoft, modèles Word (lot S)
 LANG=C.UTF-8 node tools/navigateur/coffre.mjs    # coffre chiffré : verrou, mode essai, rien en clair, clé perdue, migration, copie avec mot de passe
@@ -71,6 +72,7 @@ Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des l
 | Finitions techniques : accessibilité (lien « Aller au contenu », titre et focus à chaque écran, cibles, mouvement réduit), vérification des données par schémas (zod), parcours navigateur dans la CI | **lot Q terminé** ; reste : première exécution du contrôle GitHub, essai au lecteur d'écran |
 | Séance : barre d'étapes, jauge, résumés par rubrique, couleur par zone, « Étape suivante » | **lot SP terminé** et validé |
 | Audit du 6-7 novembre, lot 1 (protéger les données) : brouillon de séance, confirmations, « Annuler » | **fait en local, en attente de validation** |
+| Audit du 6-7 novembre, lot 2 (défilement natif) : atterrissage des rubriques, focus, bande, dialogues | **fait en local, en attente de validation** |
 | Retouches du 4 novembre (tablette) : matière en pastilles, points de vigilance, menu réductible, fiche élève | **lot V terminé** |
 | Retouches du 3 novembre : encodage depuis l'agenda, horaire libre, enseignants par cours, évolution lisible | **lot U terminé** ; reste : référentiel (lots R) |
 | Mise en service : la V2 à l'adresse principale, la V75 en secours dans `/v75/`, assemblage du site vérifié (chaque page appelle des fichiers existants de sa propre version), adresse de retour Microsoft de la V2 = celle de la V75 | **lot S terminé** ; reste : déclarer l'adresse `/v75/` chez Entra, regarder le contrôle GitHub, essais réels, puis fusionner la demande #37 (= la bascule) |

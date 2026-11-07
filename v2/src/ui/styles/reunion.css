@@ -36,7 +36,7 @@
 
 .reunion-actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
 .reunion-apercu summary { cursor: pointer; font-weight: 600; min-height: 36px; display: flex; align-items: center; }
-.reunion-texte { margin: var(--sp-2) 0 0; padding: var(--sp-3) var(--sp-4); max-height: 60vh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--font); font-size: 0.9rem; line-height: 1.5; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-m); }
+.reunion-texte { margin: var(--sp-2) 0 0; padding: var(--sp-3) var(--sp-4); max-height: 60dvh; overflow: auto; overscroll-behavior: contain; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--font); font-size: 0.9rem; line-height: 1.5; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-m); }
 
 @media (prefers-reduced-motion: reduce) { .reunion-choix { transition: none; } }
 @media (max-width: 640px) {

@@ -11,6 +11,7 @@ import type { BrouillonSeance } from '../../domain/brouillons/index.ts';
 import { dateFR } from '../../domain/redaction/langue.ts';
 import { Apercu } from './Apercu.tsx';
 import { Etape } from './Etape.tsx';
+import { attendreFinRepli } from './defilement.ts';
 import { BarreEtapes } from './BarreEtapes.tsx';
 import { etatsEtapes, progression, resumesEtapes, seanceVide, verifier } from './brouillon.ts';
 import {
@@ -77,9 +78,13 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
   const notes = s.observations.length + s.competences.length + s.aides.length;
 
   const aller = (i: number) => {
+    // Une rubrique ouverte AU-DESSUS de la cible se referme : on attend la fin du repli, sinon la cible bouge pendant le défilement.
+    const precedente = ouvert >= 0 && ouvert < i ? document.getElementById(`etape-corps-${ouvert + 1}`) : null;
     setOuvert(i);
-    requestAnimationFrame(() => {
-      document.getElementById(`etape-${i + 1}`)?.scrollIntoView({ block: 'start', behavior: reduireMouvement() ? 'auto' : 'smooth' });
+    void attendreFinRepli(precedente).then(() => {
+      requestAnimationFrame(() => {
+        document.getElementById(`etape-${i + 1}`)?.scrollIntoView({ block: 'start', behavior: reduireMouvement() ? 'auto' : 'smooth' });
+      });
     });
   };
 
