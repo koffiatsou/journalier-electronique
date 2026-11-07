@@ -33,6 +33,7 @@ async function nouvelleSeance(eleve, date, matiere) {
   await page.getByLabel('Date', { exact: true }).fill(date);
   await page.getByLabel('Matière').fill(matiere);
   await page.getByRole('button', { name: 'Enregistrer la séance' }).click();
+  await page.getByRole('dialog', { name: /Aucun point noté/ }).getByRole('button', { name: 'Enregistrer quand même' }).click({ timeout: 1500 }).catch(() => undefined); // séance volontairement sans point noté
   await page.getByText('Séance enregistrée').first().waitFor();
 }
 /** Comme un utilisateur : on quitte la page puis on clique sur « Élèves » dans le menu (l'écran repart de la liste). */

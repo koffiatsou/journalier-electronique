@@ -24,6 +24,7 @@ async function saisir(matiere) {
   await page.getByLabel('Première période').selectOption({ index: 2 });
   await page.getByLabel('Matière').fill(matiere);
   await page.getByRole('button', { name: 'Enregistrer la séance' }).click();
+  await page.getByRole('dialog', { name: /Aucun point noté/ }).getByRole('button', { name: 'Enregistrer quand même' }).click({ timeout: 1500 }).catch(() => undefined); // séance volontairement sans point noté
 }
 await saisir('Sciences');
 await page.getByText('Séance enregistrée').first().waitFor();
@@ -40,6 +41,7 @@ if (await dialogue.count() === 1) {
   await page.waitForTimeout(500);
   ok((await lireBase(page, 'seances')).length === avant, '« Revenir » n’enregistre rien');
   await page.getByRole('button', { name: 'Enregistrer la séance' }).click();
+  await page.getByRole('dialog', { name: /Aucun point noté/ }).getByRole('button', { name: 'Enregistrer quand même' }).click({ timeout: 1500 }).catch(() => undefined); // séance volontairement sans point noté
   await page.getByRole('dialog', { name: /déjà une séance/ }).getByRole('button', { name: 'Enregistrer quand même' }).click();
   await page.getByText('Séance enregistrée').first().waitFor();
   await page.waitForTimeout(600);

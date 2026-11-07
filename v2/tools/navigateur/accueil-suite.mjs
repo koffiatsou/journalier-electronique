@@ -40,6 +40,7 @@ await page.getByLabel('Objectif pour la prochaine séance').fill('Légender seul
 await page.getByRole('button', { name: 'Adaptation à partager avec l’équipe' }).click();
 await page.locator('#etape-corps-5').getByLabel('Précision').fill('Apporter la fiche plastifiée.');
 await page.getByRole('button', { name: 'Enregistrer la séance' }).click();
+await page.getByRole('dialog', { name: /Aucun point noté/ }).getByRole('button', { name: 'Enregistrer quand même' }).click({ timeout: 1500 }).catch(() => undefined); // séance volontairement sans point noté
 await page.getByText('Séance enregistrée').first().waitFor();
 console.log('✓ séance saisie et enregistrée par l’écran Séance');
 

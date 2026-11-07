@@ -37,6 +37,7 @@ async function nouvelleSeance(date, matiere) {
   await page.getByLabel('Date', { exact: true }).fill(date);
   await page.getByLabel('Matière').fill(matiere);
   await page.getByRole('button', { name: 'Enregistrer la séance' }).click();
+  await page.getByRole('dialog', { name: /Aucun point noté/ }).getByRole('button', { name: 'Enregistrer quand même' }).click({ timeout: 1500 }).catch(() => undefined); // séance volontairement sans point noté
   await page.getByText('Séance enregistrée').first().waitFor();
 }
 
@@ -104,6 +105,7 @@ await page.getByRole('heading', { name: 'Modifier la séance du 20/10/2026' }).w
 ok(await page.getByLabel('Matière').inputValue() === 'Mathématiques', 'la séance s’ouvre avec ses données');
 await page.getByLabel('Matière').fill('Sciences');
 await page.getByRole('button', { name: 'Enregistrer les modifications' }).click();
+await page.getByRole('dialog', { name: /Aucun point noté/ }).getByRole('button', { name: 'Enregistrer quand même' }).click({ timeout: 1500 }).catch(() => undefined); // séance volontairement sans point noté
 await page.getByRole('heading', { name: 'Journalier', level: 1 }).waitFor();
 ok(page.url().includes('eleve=demo-alpha'), 'retour au Journalier de l’élève');
 ok(await lignes().count() === 2 && await page.locator('.journalier-liste', { hasText: 'Sciences' }).count() === 1, 'modification visible, pas de doublon');

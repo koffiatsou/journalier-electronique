@@ -6,7 +6,7 @@ import { Button } from '../../ui/Button.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import type { Aller } from '../../app/useRoute.ts';
 import { fixerEnseignant, nomAffiche } from '../../domain/eleves/index.ts';
-import { seanceEnDoublon } from '../../domain/journalier/index.ts';
+import { sansPointNote, seanceEnDoublon } from '../../domain/journalier/index.ts';
 import { contenuSaisi } from '../../domain/brouillons/index.ts';
 import type { BrouillonSeance } from '../../domain/brouillons/index.ts';
 import { dateFR } from '../../domain/redaction/langue.ts';
@@ -110,12 +110,16 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
 
   const [doublon, setDoublon] = useState<Seance | null>(null);
 
-  /** `confirme` : l'agent a vu l'avertissement de doublon et veut quand même enregistrer. */
-  const enregistrer = async (confirme = false) => {
+  const [videAConfirmer, setVideAConfirmer] = useState(false);
+
+  /** `acquis` : ce que l'agent a déjà confirmé après avertissement (séance sans point noté, doublon) : on ne le lui redemande pas. */
+  const enregistrer = async (acquis: { vide?: boolean; doublon?: boolean } = {}) => {
     const v = verifier(s);
     if (!v.ok) { refuser(); return; }
+    if (sansPointNote(s) && !acquis.vide) { setVideAConfirmer(true); return; }
+    setVideAConfirmer(false);
     const enConflit = seanceEnDoublon(seances, s);
-    if (enConflit && !confirme) { setDoublon(enConflit); return; }
+    if (enConflit && !acquis.doublon) { setDoublon(enConflit); return; }
     setDoublon(null);
     await magasin.enregistrerSeance(fixerEnseignant(s, eleve));
     await magasin.effacerBrouillonSeance();
@@ -197,10 +201,17 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
             <p>Séance du {dateFR(doublon.date)}, {doublon.periodeDebut}{doublon.matiere ? ` — ${doublon.matiere}` : ''}, pour {eleve ? nomAffiche(eleve) : 'cet élève'}. Si ce n’est pas voulu, revenez à la séance et changez la date ou la période.</p>
             <div className="fiche-actions">
               <Button data-focus-initial variante="primaire" onClick={() => setDoublon(null)}>Revenir à la séance</Button>
-              <Button onClick={() => { void enregistrer(true); }}>Enregistrer quand même</Button>
+              <Button onClick={() => { void enregistrer({ vide: true, doublon: true }); }}>Enregistrer quand même</Button>
             </div>
           </>
         ) : null}
+      </Dialog>
+      <Dialog ouvert={videAConfirmer} titre="Aucun point noté" onFermer={() => setVideAConfirmer(false)}>
+        <p>Vous n’avez noté ni observation, ni compétence, ni aide pour cette séance. Elle apparaîtra au Journalier sans partie orthopédagogique détaillée.</p>
+        <div className="fiche-actions">
+          <Button data-focus-initial variante="primaire" onClick={() => setVideAConfirmer(false)}>Revenir à la séance</Button>
+          <Button onClick={() => { void enregistrer({ vide: true }); }}>Enregistrer quand même</Button>
+        </div>
       </Dialog>
       <ConfirmerAbandon ouvert={confirmerAnnulation} perte="Les changements faits à cette séance ne sont pas enregistrés." onContinuer={() => setConfirmerAnnulation(false)} onAbandonner={() => onAller('journalier', { eleve: s.eleveId })} />
     </div>

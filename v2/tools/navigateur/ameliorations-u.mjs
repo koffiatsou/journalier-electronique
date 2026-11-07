@@ -92,6 +92,7 @@ ok((await page.locator('.feuille').first().innerText()).includes('Mme Français'
 ok((await page.getByLabel('Enseignant du cours').getAttribute('placeholder')) === 'Mme Français', 'séance : le nom du dossier est proposé pour la matière');
 await page.getByLabel('Objectif de la leçon').fill('Le verbe').catch(() => undefined);
 await page.getByRole('button', { name: /Enregistrer la séance/ }).click();
+await page.getByRole('dialog', { name: /Aucun point noté/ }).getByRole('button', { name: 'Enregistrer quand même' }).click({ timeout: 1500 }).catch(() => undefined); // séance volontairement sans point noté
 await page.waitForTimeout(800);
 const seances = await lireBase(page, 'seances');
 const nouvelle = seances.find((s) => s.matiere === 'Français');

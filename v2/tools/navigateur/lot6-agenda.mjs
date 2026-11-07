@@ -25,6 +25,7 @@ await page.getByLabel('Première période').selectOption({ index: 6 });
 await page.getByLabel('Matière').fill('Sciences');
 await page.locator('input[name="presence"][value="absent_eleve"]').check({ force: true });
 await page.getByRole('button', { name: 'Enregistrer la séance' }).click();
+await page.getByRole('dialog', { name: /Aucun point noté/ }).getByRole('button', { name: 'Enregistrer quand même' }).click({ timeout: 1500 }).catch(() => undefined); // séance volontairement sans point noté
 await page.getByText('Séance enregistrée').first().waitFor();
 
 await page.evaluate(() => { location.hash = '#/agenda'; });

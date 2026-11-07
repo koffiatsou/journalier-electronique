@@ -22,6 +22,7 @@ await page.getByLabel('Élève accompagné').selectOption({ label: 'Élève Bêt
 await page.getByLabel('Date', { exact: true }).fill('2026-11-03');
 await page.getByLabel('Matière').fill('Sciences');
 await page.getByRole('button', { name: 'Enregistrer la séance' }).click();
+await page.getByRole('dialog', { name: /Aucun point noté/ }).getByRole('button', { name: 'Enregistrer quand même' }).click({ timeout: 1500 }).catch(() => undefined); // séance volontairement sans point noté
 await page.getByText('Séance enregistrée').first().waitFor();
 const geste = page.getByRole('button', { name: 'Voir dans le Journalier' });
 ok(await geste.count() === 1, 'la notification propose « Voir dans le Journalier »');
