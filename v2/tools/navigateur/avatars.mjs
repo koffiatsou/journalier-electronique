@@ -121,6 +121,7 @@ ok(await carte('Alpha').locator('.avatar').getAttribute('aria-hidden') === 'true
 await page.screenshot({ path: `${SORTIE}/avatar-cartes-bureau.png`, fullPage: true });
 ok(await carte('Alpha').locator('.avatar').evaluate((e) => getComputedStyle(e).overflow) === 'hidden', 'le dessin est découpé dans le rond (pas de coins carrés)');
 await carte('Alpha').click();
+await page.locator('.dossier-identite').waitFor(); // le dossier s'ouvre par l'adresse (hashchange), plus au clic même
 ok(await page.locator('.dossier-identite .avatar-l svg').count() === 1, 'dossier : grand avatar dessiné');
 await page.screenshot({ path: `${SORTIE}/avatar-dossier-bureau.png`, fullPage: true });
 await versEleves();

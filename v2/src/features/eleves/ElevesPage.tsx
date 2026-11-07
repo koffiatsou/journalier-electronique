@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Aller } from '../../app/useRoute.ts';
 import { couleurLibre, couleursEleves } from '../../domain/agenda/index.ts';
 import { anneeScolaire } from '../../domain/export/journalier.ts';
@@ -60,7 +60,7 @@ function Carte({ eleve, couleur, bilan, aJour, onOuvrir }: { eleve: Eleve; coule
   );
 }
 
-export function ElevesPage({ magasin, onAller, nouveau = false }: { magasin: Magasin; onAller: Aller; nouveau?: boolean }) {
+export function ElevesPage({ magasin, onAller, nouveau = false, eleveInitial = '' }: { magasin: Magasin; onAller: Aller; nouveau?: boolean; eleveInitial?: string }) {
   const eleves = useMagasin(magasin, (s) => s.eleves);
   const seances = useMagasin(magasin, (s) => s.seances);
   const activites = useMagasin(magasin, (s) => s.activites);
@@ -71,7 +71,13 @@ export function ElevesPage({ magasin, onAller, nouveau = false }: { magasin: Mag
   const aujourdhui = aujourdhuiISO();
   const anneeCourante = anneeScolaire(aujourdhui);
 
-  const [vue, setVue] = useState<Vue>(() => (nouveau ? { genre: 'fiche', eleve: vide(eleves), retour: { genre: 'liste' } } : { genre: 'liste' }));
+  const [vue, setVue] = useState<Vue>(() => (nouveau ? { genre: 'fiche', eleve: vide(eleves), retour: { genre: 'liste' } } : eleveInitial ? { genre: 'dossier', id: eleveInitial } : { genre: 'liste' }));
+  // Le dossier ouvert est dans l'adresse (#/eleves?eleve=…) : « Précédent » et le rechargement le retrouvent. Une fiche en cours de saisie n'est jamais fermée par l'adresse.
+  const premiereLecture = useRef(true);
+  useEffect(() => {
+    if (premiereLecture.current) { premiereLecture.current = false; return; }
+    setVue((v) => (v.genre === 'fiche' || v.genre === 'passage' ? v : eleveInitial ? { genre: 'dossier', id: eleveInitial } : { genre: 'liste' }));
+  }, [eleveInitial]);
   const [requete, setRequete] = useState('');
   const [archivesOuvertes, setArchivesOuvertes] = useState(false);
   const [aSupprimer, setASupprimer] = useState<Eleve | null>(null);
@@ -116,6 +122,7 @@ export function ElevesPage({ magasin, onAller, nouveau = false }: { magasin: Mag
       const effet = await magasin.supprimerEleve(e.id);
       fermerSuppression();
       setVue({ genre: 'liste' });
+      onAller('eleves');
       annoncer(`${nomAffiche(e)} supprimé (${pluriel(effet.seances.length, 'séance')})`);
     } catch (err) {
       annoncer(err instanceof Error ? err.message : 'Suppression impossible');
@@ -184,7 +191,7 @@ export function ElevesPage({ magasin, onAller, nouveau = false }: { magasin: Mag
         {entete}
         <section className="liste-carte dossier">
           <div className="dossier-entete">
-            <Button variante="discret" onClick={() => setVue({ genre: 'liste' })}>← Tous les élèves</Button>
+            <Button variante="discret" onClick={() => onAller('eleves')}>← Tous les élèves</Button>
           </div>
           <div className="dossier-identite">
             <Avatar eleve={ouvert} couleur={couleurs.get(ouvert.id) ?? 0} taille="l" />
@@ -261,7 +268,7 @@ export function ElevesPage({ magasin, onAller, nouveau = false }: { magasin: Mag
   }
 
   const carte = (e: Eleve) => (
-    <Carte key={e.id} eleve={e} couleur={couleurs.get(e.id) ?? 0} bilan={bilans.get(e.id)} aJour={aJour(e)} onOuvrir={() => setVue({ genre: 'dossier', id: e.id })} />
+    <Carte key={e.id} eleve={e} couleur={couleurs.get(e.id) ?? 0} bilan={bilans.get(e.id)} aJour={aJour(e)} onOuvrir={() => onAller('eleves', { eleve: e.id })} />
   );
   const archivesVisibles = archivesOuvertes || (recherche && archives.length > 0);
 
