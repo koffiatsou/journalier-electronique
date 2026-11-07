@@ -16,7 +16,7 @@ import { Field, Select } from '../../ui/Field.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { aujourdhuiISO } from '../seance/brouillon.ts';
 import { nomEleve } from './contexte.ts';
-import { cleDeTri } from '../../domain/eleves/index.ts';
+import { anneeSuivante, cleDeTri } from '../../domain/eleves/index.ts';
 import { OngletAmenagements } from './OngletAmenagements.tsx';
 import { OngletIdentite } from './OngletIdentite.tsx';
 import { OngletProfil } from './OngletProfil.tsx';
@@ -81,6 +81,12 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
     const set = new Set([...anneesDisponibles(seances, aujourdhui), ...pias.map((p) => p.annee), annee]);
     return [...set].sort().reverse();
   }, [seances, pias, aujourdhui, annee]);
+  // Ouvrir la nouvelle année depuis l'écran (sinon seule l'adresse y menait) : une année d'avance sur la plus récente.
+  const anneesExistantes = useMemo(() => new Set([...anneesDisponibles(seances, aujourdhui), ...pias.map((p) => p.annee)]), [seances, pias, aujourdhui]);
+  const anneesProposees = useMemo(() => {
+    const suivante = anneeSuivante(annees[0] ?? '');
+    return suivante && !annees.includes(suivante) ? [suivante, ...annees] : annees;
+  }, [annees]);
 
   const aller = (suite: Partial<{ eleve: string; annee: string; onglet: string }>) => {
     const p = { eleve: eleveId, annee, onglet, ...suite };
@@ -159,7 +165,7 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
           <Field label="Année scolaire">
             {(id) => (
               <Select id={id} value={annee} onChange={(ev) => aller({ annee: ev.target.value })}>
-                {annees.map((a) => <option key={a} value={a}>{a}</option>)}
+                {anneesProposees.map((a) => <option key={a} value={a}>{anneesExistantes.has(a) ? a : `${a} (nouvelle année)`}</option>)}
               </Select>
             )}
           </Field>
