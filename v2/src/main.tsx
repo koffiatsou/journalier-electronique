@@ -19,6 +19,7 @@ import './ui/styles/synchro.css';
 import './ui/styles/reprise.css';
 import './ui/styles/verrou.css';
 import './ui/styles/tactile.css';
+import './ui/styles/mouvement.css';
 
 // Thème choisi sur cet appareil, appliqué avant l'affichage pour éviter un éclair clair.
 appliquerTheme(themeEnregistre(), false);

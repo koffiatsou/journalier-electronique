@@ -186,6 +186,66 @@ for (const largeur of [834, 1280]) {
   await ctx.close();
 }
 
+/* ───────── F : mouvement réduit : plus de translation ni d'échelle, mais les fondus restent ───────── */
+{
+  /** Images clés (propriétés animées) et durée de chaque animation CSS en cours sur les éléments qui correspondent. */
+  const animations = (page, sel) => page.evaluate((s) => document.getAnimations()
+    .filter((a) => a.effect?.target?.matches?.(s))
+    .map((a) => ({ nom: a.animationName, duree: a.effect.getTiming().duration, proprietes: [...new Set(a.effect.getKeyframes().flatMap((k) => Object.keys(k)).filter((p) => !['offset', 'easing', 'composite', 'computedOffset'].includes(p)))] })), sel);
+  const memo = async (page, texte) => { await page.getByLabel('Nouveau mémo').fill(texte); await page.getByRole('button', { name: 'Ajouter', exact: true }).click(); };
+
+  for (const reduit of [false, true]) {
+    const etiquette = reduit ? 'mouvement réduit' : 'mouvement normal';
+    const { ctx, page } = await ouvrir(1024);
+    await page.emulateMedia({ reducedMotion: reduit ? 'reduce' : 'no-preference' });
+    ok(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches) === reduit, `F0 ${etiquette} : la préférence est bien émulée`);
+    await aller_(page, '#/accueil');
+    await memo(page, 'Mémo de mouvement');
+    const toast = await animations(page, '.toast');
+    ok(toast.length > 0, `F1 ${etiquette} : une notification s’anime (${toast.length})`);
+    const avecDeplacement = toast.some((a) => a.proprietes.includes('transform'));
+    ok(reduit ? !avecDeplacement : avecDeplacement, `F2 ${etiquette} : l’apparition de la notification ${reduit ? 'n’a plus de translation ni d’échelle' : 'garde son déplacement'} (${toast.map((a) => a.proprietes.join('+')).join(' ; ')})`);
+    ok(toast.every((a) => a.proprietes.includes('opacity')), `F3 ${etiquette} : l’apparition est un fondu (opacité animée)`);
+    if (reduit) ok(toast.every((a) => a.duree >= 100 && a.duree <= 300), `F4 ${etiquette} : le fondu garde une durée visible, ${toast.map((a) => a.duree).join(', ')} ms (ni 1 ms, ni plus de 300 ms)`);
+    // Appui : pas de réduction d'échelle en mouvement réduit (une teinte la remplace).
+    const bouton = page.getByRole('button', { name: 'Ajouter', exact: true });
+    const b = await bouton.boundingBox();
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await page.mouse.down();
+    await attendre(page, 250);
+    const transformAppui = await bouton.evaluate((e) => getComputedStyle(e).transform);
+    await page.mouse.up();
+    ok(reduit ? transformAppui === 'none' : transformAppui !== 'none', `F5 ${etiquette} : à l’appui, ${reduit ? 'le bouton ne change pas d’échelle' : 'le bouton rétrécit légèrement'} (${transformAppui})`);
+    // Fenêtre de dialogue.
+    await aller_(page, '#/journalier');
+    await page.locator('.journalier-liste .journalier-actions .btn-danger').first().click();
+    await attendre(page, 60);
+    const dialogue = await animations(page, '.dialog');
+    ok(dialogue.length > 0 && (reduit ? !dialogue.some((a) => a.proprietes.includes('transform')) : dialogue.some((a) => a.proprietes.includes('transform'))), `F6 ${etiquette} : l’ouverture d’une fenêtre ${reduit ? 'est un simple fondu' : 'garde son déplacement'} (${dialogue.map((a) => a.proprietes.join('+')).join(' ; ')})`);
+    await page.keyboard.press('Escape');
+    // Rubrique de la séance : pas de décalage de 60 ms, pas de translation du contenu, chevron sans rotation animée.
+    await aller_(page, '#/seance');
+    const rubrique = await page.evaluate(() => {
+      const c = getComputedStyle(document.querySelector('.etape[data-ouvert="true"] .etape-contenu'));
+      const chev = getComputedStyle(document.querySelector('.etape[data-ouvert="true"] .etape-chevron'));
+      return { delai: c.transitionDelay, transform: c.transform, chevron: chev.transitionDuration };
+    });
+    ok(reduit ? rubrique.delai.split(', ').every((d) => d === '0s') : true, `F7 ${etiquette} : pas de décalage de 60 ms à l’ouverture d’une rubrique (${rubrique.delai})`);
+    ok(reduit ? parseFloat(rubrique.chevron) <= 0.001 : parseFloat(rubrique.chevron) > 0.1, `F8 ${etiquette} : le chevron ${reduit ? 'ne tourne plus en douceur' : 'tourne en douceur'} (${rubrique.chevron})`);
+    // Le défilement vers une rubrique reste juste quand le repli est instantané.
+    await page.locator('.barre-etape').nth(2).click();
+    await attendre(page, 900);
+    const haut = await page.evaluate(() => document.getElementById('etape-3').getBoundingClientRect().top);
+    ok(haut >= 0 && haut < 300, `F9 ${etiquette} : la rubrique 3 est amenée en haut de l’écran (${Math.round(haut)} px)`);
+    await ctx.close();
+  }
+  // Durée de sortie de la notification : un jeton, pas un nombre écrit en dur.
+  const { ctx, page } = await ouvrir(1024);
+  await aller_(page, '#/accueil');
+  ok(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--t-sortie').trim()) !== '', 'F10 la durée de sortie des notifications est un jeton (--t-sortie)');
+  await ctx.close();
+}
+
 await nav.close();
 ok(erreurs.length === 0, `aucune erreur dans la console${erreurs.length ? ' : ' + erreurs.slice(0, 3).join(' | ') : ''}`);
 if (echecs.length) { console.log(`\n${echecs.length} échec(s)`); process.exit(1); }

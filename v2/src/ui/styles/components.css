@@ -97,7 +97,7 @@
   background: var(--ink); color: var(--ground); font-weight: 600; box-shadow: var(--shadow-2);
   animation: toast-in var(--t-panel) var(--ease-out) both; pointer-events: auto;
 }
-.toast[data-leaving="true"] { animation: toast-out 180ms ease-in both; }
+.toast[data-leaving="true"] { animation: toast-out var(--t-sortie) ease-in both; }
 /* Geste proposé dans la notification (« Annuler ») : texte souligné, zone de 44 px, couleur sur le fond encre. */
 .toast-action {
   margin-left: auto; min-height: 44px; padding: 0 12px; border: 0; border-radius: var(--r-s); background: transparent;

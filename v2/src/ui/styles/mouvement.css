@@ -1,0 +1,35 @@
+/* ---------- mouvement réduit (audit lot 4) ----------
+   Chargé en dernier. « Réduire les animations » veut dire : plus de déplacement, d'échelle, de rotation ni de changement de taille.
+   Les fondus d'opacité et de couleur restent (≈ 140 ms) : ils portent le retour d'état (une notification apparaît, un niveau est choisi).
+   Avant, tout passait à 1 ms : ces retours devenaient des coupures sèches. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-press: 1ms;   /* appui : plus d'échelle, une teinte la remplace (plus bas) */
+    --t-panel: 1ms;   /* repli des rubriques, jauge, tiroirs : la taille et la position changent d'un coup */
+    --t-ui: 140ms;    /* fondus de couleur, de fond, de bordure et d'opacité */
+    --t-sortie: 140ms;
+  }
+  * , *::before, *::after { animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+
+  /* Apparitions : l'opacité seule (les mêmes noms, redéfinis) ; la durée vient de --t-ui. */
+  @keyframes level-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes toast-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes toast-out { to { opacity: 0; } }
+  @keyframes dialog-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes apercu-in { from { opacity: 0; } to { opacity: 1; } }
+  .toast, .dialog[open], .pastille, .journalier-apercu { animation-duration: var(--t-ui); }
+  .toast[data-leaving="true"] { animation-duration: var(--t-sortie); }
+
+  /* Appui : une teinte à la place de la réduction d'échelle. */
+  :is(.btn, .chip, .pastille, .nav-lien, .theme-bouton, .verrouiller-bouton, .barre-etape, .presence-choix, .carte-eleve, .choix-bouton, .choix-pastille):active {
+    transform: none;
+    filter: brightness(0.92);
+  }
+
+  /* Rubriques de la séance : le contenu apparaît sans glisser ni attendre ; le chevron change sans tourner. */
+  .etape-contenu, .etape[data-ouvert="true"] .etape-contenu { transform: none; transition-delay: 0s; }
+  .etape-chevron, .creneau-chevron { transition: none; }
+  .chip .tick { transform: none; transition: opacity var(--t-ui) ease-out; }
+  /* Tiroir « Feuille » : il apparaît par fondu, sans monter. */
+  .apercu { transform: none; }
+}

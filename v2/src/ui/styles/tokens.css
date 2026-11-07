@@ -46,6 +46,7 @@
   --t-press: 140ms;
   --t-ui: 200ms;
   --t-panel: 280ms;
+  --t-sortie: 180ms; /* sortie d'une notification */
 
   --rail: 232px;
   --tabbar: 64px;
@@ -124,7 +125,4 @@
 :root[data-theme='clair'] { color-scheme: light; }
 :root[data-theme='sombre'] { color-scheme: dark; }
 
-@media (prefers-reduced-motion: reduce) {
-  :root { --t-press: 1ms; --t-ui: 1ms; --t-panel: 1ms; }
-  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
-}
+/* Mouvement réduit : voir mouvement.css (chargé en dernier). */
