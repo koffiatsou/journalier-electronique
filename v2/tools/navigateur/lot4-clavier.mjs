@@ -121,6 +121,26 @@ for (const largeur of [834, 1280]) {
   await ctx.close();
 }
 
+/* ───────── D : Journalier : chaque bouton d'une ligne a un nom qui dit de quelle séance il s'agit ───────── */
+{
+  const { ctx, page } = await ouvrir(1280);
+  await aller_(page, '#/journalier');
+  const noms = await page.locator('.journalier-liste .journalier-actions button').evaluateAll((bs) => bs.map((b) => b.getAttribute('aria-label') ?? b.textContent.trim()));
+  ok(noms.length >= 6, `D1 Journalier : des lignes à mesurer (${noms.length} boutons)`);
+  ok(new Set(noms).size === noms.length, `D2 Journalier : tous les noms de boutons sont différents (${new Set(noms).size} sur ${noms.length})`);
+  ok(noms.every((n) => /\d{2}\/\d{2}\/\d{4}/.test(n)), `D3 Journalier : chaque nom contient la date de la séance (ex. « ${noms[0]} »)`);
+  ok(noms.every((n) => /^(Voir|Masquer|Modifier|Supprimer)/.test(n)), 'D4 Journalier : chaque nom commence par le mot visible (étiquette dans le nom, WCAG 2.5.3)');
+  const voir = page.locator('.journalier-liste .journalier-actions button[aria-expanded]').first();
+  ok(await voir.getAttribute('aria-controls') === null, 'D5 Journalier : fermé, « Voir » ne pointe vers rien (aria-controls absent)');
+  await voir.focus();
+  await page.keyboard.press('Enter');
+  await attendre(page, 300);
+  const cible = await voir.getAttribute('aria-controls');
+  ok(Boolean(cible) && await page.evaluate((id) => Boolean(document.getElementById(id)), cible), `D6 Journalier : ouvert, aria-controls désigne l'aperçu affiché (${cible})`);
+  ok(await voir.getAttribute('aria-expanded') === 'true', 'D7 Journalier : aria-expanded passe à vrai');
+  await ctx.close();
+}
+
 await nav.close();
 ok(erreurs.length === 0, `aucune erreur dans la console${erreurs.length ? ' : ' + erreurs.slice(0, 3).join(' | ') : ''}`);
 if (echecs.length) { console.log(`\n${echecs.length} échec(s)`); process.exit(1); }

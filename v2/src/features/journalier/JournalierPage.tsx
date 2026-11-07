@@ -32,6 +32,9 @@ interface Filtre { eleveId: string; genre: Genre; annee: string; du: string; au:
 let dernier: Filtre | null = null;
 
 const nomEleve = (e: Eleve | undefined): string => (e ? `${e.nom} ${e.prenom}`.trim() : 'Élève supprimé');
+
+/** Nom accessible d'un bouton de ligne : le mot visible d'abord (WCAG 2.5.3), puis de quelle séance il s'agit. */
+const nomBouton = (geste: string, s: Seance, e: Eleve | undefined): string => `${geste} la séance du ${dateFR(s.date)}, ${nomEleve(e)}${s.matiere ? `, ${s.matiere}` : ''}`;
 const pluriel = (n: number, mot: string): string => `${n} ${mot}${n > 1 ? 's' : ''}`;
 const creneau = (s: Seance): string => (s.periodeFin && s.periodeFin !== s.periodeDebut ? `${s.periodeDebut} → ${s.periodeFin}` : s.periodeDebut);
 
@@ -39,7 +42,7 @@ const creneau = (s: Seance): string => (s.periodeFin && s.periodeFin !== s.perio
 function ApercuSeance({ seance, eleve, precedentes }: { seance: Seance; eleve: Eleve | undefined; precedentes: Seance[] }) {
   const b = construireBloc(seance, { titulaire: enseignantDeSeance(seance, eleve), precedentes });
   return (
-    <div className="journalier-apercu">
+    <div className="journalier-apercu" id={`apercu-${seance.id}`}>
       {b.peda ? (
         <div className="zone-peda">
           <h4>Partie pédagogique</h4>
@@ -215,9 +218,9 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
                     <span className="liste-detail">{creneau(s)}{s.objectifLecon ? ` · ${s.objectifLecon}` : ''}</span>
                   </div>
                   <div className="journalier-actions">
-                    <Button variante="discret" aria-expanded={ouvert} onClick={() => setOuverte(ouvert ? null : s.id)}>{ouvert ? 'Masquer' : 'Voir'}</Button>
-                    <Button variante="discret" onClick={() => modifier(s)}>Modifier</Button>
-                    <Button variante="discret" className="btn-danger" onClick={() => setASupprimer(s)}>Supprimer</Button>
+                    <Button variante="discret" aria-expanded={ouvert} {...(ouvert ? { 'aria-controls': `apercu-${s.id}` } : {})} aria-label={nomBouton(ouvert ? 'Masquer' : 'Voir', s, e)} onClick={() => setOuverte(ouvert ? null : s.id)}>{ouvert ? 'Masquer' : 'Voir'}</Button>
+                    <Button variante="discret" aria-label={nomBouton('Modifier', s, e)} onClick={() => modifier(s)}>Modifier</Button>
+                    <Button variante="discret" className="btn-danger" aria-label={nomBouton('Supprimer', s, e)} onClick={() => setASupprimer(s)}>Supprimer</Button>
                   </div>
                   {ouvert ? <ApercuSeance seance={s} eleve={e} precedentes={seances.filter((x) => x.eleveId === s.eleveId && x.date < s.date)} /> : null}
                 </li>
