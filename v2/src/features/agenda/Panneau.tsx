@@ -8,6 +8,7 @@ import { elevesProposes, languesDe, nomAffiche } from '../../domain/eleves/index
 import type { Eleve } from '../../domain/types.ts';
 import { Button } from '../../ui/Button.tsx';
 import { ChampSuggestions } from '../../ui/ChampSuggestions.tsx';
+import { ConfirmerAbandon } from '../../ui/ConfirmerAbandon.tsx';
 import { Field, Input, Select, Textarea } from '../../ui/Field.tsx';
 import { useTiroir } from '../../ui/useTiroir.ts';
 
@@ -53,7 +54,12 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
   const [heureDebut, setHeureDebut] = useState(libresDeBase?.debut ?? '');
   const [heureFin, setHeureFin] = useState(libresDeBase?.fin ?? '');
   const racine = useRef<HTMLElement>(null);
-  const recouvre = useTiroir(racine, { actif: true, onFermer });
+  // Quitter sans enregistrer : on ne demande que si quelque chose a changé depuis l'ouverture.
+  const saisie = JSON.stringify([type, eleveId, nomLibre, titre, matiere, lieu, note, date, debut, fin, repetition, jusquau, couleur ?? null, ecoleId, libre, heureDebut, heureFin]);
+  const saisieInitiale = useRef(saisie);
+  const [confirmation, setConfirmation] = useState(false);
+  const fermer = () => { if (saisie !== saisieInitiale.current) setConfirmation(true); else onFermer(); };
+  const recouvre = useTiroir(racine, { actif: true, onFermer: fermer });
   const serie = a?.repetition === 'hebdomadaire';
   const eleve = eleves.find((e) => e.id === eleveId);
   // Les heures affichées sont celles de l'école de l'élève (ou de l'école choisie pour une autre activité).
@@ -110,7 +116,7 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
       {...(recouvre ? { role: 'dialog', 'aria-modal': true } : {})}>
       <div className="en-tete">
         <h2>{occurrence ? libelle(base, nom) : 'Nouvelle activité'}</h2>
-        <Button onClick={onFermer} aria-label="Fermer le panneau">Fermer</Button>
+        <Button onClick={fermer} aria-label="Fermer le panneau">Fermer</Button>
       </div>
       {occurrence && occurrence.activite.type === 'eleve' && occurrence.statut !== 'annule' ? (
         <div className="actions encoder-haut">
@@ -218,7 +224,7 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
       ) : null}
 
       <div className="actions barre-fixe">
-        <Button variante="primaire" raison={raisonInvalide} onClick={enregistrer}>{occurrence ? 'Enregistrer' : 'Ajouter à l’agenda'}</Button>
+        <Button variante="primaire" raison={raisonInvalide} onClick={enregistrer}>{occurrence ? (serie ? (portee === 'serie' ? 'Enregistrer toute la série' : 'Enregistrer cette date') : 'Enregistrer') : 'Ajouter à l’agenda'}</Button>
         {occurrence && occurrence.activite.type !== 'eleve' && occurrence.statut !== 'annule' ? <Button onClick={() => onRealiser(occurrence)}>{occurrence.statut === 'realise' ? 'Remettre à prévu' : 'Marquer réalisé'}</Button> : null}
       </div>
       {occurrence ? (
@@ -228,6 +234,7 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
           <Button variante="discret" onClick={() => onSupprimer(occurrence, portee)}>Supprimer{serie ? (portee === 'serie' ? ' la série' : ' cette date') : ''}</Button>
         </div>
       ) : null}
+      <ConfirmerAbandon ouvert={confirmation} perte="Les changements faits dans ce panneau ne sont pas enregistrés." onContinuer={() => setConfirmation(false)} onAbandonner={onFermer} />
     </section>
   );
 }

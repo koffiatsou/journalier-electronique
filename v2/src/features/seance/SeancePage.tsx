@@ -11,6 +11,7 @@ import type { BrouillonSeance } from '../../domain/brouillons/index.ts';
 import { dateFR } from '../../domain/redaction/langue.ts';
 import { Apercu } from './Apercu.tsx';
 import { Etape } from './Etape.tsx';
+import { ConfirmerAbandon } from '../../ui/ConfirmerAbandon.tsx';
 import { attendreFinRepli } from './defilement.ts';
 import { BarreEtapes } from './BarreEtapes.tsx';
 import { champsEnErreur, etatsEtapes, progression, resumesEtapes, seanceVide, verifier } from './brouillon.ts';
@@ -101,6 +102,10 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
     });
   };
 
+  const [confirmerAnnulation, setConfirmerAnnulation] = useState(false);
+  /** Annuler la modification d'une séance : on ne demande que si quelque chose a été changé. */
+  const annuler = () => { if (modifie) setConfirmerAnnulation(true); else onAller('journalier', { eleve: s.eleveId }); };
+
   const enregistrer = async () => {
     const v = verifier(s);
     if (!v.ok) { refuser(); return; }
@@ -175,9 +180,10 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
           )}
         </div>
         <Button className="btn-feuille" aria-expanded={tiroir} aria-controls="feuille-apercu" onClick={() => setTiroir((v) => !v)}>Feuille</Button>
-        {edition ? <Button onClick={() => onAller('journalier', { eleve: s.eleveId })}>Annuler</Button> : null}
+        {edition ? <Button onClick={annuler}>Annuler</Button> : null}
         <Button variante="primaire" onClick={() => { void enregistrer(); }}>{edition ? 'Enregistrer les modifications' : 'Enregistrer la séance'}</Button>
       </div>
+      <ConfirmerAbandon ouvert={confirmerAnnulation} perte="Les changements faits à cette séance ne sont pas enregistrés." onContinuer={() => setConfirmerAnnulation(false)} onAbandonner={() => onAller('journalier', { eleve: s.eleveId })} />
     </div>
   );
 }
