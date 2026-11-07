@@ -169,6 +169,7 @@ export function FicheEleve({ eleve, couleurParDefaut, ecoles, onEnregistrer, onA
             <button key={i} type="button" className={`c-${i}`} aria-pressed={e.couleur === i} aria-label={NOMS_COULEURS[i]} onClick={() => maj({ couleur: i })} />
           ))}
         </div>
+        <p className="field-hint">Couleur choisie : {typeof e.couleur === 'number' ? NOMS_COULEURS[e.couleur] : `${NOMS_COULEURS[couleurParDefaut]} (automatique)`}</p>
       </div>
 
       <ChoixAvatar

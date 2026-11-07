@@ -233,7 +233,7 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
 
           <div id="pia-panneau" role="tabpanel" aria-labelledby={`pia-onglet-${onglet}`} className="pia-panneau">
             {onglet === 'preparer' ? (
-              <Preparer eleve={eleve} pia={pia} changer={changer} seancesEleve={seancesEleve} filtre={filtre} onFiltre={setFiltre} onAller={onAller} onPv1={() => aller({ onglet: 'pv1' })} />
+              <Preparer eleve={eleve} pia={pia} changer={changer} seancesEleve={seancesEleve} filtre={{ ...filtre, annee }} onFiltre={setFiltre} onAller={onAller} onPv1={() => aller({ onglet: 'pv1' })} />
             ) : null}
             {onglet === 'identite' ? <OngletIdentite eleve={eleve} pia={pia} seances={seancesAnnee} changer={changer} /> : null}
             {onglet === 'profil' ? <OngletProfil eleve={eleve} pia={pia} seances={seancesAnnee} changer={changer} /> : null}

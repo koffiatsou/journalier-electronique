@@ -64,3 +64,7 @@
   .pia-impression th, .pia-impression td { border: 1px solid #000; padding: 3pt 5pt; text-align: left; vertical-align: top; break-inside: avoid; }
   .pia-impression .pia-legende { margin-top: 4pt; font-size: 9.5pt; }
 }
+
+/* Onglets du PIA collés sous la barre du haut : l'en-tête (choix de l'élève, export…) est long, on garde les onglets sous la main. */
+.pia-onglets { position: sticky; top: var(--barre-haut, 0px); z-index: 30; background: var(--ground); }
+:root:has(.pia-onglets) { scroll-padding-top: calc(var(--barre-haut, 0px) + 56px); }

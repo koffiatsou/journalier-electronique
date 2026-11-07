@@ -242,6 +242,7 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
             <button key={i} type="button" className={`c-${i}`} aria-pressed={couleur === i} aria-label={NOMS_COULEURS[i]} onClick={() => setCouleur(i)} />
           ))}
         </div>
+        <p className="field-hint">Couleur choisie : {typeof couleur === 'number' ? NOMS_COULEURS[couleur] : 'automatique'}</p>
       </div>
 
       {serie ? (

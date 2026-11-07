@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import type { Aller } from '../../app/useRoute.ts';
 import { noms } from '../../domain/export/journalier.ts';
-import { anneesDisponibles, bornes, construirePeriode, libellePeriode, seancesDuJournalier } from '../../domain/journalier/index.ts';
+import { bornes, construirePeriode, libellePeriode, seancesDuJournalier } from '../../domain/journalier/index.ts';
 import type { GenrePeriode } from '../../domain/journalier/index.ts';
 import { definirRetenus } from '../../domain/pia/index.ts';
 import { synthese } from '../../domain/redaction/index.ts';
@@ -13,7 +13,7 @@ import type { ObjectifRetenu, Proposition } from '../../domain/reunion/index.ts'
 import type { Seance } from '../../domain/types.ts';
 import { aujourdhuiISO } from '../seance/brouillon.ts';
 import { Button } from '../../ui/Button.tsx';
-import { Field, Input, Select } from '../../ui/Field.tsx';
+import { Field, Input } from '../../ui/Field.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import type { PropsOnglet } from './contexte.ts';
 import { nomAffiche } from '../../domain/eleves/index.ts';
@@ -82,7 +82,6 @@ interface Props extends Pick<PropsOnglet, 'eleve' | 'pia' | 'changer'> {
 export function Preparer({ eleve, pia, changer, seancesEleve, filtre: f, onFiltre, onAller, onPv1 }: Props) {
   const { annoncer } = useToast();
   const aujourdhui = aujourdhuiISO();
-  const annees = useMemo(() => anneesDisponibles(seancesEleve, aujourdhui), [seancesEleve, aujourdhui]);
   const maj = (p: Partial<FiltrePreparer>) => onFiltre({ ...f, ...p });
   const [libre, setLibre] = useState('');
 
@@ -133,13 +132,8 @@ export function Preparer({ eleve, pia, changer, seancesEleve, filtre: f, onFiltr
         </div>
         {f.genre === 'annee' ? (
           <div className="reunion-grille">
-            <Field label="Année scolaire" aide="Du 1er août au 31 juillet.">
-              {(id) => (
-                <Select id={id} value={f.annee} onChange={(ev) => maj({ annee: ev.target.value })}>
-                  {[...new Set([...annees, f.annee])].map((a) => <option key={a} value={a}>{a}</option>)}
-                </Select>
-              )}
-            </Field>
+            {/* Une seule année à choisir : celle du PIA, en haut de l'écran (deux sélecteurs pouvaient diverger). */}
+            <p className="field-hint">Année scolaire {f.annee} (du 1er août au 31 juillet) : c’est l’année choisie en haut de l’écran.</p>
           </div>
         ) : null}
         {f.genre === 'dates' ? (
