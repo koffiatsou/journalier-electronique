@@ -44,7 +44,7 @@ LANG=C.UTF-8 node tools/navigateur/coffre.mjs    # coffre chiffré : verrou, mod
 LANG=C.UTF-8 node --import tsx tools/navigateur/synchro.mjs   # synchronisation : démonstration, conflits, Outlook, copie de secours, connexion Microsoft (faux Microsoft)
 ```
 
-**Playwright** (outil de vérification, jamais une dépendance de l'application) : en local, `npm install --no-save playwright@1.63.0` puis `npx playwright install chromium` dans `v2/` (ou la variable `PLAYWRIGHT=<chemin>/playwright/index.mjs`). La CI le fait toute seule (`.github/workflows/ci.yml`, version épinglée). Les parcours d'un autre nom que `_…` sont tous repris par `npm run navigateur`.
+**Playwright** (outil de vérification, jamais une dépendance de l'application) : en local, `npm install --no-save playwright@1.63.0` puis `npx playwright install chromium webkit` (WebKit : moteur de Safari, utilisé par le parcours `lot2b-tactile`, ignoré avec un avertissement s'il manque) dans `v2/` (ou la variable `PLAYWRIGHT=<chemin>/playwright/index.mjs`). La CI le fait toute seule (`.github/workflows/ci.yml`, version épinglée). Les parcours d'un autre nom que `_…` sont tous repris par `npm run navigateur`.
 
 **Sans accès au registre npm** (environnement de travail de Claude) : les paquets aux bonnes versions (esbuild, zod, React, TypeScript, tsx) sont souvent déjà installés sur la machine ; on les relie dans `v2/node_modules` (liens symboliques, dossier ignoré par Git) et on ajoute `@types/react`, `@types/react-dom` (DefinitelyTyped) et `csstype` récupérés depuis GitHub.
 

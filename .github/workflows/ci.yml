@@ -46,11 +46,12 @@ jobs:
 
       # Parcours dans un vrai navigateur (lot Q) : l'accessibilité, l'agenda, la séance, le PIA, la synchronisation…
       # Playwright est un outil de vérification : installé ici seulement, sans toucher à v2/package.json ni aux dépendances de l'application.
+      # WebKit (le moteur de Safari) sert au parcours lot2b-tactile : un iPad n'utilise que ce moteur, même avec Chrome.
       - name: V2 — installer l'outil de test Playwright (hors package.json)
         working-directory: v2
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.63.0
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps chromium webkit
 
       - name: V2 — parcours dans un vrai navigateur
         working-directory: v2
