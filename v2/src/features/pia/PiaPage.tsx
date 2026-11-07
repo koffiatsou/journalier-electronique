@@ -15,6 +15,7 @@ import { Button } from '../../ui/Button.tsx';
 import { Field, Select } from '../../ui/Field.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { aujourdhuiISO } from '../seance/brouillon.ts';
+import { positionCentree } from '../seance/defilement.ts';
 import { nomEleve } from './contexte.ts';
 import { anneeSuivante, cleDeTri } from '../../domain/eleves/index.ts';
 import { OngletAmenagements } from './OngletAmenagements.tsx';
@@ -75,6 +76,14 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
     setEnImpression(false);
   }, [enImpression]);
   const refsOnglets = useRef<Record<string, HTMLButtonElement | null>>({});
+  // Téléphone : la liste d'onglets défile ; l'onglet actif est ramené dans la bande (sans jamais faire défiler la page elle-même).
+  useEffect(() => {
+    const actif = refsOnglets.current[onglet];
+    const bande = actif?.parentElement;
+    if (!actif || !bande) return;
+    const gauche = actif.getBoundingClientRect().left - bande.getBoundingClientRect().left + bande.scrollLeft;
+    bande.scrollTo({ left: positionCentree(gauche, actif.offsetWidth, bande.clientWidth, bande.scrollWidth), behavior: 'auto' });
+  }, [onglet]);
 
   const triees = useMemo(() => [...eleves].sort((a, b) => cleDeTri(a).localeCompare(cleDeTri(b), 'fr')), [eleves]);
   const annees = useMemo(() => {
@@ -200,7 +209,7 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
                 <input type="checkbox" checked={deidentifie} onChange={(ev) => setDeidentifie(ev.target.checked)} />
                 <span>Version dé-identifiée (sans nom ni coordonnées : pour partager hors de l’équipe)<small className="reunion-raison">Le nom de l’élève est remplacé par « l’élève » dans les textes ; des personnes présentes, seule la fonction est gardée.</small></span>
               </label>
-              <p className="field-hint">« Imprimer / PDF » imprime les mêmes parties dans une mise en page simple (ce n’est pas le modèle officiel). Pour le PDF du modèle officiel, exportez en Word puis enregistrez en PDF depuis Word.</p>
+              <p className="field-hint">« Imprimer / PDF » imprime les mêmes parties dans une mise en page simple (ce n’est pas le modèle officiel). Pour le PDF du modèle officiel, exportez en Word puis enregistrez en PDF depuis Word. Le texte de réunion (onglet « Préparer ») ne fait pas partie de ces exports : utilisez son bouton « Copier le texte ».</p>
             </div>
           </details>
 

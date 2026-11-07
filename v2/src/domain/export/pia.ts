@@ -404,5 +404,5 @@ export const remplirEntete = (xml: string, annee: string): string =>
   xml.replace(/(<w:t(?: [^>]*)?>)\d{4}-\d{4}(<\/w:t>)/g, `$1${esc(annee)}$2`);
 
 /** Nom du fichier Word du PIA. */
-export const nomFichierPia = (eleve: Pick<Eleve, 'nom'>, annee: string): string =>
-  `PIA - ${eleve.nom || 'élève'} - ${annee}.docx`.replace(/[\\/:*?"<>|]/g, '');
+export const nomFichierPia = (eleve: Pick<Eleve, 'nom'> & { prenom?: string }, annee: string): string =>
+  `PIA - ${[eleve.nom, eleve.prenom].filter(Boolean).join(' ') || 'élève'} - ${annee}.docx`.replace(/[\\/:*?"<>|]/g, '');

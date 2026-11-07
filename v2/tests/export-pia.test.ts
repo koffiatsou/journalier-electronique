@@ -227,6 +227,13 @@ describe('Export Word du PIA', () => {
     assert.equal(nomFichierPia({ nom: '' }, '2026-2027'), 'PIA - élève - 2026-2027.docx');
   });
 
+  it('deux élèves de même nom de famille ont deux noms de fichier différents (le prénom en fait partie)', () => {
+    const a = nomFichierPia({ nom: 'Dupont', prenom: 'Élodie' }, '2026-2027');
+    const b = nomFichierPia({ nom: 'Dupont', prenom: 'Karim' }, '2026-2027');
+    assert.equal(a, 'PIA - Dupont Élodie - 2026-2027.docx');
+    assert.notEqual(a, b);
+  });
+
   it('refuse un modèle qui n’est pas le modèle officiel plutôt que d’écrire au mauvais endroit', async () => {
     const entrees = await lireZip(MODELE);
     const xml = dec.decode(entrees['word/document.xml']);

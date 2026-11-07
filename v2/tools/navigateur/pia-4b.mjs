@@ -90,7 +90,7 @@ ok(await page.getByLabel('Commentaire sur l’objectif 1').inputValue() === 'Pro
 // Exports
 await page.getByText('Choisir les parties à exporter').click();
 const complet = await exporter();
-ok(/^PIA - Alpha - \d{4}-\d{4}\.docx$/.test(complet), `export complet : ${complet}`);
+ok(/^PIA - Alpha Élève - \d{4}-\d{4}\.docx$/.test(complet), `export complet : ${complet}`);
 await page.getByLabel('Profil', { exact: true }).uncheck();
 await page.getByLabel('Procès-verbal 1 et aménagements').uncheck();
 const pv2 = await exporter();
