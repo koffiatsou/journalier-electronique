@@ -96,6 +96,31 @@ for (const largeur of [834, 1280]) {
   await ctx.close();
 }
 
+/* ───────── C : grille de l'agenda : rôles ARIA valides, un seul parcours de Tab, création au clavier ───────── */
+{
+  const { ctx, page } = await ouvrir(1280);
+  await aller_(page, '#/agenda');
+  const arret = await page.evaluate(() => {
+    const g = document.querySelector('.grille');
+    const arrets = [...g.querySelectorAll('button, a[href], input, select, textarea, [tabindex]')].filter((e) => e.tabIndex >= 0);
+    return { cellules: arrets.filter((e) => e.classList.contains('cellule')).length, evenements: arrets.filter((e) => e.classList.contains('evt')).length, total: arrets.length };
+  });
+  ok(arret.cellules === 0, `C1 grille : aucune case de création dans l’ordre de Tab (${arret.cellules})`);
+  ok(arret.evenements > 0 && arret.total === arret.evenements, `C2 grille : seules les activités sont des arrêts de Tab (${arret.total} arrêts, ${arret.evenements} activités)`);
+  const orphelins = await page.evaluate(() => [...document.querySelectorAll('[role=row], [role=gridcell], [role=columnheader]')].filter((e) => !e.closest('[role=grid], [role=table], [role=treegrid]')).length);
+  ok(orphelins === 0, `C3 grille : aucun rôle row / gridcell / columnheader sans grille ou tableau autour (${orphelins})`);
+  ok(await page.locator('.grille .colonne[role=group][aria-label]').count() > 0, 'C4 grille : chaque jour est un groupe étiqueté');
+  // La création reste possible au clavier : « Nouvelle activité » de la barre d'outils.
+  await page.getByRole('button', { name: 'Nouvelle activité' }).first().focus();
+  await page.keyboard.press('Enter');
+  await attendre(page, 400);
+  ok(await page.locator('.panneau').count() === 1 && await page.evaluate(() => document.querySelector('.panneau').contains(document.activeElement)), 'C5 grille : « Nouvelle activité » ouvre le panneau au clavier, focus dedans');
+  await page.keyboard.press('Escape');
+  await attendre(page, 300);
+  ok(await page.evaluate(() => document.activeElement?.textContent?.includes('Nouvelle activité')), `C6 grille : Échap rend le focus à « Nouvelle activité » (${await focus(page)})`);
+  await ctx.close();
+}
+
 await nav.close();
 ok(erreurs.length === 0, `aucune erreur dans la console${erreurs.length ? ' : ' + erreurs.slice(0, 3).join(' | ') : ''}`);
 if (echecs.length) { console.log(`\n${echecs.length} échec(s)`); process.exit(1); }

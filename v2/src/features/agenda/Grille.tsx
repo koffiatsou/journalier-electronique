@@ -170,13 +170,13 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
 
   return (
     <div className="grille" style={{ '--nb-jours': jours.length } as Record<string, number>}>
-      <div className="grille-entete" role="row">
+      <div className="grille-entete">
         <div />
         {jours.map((j) => {
           const infos = infosJour(j);
           const nature = natureJour(infos);
           return (
-            <div key={j} className={`${j === aujourdhui ? 'aujourdhui' : ''} ${nature ? `jour-${nature}` : ''}`.trim()} role="columnheader">
+            <div key={j} className={`${j === aujourdhui ? 'aujourdhui' : ''} ${nature ? `jour-${nature}` : ''}`.trim()}>
               {nomJour(j).slice(0, 3)}.<strong>{Number(j.slice(8))}</strong>
               <span className="sr-only"> {jourMois(j)}</span>
               {infos.libelle ? <small className="marque-jour">{infos.libelle}</small> : null}
@@ -195,12 +195,13 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
           {geo.pauses.map((p) => <div key={p.y} className="pause-axe" style={{ top: p.y, height: p.h }}>{p.libelle}</div>)}
         </div>
         {jours.map((j) => (
-          <div key={j} className={`colonne ${natureJour(infosJour(j)) ? `jour-${natureJour(infosJour(j))}` : ''}`.trim()} style={{ height: total }} role="gridcell">
+          <div key={j} className={`colonne ${natureJour(infosJour(j)) ? `jour-${natureJour(infosJour(j))}` : ''}`.trim()} style={{ height: total }} role="group" aria-label={`${nomJour(j)} ${jourMois(j)}`}>
             {geo.pauses.map((p) => <div key={p.y} className="pause" style={{ top: p.y, height: p.h }} />)}
+            {/* Cases de création : geste à la souris et au doigt (glisser pour créer), hors de l'ordre de Tab et cachées aux lecteurs d'écran (40 arrêts n'apportaient rien).
+                Au clavier et au lecteur d'écran, « Nouvelle activité » (barre d'outils) crée une activité à la date voulue. */}
             {periodes.map((p, i) => (
-              <button key={p.label} type="button" className="cellule" data-date={j} data-periode={i}
+              <button key={p.label} type="button" className="cellule" data-date={j} data-periode={i} tabIndex={-1} aria-hidden="true"
                 style={{ top: geo.y[i]!, height: finY(i) - geo.y[i]! }}
-                aria-label={`Nouvelle activité, ${nomJour(j)} ${jourMois(j)}, ${p.label}${p.debut ? `, ${p.debut}` : ''}`}
                 onPointerDown={(e) => commencerCreation(e, j, i)}
                 onClick={() => { if (!clicIgnore.current) onCreer(j, i, i); }} />
             ))}
