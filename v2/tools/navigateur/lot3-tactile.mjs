@@ -227,6 +227,16 @@ for (const theme of ['light', 'dark']) {
   ok(nbNormaux > 0, `${theme} : des activités à mesurer (${nbNormaux})`);
   const normaux = await textes('.evt:not(.annule) strong, .evt:not(.annule) small');
   ok(Math.min(...normaux) >= CONTRASTE_TEXTE, `${theme} : texte des activités (titre et 2e ligne) ≥ ${CONTRASTE_TEXTE}:1 (pire : ${Math.min(...normaux).toFixed(2)}:1, ${normaux.length} textes)`);
+  /* Les 14 couleurs d'activité (c-0 à c-9, t-*), l'une après l'autre sur la première activité de la grille. */
+  const COULEURS = ['c-0', 'c-1', 'c-2', 'c-3', 'c-4', 'c-5', 'c-6', 'c-7', 'c-8', 'c-9', 't-collaboration', 't-formation', 't-administratif', 't-libre'];
+  for (const cl of COULEURS) {
+    const r = await page.evaluate((classe) => {
+      const e = document.querySelector('.evt:not(.annule)');
+      e.className = `evt ${classe}`;
+      return [...e.querySelectorAll('strong, small')].map((t) => window.__contraste.texte(t));
+    }, cl);
+    ok(r.length > 0 && Math.min(...r) >= CONTRASTE_TEXTE, `${theme} : couleur ${cl} ≥ ${CONTRASTE_TEXTE}:1 (pire : ${Math.min(...r).toFixed(2)}:1)`);
+  }
   await page.evaluate(() => { for (const e of document.querySelectorAll('.evt')) e.classList.add('annule'); });
   const annules = await textes('.evt.annule strong, .evt.annule small');
   ok(Math.min(...annules) >= CONTRASTE_TEXTE, `${theme} : texte d'une activité annulée ≥ ${CONTRASTE_TEXTE}:1 (pire : ${Math.min(...annules).toFixed(2)}:1, ${annules.length} textes)`);

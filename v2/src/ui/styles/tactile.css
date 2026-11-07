@@ -6,12 +6,19 @@
   :root { --cible-tactile: 44px; }
   :is(.btn, .chip, .pastille, .input, .select, .barre-etape, .point-retirer, .apercu-fermer, .presence-choix, .case-anonyme,
     .legende button, .reunion-apercu summary, .jours-onglets button, .bascule button, .journalier-actions .btn,
-    .btn-feuille, .memo-liste label, .mois-jour, .mois-evt, .pastilles-couleur button) {
+    .btn-feuille, .memo-liste label, .mois-jour, .mois-evt) {
     min-height: var(--cible-tactile);
   }
-  :is(.btn, .chip, .bascule button, .pastilles-couleur button, .mois-jour, .mois-ajout) { min-width: var(--cible-tactile); }
-  .pastilles-couleur button { width: var(--cible-tactile); height: var(--cible-tactile); }
-  .pastilles-couleur { gap: 0; }
+  :is(.btn, .chip, .bascule button, .mois-jour, .mois-ajout) { min-width: var(--cible-tactile); }
+  /* Pastilles de couleur : le dessin garde ses 28 px, seule la zone à toucher passe à 44 px. */
+  .pastilles-couleur button:not(.auto), .pastilles-couleur button:not(.auto)[aria-pressed='true'] {
+    position: relative; width: var(--cible-tactile); height: var(--cible-tactile); border: 0; background: none; box-shadow: none;
+  }
+  .pastilles-couleur button:not(.auto)::before {
+    content: ''; position: absolute; left: 50%; top: 50%; width: 28px; height: 28px; margin: -14px 0 0 -14px;
+    border: 2px solid transparent; border-radius: 50%; background: var(--c-bord);
+  }
+  .pastilles-couleur button:not(.auto)[aria-pressed='true']::before { border-color: var(--ink); box-shadow: 0 0 0 2px var(--surface) inset; }
 
   /* Mois : le « + » est toujours visible (il n'y a pas de survol au doigt) et assez grand ; sa bordure se voit. */
   .mois-ajout { width: var(--cible-tactile); height: var(--cible-tactile); opacity: 1; border-color: var(--ink-3); }
