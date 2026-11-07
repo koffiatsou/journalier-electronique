@@ -12,7 +12,7 @@ Avant de coder, pose-moi les trois décisions listées en tête du lot 5. Annonc
 
 ## Où en est-on (à vérifier avec `git log --oneline -8` : d'autres commits des lots 3 et 4 doivent s'y trouver)
 
-- Branche locale **`v2/audit-lot1-donnees`**. Commits locaux, **jamais poussés** : lot 1 (`8aeff23`, protéger les données), lot 2 (`ae68827`, défilement natif), puis les lots 3 et 4 s'ils sont faits.
+- Branche locale **`v2/audit-lot1-donnees`**. Commits locaux, **jamais poussés** : lot 1 (`8aeff23`, protéger les données), lot 2 (`ae68827`, défilement natif), lot 2b (gestes tactiles et position au retour), puis les lots 3 et 4 s'ils sont faits.
 - **Rien n'est poussé ni fusionné sans l'accord explicite de l'utilisateur** (la fusion vers `main` publie le site).
 - Méthode : tout en local, l'utilisateur essaie dans le volet navigateur (serveur `journalier-v2`, `.claude/launch.json`), puis décide.
 - À chaque lot : écrire le parcours navigateur d'abord (il doit **échouer avant**), corriger, `npm run check`, tous les parcours, documentation à jour, commit local, message en français simple (ce qu'il peut essayer, ce qui n'est pas vérifié, ce qu'il doit décider).
@@ -157,7 +157,7 @@ Le sélecteur d'année de `features/pia/PiaPage.tsx` (≈ ligne 79) n'offre que 
 
 ## Hors audit, à garder en réserve (inscrit dans `docs/plan-de-travail.md`, « Idées en attente »)
 
-- Filet d'erreur global (`ErrorBoundary`) : aujourd'hui une exception de rendu démonte tout l'arbre (écran blanc sans message) ; aucun `window.onerror` ; verrouillage automatique après inactivité ; application installable / hors ligne (manifeste, service worker : **décision du lot S, ne pas ajouter sans en parler**) ; sourcemaps publiés (3,7 Mo, dépôt public : sans conséquence de confidentialité) ; en-têtes de sécurité (GitHub Pages n'en pose pas : `frame-ancestors` impossible par `<meta>`) ; lecteur d'écran réel jamais essayé ; essai sur tablette réelle de tous les lots ; position de défilement au retour arrière et écouteur `touchmove` non passif de l'agenda (lot 2b, voir le plan).
+- Filet d'erreur global (`ErrorBoundary`) : aujourd'hui une exception de rendu démonte tout l'arbre (écran blanc sans message) ; aucun `window.onerror` ; verrouillage automatique après inactivité ; application installable / hors ligne (manifeste, service worker : **décision du lot S, ne pas ajouter sans en parler**) ; sourcemaps publiés (3,7 Mo, dépôt public : sans conséquence de confidentialité) ; en-têtes de sécurité (GitHub Pages n'en pose pas : `frame-ancestors` impossible par `<meta>`) ; lecteur d'écran réel jamais essayé ; essai sur tablette réelle de tous les lots (le lot 2b a été vérifié avec de vrais événements tactiles et WebKit, pas sur un iPad).
 
 ## Fin de conversation (à faire à chaque lot)
 

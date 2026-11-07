@@ -12,8 +12,8 @@ Annonce ton plan en quelques lignes avant de modifier le code, puis travaille en
 
 ## Où en est-on
 
-- Branche locale **`v2/audit-lot1-donnees`** (partie de `v2/react-ts`). Deux commits locaux, **jamais poussés** : `8aeff23` (lot 1, protéger les données) et `ae68827` (lot 2, défilement natif).
-- État vérifié à la fin du lot 2 : `npm run check` vert (614 tests), les 23 parcours navigateur passent (`tools/navigateur/tout.mjs`).
+- Branche locale **`v2/audit-lot1-donnees`** (partie de `v2/react-ts`). Commits locaux, **jamais poussés** : `8aeff23` (lot 1, protéger les données), `ae68827` (lot 2, défilement natif), puis le lot 2b (gestes tactiles de l'agenda et position au retour : voir `git log`).
+- État vérifié à la fin du lot 2b : `npm run check` vert (619 tests), les 24 parcours navigateur passent (`tools/navigateur/tout.mjs`).
 - **Méthode validée par l'utilisateur** : tout se fait d'abord en local ; il essaie dans le volet navigateur de l'application ; **rien n'est poussé ni fusionné sans son accord explicite**. La fusion vers `main` publie le site.
 - Le projet impose : un sujet par modification, petits lots, tests qui exécutent le code, documentation mise à jour en fin de lot (`AGENTS.md`, `docs/plan-de-travail.md`, `docs/etat-des-lieux.md`, `docs/decisions.md`, `README.md`).
 
@@ -35,7 +35,7 @@ Annonce ton plan en quelques lignes avant de modifier le code, puis travaille en
 - Playwright est un outil de vérification, pas une dépendance : `npm install --no-save playwright@1.63.0` (déjà fait dans `v2/node_modules`, à refaire après un `npm ci`). Ne jamais l'ajouter à `package.json`.
 - Git n'a pas d'identité configurée : committer avec `git -c user.name="Shirokof-BG" -c user.email="shirokof@gmail.com" commit …` (même identité que les commits existants), sans toucher à la configuration. Terminer le message par `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`.
 - Python sous Windows écrit en cp1252 : tout appel Python d'un parcours passe par `PYTHONUTF8=1` (déjà fait dans `journalier.mjs`).
-- Pour simuler un doigt dans Playwright, quelle que soit la largeur : `newContext({ viewport, hasTouch: true, isMobile: true })` (donne `pointer: coarse`). Le navigateur de bureau seul ne le fait pas.
+- **Simuler une tablette** : `devices['iPad Pro 11']` de Playwright (834 px, `pointer: coarse`, agent utilisateur iPad), ou à la main `newContext({ viewport, hasTouch: true, isMobile: true })` (donne `pointer: coarse` à n'importe quelle largeur). De **vrais gestes** : `ctx.newCDPSession(page)` puis `Input.dispatchTouchEvent` (`touchStart`, `touchMove`, `touchEnd`) : le navigateur applique les actions par défaut (défilement). **WebKit** (moteur de Safari) est installé (`npx playwright install webkit`) : `pw.webkit.launch()`. Modèle complet : `tools/navigateur/lot2b-tactile.mjs`. Ce qu'aucune simulation ne prouve : la sensation du doigt, l'inertie d'iPadOS, la barre d'adresse de Safari, les performances d'un vrai iPad.
 - Un hook de contrôle du design (impeccable) tourne après chaque modification de fichier : il ne signale que des règles automatiques, il ne remplace pas un regard humain.
 
 ## Outils de vérification à réutiliser
