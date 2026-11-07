@@ -6,6 +6,8 @@ import { Button } from '../../ui/Button.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import type { Aller } from '../../app/useRoute.ts';
 import { fixerEnseignant } from '../../domain/eleves/index.ts';
+import { contenuSaisi } from '../../domain/brouillons/index.ts';
+import type { BrouillonSeance } from '../../domain/brouillons/index.ts';
 import { dateFR } from '../../domain/redaction/langue.ts';
 import { Apercu } from './Apercu.tsx';
 import { Etape } from './Etape.tsx';
@@ -26,6 +28,9 @@ const ETAPES = [
 
 const reduireMouvement = (): boolean => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
+/** « 7 nov. 2026, 10:12 » : le moment de la dernière saisie, dans la langue de l'appareil. */
+const quand = (iso: string): string => new Date(iso).toLocaleString('fr-BE', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
 export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Aller }) {
   const eleves = useMagasin(magasin, (e) => e.eleves);
   const ecoles = useMagasin(magasin, (e) => e.ecoles);
@@ -34,15 +39,36 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
   const [s, setS] = useState<Seance>(() => ({ ...seanceVide(), ...(magasin.lire().preparation ?? {}) }));
   /** Séance déjà enregistrée (ouverte depuis le Journalier) : on la modifie au lieu d'en créer une. */
   const [edition] = useState(() => magasin.lire().seances.some((x) => x.id === s.id));
+  /** Ouverte depuis l'agenda ou le Journalier : la séance est déjà choisie, on ne propose pas de brouillon par-dessus. */
+  const [preparee] = useState(() => magasin.lire().preparation !== null);
+  /** Brouillon retrouvé (rechargement, changement d'écran par erreur) : proposé une fois, jamais appliqué sans accord. */
+  const [proposition, setProposition] = useState<BrouillonSeance | null>(() => {
+    const b = edition || preparee ? null : magasin.lire().brouillonSeance;
+    return b && contenuSaisi(b.seance) ? b : null;
+  });
+  /** Vrai dès la première saisie : avant cela, ouvrir l'écran ne touche pas à un brouillon existant. */
+  const [modifie, setModifie] = useState(false);
+  const erreurBrouillon = useMagasin(magasin, (e) => e.erreurBrouillon);
   useEffect(() => { magasin.viderPreparation(); }, [magasin]);
+  /* Garde la saisie au fur et à mesure ; à la sortie de l'écran, écrit tout de suite ce qui attend. */
+  useEffect(() => {
+    if (edition || proposition || !modifie) return;
+    if (contenuSaisi(s)) magasin.enregistrerBrouillonSeance(s);
+    else void magasin.effacerBrouillonSeance();
+  }, [s, edition, proposition, modifie, magasin]);
+  useEffect(() => () => { void magasin.viderEnregistrements(); }, [magasin]);
   const [ouvert, setOuvert] = useState(0);
   const [raisons, setRaisons] = useState<string[]>([]);
   const [tiroir, setTiroir] = useState(false);
 
   const maj = useCallback((patch: Partial<Seance>) => {
     setS((cur) => ({ ...cur, ...patch, modifieLe: new Date().toISOString() }));
+    setModifie(true);
     setRaisons([]);
   }, []);
+
+  const reprendre = (b: BrouillonSeance) => { setS(b.seance); setProposition(null); setModifie(true); };
+  const repartir = () => { setProposition(null); void magasin.effacerBrouillonSeance(); };
 
   const eleve = eleves.find((e) => e.id === s.eleveId);
   const precedentes = useMemo(() => seances.filter((x) => x.eleveId === s.eleveId), [seances, s.eleveId]);
@@ -61,6 +87,7 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
     const v = verifier(s);
     if (!v.ok) { setRaisons(v.raisons); return; }
     await magasin.enregistrerSeance(fixerEnseignant(s, eleve));
+    await magasin.effacerBrouillonSeance();
     if (edition) {
       annoncer('Séance modifiée');
       onAller('journalier', { eleve: s.eleveId });
@@ -68,6 +95,7 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
     }
     annoncer('Séance enregistrée');
     setS(seanceVide(s.eleveId, s.date));
+    setModifie(false);
     setOuvert(0);
     window.scrollTo({ top: 0 });
   };
@@ -88,6 +116,17 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
           ? 'Corrigez ce qui doit l’être, puis enregistrez : vous reviendrez au Journalier.'
           : 'Remplissez la feuille comme sur le Journalier papier : la partie pédagogique, puis la partie orthopédagogique.'}</p>
       </header>
+
+      {proposition ? (
+        <div className="brouillon-retrouve" role="status">
+          <p>Une séance non enregistrée a été retrouvée ({quand(proposition.enregistreLe)}).</p>
+          <div className="fiche-actions">
+            <Button variante="primaire" onClick={() => reprendre(proposition)}>Reprendre ma saisie</Button>
+            <Button onClick={repartir}>Repartir de zéro</Button>
+          </div>
+        </div>
+      ) : null}
+      {erreurBrouillon ? <p className="field-hint" role="alert">Votre saisie n’a pas pu être gardée sur cet appareil : {erreurBrouillon}</p> : null}
 
       <BarreEtapes etapes={ETAPES} etats={etats} ouvert={ouvert} progression={progression(s)} onAller={aller} />
 

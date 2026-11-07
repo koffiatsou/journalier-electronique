@@ -27,6 +27,9 @@ const docx = async (telechargement, nom) => {
   return chemin;
 };
 const xmlDuDocx = (chemin) => execFileSync('unzip', ['-p', chemin, 'word/document.xml']).toString();
+// Python sous Windows écrit sa sortie en cp1252 (un « é » = 1 octet) alors que Node la lit en UTF-8 : le nom du fichier
+// accentué arrivait abîmé. PYTHONUTF8=1 force l'UTF-8 sur toutes les machines (sans effet sur Linux, où c'est déjà le cas).
+const python = (code, ...arguments_) => execFileSync('python3', ['-c', code, ...arguments_], { env: { ...process.env, PYTHONUTF8: '1' } }).toString();
 
 async function nouvelleSeance(date, matiere) {
   await page.goto(`${URL_APP}#/seance`);
@@ -88,9 +91,9 @@ await page.getByLabel('Sans nom ni titulaire (pour partager)').check();
 ok(t.suggestedFilename() === 'Journaliers - dé-identifiés - 2025-2026.zip', `archive : ${t.suggestedFilename()}`);
 const zip = await docx(t, 'tous.zip');
 // unzip ignore le marqueur UTF-8 : Python le respecte (comme l’explorateur de Windows).
-const contenu = execFileSync('python3', ['-c', 'import zipfile,sys;print("\\n".join(zipfile.ZipFile(sys.argv[1]).namelist()))', zip]).toString().trim().split('\n');
+const contenu = python('import zipfile,sys;print("\\n".join(zipfile.ZipFile(sys.argv[1]).namelist()))', zip).trim().split('\n');
 ok(contenu.length === 1 && contenu[0] === 'Journalier - dé-identifié - 1CB - 2025-2026.docx', `contenu de l’archive : ${contenu.join(', ')}`);
-xml = execFileSync('python3', ['-c', 'import zipfile,sys,io;z=zipfile.ZipFile(sys.argv[1]);d=zipfile.ZipFile(io.BytesIO(z.read(sys.argv[2])));print(d.read("word/document.xml").decode())', zip, contenu[0]]).toString();
+xml = python('import zipfile,sys,io;z=zipfile.ZipFile(sys.argv[1]);d=zipfile.ZipFile(io.BytesIO(z.read(sys.argv[2])));print(d.read("word/document.xml").decode())', zip, contenu[0]);
 ok(xml.includes('15/06/2026') && !xml.includes('Alpha') && !xml.includes('M. Test'), 'docx de l’archive : bonne période, sans nom ni titulaire');
 await page.getByLabel('Sans nom ni titulaire (pour partager)').uncheck();
 

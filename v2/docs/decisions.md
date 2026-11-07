@@ -2,6 +2,9 @@
 
 | Date | Décision | Raison |
 |---|---|---|
+| 2026-11-07 | **Parcours journalier.mjs sur Windows** : Python y écrit en cp1252 alors que Node lit de l'UTF-8 (`é` = 1 octet) ; les appels Python des parcours passent par `PYTHONUTF8=1` ; unzip doit être dans le PATH (lancer les parcours depuis Git Bash) | Le zip de l'application était correct (drapeau UTF-8) ; seul l'outil de vérification abîmait le nom |
+| 2026-11-07 | **Audit, lot 1 (protéger les données)** : brouillon de séance gardé (chiffré) et proposé après un rechargement (« Reprendre ma saisie » / « Repartir de zéro », jamais appliqué sans accord) ; suppression d'une activité de l'agenda confirmée ; croix d'un mémo avec « Annuler » (8 s) ; le focus d'une confirmation va sur « Annuler » | Séance perdue au moindre rechargement ou changement d'écran ; suppression d'un seul toucher dans l'agenda ; Entrée suffisait à supprimer une séance |
+| 2026-11-07 | **Filets d'un seul côté** : voulus par l'utilisateur (à inscrire dans `DESIGN.md` au lot 5) ; export Word : aucune erreur observée en conditions réelles, le toast d'erreur reste une amélioration mineure | Précision de l'utilisateur après l'audit |
 | 2026-10 | Réécriture en React + TypeScript dans `v2/`, V75 conservée | Personne n'utilise encore l'app ; design et fluidité pour l'adhésion de l'équipe |
 | 2026-10 | esbuild sans Vite | Peu de dépendances, build simple |
 | 2026-10 | Une échelle d'observation, une échelle d'effet des aides | Vocabulaire simple, texte final cohérent |

@@ -174,3 +174,10 @@
   .journalier-liste li { grid-template-columns: 1fr; }
   .journalier-actions { justify-content: flex-start; margin-left: calc(-1 * var(--sp-3)); }
 }
+
+/* Brouillon retrouvé : proposé en haut de l'écran Séance, cadre complet (jamais de filet d'un seul côté). */
+.brouillon-retrouve {
+  display: grid; gap: var(--sp-3); margin-bottom: var(--sp-4); padding: var(--sp-4);
+  border: 1px solid var(--attention); border-radius: var(--r-m); background: var(--attention-soft);
+}
+.brouillon-retrouve p { margin: 0; }

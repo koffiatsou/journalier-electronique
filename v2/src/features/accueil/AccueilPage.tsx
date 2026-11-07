@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { exempleDemo } from '../../data/demo.ts';
-import { aEncoder, basculerMemo, creerMemo, deplacements, journeeDu, lignesSuite, memosDuCreneau, retirerMemo, viderFaits } from '../../domain/accueil/index.ts';
+import { aEncoder, basculerMemo, creerMemo, deplacements, journeeDu, lignesSuite, memosDuCreneau, remettreMemo, retirerMemo, viderFaits } from '../../domain/accueil/index.ts';
 import type { Creneau, Deplacement, Memo } from '../../domain/accueil/index.ts';
 import { PERIODES_AGENDA, ajouterJours, jourComplet, seanceDuCreneau } from '../../domain/agenda/index.ts';
 import type { Occurrence } from '../../domain/agenda/index.ts';
@@ -112,6 +112,12 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
     changerMemos((l) => [m, ...l]);
     setTexteMemo('');
     setCibleMemo('');
+  };
+  /** Retire un mémo, puis propose « Annuler » pendant quelques secondes : la croix est petite et se touche sans le vouloir. */
+  const supprimerMemo = (m: Memo) => {
+    const position = magasin.lire().memos.findIndex((x) => x.id === m.id);
+    changerMemos((l) => retirerMemo(l, m.id));
+    annoncer('Mémo supprimé', { libelle: 'Annuler', faire: () => changerMemos((l) => remettreMemo(l, m, position)) });
   };
   const memosTries = [...memos].sort((a, b) => Number(a.fait) - Number(b.fait));
   const nbFaits = memos.filter((m) => m.fait).length;
@@ -252,7 +258,7 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
                         <input type="checkbox" checked={m.fait} onChange={() => changerMemos((l) => basculerMemo(l, m.id))} />
                         <span className="memo-texte">{m.texte}{cibleDe(m) ? <small>{cibleDe(m)}</small> : null}</span>
                       </label>
-                      <button type="button" className="memo-retirer" aria-label={`Supprimer le mémo : ${m.texte}`} onClick={() => changerMemos((l) => retirerMemo(l, m.id))}>×</button>
+                      <button type="button" className="memo-retirer" aria-label={`Supprimer le mémo : ${m.texte}`} onClick={() => supprimerMemo(m)}>×</button>
                     </li>
                   ))}
                 </ul>

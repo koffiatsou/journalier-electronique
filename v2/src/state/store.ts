@@ -13,6 +13,8 @@ import { effetSuppression, normaliserEleve } from '../domain/eleves/index.ts';
 import type { EffetSuppression } from '../domain/eleves/index.ts';
 import { REGLAGE_MEMOS, normaliserMemos } from '../domain/accueil/index.ts';
 import type { Memo } from '../domain/accueil/index.ts';
+import { REGLAGE_BROUILLON_SEANCE, creerBrouillonSeance, normaliserBrouillonSeance } from '../domain/brouillons/index.ts';
+import type { BrouillonSeance } from '../domain/brouillons/index.ts';
 import { normaliserPia } from '../domain/pia/index.ts';
 import type { Pia } from '../domain/pia/index.ts';
 import { estDemo } from '../domain/synchro/cles.ts';
@@ -54,10 +56,14 @@ export interface Etat {
   illisibles: number;
   /** Séance à ouvrir préremplie (depuis l'agenda) ; consommée une fois. */
   preparation: Partial<Seance> | null;
+  /** Séance commencée et pas encore enregistrée, gardée sur cet appareil (chiffrée comme le reste) pour survivre à un rechargement. */
+  brouillonSeance: BrouillonSeance | null;
+  /** Message d'erreur si le brouillon n'a pas pu être écrit (sinon `null`). */
+  erreurBrouillon: string | null;
 }
 
 const initial: Etat = {
-  pret: false, erreur: null, eleves: [], seances: [], activites: [], pias: [], horaires: horairesParDefaut(), ecoles: ecolesParDefaut().ecoles, trajet: ecolesParDefaut().trajet, semaineType: null, memos: [], statutPia: { etat: 'repos', le: '', message: '' }, illisibles: 0, preparation: null
+  pret: false, erreur: null, eleves: [], seances: [], activites: [], pias: [], horaires: horairesParDefaut(), ecoles: ecolesParDefaut().ecoles, trajet: ecolesParDefaut().trajet, semaineType: null, memos: [], statutPia: { etat: 'repos', le: '', message: '' }, illisibles: 0, preparation: null, brouillonSeance: null, erreurBrouillon: null
 };
 
 /** Ancien nom du réglage « horaires des périodes » (une seule école) : encore relu tant que `agenda-ecoles` n'existe pas. */
@@ -98,6 +104,29 @@ export function creerMagasin(depot: Depot) {
     return file;
   };
 
+  /* Brouillon de séance : même principe que le PIA (visible tout de suite, écrit après une courte pause, en une seule écriture à la fois). */
+  let brouillonAEcrire: BrouillonSeance | null | undefined; // undefined : rien à écrire ; null : à effacer
+  let minuteurBrouillon: ReturnType<typeof setTimeout> | null = null;
+  let fileBrouillon: Promise<void> = Promise.resolve();
+
+  /** Écrit le brouillon en attente. Ne lève jamais d'erreur : un échec est signalé dans `erreurBrouillon` et réessayé à la prochaine modification. */
+  const ecrireBrouillon = (): Promise<void> => {
+    if (minuteurBrouillon) { clearTimeout(minuteurBrouillon); minuteurBrouillon = null; }
+    fileBrouillon = fileBrouillon.then(async () => {
+      if (brouillonAEcrire === undefined) return;
+      const valeur = brouillonAEcrire;
+      brouillonAEcrire = undefined;
+      try {
+        await depot.enregistrerReglage({ id: REGLAGE_BROUILLON_SEANCE, valeur });
+        if (etat.erreurBrouillon) maj({ erreurBrouillon: null });
+      } catch (e) {
+        if (brouillonAEcrire === undefined) brouillonAEcrire = valeur;
+        maj({ erreurBrouillon: e instanceof Error ? e.message : 'Enregistrement du brouillon impossible' });
+      }
+    });
+    return fileBrouillon;
+  };
+
   return {
     lire: () => etat,
     abonner(f: () => void) { abonnes.add(f); return () => { abonnes.delete(f); }; },
@@ -111,6 +140,7 @@ export function creerMagasin(depot: Depot) {
           ...ecolesDepuis(reglages),
           semaineType: normaliserSemaineType(reglages.find((r) => r.id === REGLAGE_SEMAINE_TYPE)?.valeur),
           memos: normaliserMemos(reglages.find((r) => r.id === REGLAGE_MEMOS)?.valeur),
+          brouillonSeance: normaliserBrouillonSeance(reglages.find((r) => r.id === REGLAGE_BROUILLON_SEANCE)?.valeur),
           illisibles: depot.illisibles().length
         });
       } catch (e) {
@@ -222,6 +252,8 @@ export function creerMagasin(depot: Depot) {
         eleves: etat.eleves.filter((x) => x.id !== id), seances: etat.seances.filter((x) => !s.has(x.id)),
         activites: etat.activites.filter((x) => !a.has(x.id)), pias: etat.pias.filter((x) => !pi.has(x.id))
       });
+      // Un brouillon de séance qui concerne l'élève supprimé n'a plus de raison d'être proposé.
+      if (etat.brouillonSeance?.seance.eleveId === id) await this.effacerBrouillonSeance();
       return effet;
     },
 
@@ -235,9 +267,26 @@ export function creerMagasin(depot: Depot) {
     },
 
     /** Écrit tout de suite ce qui attend (changement d'écran, fermeture de la page, tests). */
-    viderEnregistrements(): Promise<void> {
+    async viderEnregistrements(): Promise<void> {
       if (minuteur) { clearTimeout(minuteur); minuteur = null; }
-      return ecrirePias();
+      await Promise.all([ecrirePias(), ecrireBrouillon()]);
+    },
+
+    /** Garde la séance en cours de saisie : visible tout de suite, écrite après une courte pause, relue après un rechargement. */
+    enregistrerBrouillonSeance(s: Seance) {
+      const b = creerBrouillonSeance(s);
+      maj({ brouillonSeance: b });
+      brouillonAEcrire = b;
+      if (minuteurBrouillon) clearTimeout(minuteurBrouillon);
+      minuteurBrouillon = setTimeout(() => { minuteurBrouillon = null; void ecrireBrouillon(); }, DELAI_PIA_MS);
+    },
+
+    /** Efface le brouillon de séance (séance enregistrée, ou choix « Repartir de zéro »). */
+    effacerBrouillonSeance(): Promise<void> {
+      if (!etat.brouillonSeance && brouillonAEcrire === undefined) return Promise.resolve();
+      maj({ brouillonSeance: null });
+      brouillonAEcrire = null;
+      return ecrireBrouillon();
     },
 
     async enregistrerSeance(s: Seance) {

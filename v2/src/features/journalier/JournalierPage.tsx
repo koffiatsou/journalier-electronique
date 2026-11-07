@@ -240,7 +240,7 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
             </p>
             <div className="fiche-actions">
               <Button variante="primaire" className="btn-danger-plein" onClick={() => { void supprimer(); }}>Supprimer</Button>
-              <Button onClick={() => setASupprimer(null)}>Annuler</Button>
+              <Button data-focus-initial onClick={() => setASupprimer(null)}>Annuler</Button>
             </div>
           </>
         ) : null}
