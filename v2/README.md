@@ -38,7 +38,7 @@ LANG=C.UTF-8 node tools/navigateur/lot1-donnees.mjs # audit lot 1 : brouillon de
 LANG=C.UTF-8 node tools/navigateur/lot2-defilement.mjs # audit lot 2 : défilement natif (rubriques, focus, bande, dialogues)
 LANG=C.UTF-8 node tools/navigateur/lot4-clavier.mjs # audit lot 4 : vraies touches (Tab, Échap), tiroirs, grille, noms, erreurs, mouvement réduit
 LANG=C.UTF-8 node tools/navigateur/lot5-coherence.mjs # audit lot 5 : capitales, graisses, jetons, vocabulaire, ordre des noms
-LANG=C.UTF-8 node tools/navigateur/lot6-naissance.mjs # audit lot 6 : date de naissance (aussi lot6-annee, lot6-apres-seance, lot6-premier-eleve)
+LANG=C.UTF-8 node tools/navigateur/lot6-naissance.mjs # audit lot 6 : date de naissance (aussi lot6-annee, lot6-apres-seance, lot6-premier-eleve, lot6-sorties, lot6-doublon, lot6-agenda, lot6-pia, lot6-brouillons, lot6-fiche)
 LANG=C.UTF-8 node tools/navigateur/lot3-tactile.mjs # audit lot 3 : zones de 44 px, textes de 12 px, survols, contrastes (contexte tactile à 390 et 768 px)
 LANG=C.UTF-8 node tools/navigateur/lot2b-tactile.mjs # audit lot 2b : gestes tactiles (profil iPad), position au retour, WebKit si installé
 LANG=C.UTF-8 node tools/navigateur/seance-sp.mjs     # lot SP : barre d'étapes, jauge, résumés, « Étape suivante », zones de texte
@@ -82,7 +82,7 @@ Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des l
 | Audit du 6-7 novembre, lot 3 (tactile et lisibilité : 44 px, 12 px, contrastes) | **fait en local, en attente de validation** |
 | Audit du 6-7 novembre, lot 4 (clavier, lecteur d'écran, mouvement réduit) | **fait en local, en attente de validation** |
 | Audit du 6-7 novembre, lot 5 (cohérence : jetons, vocabulaire, ordre des noms) | **fait en local, en attente de validation** |
-| Audit du 6-7 novembre, lot 6 (fonctionnel : date de naissance, nouvelle année PIA, premier élève…) | **partiel, fait en local** |
+| Audit du 6-7 novembre, lot 6 (fonctionnel : date de naissance, nouvelle année PIA, premier élève…) | **fait en local, en attente de validation** |
 | Retouches du 4 novembre (tablette) : matière en pastilles, points de vigilance, menu réductible, fiche élève | **lot V terminé** |
 | Retouches du 3 novembre : encodage depuis l'agenda, horaire libre, enseignants par cours, évolution lisible | **lot U terminé** ; reste : référentiel (lots R) |
 | Mise en service : la V2 à l'adresse principale, la V75 en secours dans `/v75/`, assemblage du site vérifié (chaque page appelle des fichiers existants de sa propre version), adresse de retour Microsoft de la V2 = celle de la V75 | **lot S terminé** ; reste : déclarer l'adresse `/v75/` chez Entra, regarder le contrôle GitHub, essais réels, puis fusionner la demande #37 (= la bascule) |

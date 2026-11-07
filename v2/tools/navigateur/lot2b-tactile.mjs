@@ -76,7 +76,7 @@ await attendre(page, 200);
 
 /* T2 + T3 : appui long puis glissement sur une activité */
 const evt = page.locator('.evt:not(.annule)').first();
-await evt.scrollIntoViewIfNeeded();
+await evt.evaluate((e) => e.scrollIntoView({ block: 'center' })); // au milieu de l'écran : la bannière « points à vérifier » (séries un jour de congé) décale la grille, et un doigt posé tout en bas n'est pas un cas de ce test
 const depart = await centre(evt);
 const hauteurCase = (await page.locator('button.cellule').first().boundingBox()).height;
 const bas = depart.y + 2 * hauteurCase < 600;
