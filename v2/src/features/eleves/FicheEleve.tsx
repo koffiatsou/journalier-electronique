@@ -67,7 +67,12 @@ export function FicheEleve({ eleve, couleurParDefaut, ecoles, onEnregistrer, onA
         <Field label="Prénom" obligatoire>{(id, champ) => <Input id={id} {...champ} value={e.prenom} onChange={(ev) => maj({ prenom: ev.target.value })} />}</Field>
       </div>
       <div className="champs champs-2">
-        <Field label="Classe" aide={deduction(e.classe) || 'Ex. : 3CB, 1DB, 4TQ, 5P'}>
+        <Field label="Date de naissance" optionnel aide="Pour l’identité du PIA et les documents Word.">
+          {(id) => <Input id={id} type="date" value={e.dateNaissance} onChange={(ev) => maj({ dateNaissance: ev.target.value })} />}
+        </Field>
+      </div>
+      <div className="champs champs-2">
+        <Field label="Classe"aide={deduction(e.classe) || 'Ex. : 3CB, 1DB, 4TQ, 5P'}>
           {(id) => <Input id={id} value={e.classe} placeholder="3CB" onChange={(ev) => maj({ classe: ev.target.value })} />}
         </Field>
         <Field label="Niveau d’étude" optionnel aide={filiereDeduite && !e.filiere ? 'Déduit de la classe.' : undefined}>
