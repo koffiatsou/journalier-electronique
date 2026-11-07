@@ -42,6 +42,15 @@ if (await dlg.count() === 1) {
 await remplir('2026-09-09', true);
 await page.getByText('Séance enregistrée').first().waitFor({ timeout: 4000 }).catch(() => undefined);
 ok(await page.getByRole('dialog', { name: /Aucun point noté/ }).count() === 0 && await nb() === avant + 2, 'une séance d’absence s’enregistre sans question');
+// Avec l'objectif de la leçon noté : rien à confirmer (le Journalier écrit « Séance sans observation particulière. »).
+await page.evaluate(() => { location.hash = '#/seance'; });
+await page.getByLabel('Élève accompagné').selectOption({ label: 'Élève Bêta' });
+await page.getByLabel('Date', { exact: true }).fill('2026-09-10');
+await page.getByLabel('Matière').fill('Sciences');
+await page.getByLabel(/Objectif de la leçon/).fill('Le cycle de l’eau');
+await page.getByRole('button', { name: 'Enregistrer la séance' }).click();
+await page.getByText('Séance enregistrée').first().waitFor({ timeout: 4000 }).catch(() => undefined);
+ok(await page.getByRole('dialog', { name: /Aucun point noté/ }).count() === 0 && await nb() === avant + 3, 'avec l’objectif noté, la séance s’enregistre sans question');
 await nav.close();
 ok(erreurs.length === 0, `aucune erreur dans la console${erreurs.length ? ' : ' + erreurs.slice(0, 2).join(' | ') : ''}`);
 if (echecs.length) { console.log(`\n${echecs.length} échec(s)`); process.exit(1); }
