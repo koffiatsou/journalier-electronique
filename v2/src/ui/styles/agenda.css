@@ -197,7 +197,7 @@
   .shell { display: block; padding: 0; min-height: 0; }
   .contenu { padding: 0; }
   .agenda { gap: 6pt; color: #000; }
-  .agenda-impression-titre { display: block; margin: 0; font-size: 14pt; font-weight: 700; text-transform: capitalize; }
+  .agenda-impression-titre { display: block; margin: 0; font-size: 14pt; font-weight: 700; }
   .legende button { border-color: #888; font-size: 9pt; min-height: 0; padding: 1pt 8pt 1pt 5pt; }
   .grille, .mois { box-shadow: none; border-radius: 0; break-inside: avoid; border-color: #888; }
   .mois-case { min-height: 84px; }

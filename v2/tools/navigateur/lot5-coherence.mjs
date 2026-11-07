@@ -141,6 +141,24 @@ for (const theme of ['dark', 'light']) {
   await ctx.close();
 }
 
+/* ───────── G : petits points de présentation ───────── */
+{
+  const { ctx, page } = await ouvrir('light', 1280, false);
+  await aller_(page, '#/agenda');
+  await page.emulateMedia({ media: 'print' });
+  const transformation = await page.evaluate(() => getComputedStyle(document.querySelector('.agenda-impression-titre')).textTransform);
+  ok(transformation === 'none', `G titre imprimé de l'agenda : pas de majuscule forcée au mois (« novembre »), transformation : ${transformation}`);
+  await page.emulateMedia({ media: 'screen' });
+  const metas = await page.evaluate(() => ({
+    description: document.querySelector('meta[name="description"]')?.getAttribute('content') ?? '',
+    couleurs: [...document.querySelectorAll('meta[name="theme-color"]')].map((m) => `${m.getAttribute('media')} => ${m.getAttribute('content')}`)
+  }));
+  ok(metas.description.length > 20, 'G la page a une description');
+  ok(metas.couleurs.length === 2 && metas.couleurs.some((c) => /light.*#f3f0ea/.test(c)) && metas.couleurs.some((c) => /dark.*#12151e/.test(c)),
+    `G theme-color : une valeur pour le clair (fond crème) et une pour le sombre${metas.couleurs.length ? ' — ' + metas.couleurs.join(' ; ') : ''}`);
+  await ctx.close();
+}
+
 await nav.close();
 ok(erreurs.length === 0, `aucune erreur dans la console${erreurs.length ? ' : ' + erreurs.slice(0, 3).join(' | ') : ''}`);
 if (echecs.length) { console.log(`\n${echecs.length} échec(s)`); process.exit(1); }
