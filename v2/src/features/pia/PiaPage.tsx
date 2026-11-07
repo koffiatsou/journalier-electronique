@@ -16,6 +16,7 @@ import { Field, Select } from '../../ui/Field.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { aujourdhuiISO } from '../seance/brouillon.ts';
 import { nomEleve } from './contexte.ts';
+import { cleDeTri } from '../../domain/eleves/index.ts';
 import { OngletAmenagements } from './OngletAmenagements.tsx';
 import { OngletIdentite } from './OngletIdentite.tsx';
 import { OngletProfil } from './OngletProfil.tsx';
@@ -75,7 +76,7 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
   }, [enImpression]);
   const refsOnglets = useRef<Record<string, HTMLButtonElement | null>>({});
 
-  const triees = useMemo(() => [...eleves].sort((a, b) => nomEleve(a).localeCompare(nomEleve(b), 'fr')), [eleves]);
+  const triees = useMemo(() => [...eleves].sort((a, b) => cleDeTri(a).localeCompare(cleDeTri(b), 'fr')), [eleves]);
   const annees = useMemo(() => {
     const set = new Set([...anneesDisponibles(seances, aujourdhui), ...pias.map((p) => p.annee), annee]);
     return [...set].sort().reverse();

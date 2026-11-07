@@ -9,7 +9,7 @@ import { Chips } from '../../ui/Chip.tsx';
 import { ChampSuggestions } from '../../ui/ChampSuggestions.tsx';
 import { Field, Input, Select, Textarea } from '../../ui/Field.tsx';
 import { anneeDeNiveau, cibleDeSeance, defautsSeance, formeDeFiliere } from '../../domain/referentiel/index.ts';
-import { elevesProposes, enseignantDuDossier, languesDe } from '../../domain/eleves/index.ts';
+import { elevesProposes, enseignantDuDossier, languesDe, nomAffiche } from '../../domain/eleves/index.ts';
 import { ecoleDeEleve, nbPeriodesUtilisees } from '../../domain/agenda/index.ts';
 import type { Ecole } from '../../domain/agenda/index.ts';
 import type { Piste } from '../../domain/referentiel/index.ts';
@@ -62,7 +62,7 @@ export function FormulaireCreneau({ s, maj, eleves, ecoles = [], erreurs = {} }:
               maj({ eleveId: e.target.value, matiere: '', ...defautsSeance(el) });
             }}>
               <option value="">Choisir un élève</option>
-              {elevesProposes(eleves, s.eleveId).map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
+              {elevesProposes(eleves, s.eleveId).map((e) => <option key={e.id} value={e.id}>{nomAffiche(e)}</option>)}
             </Select>
           )}
         </Field>

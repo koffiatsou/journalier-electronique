@@ -4,7 +4,7 @@ import { creerDepotMemoire } from '../src/data/memoire.ts';
 import type { Activite } from '../src/domain/agenda/types.ts';
 import {
   appliquerPassage, archiver, bilanSeances, classeSuivante, effetSuppression, elevesActifs, elevesArchives, elevesProposes,
-  initiales, languesDe, niveauSuivant, normaliserEleve, planPassage, reactiver, rechercherEleves
+  cleDeTri, initiales, languesDe, niveauSuivant, nomAffiche, nomDeDocument, normaliserEleve, planPassage, reactiver, rechercherEleves
 } from '../src/domain/eleves/index.ts';
 import { rechercherSeances } from '../src/domain/journalier/index.ts';
 import { cibleDeSeance } from '../src/domain/referentiel/index.ts';
@@ -244,5 +244,28 @@ describe('Passage d’année scolaire', () => {
     await magasin.ajouterEleves([appliquerPassage(e, ligne(e), cible, options)]);
     assert.equal(magasin.lire().eleves[0]?.classe, '4CB');
     assert.deepEqual(magasin.lire().seances, [s]);
+  });
+});
+
+describe('ordre des noms (décision du 7/11/2026 : prénom puis nom à l’écran)', () => {
+  const e = eleve({ nom: 'Alpha', prenom: 'Élève' });
+
+  it('à l’écran : prénom puis nom', () => {
+    assert.equal(nomAffiche(e), 'Élève Alpha');
+  });
+
+  it('pour trier les listes : nom puis prénom, donc l’ordre alphabétique reste celui des noms de famille', () => {
+    const liste = [eleve({ nom: 'Zeta', prenom: 'Anne' }), eleve({ nom: 'Alpha', prenom: 'Zoé' }), eleve({ nom: 'Alpha', prenom: 'Bob' })];
+    const tries = [...liste].sort((a, b) => cleDeTri(a).localeCompare(cleDeTri(b), 'fr')).map(nomAffiche);
+    assert.deepEqual(tries, ['Bob Alpha', 'Zoé Alpha', 'Anne Zeta']);
+  });
+
+  it('dans un document : nom puis prénom, comme le modèle officiel', () => {
+    assert.equal(nomDeDocument(e), 'Alpha Élève');
+  });
+
+  it('sans prénom ou sans nom : pas d’espace en trop', () => {
+    assert.equal(nomAffiche(eleve({ nom: 'Alpha', prenom: '' })), 'Alpha');
+    assert.equal(nomAffiche(eleve({ nom: '', prenom: 'Élève' })), 'Élève');
   });
 });

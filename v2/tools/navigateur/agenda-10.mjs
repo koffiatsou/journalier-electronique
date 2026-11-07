@@ -149,9 +149,9 @@ await page.getByRole('group', { name: 'Affichage' }).getByRole('button', { name:
 
 /* ───────── Formulaire de séance : les périodes de l'école de l'élève ───────── */
 await aller(page, `${URL_APP}#/seance`);
-await page.getByLabel('Élève accompagné').selectOption({ label: 'Bêta Élève' });
+await page.getByLabel('Élève accompagné').selectOption({ label: 'Élève Bêta' });
 ok((await page.getByLabel('Première période').locator('option').allInnerTexts()).length === 9, 'séance de Bêta (Notre-Dame) : neuf périodes proposées');
-await page.getByLabel('Élève accompagné').selectOption({ label: 'Alpha Élève' });
+await page.getByLabel('Élève accompagné').selectOption({ label: 'Élève Alpha' });
 ok((await page.getByLabel('Première période').locator('option').allInnerTexts()).length === 8, 'séance d’Alpha (Saint-Joseph) : huit périodes proposées');
 
 /* ───────── Après rechargement ───────── */

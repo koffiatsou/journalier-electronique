@@ -21,7 +21,7 @@ await page.locator('.creneau').first().waitFor();
 
 // 1. séance saisie à la main, hier, pour Élève Bêta, avec l'étape « Suite » remplie
 await page.getByRole('link', { name: 'Séance' }).first().click();
-await page.getByLabel('Élève accompagné').selectOption({ label: 'Bêta Élève' });
+await page.getByLabel('Élève accompagné').selectOption({ label: 'Élève Bêta' });
 await page.getByLabel('Date', { exact: true }).fill('2026-10-26');
 await page.getByLabel('Matière').fill('Sciences');
 await page.getByLabel('Mon objectif').fill('Retenir le vocabulaire du cycle de l’eau');

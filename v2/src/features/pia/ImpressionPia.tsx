@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom';
+import { nomDeDocument } from '../../domain/eleves/index.ts';
 import { lignesEvaluation, lignesObjectifs } from '../../domain/export/pia.ts';
 import type { PartiePia } from '../../domain/export/index.ts';
 import { dateBelge } from '../../domain/export/journalier.ts';
@@ -50,7 +51,7 @@ interface Props { pia: Pia; eleve: Eleve; parties: ReadonlySet<PartiePia>; deide
 
 /** Rendu dans `document.body` : à l'impression, tout le reste de la page est masqué. */
 export function ImpressionPia({ pia, eleve, parties, deidentifie }: Props) {
-  const nom = deidentifie ? 'Élève' : `${eleve.nom} ${eleve.prenom}`.trim();
+  const nom = deidentifie ? 'Élève' : nomDeDocument(eleve);
   const evaluation = lignesEvaluation(pia);
   const objectifs = lignesObjectifs(pia);
   return createPortal(

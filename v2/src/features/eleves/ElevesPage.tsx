@@ -3,7 +3,7 @@ import type { Aller } from '../../app/useRoute.ts';
 import { couleurLibre, couleursEleves } from '../../domain/agenda/index.ts';
 import { anneeScolaire } from '../../domain/export/journalier.ts';
 import {
-  archiver, bilanSeances, effetSuppression, elevesActifs, elevesArchives, languesDe, reactiver, rechercherEleves
+  archiver, bilanSeances, cleDeTri, effetSuppression, elevesActifs, elevesArchives, languesDe, nomAffiche, reactiver, rechercherEleves
 } from '../../domain/eleves/index.ts';
 import type { BilanSeances } from '../../domain/eleves/index.ts';
 import { analyserClasse } from '../../domain/referentiel/index.ts';
@@ -25,7 +25,6 @@ import { PassageAnnee } from './PassageAnnee.tsx';
 
 const vide = (autres: readonly Eleve[]): Eleve => ({ id: crypto.randomUUID(), nom: '', prenom: '', classe: '', ecole: '', titulaire: '', dateNaissance: '', matieres: [], couleur: couleurLibre(autres) });
 
-const nomComplet = (e: Pick<Eleve, 'nom' | 'prenom'>): string => `${e.nom} ${e.prenom}`.trim();
 const pluriel = (n: number, mot: string): string => `${n} ${mot}${n > 1 ? 's' : ''}`;
 
 /** Classe et niveau d'étude, tels que l'application les lit (ex. « 3CB · Secondaire général »). */
@@ -47,7 +46,7 @@ function Carte({ eleve, couleur, bilan, aJour, onOuvrir }: { eleve: Eleve; coule
       <button type="button" className="carte-eleve" data-archive={Boolean(eleve.archiveLe)} onClick={onOuvrir}>
         <Avatar eleve={eleve} couleur={couleur} />
         <span className="carte-corps">
-          <strong className="carte-nom">{nomComplet(eleve) || 'Sans nom'}</strong>
+          <strong className="carte-nom">{nomAffiche(eleve) || 'Sans nom'}</strong>
           <span className="carte-detail">{resume(eleve) || 'Dossier à compléter'}</span>
           {eleve.matieres.length ? <span className="carte-detail">{eleve.matieres.join(', ')}</span> : null}
           {langues.length ? <span className="carte-detail">Langues : {langues.join(', ')}</span> : null}
@@ -80,7 +79,7 @@ export function ElevesPage({ magasin, onAller }: { magasin: Magasin; onAller: Al
 
   const couleurs = couleursEleves(eleves);
   const bilans = bilanSeances(seances);
-  const parNom = (a: Eleve, b: Eleve) => nomComplet(a).localeCompare(nomComplet(b), 'fr');
+  const parNom = (a: Eleve, b: Eleve) => cleDeTri(a).localeCompare(cleDeTri(b), 'fr');
   const trouves = rechercherEleves(eleves, requete);
   const actifs = elevesActifs(trouves).sort(parNom);
   const archives = elevesArchives(trouves).sort(parNom);
@@ -94,16 +93,16 @@ export function ElevesPage({ magasin, onAller }: { magasin: Magasin; onAller: Al
   const enregistrer = async (e: Eleve, retour: Vue) => {
     await magasin.ajouterEleves([e]);
     setVue(retour.genre === 'dossier' ? { genre: 'dossier', id: e.id } : { genre: 'liste' });
-    annoncer(`${nomComplet(e)} enregistré`);
+    annoncer(`${nomAffiche(e)} enregistré`);
   };
 
   const basculerArchive = async (e: Eleve) => {
     if (e.archiveLe) {
       await magasin.ajouterEleves([reactiver(e)]);
-      annoncer(`${nomComplet(e)} est de nouveau suivi`);
+      annoncer(`${nomAffiche(e)} est de nouveau suivi`);
     } else {
       await magasin.ajouterEleves([archiver(e, aujourdhui)]);
-      annoncer(`${nomComplet(e)} archivé : son historique reste au Journalier`);
+      annoncer(`${nomAffiche(e)} archivé : son historique reste au Journalier`);
     }
   };
 
@@ -116,7 +115,7 @@ export function ElevesPage({ magasin, onAller }: { magasin: Magasin; onAller: Al
       const effet = await magasin.supprimerEleve(e.id);
       fermerSuppression();
       setVue({ genre: 'liste' });
-      annoncer(`${nomComplet(e)} supprimé (${pluriel(effet.seances.length, 'séance')})`);
+      annoncer(`${nomAffiche(e)} supprimé (${pluriel(effet.seances.length, 'séance')})`);
     } catch (err) {
       annoncer(err instanceof Error ? err.message : 'Suppression impossible');
     } finally {
@@ -188,7 +187,7 @@ export function ElevesPage({ magasin, onAller }: { magasin: Magasin; onAller: Al
           <div className="dossier-identite">
             <Avatar eleve={ouvert} couleur={couleurs.get(ouvert.id) ?? 0} taille="l" />
             <div>
-              <h2>{nomComplet(ouvert)}</h2>
+              <h2>{nomAffiche(ouvert)}</h2>
               <p className="liste-detail">{resume(ouvert) || 'Dossier à compléter'}</p>
               {ouvert.archiveLe ? <p><Badge>Archivé le {dateFR(ouvert.archiveLe)}</Badge></p> : !aJour(ouvert) ? <p><Badge ton="attention">Dossier de {ouvert.anneeDossier} : à mettre à jour</Badge></p> : null}
             </div>
@@ -231,7 +230,7 @@ export function ElevesPage({ magasin, onAller }: { magasin: Magasin; onAller: Al
           {aSupprimer ? (
             <>
               <p>
-                Le dossier de <strong>{nomComplet(aSupprimer)}</strong> sera supprimé
+                Le dossier de <strong>{nomAffiche(aSupprimer)}</strong> sera supprimé
                 {effet.seances.length || effet.activites.length || effet.pias.length ? (
                   <>, avec <strong>{pluriel(effet.seances.length, 'séance')}</strong> du Journalier{effet.pias.length ? ', ' : ' et '}<strong>{pluriel(effet.activites.length, 'activité')}</strong> de l’agenda{effet.pias.length ? <> et <strong>{pluriel(effet.pias.length, 'PIA')}</strong></> : null}</>
                 ) : ' (aucune séance ni activité n’y est liée)'}.

@@ -4,6 +4,7 @@ import { deIdentifierPia, identiteAnonyme, nomFichierPia, remplirEntete, remplir
 import type { OptionsPia } from './pia.ts';
 import type { Pia } from '../pia/types.ts';
 import type { Eleve, Seance } from '../types.ts';
+import { nomDeDocument } from '../eleves/affichage.ts';
 
 export { lireZip, ecrireZip } from './zip.ts';
 export { remplirDocument, preparerBlocs, nomFichier, anneeScolaire } from './journalier.ts';
@@ -61,7 +62,7 @@ export async function construirePia(modele: Uint8Array, piaComplet: Pia, eleve: 
   const identite = options.deidentifie
     ? identiteAnonyme(eleve.classe, pia.identite.option)
     : {
-      nom: `${eleve.nom} ${eleve.prenom}`.trim(), dateNaissance: eleve.dateNaissance, ecole: eleve.ecole, classe: eleve.classe,
+      nom: nomDeDocument(eleve), dateNaissance: eleve.dateNaissance, ecole: eleve.ecole, classe: eleve.classe,
       option: pia.identite.option, titulaire: eleve.titulaire, cpms: pia.identite.cpms,
       representantPole: pia.identite.representantPole, responsable: pia.identite.responsable
     };

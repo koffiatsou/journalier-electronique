@@ -4,7 +4,7 @@ import {
   periodesCouvertes, verifierHeuresLibres
 } from '../../domain/agenda/index.ts';
 import type { Activite, Changement, Ecole, Edition, Occurrence, Portee, TypeActivite } from '../../domain/agenda/index.ts';
-import { elevesProposes, languesDe } from '../../domain/eleves/index.ts';
+import { elevesProposes, languesDe, nomAffiche } from '../../domain/eleves/index.ts';
 import type { Eleve } from '../../domain/types.ts';
 import { Button } from '../../ui/Button.tsx';
 import { ChampSuggestions } from '../../ui/ChampSuggestions.tsx';
@@ -132,7 +132,7 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
             {(id) => (
               <Select id={id} value={eleveId} onChange={(e) => setEleveId(e.target.value)}>
                 <option value="">Autre (nom libre)</option>
-                {elevesProposes(eleves, eleveId).map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
+                {elevesProposes(eleves, eleveId).map((e) => <option key={e.id} value={e.id}>{nomAffiche(e)}</option>)}
               </Select>
             )}
           </Field>

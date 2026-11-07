@@ -33,7 +33,7 @@ const python = (code, ...arguments_) => execFileSync('python3', ['-c', code, ...
 
 async function nouvelleSeance(date, matiere) {
   await page.goto(`${URL_APP}#/seance`);
-  await page.getByLabel('Élève accompagné').selectOption({ label: 'Alpha Élève' });
+  await page.getByLabel('Élève accompagné').selectOption({ label: 'Élève Alpha' });
   await page.getByLabel('Date', { exact: true }).fill(date);
   await page.getByLabel('Matière').fill(matiere);
   await page.getByRole('button', { name: 'Enregistrer la séance' }).click();
@@ -75,7 +75,7 @@ await page.getByRole('button', { name: 'Voir' }).first().click();
 ok(await page.locator('.journalier-apercu').count() === 1, 'aperçu du texte affiché');
 
 // Export Word pour un élève, période septembre → octobre
-await page.getByLabel('Élève', { exact: true }).selectOption({ label: 'Alpha Élève (1CB)' });
+await page.getByLabel('Élève', { exact: true }).selectOption({ label: 'Élève Alpha (1CB)' });
 let [t] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Exporter le Journalier (Word)' }).click()]);
 ok(t.suggestedFilename() === 'Journalier - Alpha - du 01-09-2026 au 31-10-2026.docx', `nom du fichier : ${t.suggestedFilename()}`);
 let xml = xmlDuDocx(await docx(t, 'alpha.docx'));
@@ -122,7 +122,7 @@ ok(await lignes().count() === 1, 'suppression et modification conservées après
 
 // Depuis Élèves
 await page.getByRole('link', { name: 'Élèves' }).click();
-await page.getByRole('button', { name: /Bêta Élève/ }).click();
+await page.getByRole('button', { name: /Élève Bêta/ }).click();
 await page.getByRole('button', { name: 'Voir le Journalier' }).click();
 ok(await page.getByLabel('Élève', { exact: true }).inputValue() === 'demo-beta', 'Élèves → Journalier filtré sur l’élève');
 ok(await page.getByText('Aucune séance dans cette période.').count() === 1, 'message quand il n’y a rien');

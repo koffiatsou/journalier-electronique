@@ -48,9 +48,9 @@ const ouvrirDossier = async (nom) => { await versEleves(); await cartes().filter
 /* ───────── Préparation : 2 élèves fictifs, 3 séances, 2 activités d'agenda ───────── */
 await aller(page, URL_APP);
 await ajouterElevesFictifs(page);
-await nouvelleSeance('Alpha Élève', '2026-09-14', 'Français');
-await nouvelleSeance('Alpha Élève', '2026-10-20', 'Mathématiques');
-await nouvelleSeance('Bêta Élève', '2026-10-21', 'Sciences');
+await nouvelleSeance('Élève Alpha', '2026-09-14', 'Français');
+await nouvelleSeance('Élève Alpha', '2026-10-20', 'Mathématiques');
+await nouvelleSeance('Élève Bêta', '2026-10-21', 'Sciences');
 await ecrireActivite({ id: 'act-alpha', type: 'eleve', eleveId: 'demo-alpha', titre: '', lieu: '', note: '', date: '2026-10-26', debut: 0, fin: 0, repetition: 'aucune', creeLe: '2026-10-24T08:00:00Z', modifieLe: '2026-10-24T08:00:00Z' });
 await ecrireActivite({ id: 'act-beta', type: 'eleve', eleveId: 'demo-beta', titre: '', lieu: '', note: '', date: '2026-10-27', debut: 1, fin: 1, repetition: 'aucune', creeLe: '2026-10-24T08:00:00Z', modifieLe: '2026-10-24T08:00:00Z' });
 console.log('✓ données de départ créées');
@@ -98,7 +98,7 @@ await groupeLangues.getByRole('button', { name: 'Espagnol' }).click();
 ok(await groupeLangues.getByRole('button', { pressed: true }).count() === 3, 'trois langues cochées (Néerlandais, Anglais, Espagnol)');
 await page.screenshot({ path: `${SORTIE}/eleves-fiche-bureau.png`, fullPage: true });
 await page.getByRole('button', { name: 'Enregistrer' }).click();
-await page.getByText('Alpha Élève enregistré').first().waitFor();
+await page.getByText('Élève Alpha enregistré').first().waitFor();
 await recharger(page);
 await ouvrirDossier('Alpha');
 const infos = await page.locator('.dossier-infos').innerText();
@@ -107,14 +107,14 @@ ok(/Néerlandais, Anglais, Espagnol/.test(infos), 'trois langues conservées apr
 
 // Séance : les langues sont proposées comme matières
 await aller(page, `${URL_APP}#/seance`);
-await page.getByLabel('Élève accompagné').selectOption({ label: 'Alpha Élève' });
+await page.getByLabel('Élève accompagné').selectOption({ label: 'Élève Alpha' });
 const propositions = await page.locator('.suggestions .chip').allInnerTexts();
 ok(['Anglais', 'Espagnol', 'Néerlandais', 'Éducation physique'].every((m) => propositions.includes(m)), `matières proposées dans la séance : ${propositions.join(', ')}`);
 
 /* ───────── Archivage ───────── */
 await ouvrirDossier('Alpha');
 await page.getByRole('button', { name: 'Archiver', exact: true }).click();
-await page.getByText('Alpha Élève archivé').first().waitFor();
+await page.getByText('Élève Alpha archivé').first().waitFor();
 ok(await page.getByText(/Archivé le/).count() === 1, 'dossier marqué archivé');
 await versEleves();
 ok(await cartes().count() === 1, 'liste principale : seul Bêta reste actif');
@@ -179,7 +179,7 @@ ok(await page.locator('.journalier-liste > li').count() === 1, 'recherche par no
 await recJ.fill('introuvable');
 ok(await page.getByText('Aucune séance de cette période ne correspond à la recherche.').count() === 1, 'aucun résultat : message clair');
 await recJ.fill('français');
-await page.getByLabel('Élève', { exact: true }).selectOption({ label: 'Alpha Élève (2CB)' });
+await page.getByLabel('Élève', { exact: true }).selectOption({ label: 'Élève Alpha (2CB)' });
 const [t] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Exporter le Journalier (Word)' }).click()]);
 await t.saveAs(`${SORTIE}/alpha-recherche.docx`);
 const xml = execFileSync('unzip', ['-p', `${SORTIE}/alpha-recherche.docx`, 'word/document.xml']).toString();
@@ -204,7 +204,7 @@ ok((await lireBase('eleves')).some((e) => e.id === 'demo-beta'), 'après « Annu
 await page.getByRole('button', { name: 'Supprimer…' }).click();
 await dialogue.getByRole('checkbox').check();
 await bouton.click();
-await page.getByText(/Bêta Élève supprimé/).first().waitFor();
+await page.getByText(/Élève Bêta supprimé/).first().waitFor();
 ok((await lireBase('eleves')).every((e) => e.id !== 'demo-beta'), 'base : l’élève est supprimé');
 ok((await lireBase('seances')).every((s) => s.eleveId !== 'demo-beta'), 'base : plus aucune séance de Bêta');
 ok((await lireBase('activites')).every((a) => a.eleveId !== 'demo-beta'), 'base : plus aucune activité de Bêta');
@@ -223,13 +223,13 @@ await page.getByRole('button', { name: 'Nouvel élève' }).click();
 await page.getByRole('textbox', { name: /^Nom( |$)/ }).fill('Test');
 await page.getByRole('textbox', { name: /^Prénom( |$)/ }).fill('Zoé');
 await page.getByRole('button', { name: 'Enregistrer' }).click();
-await page.getByText('Test Zoé enregistré').first().waitFor();
+await page.getByText('Zoé Test enregistré').first().waitFor();
 await ouvrirDossier('Test');
 await page.getByRole('button', { name: 'Supprimer…' }).click();
 ok((await page.getByRole('dialog').innerText()).includes('aucune séance ni activité'), 'élève sans séance : message adapté');
 await page.getByRole('dialog').getByRole('checkbox').check();
 await page.getByRole('dialog').getByRole('button', { name: 'Supprimer définitivement' }).click();
-await page.getByText(/Test Zoé supprimé/).first().waitFor();
+await page.getByText(/Zoé Test supprimé/).first().waitFor();
 
 /* ───────── Téléphone ───────── */
 await page.setViewportSize({ width: 390, height: 844 });

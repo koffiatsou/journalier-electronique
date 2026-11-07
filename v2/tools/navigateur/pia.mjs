@@ -64,7 +64,7 @@ await page.getByRole('heading', { name: 'PIA', level: 1 }).waitFor();
 ok(await page.getByText('Choisissez un élève pour ouvrir ou commencer son PIA.').count() === 1, 'sans élève : message clair');
 
 // Résumé (onglet Préparer)
-await page.getByLabel('Élève', { exact: true }).selectOption({ label: 'Alpha Élève (1CB)' });
+await page.getByLabel('Élève', { exact: true }).selectOption({ label: 'Élève Alpha (1CB)' });
 await page.getByRole('tab', { name: 'Préparer', selected: true }).waitFor();
 await page.getByRole('radio', { name: 'État à ce jour' }).click();
 const texteResume = await page.locator('.reunion-resume').innerText();
@@ -88,7 +88,7 @@ ok(await page.locator('.reunion-retenus li').count() === 3, 'après rechargement
 
 // Identité
 await page.getByRole('tab', { name: 'Identité' }).click();
-ok((await page.locator('.dossier-infos').innerText()).includes('Alpha Élève'), 'identité préremplie depuis le dossier');
+ok((await page.locator('.dossier-infos').innerText()).includes('Élève Alpha'), 'identité préremplie depuis le dossier');
 await page.getByLabel('Option').fill('Sciences');
 await page.getByLabel('Coordonnées du CPMS coopérant').fill('CPMS Test 02 000 00 00');
 
@@ -170,17 +170,17 @@ ok(await page.getByLabel('Élève', { exact: true }).inputValue() === 'demo-beta
 
 // Depuis Élèves : suppression, aucun PIA orphelin
 await page.getByRole('link', { name: 'Élèves' }).click();
-await page.getByRole('button', { name: /Alpha Élève/ }).click();
+await page.getByRole('button', { name: /Élève Alpha/ }).click();
 await page.getByRole('button', { name: 'Ouvrir le PIA' }).click();
 await page.getByRole('heading', { name: 'PIA', level: 1 }).waitFor();
 ok(await page.getByLabel('Élève', { exact: true }).inputValue() === 'demo-alpha', 'Élèves → PIA avec l’élève choisi');
 await page.getByRole('link', { name: 'Élèves' }).click();
-await page.getByRole('button', { name: /Alpha Élève/ }).click();
+await page.getByRole('button', { name: /Élève Alpha/ }).click();
 await page.getByRole('button', { name: 'Supprimer…' }).click();
 ok((await page.getByRole('dialog').innerText()).includes('PIA'), 'suppression : le message annonce aussi le PIA');
 await page.getByRole('dialog').getByRole('checkbox').check();
 await page.getByRole('dialog').getByRole('button', { name: 'Supprimer définitivement' }).click();
-await page.getByText(/Alpha Élève supprimé/).first().waitFor();
+await page.getByText(/Élève Alpha supprimé/).first().waitFor();
 pias = await lireBase('pia');
 ok(pias.every((p) => p.eleveId !== 'demo-alpha'), 'après suppression de l’élève : aucun PIA orphelin');
 

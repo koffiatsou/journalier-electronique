@@ -1,3 +1,4 @@
+import { nomAffiche } from '../../domain/eleves/index.ts';
 import type { Pia } from '../../domain/pia/index.ts';
 import type { Eleve, Seance } from '../../domain/types.ts';
 
@@ -11,4 +12,4 @@ export interface PropsOnglet {
   changer: (modification: (p: Pia) => Pia) => void;
 }
 
-export const nomEleve = (e: Pick<Eleve, 'nom' | 'prenom'> | undefined): string => (e ? `${e.nom} ${e.prenom}`.trim() : '');
+export const nomEleve = (e: Pick<Eleve, 'nom' | 'prenom'> | undefined): string => (e ? nomAffiche(e) : '');

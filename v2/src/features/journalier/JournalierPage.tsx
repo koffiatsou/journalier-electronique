@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Aller } from '../../app/useRoute.ts';
 import { couleursEleves } from '../../domain/agenda/index.ts';
 import { telechargerJournalier, telechargerJournaliers } from '../../domain/export/telecharger.ts';
-import { enseignantDeSeance } from '../../domain/eleves/index.ts';
+import { cleDeTri, enseignantDeSeance, nomAffiche } from '../../domain/eleves/index.ts';
 import { anneesDisponibles, bornes, construirePeriode, libellePeriode, rechercherSeances, seancesDuJournalier } from '../../domain/journalier/index.ts';
 import type { Periode } from '../../domain/journalier/index.ts';
 import { construireBloc } from '../../domain/redaction/index.ts';
@@ -31,7 +31,7 @@ interface Filtre { eleveId: string; genre: Genre; annee: string; du: string; au:
 /** Le choix est gardé le temps de la visite (retour après une modification de séance). */
 let dernier: Filtre | null = null;
 
-const nomEleve = (e: Eleve | undefined): string => (e ? `${e.nom} ${e.prenom}`.trim() : 'Élève supprimé');
+const nomEleve = (e: Eleve | undefined): string => (e ? nomAffiche(e) : 'Élève supprimé');
 
 /** Nom accessible d'un bouton de ligne : le mot visible d'abord (WCAG 2.5.3), puis de quelle séance il s'agit. */
 const nomBouton = (geste: string, s: Seance, e: Eleve | undefined): string => `${geste} la séance du ${dateFR(s.date)}, ${nomEleve(e)}${s.matiere ? `, ${s.matiere}` : ''}`;
@@ -91,7 +91,7 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
   const recherche = f.requete.trim() !== '';
   const affichees = recherche ? rechercherSeances(liste, f.requete, parEleve) : liste;
   const couleurs = couleursEleves(eleves);
-  const triees = [...eleves].sort((a, b) => nomEleve(a).localeCompare(nomEleve(b), 'fr'));
+  const triees = [...eleves].sort((a, b) => cleDeTri(a).localeCompare(cleDeTri(b), 'fr'));
   const eleve = f.eleveId ? parEleve.get(f.eleveId) : undefined;
   const nbEleves = new Set(liste.map((s) => s.eleveId)).size;
 

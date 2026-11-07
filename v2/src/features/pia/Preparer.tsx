@@ -16,7 +16,7 @@ import { Button } from '../../ui/Button.tsx';
 import { Field, Input, Select } from '../../ui/Field.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import type { PropsOnglet } from './contexte.ts';
-import { nomEleve } from './contexte.ts';
+import { nomAffiche } from '../../domain/eleves/index.ts';
 
 const GENRES: { genre: GenrePeriode; libelle: string }[] = [
   { genre: 'a-ce-jour', libelle: 'État à ce jour' },
@@ -98,7 +98,7 @@ export function Preparer({ eleve, pia, changer, seancesEleve, filtre: f, onFiltr
   const nbAbsences = liste.length - sy.seances;
 
   const texte = texteReunion(sy, [...retenus], {
-    eleve: nomEleve(eleve), classe: eleve.classe, periode: libellePeriode(periode, aujourdhui),
+    eleve: nomAffiche(eleve), classe: eleve.classe, periode: libellePeriode(periode, aujourdhui),
     masquer: f.anonyme ? noms(eleve) : []
   });
 
