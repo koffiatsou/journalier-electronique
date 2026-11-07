@@ -5,7 +5,7 @@ import { telechargerJournalier, telechargerJournaliers } from '../../domain/expo
 import { cleDeTri, enseignantDeSeance, nomAffiche } from '../../domain/eleves/index.ts';
 import { anneesDisponibles, bornes, construirePeriode, libellePeriode, rechercherSeances, seancesDuJournalier } from '../../domain/journalier/index.ts';
 import type { Periode } from '../../domain/journalier/index.ts';
-import { construireBloc } from '../../domain/redaction/index.ts';
+import { blocEnTexte, construireBloc } from '../../domain/redaction/index.ts';
 import { dateFR } from '../../domain/redaction/langue.ts';
 import { PRESENCE_LIBELLES } from '../../domain/types.ts';
 import type { Eleve, Seance } from '../../domain/types.ts';
@@ -41,8 +41,20 @@ const creneau = (s: Seance): string => (s.periodeFin && s.periodeFin !== s.perio
 /** Texte de la séance tel qu'il ira dans le Journalier (aperçu repliable). */
 function ApercuSeance({ seance, eleve, precedentes }: { seance: Seance; eleve: Eleve | undefined; precedentes: Seance[] }) {
   const b = construireBloc(seance, { titulaire: enseignantDeSeance(seance, eleve), precedentes });
+  const { annoncer } = useToast();
+  const copier = async () => {
+    try {
+      await globalThis.navigator.clipboard.writeText(blocEnTexte(b));
+      annoncer('Texte de la séance copié');
+    } catch {
+      annoncer('Copie impossible ici : exportez le Journalier en Word');
+    }
+  };
   return (
     <div className="journalier-apercu" id={`apercu-${seance.id}`}>
+      <div className="apercu-outils">
+        <Button variante="discret" aria-label={nomBouton('Copier le texte de', seance, eleve)} onClick={() => { void copier(); }}>Copier le texte</Button>
+      </div>
       {b.peda ? (
         <div className="zone-peda">
           <h4>Partie pédagogique</h4>

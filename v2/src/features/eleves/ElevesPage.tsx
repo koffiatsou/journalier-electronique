@@ -223,7 +223,10 @@ export function ElevesPage({ magasin, onAller, nouveau = false }: { magasin: Mag
             <Button onClick={() => onAller('pia', { eleve: ouvert.id, onglet: 'preparer' })}>Préparer la réunion</Button>
             <Button onClick={() => onAller('pia', { eleve: ouvert.id })}>Ouvrir le PIA</Button>
             <Button onClick={() => setVue({ genre: 'fiche', eleve: ouvert, retour: vue })}>Modifier le dossier</Button>
-            <Button onClick={() => { void basculerArchive(ouvert); }}>{ouvert.archiveLe ? 'Suivre à nouveau' : 'Archiver'}</Button>
+          </div>
+          {/* Gérer le dossier : à l'écart des actions de tous les jours, « Supprimer… » loin d'« Archiver » (on ne se trompe pas de bouton). */}
+          <div className="fiche-actions dossier-gestion">
+            <Button variante="discret" onClick={() => { void basculerArchive(ouvert); }}>{ouvert.archiveLe ? 'Suivre à nouveau' : 'Archiver'}</Button>
             <Button className="btn-danger" onClick={() => setASupprimer(ouvert)}>Supprimer…</Button>
           </div>
         </section>

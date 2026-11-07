@@ -192,3 +192,5 @@
   scroll-padding-top: calc(var(--barre-haut, 0px) + 108px);
   scroll-padding-bottom: calc(var(--tabbar, 0px) + 112px);
 }
+
+.apercu-outils { display: flex; justify-content: flex-end; }
