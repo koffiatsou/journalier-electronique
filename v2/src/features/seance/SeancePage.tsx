@@ -111,7 +111,8 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
       onAller('journalier', { eleve: s.eleveId });
       return;
     }
-    annoncer('Séance enregistrée');
+    const eleveId = s.eleveId;
+    annoncer('Séance enregistrée', { libelle: 'Voir dans le Journalier', faire: () => onAller('journalier', { eleve: eleveId }) });
     setS(seanceVide(s.eleveId, s.date));
     setModifie(false);
     setOuvert(0);
