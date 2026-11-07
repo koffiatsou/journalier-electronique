@@ -19,7 +19,7 @@
 
 .agenda { display: grid; gap: var(--sp-4); }
 .agenda-barre { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); }
-.agenda-titre { font-size: 1.15rem; font-weight: 650; margin: 0; min-width: 12ch; }
+.agenda-titre { font-size: 1.15rem; font-weight: 700; margin: 0; min-width: 12ch; }
 .agenda-nav { display: flex; gap: var(--sp-1); }
 .agenda-barre .espace { flex: 1; }
 .agenda-outils { display: flex; flex-wrap: wrap; gap: var(--sp-1); } /* les trois outils restent groupés quand la barre passe à la ligne */
@@ -59,7 +59,7 @@
 
 .evt { position: absolute; z-index: 2; box-sizing: border-box; text-align: left; border: 0; border-left: 4px solid var(--c-bord); border-radius: 8px; background: var(--c-fond); color: var(--c-texte); padding: 4px 8px 6px; font: inherit; font-size: .8125rem; line-height: 1.25; overflow: hidden; cursor: grab; box-shadow: 0 1px 2px rgb(22 35 63 / 10%); user-select: none; -webkit-user-select: none; touch-action: pan-y; }
 .evt:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
-.evt strong { display: block; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.evt strong { display: block; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .evt small { display: block; font-size: .75rem; opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .evt[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--c-bord), var(--shadow-2); z-index: 4; }
 .evt.t-libre { background: var(--surface); border: 1px dashed var(--c-bord); border-left: 4px solid var(--c-bord); }
@@ -100,7 +100,7 @@
 .lecteur-seul { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ───────── Jours fériés et vacances (semaine, jour, mois) ───────── */
-.marque-jour { display: block; font-size: .75rem; line-height: 1.25; font-weight: 500; color: var(--ink-3); margin-top: 2px; pointer-events: none; }
+.marque-jour { display: block; font-size: .75rem; line-height: 1.25; font-weight: 400; color: var(--ink-3); margin-top: 2px; pointer-events: none; }
 .grille-entete .marque-jour { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .grille-entete .jour-ferie, .mois-case.jour-ferie { background: color-mix(in srgb, var(--line-strong) 26%, var(--surface-2)); }
 .grille-entete .jour-vacances, .mois-case.jour-vacances { background: repeating-linear-gradient(135deg, transparent 0 8px, color-mix(in srgb, var(--line-strong) 40%, transparent) 8px 9px), var(--surface-2); }

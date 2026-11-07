@@ -22,7 +22,7 @@
 /* ---------- champs ---------- */
 .field { display: grid; gap: 6px; min-width: 0; }
 .field-label { font-weight: 600; font-size: 0.85rem; color: var(--ink); }
-.field-label .opt { font-weight: 450; color: var(--ink-3); margin-left: 6px; }
+.field-label .opt { font-weight: 400; color: var(--ink-3); margin-left: 6px; }
 .field-hint { font-size: 0.8rem; color: var(--ink-3); }
 .input, .select, .textarea {
   width: 100%; min-height: 42px; padding: 9px 12px;
@@ -41,7 +41,7 @@
 .chip {
   display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px;
   border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface);
-  font-size: 0.88rem; font-weight: 550; color: var(--ink-2);
+  font-size: 0.88rem; font-weight: 600; color: var(--ink-2);
   transition: transform var(--t-press) var(--ease-out), background-color var(--t-ui) ease-out,
     border-color var(--t-ui) ease-out, color var(--t-ui) ease-out;
 }
@@ -59,7 +59,7 @@
 }
 .point[data-etat="choisi"] { background: var(--surface-2); }
 .point[data-etat="ouvert"] { border-color: var(--accent); box-shadow: 0 0 0 3px var(--peda-soft); }
-.point-nom { font-weight: 550; line-height: 1.35; }
+.point-nom { font-weight: 600; line-height: 1.35; }
 .point-choix { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .pastille {
   display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; min-height: 36px; padding: 0 14px; border-radius: 999px;
@@ -78,11 +78,11 @@
 @media (hover: hover) and (pointer: fine) { .point-choix .pastille[data-teinte]:hover { background: var(--t-bg); color: var(--t-ink); border-color: var(--t-line); } }
 .pastille[aria-checked="true"] { background: var(--t-bg); color: var(--t-ink); border-color: var(--t-line); }
 .point-retirer { min-height: 36px; padding: 0 8px; font-size: 0.85rem; color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; }
-.level-missing { font-size: 0.78rem; font-weight: 650; color: var(--attention); background: var(--attention-soft); padding: 3px 10px; border-radius: 999px; }
+.level-missing { font-size: 0.78rem; font-weight: 700; color: var(--attention); background: var(--attention-soft); padding: 3px 10px; border-radius: 999px; }
 @keyframes level-in { from { opacity: 0; transform: translateY(3px) scale(0.98); } to { opacity: 1; transform: none; } }
 
 /* ---------- badges ---------- */
-.badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 0.76rem; font-weight: 650; background: var(--surface-2); color: var(--ink-2); }
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 0.76rem; font-weight: 700; background: var(--surface-2); color: var(--ink-2); }
 .badge-ok { background: var(--ok-soft); color: var(--ok); }
 .badge-attention { background: var(--attention-soft); color: var(--attention); }
 .badge-danger { background: var(--danger-soft); color: var(--danger); }

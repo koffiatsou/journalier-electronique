@@ -29,10 +29,10 @@
 button.creneau-tete { cursor: pointer; transition: background-color var(--t-ui) ease-out; }
 @media (hover: hover) { button.creneau-tete:hover { background: color-mix(in srgb, var(--surface-2) 70%, transparent); } }
 button.creneau-tete:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: var(--r-m); }
-.creneau-heure { display: grid; gap: 2px; font-weight: 650; color: var(--ink); }
-.creneau-heure small { color: var(--ink-3); font-weight: 500; font-size: 0.78rem; }
+.creneau-heure { display: grid; gap: 2px; font-weight: 700; color: var(--ink); }
+.creneau-heure small { color: var(--ink-3); font-weight: 400; font-size: 0.78rem; }
 .creneau-corps { display: grid; gap: 1px; min-width: 0; }
-.creneau-titre { font-weight: 650; overflow-wrap: anywhere; }
+.creneau-titre { font-weight: 700; overflow-wrap: anywhere; }
 .creneau-detail { color: var(--ink-2); font-size: 0.85rem; }
 .creneau-signes { display: flex; align-items: center; gap: var(--sp-2); }
 .creneau-chevron { color: var(--ink-3); transition: transform var(--t-ui) var(--ease-out); }
