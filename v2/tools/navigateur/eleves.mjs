@@ -220,8 +220,8 @@ ok(await page.getByText('Élève supprimé').count() === 0, 'Journalier : aucune
 // Suppression d'un élève sans séance (message adapté), puis création d'un nouvel élève
 await versEleves();
 await page.getByRole('button', { name: 'Nouvel élève' }).click();
-await page.getByLabel('Nom', { exact: true }).fill('Test');
-await page.getByLabel('Prénom').fill('Zoé');
+await page.getByRole('textbox', { name: /^Nom( |$)/ }).fill('Test');
+await page.getByRole('textbox', { name: /^Prénom( |$)/ }).fill('Zoé');
 await page.getByRole('button', { name: 'Enregistrer' }).click();
 await page.getByText('Test Zoé enregistré').first().waitFor();
 await ouvrirDossier('Test');

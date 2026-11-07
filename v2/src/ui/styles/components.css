@@ -13,6 +13,11 @@
 @media (hover: hover) and (pointer: fine) { .btn-primary:hover { background: var(--peda-ink); border-color: var(--peda-ink); } }
 .btn-ghost { border-color: transparent; background: transparent; }
 .btn[disabled] { opacity: 0.5; pointer-events: none; }
+/* Inactif mais atteignable au clavier et lu par les lecteurs d'écran : la raison est écrite dessous (`Button` avec `raison`). */
+.btn[aria-disabled='true'] { opacity: 0.5; cursor: not-allowed; }
+.btn-raison { flex-basis: 100%; font-size: 0.8125rem; color: var(--ink-2); }
+.field-erreur { font-size: 0.8125rem; font-weight: 600; color: var(--danger); }
+.input[aria-invalid='true'], .select[aria-invalid='true'], .textarea[aria-invalid='true'] { border-color: var(--danger); }
 
 /* ---------- champs ---------- */
 .field { display: grid; gap: 6px; min-width: 0; }

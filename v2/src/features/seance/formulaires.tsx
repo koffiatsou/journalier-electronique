@@ -14,6 +14,7 @@ import { ecoleDeEleve, nbPeriodesUtilisees } from '../../domain/agenda/index.ts'
 import type { Ecole } from '../../domain/agenda/index.ts';
 import type { Piste } from '../../domain/referentiel/index.ts';
 import { indexDe } from '../../domain/referentiel/charger.ts';
+import type { ErreursChamps } from './brouillon.ts';
 import { Point, TEINTES_EFFET, TEINTES_NIVEAU, TEINTES_VIGILANCE } from '../../ui/Point.tsx';
 
 export interface PropsFormulaire {
@@ -21,11 +22,14 @@ export interface PropsFormulaire {
   maj: (patch: Partial<Seance>) => void;
 }
 
+/** Messages d'erreur à écrire sous les champs de l'étape 1 (vide tant que la personne n'a pas essayé d'enregistrer). */
+interface PropsCreneau extends PropsFormulaire { eleves: Eleve[]; ecoles?: readonly Ecole[]; erreurs?: ErreursChamps }
+
 const niveau = (n: number): Niveau => n as Niveau;
 const effet = (n: number): Effet => n as Effet;
 
 /* ───────── 1. Créneau et partie pédagogique ───────── */
-export function FormulaireCreneau({ s, maj, eleves, ecoles = [] }: PropsFormulaire & { eleves: Eleve[]; ecoles?: readonly Ecole[] }) {
+export function FormulaireCreneau({ s, maj, eleves, ecoles = [], erreurs = {} }: PropsCreneau) {
   const eleve = eleves.find((e) => e.id === s.eleveId);
   // Les périodes proposées sont celles de l'école de l'élève (neuf au plus) ; on garde toujours celles déjà choisies.
   const nbPeriodes = ecoles.length
@@ -51,9 +55,9 @@ export function FormulaireCreneau({ s, maj, eleves, ecoles = [] }: PropsFormulai
       </fieldset>
 
       <div className="champs champs-3">
-        <Field label="Élève accompagné">
-          {(id) => (
-            <Select id={id} value={s.eleveId} onChange={(e) => {
+        <Field label="Élève accompagné" {...(erreurs.eleve ? { erreur: erreurs.eleve } : {})}>
+          {(id, champ) => (
+            <Select id={id} {...champ} value={s.eleveId} onChange={(e) => {
               const el = eleves.find((x) => x.id === e.target.value);
               maj({ eleveId: e.target.value, matiere: '', ...defautsSeance(el) });
             }}>
@@ -62,8 +66,8 @@ export function FormulaireCreneau({ s, maj, eleves, ecoles = [] }: PropsFormulai
             </Select>
           )}
         </Field>
-        <Field label="Date">
-          {(id) => <Input id={id} type="date" value={s.date} onChange={(e) => maj({ date: e.target.value })} />}
+        <Field label="Date" {...(erreurs.date ? { erreur: erreurs.date } : {})}>
+          {(id, champ) => <Input id={id} {...champ} type="date" value={s.date} onChange={(e) => maj({ date: e.target.value })} />}
         </Field>
         <Field label="Période">
           {(id) => (
@@ -81,9 +85,9 @@ export function FormulaireCreneau({ s, maj, eleves, ecoles = [] }: PropsFormulai
       </div>
 
       <div className="champs champs-3">
-        <Field label="Matière" aide={matieres.length ? 'Les matières du dossier de l’élève sont proposées en priorité.' : undefined}>
-          {(id) => (
-            <ChampSuggestions id={id} value={s.matiere} placeholder="Choisir ou écrire" suggestions={matieres} onChange={(matiere) => maj({ matiere })} />
+        <Field label="Matière" aide={matieres.length ? 'Les matières du dossier de l’élève sont proposées en priorité.' : undefined} {...(erreurs.matiere ? { erreur: erreurs.matiere } : {})}>
+          {(id, champ) => (
+            <ChampSuggestions id={id} {...champ} value={s.matiere} placeholder="Choisir ou écrire" suggestions={matieres} onChange={(matiere) => maj({ matiere })} />
           )}
         </Field>
         <Field label="Enseignant du cours" optionnel aide="Laissez vide : le nom du dossier de l’élève sera gardé. Écrivez un nom pour un remplacement.">

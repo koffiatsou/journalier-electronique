@@ -141,6 +141,51 @@ for (const largeur of [834, 1280]) {
   await ctx.close();
 }
 
+/* ───────── E : formulaires : erreur annoncée et focalisée, bouton grisé qui explique pourquoi ───────── */
+{
+  const { ctx, page } = await ouvrir(1024);
+  /** Texte de ce qui décrit un élément (aria-describedby). */
+  const decrit = (loc) => loc.evaluate((e) => (e.getAttribute('aria-describedby') ?? '').split(' ').filter(Boolean).map((id) => document.getElementById(id)?.textContent ?? '').join(' '));
+
+  await aller_(page, '#/seance');
+  await page.getByRole('button', { name: 'Enregistrer la séance' }).click();
+  await attendre(page, 500);
+  const invalide = page.locator('.seance-formulaire [aria-invalid="true"]');
+  ok(await invalide.count() === 2, `E1 Séance : élève et matière manquants sont marqués aria-invalid (${await invalide.count()})`);
+  ok(await page.evaluate(() => document.activeElement?.getAttribute('aria-invalid') === 'true'), `E2 Séance : le focus est sur le premier champ en erreur (${await focus(page)})`);
+  ok((await decrit(invalide.first())).includes('Choisissez l’élève'), 'E3 Séance : le champ en erreur est décrit par son message (aria-describedby)');
+  const barre = await page.locator('.barre-erreur').innerText();
+  ok(barre.includes('Choisissez l’élève') && barre.includes('Indiquez la matière') && !barre.includes('(+'), `E4 Séance : la barre du bas liste toutes les erreurs, sans « (+1) » (« ${barre} »)`);
+
+  await aller_(page, '#/accueil');
+  const ajouter = page.getByRole('button', { name: 'Ajouter', exact: true });
+  ok(await ajouter.getAttribute('aria-disabled') === 'true' && await ajouter.getAttribute('disabled') === null, 'E5 Accueil : « Ajouter » sans mémo est aria-disabled, pas disabled');
+  ok((await decrit(ajouter)).includes('mémo'), `E6 Accueil : « Ajouter » dit pourquoi (« ${await decrit(ajouter)} »)`);
+  const avant = await page.locator('.memo-liste li').count();
+  await ajouter.click({ force: true });
+  await attendre(page, 300);
+  ok(await page.locator('.memo-liste li').count() === avant, 'E7 Accueil : cliquer sur le bouton inactif n’ajoute rien');
+  await page.getByLabel('Nouveau mémo').fill('Un mémo de test');
+  ok(await ajouter.getAttribute('aria-disabled') === null, 'E8 Accueil : une fois le mémo écrit, le bouton est actif');
+
+  await aller_(page, '#/agenda');
+  await page.getByRole('button', { name: 'Nouvelle activité' }).first().click();
+  await attendre(page, 400);
+  const ajouterActivite = page.getByRole('button', { name: 'Ajouter à l’agenda' });
+  ok(await ajouterActivite.getAttribute('aria-disabled') === 'true' && await ajouterActivite.getAttribute('disabled') === null, 'E9 Agenda : « Ajouter à l’agenda » sans élève est aria-disabled');
+  ok((await decrit(ajouterActivite)).includes('élève'), `E10 Agenda : le bouton dit « Choisissez d’abord l’élève » (« ${await decrit(ajouterActivite)} »)`);
+
+  await aller_(page, '#/eleves');
+  await page.getByRole('button', { name: 'Nouvel élève' }).click();
+  await attendre(page, 400);
+  const enregistrer = page.getByRole('button', { name: 'Enregistrer', exact: true });
+  ok(await enregistrer.getAttribute('aria-disabled') === 'true' && await enregistrer.getAttribute('disabled') === null, 'E11 Élèves : « Enregistrer » sans nom est aria-disabled');
+  ok((await decrit(enregistrer)).includes('nom'), `E12 Élèves : le bouton dit quoi remplir (« ${await decrit(enregistrer)} »)`);
+  ok(await page.getByRole('textbox', { name: /^Nom( |$)/ }).getAttribute('aria-required') === 'true' && await page.getByRole('textbox', { name: /^Prénom( |$)/ }).getAttribute('aria-required') === 'true', 'E13 Élèves : « Nom » et « Prénom » sont marqués obligatoires (aria-required)');
+  ok(await page.locator('label:has-text("Nom") .opt', { hasText: 'obligatoire' }).count() > 0, 'E14 Élèves : « obligatoire » est écrit à côté de « Nom »');
+  await ctx.close();
+}
+
 await nav.close();
 ok(erreurs.length === 0, `aucune erreur dans la console${erreurs.length ? ' : ' + erreurs.slice(0, 3).join(' | ') : ''}`);
 if (echecs.length) { console.log(`\n${echecs.length} échec(s)`); process.exit(1); }

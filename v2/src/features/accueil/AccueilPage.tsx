@@ -248,7 +248,7 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
                   </optgroup>
                   {plusieursEcoles ? <optgroup label="Rappeler dans l’école">{ecoles.map((e) => <option key={e.id} value={`c:${e.id}`}>{e.nom}</option>)}</optgroup> : null}
                 </Select>
-                <Button type="submit" variante="primaire" disabled={!texteMemo.trim()}>Ajouter</Button>
+                <Button type="submit" variante="primaire" raison={texteMemo.trim() ? undefined : 'Écrivez d’abord le mémo.'}>Ajouter</Button>
               </form>
               {memosTries.length ? (
                 <ul className="memo-liste">

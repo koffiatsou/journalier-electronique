@@ -68,6 +68,8 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
   // Les heures libres ne concernent pas un accompagnement d'élève (il suit les périodes, comme sa séance).
   const libreActif = libre && type !== 'eleve';
   const erreurHeures = libreActif ? verifierHeuresLibres(heureDebut, heureFin) : null;
+  const raisonSansElement = type === 'eleve' ? (eleveId || nomLibre.trim() ? undefined : 'Choisissez d’abord l’élève.') : !titre.trim() ? 'Indiquez d’abord le titre.' : date === '' ? 'Indiquez d’abord le jour.' : undefined;
+  const raisonInvalide = raisonSansElement ?? erreurHeures ?? undefined;
   const valide = (type === 'eleve' ? Boolean(eleveId || nomLibre.trim()) : Boolean(titre.trim()) && date !== '') && !erreurHeures;
 
   const enregistrer = () => {
@@ -216,7 +218,7 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
       ) : null}
 
       <div className="actions barre-fixe">
-        <Button variante="primaire" disabled={!valide} onClick={enregistrer}>{occurrence ? 'Enregistrer' : 'Ajouter à l’agenda'}</Button>
+        <Button variante="primaire" raison={raisonInvalide} onClick={enregistrer}>{occurrence ? 'Enregistrer' : 'Ajouter à l’agenda'}</Button>
         {occurrence && occurrence.activite.type !== 'eleve' && occurrence.statut !== 'annule' ? <Button onClick={() => onRealiser(occurrence)}>{occurrence.statut === 'realise' ? 'Remettre à prévu' : 'Marquer réalisé'}</Button> : null}
       </div>
       {occurrence ? (

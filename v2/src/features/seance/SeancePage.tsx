@@ -13,7 +13,7 @@ import { Apercu } from './Apercu.tsx';
 import { Etape } from './Etape.tsx';
 import { attendreFinRepli } from './defilement.ts';
 import { BarreEtapes } from './BarreEtapes.tsx';
-import { etatsEtapes, progression, resumesEtapes, seanceVide, verifier } from './brouillon.ts';
+import { champsEnErreur, etatsEtapes, progression, resumesEtapes, seanceVide, verifier } from './brouillon.ts';
 import {
   FormulaireAides, FormulaireCompetence, FormulaireCreneau, FormulaireFonctionnement, FormulaireSuite
 } from './formulaires.tsx';
@@ -59,13 +59,16 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
   }, [s, edition, proposition, modifie, magasin]);
   useEffect(() => () => { void magasin.viderEnregistrements(); }, [magasin]);
   const [ouvert, setOuvert] = useState(0);
-  const [raisons, setRaisons] = useState<string[]>([]);
+  // Vrai après un essai d'enregistrement refusé : les erreurs s'affichent alors, et disparaissent d'elles-mêmes une fois corrigées.
+  const [tentative, setTentative] = useState(false);
+  const raisons = tentative ? verifier(s).raisons : [];
+  const erreurs = tentative ? champsEnErreur(s) : {};
   const [tiroir, setTiroir] = useState(false);
 
   const maj = useCallback((patch: Partial<Seance>) => {
     setS((cur) => ({ ...cur, ...patch, modifieLe: new Date().toISOString() }));
     setModifie(true);
-    setRaisons([]);
+    setTentative(false);
   }, []);
 
   const reprendre = (b: BrouillonSeance) => { setS(b.seance); setProposition(null); setModifie(true); };
@@ -88,9 +91,19 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
     });
   };
 
+  /** Montre les erreurs et amène le focus sur le premier champ en erreur (rubrique 1 d'abord, ouverte si besoin). */
+  const refuser = () => {
+    setTentative(true);
+    if (Object.keys(champsEnErreur(s)).length === 0) return;
+    setOuvert(0);
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>('.seance-formulaire [aria-invalid="true"]')?.focus({ preventScroll: false });
+    });
+  };
+
   const enregistrer = async () => {
     const v = verifier(s);
-    if (!v.ok) { setRaisons(v.raisons); return; }
+    if (!v.ok) { refuser(); return; }
     await magasin.enregistrerSeance(fixerEnseignant(s, eleve));
     await magasin.effacerBrouillonSeance();
     if (edition) {
@@ -106,7 +119,7 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
   };
 
   const formulaires = [
-    <FormulaireCreneau key="1" s={s} maj={maj} eleves={eleves} ecoles={ecoles} />,
+    <FormulaireCreneau key="1" s={s} maj={maj} eleves={eleves} ecoles={ecoles} erreurs={erreurs} />,
     <FormulaireFonctionnement key="2" s={s} maj={maj} />,
     <FormulaireCompetence key="3" s={s} maj={maj} eleve={eleve} />,
     <FormulaireAides key="4" s={s} maj={maj} />,
@@ -155,7 +168,7 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
       <div className="barre-action">
         <div className="barre-info" aria-live="polite">
           {raisons.length ? (
-            <p className="barre-erreur">{raisons[0]}{raisons.length > 1 ? ` (+${raisons.length - 1})` : ''}</p>
+            <p className="barre-erreur">{raisons.join(' ')}</p>
           ) : (
             <p className="num">{notes ? `${notes} point${notes > 1 ? 's' : ''} noté${notes > 1 ? 's' : ''}` : 'Aucun point noté'}</p>
           )}

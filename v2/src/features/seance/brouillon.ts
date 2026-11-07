@@ -56,11 +56,19 @@ export function niveauxManquants(s: Seance): string[] {
 
 export interface Verification { ok: boolean; raisons: string[] }
 
+/** Champs de l'étape 1 qui empêchent d'enregistrer, avec le message à écrire sous chacun. */
+export type ErreursChamps = Partial<Record<'eleve' | 'date' | 'matiere', string>>;
+
+export function champsEnErreur(s: Seance): ErreursChamps {
+  const erreurs: ErreursChamps = {};
+  if (!s.eleveId) erreurs.eleve = 'Choisissez l’élève accompagné.';
+  if (!s.date) erreurs.date = 'Indiquez la date.';
+  if (s.presence !== 'absent_agent' && !s.matiere.trim()) erreurs.matiere = 'Indiquez la matière.';
+  return erreurs;
+}
+
 export function verifier(s: Seance): Verification {
-  const raisons: string[] = [];
-  if (!s.eleveId) raisons.push('Choisissez l’élève accompagné.');
-  if (!s.date) raisons.push('Indiquez la date.');
-  if (s.presence !== 'absent_agent' && !s.matiere.trim()) raisons.push('Indiquez la matière.');
+  const raisons: string[] = Object.values(champsEnErreur(s));
   const manquants = niveauxManquants(s);
   if (manquants.length) raisons.push(`Choisissez un niveau pour : ${manquants.join(', ')}.`);
   return { ok: raisons.length === 0, raisons };

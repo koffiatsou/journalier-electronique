@@ -63,8 +63,8 @@ export function FicheEleve({ eleve, couleurParDefaut, ecoles, onEnregistrer, onA
   return (
     <form className="fiche-eleve" onSubmit={soumettre}>
       <div className="champs champs-2">
-        <Field label="Nom">{(id) => <Input id={id} value={e.nom} onChange={(ev) => maj({ nom: ev.target.value })} autoFocus />}</Field>
-        <Field label="Prénom">{(id) => <Input id={id} value={e.prenom} onChange={(ev) => maj({ prenom: ev.target.value })} />}</Field>
+        <Field label="Nom" obligatoire>{(id, champ) => <Input id={id} {...champ} value={e.nom} onChange={(ev) => maj({ nom: ev.target.value })} autoFocus />}</Field>
+        <Field label="Prénom" obligatoire>{(id, champ) => <Input id={id} {...champ} value={e.prenom} onChange={(ev) => maj({ prenom: ev.target.value })} />}</Field>
       </div>
       <div className="champs champs-2">
         <Field label="Classe" aide={deduction(e.classe) || 'Ex. : 3CB, 1DB, 4TQ, 5P'}>
@@ -154,7 +154,7 @@ export function FicheEleve({ eleve, couleurParDefaut, ecoles, onEnregistrer, onA
       />
 
       <div className="fiche-actions">
-        <Button type="submit" variante="primaire" disabled={!valide}>Enregistrer</Button>
+        <Button type="submit" variante="primaire" raison={valide ? undefined : 'Écrivez d’abord le nom et le prénom.'}>Enregistrer</Button>
         <Button type="button" onClick={onAnnuler}>Annuler</Button>
       </div>
     </form>
