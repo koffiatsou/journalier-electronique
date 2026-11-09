@@ -9,7 +9,7 @@ import type { Annee, FormeEnseignement } from '../src/domain/referentiel/index.t
  * Le corpus est gelé avant tout réglage du moteur ; ajouter des cas est permis, en retirer pour améliorer le score ne l'est pas.
  * Parité de l'indice : pair = lot de réglage, impair = lot de contrôle (jamais regardé pendant les réglages).
  */
-export type JeuCorpus = 'mathematiques' | 'francais' | 'sciences' | 'langues' | 'economie';
+export type JeuCorpus = 'mathematiques' | 'francais' | 'sciences' | 'langues' | 'economie' | 'histoire-geographie';
 
 export interface CasCorpus {
   jeu: JeuCorpus;
@@ -26,6 +26,7 @@ const f = (objectif: string, annee: Annee, attendu: RegExp, forme?: FormeEnseign
 const s = (objectif: string, annee: Annee, attendu: RegExp, forme?: FormeEnseignement): CasCorpus => ({ jeu: 'sciences', objectif, annee, attendu, ...(forme ? { forme } : {}) });
 const l = (langue: string, objectif: string, annee: Annee, attendu: RegExp, forme?: FormeEnseignement): CasCorpus => ({ jeu: 'langues', objectif, annee, langue, attendu, ...(forme ? { forme } : {}) });
 const e = (objectif: string, attendu: RegExp): CasCorpus => ({ jeu: 'economie', objectif, forme: 'G', attendu });
+const h = (objectif: string, annee: Annee, attendu: RegExp): CasCorpus => ({ jeu: 'histoire-geographie', objectif, annee, attendu });
 const vague = (jeu: JeuCorpus, objectif: string, annee: Annee): CasCorpus => ({ jeu, objectif, annee });
 
 export const CORPUS: readonly CasCorpus[] = [
@@ -141,6 +142,16 @@ export const CORPUS: readonly CasCorpus[] = [
   e('impôts et taxes', /impot|taxe|fiscal|etat/),
   e('le budget d’un ménage', /budget|menage|consomm|revenu/),
   e('la bourse', /bourse|marche|action|financ/),
+  h('la frise chronologique', 'S1', /frise|chronolog|temps/),
+  h('lire une carte', 'S1', /carte|plan|croquis|localis/),
+  h('la colonisation', 'S2', /coloni/),
+  h('la Seconde Guerre mondiale', 'S3', /guerre|1945|1940|mondiale/),
+  h('l’Antiquité romaine', 'S1', /rome|romain|antiquit|empire/),
+  h('le paysage', 'S2', /paysage/),
+  h('la mondialisation', 'S2', /mondialisation/),
+  h('les sources historiques', 'S1', /trace|source|document/),
+  h('commerce équitable et consommation', 'S1', /consommation|commerce/),
+  h('l’urbanisation', 'S3', /urbain|ville|urbanisation|population/),
   vague('mathematiques', 'révisions', 'S2'),
   vague('mathematiques', 'interro', 'S3'),
   vague('mathematiques', 'exercices', 'S1'),

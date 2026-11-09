@@ -6,8 +6,9 @@ import type { Lot } from './mesure-referentiel.ts';
 /**
  * Planchers mesurés sur le corpus gelé (tests/corpus-referentiel.ts), à relever quand le moteur progresse.
  * Mesure de départ (9/11/2026, avant tout réglage) : réglage 49/56, contrôle 48/56, objectifs vagues 4/4 des deux côtés.
+ * Après l'ajout de l'histoire-géographie (10 cas) : réglage 54/61, contrôle 53/61.
  */
-const PLANCHER: Record<Lot, number> = { reglage: 49, controle: 48 };
+const PLANCHER: Record<Lot, number> = { reglage: 54, controle: 53 };
 
 describe('moteur de pistes : corpus d’objectifs de terrain', () => {
   for (const lot of ['reglage', 'controle'] as const) {
