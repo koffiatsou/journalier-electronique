@@ -72,19 +72,27 @@ Reste côté Élèves : l'avatar n'apparaît pas encore au Journalier, à l'agen
 |---|---|
 | Mathématiques, français, sciences | tronc commun 2022 + secondaire supérieur 2014 |
 | Néerlandais | tronc commun 2022 (grammaire fine) + secondaire supérieur 2017 |
-| Anglais, allemand, espagnol, italien | secondaire supérieur 2017 uniquement |
+| Anglais, allemand | grammaire du tronc commun P5–S3 (9/11/2026, 165 et 157 lignes) + secondaire supérieur 2017 |
+| Espagnol, italien | secondaire supérieur 2017 uniquement |
+| Histoire, géographie, formation économique et sociale | tronc commun 2022 P1–S3 (9/11/2026, 530 lignes, `histoire-geographie.json`) ; S4–S6 (1999, 2014) non extraits |
 | Sciences économiques | compétences terminales 2000 (secondaire supérieur) |
 
 Points restants :
-1. Histoire-géographie (2022, 1999, HPT 2014) : non extrait.
+1. Histoire-géographie : tronc commun fait ; S4–S6 (1999, HPT 2014, géographie) non extraits. Qualité de la première extraction à relire par échantillon.
 2. Technique (manuel, technologique, 2022) : non extrait.
 3. Droit détaillé : seulement les « objets à croiser » des sciences économiques.
-4. Anglais et allemand du tronc commun (P3–S3) : non extraits (seul le néerlandais l'est).
+4. Anglais et allemand du tronc commun : grammaire faite (P5–S3) ; les compétences par habileté sont communes à toutes les langues (lignes sans langue).
 5. Langues du secondaire supérieur : classées par niveau du CECRL, sans année ; grammaire par langue lue des annexes de façon heuristique.
 6. Sciences et sciences économiques du secondaire supérieur : compétences d'unité (larges), pas de savoir-faire fins.
 7. Qualité d'extraction : quelques lignes tronquées ou sans thème (maths HGT, français 2014), phrases parfois coupées ; à relire par échantillon.
 8. Vérifier les pistes sur de vrais objectifs de leçon (journaux réels) et enrichir la table d'alias du langage de terrain.
 9. Regrouper les compétences proches (l'agent voit parfois plusieurs formulations voisines).
+
+### Mesure du moteur de pistes (9/11/2026)
+- Corpus gelé de 122 objectifs fictifs en langage de terrain (`tests/corpus-referentiel.ts`), moitié réglage / moitié contrôle ; mesure : `node --import tsx tools/referentiel/mesurer.ts --echecs`. Mesure de départ : 49/56 et 48/56 pistes trouvées, 4/4 objectifs vagues sans piste. Après histoire-géographie, anglais/allemand et alias par matière : 60/61 et 59/61 ; le lot de contrôle n'est plus indépendant (échecs vus avant d'écrire les alias). Les planchers sont des tests (`tests/referentiel-corpus.test.ts`).
+- Alias de terrain **par matière** (`alias.ts`) : « x » et « signes » n'agissent plus qu'en mathématiques. Table à compléter avec de vrais objectifs (journaux), pas avec le corpus.
+- Programmes WBE du tronc commun (9 PDF dans le dossier de l'utilisateur) : essai de recherche automatique de vocabulaire d'usage, **abandonné** (programmes surtout pédagogiques, candidats sans valeur). Ils ne sont pas utilisés par l'application.
+- **Calendrier réel** (enseignement.be) : S1 au tronc commun dès la rentrée 2026, S2 en 2027, S3 en 2028. Les Socles de compétences s'arrêtent à la fin de la 2e secondaire ; S3 relève des compétences terminales et savoirs requis (2014, 1999…). Les Socles (S2 jusqu'en juin 2027) ne sont pas extraits : rendement faible, une seule année scolaire. Le moteur propose encore les lignes S2 et S3 du tronc commun pour ces années : à décider (champ « en vigueur à partir de »).
 
 ## À venir
 Tout est réparti en lots dans `docs/plan-de-travail.md` (Journalier, Élèves, Réunion, PIA, Agenda 5–6, coffre, OneDrive/Outlook, reprise V75, référentiel R1–R3, finitions). Le référentiel ci‑dessus correspond aux lots R1–R3.
