@@ -75,6 +75,12 @@ export const ALIAS: Readonly<Record<string, TableAlias>> = {
     frise: 'frise chronologique temps',
     carte: 'carte localiser plan croquis'
   },
+  Technique: {
+    scratch: 'programme algorithme boucle condition',
+    excel: 'tableur donnees graphique',
+    tableur: 'donnees graphique',
+    internet: 'recherche reseau'
+  },
   'Sciences économiques': {
     'offre et demande': 'marche prix',
     inflation: 'prix monnaie',

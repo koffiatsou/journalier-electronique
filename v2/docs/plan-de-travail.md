@@ -51,7 +51,7 @@ Mis à jour le 3 novembre 2026 (lots 1 à 10, A, F, Q, S, SP et **U** terminés 
 ### Référentiel (« R »), à reprendre quand l'utilisateur le décide
 | Lot | Contenu | Statut |
 |---|---|---|
-| R1 — Histoire‑géographie et technique | Histoire-géographie tronc commun ✅ (9/11/2026) ; reste S4–S6 (1999, 2014), technique manuel/technologique, droit détaillé | 🟡 |
+| R1 — Histoire‑géographie et technique | Histoire-géographie et technique du tronc commun ✅, S4–S6 en grandes lignes ✅ (9/11/2026) ; reste formation économique et sociale HPT, technique S4–S6/qualification, droit détaillé | 🟡 |
 | R2 — Langues | Grammaire anglais/allemand du tronc commun ✅ (9/11/2026) ; reste correspondance CECRL ↔ année, grammaire du secondaire supérieur | 🟡 |
 | R3 — Qualité des pistes | Relecture par échantillon, lignes tronquées, alias de terrain, regroupement des formulations proches, essai sur de vrais objectifs (journaux réels) | ⏳ |
 

@@ -3,7 +3,7 @@ import { ANNEES } from './types.ts';
 import type { Annee, FormeEnseignement } from './types.ts';
 import type { Filiere } from '../types.ts';
 
-export type Jeu = 'mathematiques' | 'francais' | 'langues' | 'sciences' | 'economie' | 'histoire-geographie';
+export type Jeu = 'mathematiques' | 'francais' | 'langues' | 'sciences' | 'economie' | 'histoire-geographie' | 'technique';
 
 export interface Cible {
   jeu: Jeu;
@@ -18,6 +18,7 @@ export function cibleDeMatiere(matiere: string): Cible | null {
   if (/\bfran[cç]/.test(m)) return { jeu: 'francais' };
   if (/\b(sciences?|biolog|chimie|physique)/.test(m) && !/econom|sociales|education physique|eps/.test(m)) return { jeu: 'sciences' };
   if (/econom|droit|gestion/.test(m)) return { jeu: 'economie' };
+  if (/technique|technologi|numerique|informatique|fmttn|tic|manuel/.test(m)) return { jeu: 'technique' };
   if (/histoire|geograph|geo|fhges|sciences humaines/.test(m)) return { jeu: 'histoire-geographie' };
   if (/neerland|\bnl\b/.test(m)) return { jeu: 'langues', langue: 'Néerlandais' };
   if (/anglais/.test(m)) return { jeu: 'langues', langue: 'Anglais' };

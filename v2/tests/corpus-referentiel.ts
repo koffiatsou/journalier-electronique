@@ -9,7 +9,7 @@ import type { Annee, FormeEnseignement } from '../src/domain/referentiel/index.t
  * Le corpus est gelé avant tout réglage du moteur ; ajouter des cas est permis, en retirer pour améliorer le score ne l'est pas.
  * Parité de l'indice : pair = lot de réglage, impair = lot de contrôle (jamais regardé pendant les réglages).
  */
-export type JeuCorpus = 'mathematiques' | 'francais' | 'sciences' | 'langues' | 'economie' | 'histoire-geographie';
+export type JeuCorpus = 'mathematiques' | 'francais' | 'sciences' | 'langues' | 'economie' | 'histoire-geographie' | 'technique';
 
 export interface CasCorpus {
   jeu: JeuCorpus;
@@ -27,6 +27,8 @@ const s = (objectif: string, annee: Annee, attendu: RegExp, forme?: FormeEnseign
 const l = (langue: string, objectif: string, annee: Annee, attendu: RegExp, forme?: FormeEnseignement): CasCorpus => ({ jeu: 'langues', objectif, annee, langue, attendu, ...(forme ? { forme } : {}) });
 const e = (objectif: string, attendu: RegExp): CasCorpus => ({ jeu: 'economie', objectif, forme: 'G', attendu });
 const h = (objectif: string, annee: Annee, attendu: RegExp): CasCorpus => ({ jeu: 'histoire-geographie', objectif, annee, attendu });
+const t = (objectif: string, annee: Annee, attendu: RegExp): CasCorpus => ({ jeu: 'technique', objectif, annee, attendu });
+const hs = (objectif: string, annee: Annee, attendu: RegExp): CasCorpus => ({ jeu: 'histoire-geographie', objectif, annee, forme: 'G', attendu });
 const vague = (jeu: JeuCorpus, objectif: string, annee: Annee): CasCorpus => ({ jeu, objectif, annee });
 
 export const CORPUS: readonly CasCorpus[] = [
@@ -152,6 +154,17 @@ export const CORPUS: readonly CasCorpus[] = [
   h('les sources historiques', 'S1', /trace|source|document/),
   h('commerce équitable et consommation', 'S1', /consommation|commerce/),
   h('l’urbanisation', 'S3', /urbain|ville|urbanisation|population/),
+  hs('les Lumières', 'S4', /lumieres|ancien regime|idees/),
+  hs('la révolution industrielle', 'S5', /industriel|revolution/),
+  hs('la décolonisation', 'S6', /decolonisation|colonisation/),
+  hs('risques naturels', 'S5', /risque/),
+  hs('la cité athénienne', 'S4', /athen|antiquite|cite/),
+  t('programmer avec Scratch', 'S1', /algorithme|programme|boucle/),
+  t('lire un dessin technique', 'S2', /dessin|plan|document technique/),
+  t('faire un graphique dans le tableur', 'S2', /tableur|graphique|donnees/),
+  t('hygiène en cuisine', 'S3', /securite|ingredient|hygien|sanitaire/),
+  t('les réseaux sociaux', 'S1', /reseau|socionumerique/),
+  t('recherche sur internet', 'S2', /recherche|operateur|moteur|internet/),
   vague('mathematiques', 'révisions', 'S2'),
   vague('mathematiques', 'interro', 'S3'),
   vague('mathematiques', 'exercices', 'S1'),

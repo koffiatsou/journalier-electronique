@@ -74,12 +74,13 @@ Reste côté Élèves : l'avatar n'apparaît pas encore au Journalier, à l'agen
 | Néerlandais | tronc commun 2022 (grammaire fine) + secondaire supérieur 2017 |
 | Anglais, allemand | grammaire du tronc commun P5–S3 (9/11/2026, 165 et 157 lignes) + secondaire supérieur 2017 |
 | Espagnol, italien | secondaire supérieur 2017 uniquement |
-| Histoire, géographie, formation économique et sociale | tronc commun 2022 P1–S3 (9/11/2026, 530 lignes, `histoire-geographie.json`) ; S4–S6 (1999, 2014) non extraits |
+| Histoire, géographie, formation économique et sociale | tronc commun 2022 P1–S3 (530 lignes) ; S4–S6 : moments-clés et compétences de l'histoire (1999), compétences d'unité de géographie (HGT) et d'histoire-géographie (HPT 2014) : 87 lignes larges, sans les tableaux de ressources (`histoire-geographie.json`) |
+| Technique (manuel, technique, technologique, numérique) | tronc commun 2022 P1–S3 (458 lignes, `technique.json`) ; qualification non extraite |
 | Sciences économiques | compétences terminales 2000 (secondaire supérieur) |
 
 Points restants :
-1. Histoire-géographie : tronc commun fait ; S4–S6 (1999, HPT 2014, géographie) non extraits. Qualité de la première extraction à relire par échantillon.
-2. Technique (manuel, technologique, 2022) : non extrait.
+1. Histoire-géographie : tronc commun fait, S4–S6 en grandes lignes seulement. Qualité de ces extractions à relire par échantillon.
+2. Technique : tronc commun fait ; S4–S6 et qualification non extraits. Formation économique et sociale HPT 2014 (tableau de compétences par thèmes) non extraite.
 3. Droit détaillé : seulement les « objets à croiser » des sciences économiques.
 4. Anglais et allemand du tronc commun : grammaire faite (P5–S3) ; les compétences par habileté sont communes à toutes les langues (lignes sans langue).
 5. Langues du secondaire supérieur : classées par niveau du CECRL, sans année ; grammaire par langue lue des annexes de façon heuristique.

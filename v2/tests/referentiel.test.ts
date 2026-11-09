@@ -57,6 +57,8 @@ describe('contexte', () => {
     assert.deepEqual(cibleDeMatiere('Néerlandais'), { jeu: 'langues', langue: 'Néerlandais' });
     assert.equal(cibleDeMatiere('Géographie')?.jeu, 'histoire-geographie');
     assert.equal(cibleDeMatiere('Histoire')?.jeu, 'histoire-geographie');
+    assert.equal(cibleDeMatiere('Technologie')?.jeu, 'technique');
+    assert.equal(cibleDeMatiere('Informatique')?.jeu, 'technique');
     assert.equal(cibleDeMatiere('Éducation physique'), null, 'l’éducation physique ne relève pas des sciences');
     assert.equal(cibleDeMatiere('EPS'), null);
   });

@@ -14,6 +14,8 @@ Exemples : `python3 extraire_tronc_commun.py 2022_REF_Mathematiques.pdf 25 150 M
 7. `extraire_sciences_secondaire_superieur.py` — sciences 2014 (HGT, HPT) et sciences économiques 2000.
 8. `extraire_grammaire_langue.py` — grammaire d'une langue du tronc commun (néerlandais, allemand, anglais) ; avec le 4e argument, met à jour `langues.json` sans rien d'autre.
 9. `extraire_fhges.py` — histoire, géographie, formation économique et sociale (tronc commun) → `histoire-geographie.json`.
+10. `extraire_technique.py` — FMTTN (tronc commun) → `technique.json`.
+11. `extraire_sciences_humaines_superieur.py` — histoire 1999, géographie et histoire-géographie 2014 (S3–S6), fusionnés dans `histoire-geographie.json`.
 Mesure du moteur : `node --import tsx tools/referentiel/mesurer.ts --echecs` (corpus dans `tests/corpus-referentiel.ts`).
 Scripts Python : `python` simple (pdfplumber installé pour l'utilisateur), pas `python -I`.
 Limites connues : voir AGENTS.md (histoire-géographie, technique et anglais/allemand du tronc commun non extraits).

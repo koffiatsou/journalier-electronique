@@ -20,6 +20,7 @@ async function lire(jeu: Jeu): Promise<EntreeReferentiel[]> {
     case 'francais': return (await import('../../data/referentiel/francais.json')).default as EntreeReferentiel[];
     case 'sciences': return (await import('../../data/referentiel/sciences.json')).default as EntreeReferentiel[];
     case 'histoire-geographie': return (await import('../../data/referentiel/histoire-geographie.json')).default as EntreeReferentiel[];
+    case 'technique': return (await import('../../data/referentiel/technique.json')).default as EntreeReferentiel[];
     case 'economie': return (await import('../../data/referentiel/economie.json')).default as EntreeReferentiel[];
     case 'langues': return (await import('../../data/referentiel/langues.json')).default as EntreeReferentiel[];
   }
