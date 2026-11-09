@@ -30,14 +30,14 @@ describe('Synthèse : le détail est gardé pour la réunion', () => {
 });
 
 describe('Propositions d’objectifs : observations', () => {
-  it('« partiellement » → faire progresser ; « suffisamment » → consolider ; « totalement » → rien', () => {
+  it('« un peu » → faire progresser ; « assez » → consolider ; « tout à fait » → rien', () => {
     const p = propositions(s('2026-09-15', { observations: obs(['Contrôle sa production', 0], ['Repère les informations pertinentes', 1], ['Entre dans la tâche', 2]) }));
     assert.deepEqual(p.map((x) => x.texte), [
       `Faire progresser${N}: contrôle sa production.`,
       `Consolider${N}: repère les informations pertinentes.`
     ]);
     assert.deepEqual(p.map((x) => x.genre), ['progresser', 'consolider']);
-    assert.equal(p[0]?.raison, 'Observé « partiellement » le 15/09.');
+    assert.equal(p[0]?.raison, 'Observé « un peu » le 15/09.');
   });
 
   it('c’est le dernier niveau noté qui compte : une observation devenue totale n’est plus proposée', () => {
@@ -53,13 +53,13 @@ describe('Propositions d’objectifs : observations', () => {
       s('2026-09-15', { observations: obs(['Contrôle sa production', 0]) }),
       s('2026-09-22', { observations: obs(['Contrôle sa production', 0]) })
     );
-    assert.equal(serie[0]?.raison, 'Observé « partiellement » lors des 2 dernières séances.');
+    assert.equal(serie[0]?.raison, 'Observé « un peu » lors des 2 dernières séances.');
     const recul = propositions(
       s('2026-09-15', { observations: obs(['Maintient son attention', 2]) }),
       s('2026-09-22', { observations: obs(['Maintient son attention', 1]) })
     );
     assert.equal(recul[0]?.genre, 'consolider');
-    assert.equal(recul[0]?.raison, 'Moins bien qu’avant : totalement le 15/09, puis suffisamment le 22/09.');
+    assert.equal(recul[0]?.raison, 'Moins bien qu’avant : tout à fait le 15/09, puis assez le 22/09.');
   });
 
   it('liste courte : le moins acquis d’abord, puis ce qui a reculé, puis ce qui dure ; au plus 3', () => {
@@ -87,7 +87,7 @@ describe('Propositions d’objectifs : compétences et aides', () => {
       `Continuer à travailler la compétence${N}: résoudre un problème à une opération.`,
       `Continuer à travailler la compétence${N}: se repérer dans le tableau.`
     ]);
-    assert.equal(p[0]?.raison, 'Niveau noté : suffisamment.');
+    assert.equal(p[0]?.raison, 'Niveau noté : assez.');
     assert.equal(p[1]?.raison, 'Précision libre notée dans la séance : à relire avant de la retenir.');
   });
 
@@ -194,7 +194,7 @@ describe('Texte de la réunion', () => {
     assert.ok(t.includes('1 cours annulé'));
     assert.ok(t.includes('Mathématiques (du 15/09/2026 au 22/09/2026)'));
     for (const titre of ['Points d’appui', 'À travailler', 'Compétence travaillée', 'Aides utilisées', 'Aides sans effet constaté']) assert.ok(t.includes(`\n${titre}\n`), titre);
-    assert.ok(t.includes(`• Entre dans la tâche${N}: totalement à chaque séance.`));
+    assert.ok(t.includes(`• Entre dans la tâche${N}: tout à fait à chaque séance.`));
     assert.ok(t.includes('• Support visuel (effet positif)') && t.includes('• Guidage verbal'));
     assert.ok(t.includes(`Objectifs retenus pour la suite\nMathématiques\n• Consolider${N}: maintient son attention.`));
     assert.ok(t.endsWith('• Voir avec la titulaire'));

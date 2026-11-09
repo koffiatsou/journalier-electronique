@@ -2,7 +2,7 @@
  * Synthèse par matière pour la réunion : constats datés, sans comptage.
  * Les séances d'absence ne comptent pas dans les observations ; elles sont résumées à part.
  */
-import { NIVEAUX_VIGILANCE } from '../types.ts';
+import { NIVEAUX_VIGILANCE, libelleNiveau } from '../types.ts';
 import type { Seance } from '../types.ts';
 import { versFaits } from './faits.ts';
 import {
@@ -10,7 +10,6 @@ import {
 } from './langue.ts';
 import { statsPresence } from './presence.ts';
 
-const NIVEAUX = ['Partiellement', 'Suffisamment', 'Totalement'] as const;
 const EFFET_MOT = ['aucun effet', 'effet partiel', 'effet positif'] as const;
 
 /** Une observation suivie séance après séance (niveau 0 partiel, 1 suffisant, 2 total). */
@@ -42,7 +41,7 @@ export interface Synthese {
   absences: string;
 }
 
-const mot = (n: number): string => min(NIVEAUX[n] ?? '');
+const mot = (n: number): string => min(libelleNiveau(n));
 const motVigilance = (n: number): string => min(NIVEAUX_VIGILANCE[n] ?? '');
 
 function suiteNiveaux(suite: readonly { date: string; niveau: number }[], mot: (n: number) => string): string {

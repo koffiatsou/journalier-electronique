@@ -12,7 +12,7 @@ export interface Suite {
   monObjectif: string;
   /** Aides dont l'effet a été positif. */
   aides: string[];
-  /** Points observés « Partiellement » : à retravailler. */
+  /** Points observés « Pas du tout » ou « Un peu » : à retravailler. */
   aRetravailler: string[];
   /* Ce qui a été prévu pour la suite (étape « Suite » de la séance). */
   objectif: string;
@@ -37,7 +37,7 @@ export function suiteDerniereSeance(eleveId: string | undefined, avant: string, 
     matiere: derniere.matiere,
     monObjectif: derniere.monObjectif.trim(),
     aides: derniere.aides.filter((a) => a.effet === 2).map((a) => a.nom),
-    aRetravailler: derniere.observations.filter((o) => o.niveau === 0 && !estVigilance(o)).map((o) => o.texte),
+    aRetravailler: derniere.observations.filter((o) => o.niveau !== null && o.niveau <= 0 && !estVigilance(o)).map((o) => o.texte),
     objectif: s.objectif.trim(),
     actions: s.actions,
     collaborations: s.collaborations,

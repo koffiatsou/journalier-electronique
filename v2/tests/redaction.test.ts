@@ -10,9 +10,9 @@ const texte = (s = seance(), opts = {}) => blocEnTexte(construireBloc(s, opts));
 
 test('séance complète : niveaux et effets groupés, points nommés', () => {
   const t = texte();
-  assert.ok(t.includes(`• Totalement${N}: entre dans la tâche${N}; maintient son attention.`));
-  assert.ok(t.includes(`• Suffisamment${N}: repère les informations pertinentes.`));
-  assert.ok(t.includes(`• Partiellement${N}: contrôle sa production.`));
+  assert.ok(t.includes(`• Tout à fait${N}: entre dans la tâche${N}; maintient son attention.`));
+  assert.ok(t.includes(`• Assez${N}: repère les informations pertinentes.`));
+  assert.ok(t.includes(`• Un peu${N}: contrôle sa production.`));
   assert.ok(t.includes(`Remarque${N}: Se fatigue en fin de période.`));
   assert.ok(t.includes(`• Effet positif${N}: support visuel.`));
   assert.ok(t.includes(`• Effet partiel${N}: guidage verbal.`));
@@ -57,7 +57,7 @@ test('évolution : même point, même matière, niveau différent', () => {
   const avant = seance({ date: '2026-09-15', observations: [{ texte: 'Maintient son attention', niveau: 0 }] });
   const t = texte(seance(), { precedentes: [avant] });
   assert.ok(t.includes('Évolution depuis la séance du 15/09\n'));
-  assert.ok(t.includes(`• Progression, Partiellement → Totalement${N}: maintient son attention.`));
+  assert.ok(t.includes(`• Progression, Un peu → Tout à fait${N}: maintient son attention.`));
 });
 
 test('évolution : progressions regroupées par changement de niveau, puis points à consolider', () => {
@@ -70,12 +70,12 @@ test('évolution : progressions regroupées par changement de niveau, puis point
       { texte: 'Contrôle sa production', niveau: 0 }
     ]
   });
-  // « Contrôle sa production » reste à « Partiellement » : rien à signaler.
+  // « Contrôle sa production » reste à « Un peu » : rien à signaler.
   const bloc = construireBloc(seance(), { precedentes: [avant] });
   const evo = bloc.ortho.find((o) => o.label?.startsWith('Évolution'));
   assert.deepEqual(evo?.lignes, [
-    `• Progression, Partiellement → Totalement${N}: entre dans la tâche${N}; maintient son attention.`,
-    `• À consolider, Totalement → Suffisamment${N}: repère les informations pertinentes.`
+    `• Progression, Un peu → Tout à fait${N}: entre dans la tâche${N}; maintient son attention.`,
+    `• À consolider, Tout à fait → Assez${N}: repère les informations pertinentes.`
   ]);
   assert.deepEqual(evo?.tons, ['progres', 'consolider']);
 });
@@ -86,7 +86,7 @@ test('évolution : dates différentes, chaque point dit depuis quand', () => {
   const bloc = construireBloc(seance(), { precedentes: [a, b] });
   const evo = bloc.ortho.find((o) => o.label?.startsWith('Évolution'));
   assert.equal(evo?.label, 'Évolution depuis les séances précédentes');
-  assert.deepEqual(evo?.lignes, [`• Progression, Partiellement → Totalement${N}: entre dans la tâche (depuis le 10/09)${N}; maintient son attention (depuis le 15/09).`]);
+  assert.deepEqual(evo?.lignes, [`• Progression, Un peu → Tout à fait${N}: entre dans la tâche (depuis le 10/09)${N}; maintient son attention (depuis le 15/09).`]);
 });
 
 test('évolution : ignorée si autre matière ou niveau inchangé', () => {
@@ -143,8 +143,8 @@ test('synthèse par matière : appuis, points à travailler, aides, absences', (
     seance({ date: '2026-10-06', presence: 'absent_agent' })
   ]);
   const m = sy.matieres[0];
-  assert.deepEqual(m?.appuis, [`Maintient son attention${N}: partiellement (15/09) → totalement (22/09).`]);
-  assert.deepEqual(m?.aTravailler, [`Contrôle sa production${N}: partiellement à chaque séance.`]);
+  assert.deepEqual(m?.appuis, [`Maintient son attention${N}: un peu (15/09) → tout à fait (22/09).`]);
+  assert.deepEqual(m?.aTravailler, [`Contrôle sa production${N}: un peu à chaque séance.`]);
   assert.deepEqual(m?.aides, ['support visuel (effet positif)']);
   assert.ok(sy.absences.includes('1 cours annulé') && sy.absences.includes('1 absence de l’agent du pôle'));
   assert.equal(sy.seances, 2);

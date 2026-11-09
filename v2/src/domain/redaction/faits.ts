@@ -20,6 +20,7 @@ export function versFaits(s: Seance, titulaire = ''): Faits {
     matiere: nettoyer(s.matiere),
     titulaire: nettoyer(titulaire),
     presence: s.presence,
+    profAbsent: s.profAbsent === true,
     interventions: sansVide(s.interventions),
     objectifLecon: objectifPropre(s.presence, nettoyer(s.objectifLecon)),
     contenuClasse: nettoyer(s.contenuClasse),

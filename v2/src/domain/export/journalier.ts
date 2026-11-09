@@ -61,11 +61,24 @@ function paragraphesOrtho(bloc: Bloc): string {
   return out.join('');
 }
 
-function tableBloc(proto: string, bloc: Bloc): string {
+const SHD_PLEIN = (fond: string): string => `<w:shd w:val="clear" w:color="auto" w:fill="${fond}"/>`;
+
+/** Met un fond de couleur aux cellules d'une ligne : remplace le gris du modèle, ou l'ajoute à une cellule qui n'a que sa largeur. */
+function colorerLigne(tr: string, fond: string): string {
+  return tr.replace(/<w:tcPr>([\s\S]*?)<\/w:tcPr>/g, (tout, contenu: string) => {
+    if (/<w:shd /.test(contenu)) return `<w:tcPr>${contenu.replace(/<w:shd [^>]*\/>/, SHD_PLEIN(fond))}</w:tcPr>`;
+    // Ordre imposé par Word : le fond vient juste après la largeur et la fusion. Une cellule plus chargée reste telle quelle.
+    return /^(<w:tcW [^>]*\/>)(<w:gridSpan [^>]*\/>)?$/.test(contenu) ? `<w:tcPr>${contenu}${SHD_PLEIN(fond)}</w:tcPr>` : tout;
+  });
+}
+
+function tableBloc(proto: string, bloc: Bloc, fond: string | null = null): string {
   const rows = lignes(proto);
   // 0 « Partie pédagogique » | 1 Date / Cours / Titulaire | 2 Objectif / Mon objectif / Intervention | 3 « Partie orthopédagogique » | 4 Observations
-  const [r0, r1, r2, r3, r4] = rows;
-  if (!r0 || !r1 || !r2 || !r3 || !r4) throw new Error('Le modèle Journalier est inattendu (lignes du tableau).');
+  const [modele0, r1, r2, modele3, r4] = rows;
+  if (!modele0 || !r1 || !r2 || !modele3 || !r4) throw new Error('Le modèle Journalier est inattendu (lignes du tableau).');
+  const r0 = fond ? colorerLigne(modele0, fond) : modele0;
+  const r3 = fond ? colorerLigne(modele3, fond) : modele3;
   const e = bloc.entete;
   const c1 = cellules(r1);
   let l1 = r1;
@@ -76,6 +89,7 @@ function tableBloc(proto: string, bloc: Bloc): string {
   const refaire = (lignesXml: string): string => proto.replace(/<w:tr[ >][\s\S]*<\/w:tr>/, () => lignesXml);
 
   if (bloc.type === 'absence') {
+    if (fond) l1 = colorerLigne(l1, fond);
     const l4 = r4.replace(cellObs, () => remplirCellule(cellObs, bloc.ortho.map((b) => para(run(b.texte ?? ''))).join('')));
     return refaire(l1 + l4);
   }
@@ -116,14 +130,17 @@ function remplirIdentite(tbl: string, id: Identite): string {
 }
 
 /** document.xml du modèle → document.xml rempli. */
-export function remplirDocument(docXml: string, blocs: Bloc[], identite: Identite): string {
+/** Couleur de fond de l'en-tête d'un bloc (hexadécimal), ou `null` pour garder le gris du modèle. */
+export type CouleurDeBloc = (bloc: Bloc) => string | null;
+
+export function remplirDocument(docXml: string, blocs: Bloc[], identite: Identite, couleurDe: CouleurDeBloc = () => null): string {
   const tables = decouperTables(docXml);
   const premiere = tables[0];
   const prototype = tables[1];
   const derniere = tables[tables.length - 1];
   if (!premiere || !prototype || !derniere) throw new Error('Le modèle Journalier est inattendu (tableaux introuvables).');
   const separateur = '<w:p><w:pPr><w:rPr><w:sz w:val="10"/><w:szCs w:val="10"/></w:rPr></w:pPr></w:p>';
-  const corps = blocs.map((b) => tableBloc(prototype.xml, b)).join(separateur);
+  const corps = blocs.map((b) => tableBloc(prototype.xml, b, couleurDe(b))).join(separateur);
   return docXml.slice(0, premiere.debut) + remplirIdentite(premiere.xml, identite) + docXml.slice(premiere.fin, prototype.debut) + corps + docXml.slice(derniere.fin);
 }
 

@@ -77,8 +77,8 @@ await libre.waitFor();
 await libre.getByRole('button', { name: /choisir un niveau/i }).click();
 await libre.getByRole('radio', { name: 'Souvent' }).click();
 const feuille = await page.locator('.feuille').first().innerText();
-ok(/Point de vigilance, tout au long/i.test(feuille) && /se désengage/i.test(feuille), 'vigilance : la feuille écrit la fréquence, pas « Totalement »');
-ok(!/Totalement\s*:\s*se désengage/i.test(feuille), 'vigilance : jamais classé parmi les acquis');
+ok(/Point de vigilance, tout au long/i.test(feuille) && /se désengage/i.test(feuille), 'vigilance : la feuille écrit la fréquence, pas « Tout à fait »');
+ok(!/Tout à fait\s*:\s*se désengage/i.test(feuille), 'vigilance : jamais classé parmi les acquis');
 await page.screenshot({ path: `${SORTIE}/v-vigilance.png`, fullPage: true });
 ok(await page.getByText('Utilisé ailleurs que pendant la séance').count() === 0, 'séance : la question « Utilisé ailleurs » n’existe plus');
 

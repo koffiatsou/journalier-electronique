@@ -195,7 +195,7 @@ describe('PIA : indices', () => {
     assert.ok(!r.some((x) => x.texte.toLowerCase().includes('libre')));
     assert.ok(!r.some((x) => x.aspect === 'physique' || x.aspect === 'communication'));
     const entreDansLaTache = r.find((x) => x.aspect === 'autonomie');
-    assert.equal(entreDansLaTache?.raison, 'Noté lors de 3 séances (Mathématiques, Français) ; dernier niveau : totalement.');
+    assert.equal(entreDansLaTache?.raison, 'Noté lors de 3 séances (Mathématiques, Français) ; dernier niveau : tout à fait.');
   });
 
   it('ne rapproche pas ce qui n’a été noté qu’une fois, ni les absences', () => {

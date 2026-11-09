@@ -16,6 +16,9 @@ import { Badge } from '../../ui/Badge.tsx';
 import { texteLigne } from '../../ui/LigneEvolution.tsx';
 import { Button } from '../../ui/Button.tsx';
 import { Dialog } from '../../ui/Dialog.tsx';
+import { couleursEnregistrees, retenirCouleurs } from '../../ui/couleursExport.ts';
+import type { ReglageCouleurs } from '../../domain/export/couleurs.ts';
+import { CouleursExport } from './CouleursExport.tsx';
 import { Field, Input, Select } from '../../ui/Field.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 
@@ -94,6 +97,8 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
   const [ouverte, setOuverte] = useState<string | null>(null);
   const [aSupprimer, setASupprimer] = useState<Seance | null>(null);
   const [enCours, setEnCours] = useState(false);
+  const [couleursWord, setCouleursWord] = useState(couleursEnregistrees);
+  const changerCouleursWord = (r: ReglageCouleurs) => { setCouleursWord(r); retenirCouleurs(r); };
 
   const periode = construirePeriode(f);
   const resultat = bornes(periode, aujourdhui);
@@ -106,11 +111,12 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
   const triees = [...eleves].sort((a, b) => cleDeTri(a).localeCompare(cleDeTri(b), 'fr'));
   const eleve = f.eleveId ? parEleve.get(f.eleveId) : undefined;
   const nbEleves = new Set(liste.map((s) => s.eleveId)).size;
+  const matieresExportees = [...new Set(liste.map((s) => s.matiere.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'));
 
   const exporter = async () => {
     if (!liste.length) return;
     setEnCours(true);
-    const options = { deidentifie: f.anonyme, periode: libellePeriode(periode, aujourdhui, true) };
+    const options = { deidentifie: f.anonyme, periode: libellePeriode(periode, aujourdhui, true), couleurs: couleursWord };
     try {
       if (eleve) {
         annoncer(`${await telechargerJournalier(eleve, liste, options)} téléchargé`);
@@ -190,6 +196,7 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
             )}
           </p>
           <label className="case-anonyme"><input type="checkbox" checked={f.anonyme} onChange={(ev) => maj({ anonyme: ev.target.checked })} /> Sans nom ni titulaire (pour partager)</label>
+          <CouleursExport matieres={matieresExportees} reglage={couleursWord} onChange={changerCouleursWord} />
           <Button variante="primaire" disabled={!liste.length || enCours} onClick={() => { void exporter(); }}>
             {enCours ? 'Préparation…' : 'Exporter le Journalier (Word)'}
           </Button>

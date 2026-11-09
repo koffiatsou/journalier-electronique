@@ -8,7 +8,7 @@
  *  - aucun comptage (« six points… ») : les points sont nommés, avec leur niveau ;
  *  - module pur : ne lit ni le DOM, ni le stockage, ni le réseau.
  */
-import { NIVEAUX_VIGILANCE } from '../types.ts';
+import { NIVEAUX_VIGILANCE, NIVEAU_MIN, libelleNiveau } from '../types.ts';
 import type { Seance } from '../types.ts';
 import { versFaits } from './faits.ts';
 import {
@@ -16,7 +16,6 @@ import {
 } from './langue.ts';
 import type { Bloc, Faits, LigneOrtho, TonLigne } from './types.ts';
 
-const NIVEAUX = ['Partiellement', 'Suffisamment', 'Totalement'] as const;
 const EFFETS = ['Aucun effet', 'Effet partiel', 'Effet positif'] as const;
 export const TEXTE_ABSENCE = {
   absent_eleve: 'Élève absent — séance non tenue.',
@@ -27,10 +26,10 @@ export const TEXTE_ABSENCE = {
 
 type AvecNiveau = { texte: string; niveau: number | null };
 
-/** Regroupe par niveau décroissant (Totalement d'abord), puis ceux sans niveau. */
+/** Regroupe par niveau décroissant (le plus fort d'abord), puis ceux sans niveau. */
 export function grouperParNiveau<T extends AvecNiveau>(items: readonly T[]): { niveau: number | null; items: T[] }[] {
   const groupes: { niveau: number | null; items: T[] }[] = [];
-  for (let n = 2; n >= 0; n--) {
+  for (let n = 2; n >= NIVEAU_MIN; n--) {
     const liste = items.filter((i) => i.niveau === n);
     if (liste.length) groupes.push({ niveau: n, items: liste });
   }
@@ -70,7 +69,7 @@ function ligneFonctionnement(f: Faits): string[] | null {
   const acquis = f.observations.filter((o) => !o.vigilance);
   const vigilances = f.observations.filter((o) => o.vigilance);
   return [
-    ...puces(grouperParNiveau(acquis), (n) => (n === null ? 'Observé' : NIVEAUX[n] ?? 'Observé')),
+    ...puces(grouperParNiveau(acquis), (n) => (n === null ? 'Observé' : libelleNiveau(n) || 'Observé')),
     ...puces(grouperParNiveau(vigilances), (n) => `Point de vigilance${n === null ? '' : `, ${min(NIVEAUX_VIGILANCE[n] ?? '')}`}`)
   ];
 }
@@ -78,7 +77,7 @@ function ligneFonctionnement(f: Faits): string[] | null {
 function ligneCompetence(f: Faits): string | null {
   if (!f.competences.length) return null;
   const parts = f.competences.map((c) =>
-    c.niveau === null ? min(c.texte) : `${min(c.texte)} (${min(NIVEAUX[c.niveau] ?? '')})`);
+    c.niveau === null ? min(c.texte) : `${min(c.texte)} (${min(libelleNiveau(c.niveau))})`);
   return `${Maj(enumeration(parts))}.`;
 }
 
@@ -117,7 +116,7 @@ interface LignesEvolution { label: string; lignes: string[]; tons: TonLigne[] }
 
 /**
  * Évolution regroupée par changement de niveau, progressions d'abord :
- * « • Progression, Partiellement → Suffisamment : a ; b. » puis « • À consolider, … ».
+ * « • Progression, Un peu → Assez : a ; b. » puis « • À consolider, … ».
  * La date de la séance comparée est dans l'intitulé quand elle est unique,
  * sinon elle suit chaque point (« depuis le 02/10 »).
  */
@@ -133,7 +132,7 @@ function lignesEvolution(evo: readonly Evolution[]): LignesEvolution | null {
   });
   // Pour un point de vigilance, c'est l'inverse : moins fréquent = progression.
   const progres = (g: { de: number; vers: number; vigilance: boolean }): boolean => (g.vigilance ? g.vers < g.de : g.vers > g.de);
-  const echelle = (g: { vigilance: boolean }, n: number): string => (g.vigilance ? NIVEAUX_VIGILANCE[n] : NIVEAUX[n]) ?? '';
+  const echelle = (g: { vigilance: boolean }, n: number): string => g.vigilance ? NIVEAUX_VIGILANCE[n] ?? '' : libelleNiveau(n);
   groupes.sort((a, b) => Number(progres(b)) - Number(progres(a)) || b.vers - a.vers || a.de - b.de);
   const lignes: string[] = [];
   const tons: TonLigne[] = [];
@@ -154,13 +153,20 @@ export interface ContexteBloc {
   precedentes?: readonly Seance[];
 }
 
+/** Case « Cours » : la matière, suivie de « (professeur absent) » quand l'élève a été vu en individuel à sa place. */
+function coursAffiche(faits: Faits): string {
+  if (!faits.profAbsent || faits.presence !== 'present') return faits.matiere;
+  return faits.matiere ? `${faits.matiere} (professeur absent)` : 'Professeur absent';
+}
+
 export function construireBloc(seance: Seance, contexte: ContexteBloc = {}): Bloc {
   const faits = versFaits(seance, contexte.titulaire);
   const estAbsence = faits.presence !== 'present' && faits.presence !== 'absent_eleve_coteach';
   const bloc: Bloc = {
     type: estAbsence ? 'absence' : 'seance',
     presence: faits.presence,
-    entete: { date: dateFR(faits.date), cours: faits.matiere, titulaire: faits.titulaire },
+    matiere: faits.matiere,
+    entete: { date: dateFR(faits.date), cours: coursAffiche(faits), titulaire: faits.titulaire },
     peda: null,
     ortho: []
   };

@@ -27,7 +27,7 @@ const VARIANTES = {
   'E-menu-replie-cartes-220': { css: CARTES_220, menu: 'reduit' }
 };
 
-const NIVEAUX = ['Partiellement', 'Suffisamment', 'Totalement', 'Suffisamment', 'Partiellement', 'Suffisamment', 'Totalement', 'Suffisamment'];
+const NIVEAUX = ['Un peu', 'Assez', 'Tout à fait', 'Assez', 'Un peu', 'Assez', 'Tout à fait', 'Assez'];
 
 async function remplir(page) {
   await page.getByLabel('Élève accompagné').selectOption({ label: 'Élève Alpha' });
