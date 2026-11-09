@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { IndexReferentiel, anneeDeNiveau, analyserClasse, cibleDeMatiere, formeDeFiliere, formeDeTexte } from '../src/domain/referentiel/index.ts';
+import { IndexReferentiel, anneeDeNiveau, developper, analyserClasse, cibleDeMatiere, formeDeFiliere, formeDeTexte } from '../src/domain/referentiel/index.ts';
 import type { EntreeReferentiel } from '../src/domain/referentiel/index.ts';
 
 const e = (a: string, extra: Partial<EntreeReferentiel> = {}): EntreeReferentiel => ({ m: 'Mathématiques', f: 'TC', t: 'f', a, r: 'test', ...extra });
@@ -38,6 +38,15 @@ describe('moteur de pistes', () => {
   });
   it('limite le nombre de pistes', () => {
     assert.ok(index.suggerer({ objectif: 'calculer nombres grandeurs problème', annee: 'S2' }, 2).length <= 2);
+  });
+});
+
+describe('alias de terrain par matière', () => {
+  it('une expression agit dans sa matière seulement', () => {
+    assert.match(developper('règle des signes', 'Mathématiques'), /positif/);
+    assert.equal(developper('les signes de ponctuation', 'Français'), 'les signes de ponctuation');
+    assert.equal(developper('x', 'Sciences'), 'x');
+    assert.equal(developper('règle des signes'), 'règle des signes');
   });
 });
 

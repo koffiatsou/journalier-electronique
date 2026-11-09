@@ -16,9 +16,12 @@ const DEJA_COUVERT = /\bconsignes?\b|ce qui est demand/i;
 export class IndexReferentiel {
   private readonly lignes: Ligne[];
   private readonly poids = new Map<string, number>();
+  /** Matière du jeu (champ `m` des lignes) : choisit la table d'alias de terrain. */
+  private readonly matiere: string | undefined;
 
   constructor(toutes: readonly EntreeReferentiel[]) {
     const entrees = toutes.filter((x) => typeof x.a === 'string' && x.a.length > 0);
+    this.matiere = entrees[0]?.m;
     const df = new Map<string, number>();
     this.lignes = entrees.map((entree) => {
       const attendu = new Set(racines(entree.a));
@@ -37,7 +40,7 @@ export class IndexReferentiel {
    * Aucune piste quand l'objectif est vague (« révisions », « interro »…).
    */
   suggerer(ctx: Contexte, k = 4): Piste[] {
-    const mots = [...new Set(racines(developper(ctx.objectif)))].filter((t) => !racinesAdministratives.has(t));
+    const mots = [...new Set(racines(developper(ctx.objectif, this.matiere)))].filter((t) => !racinesAdministratives.has(t));
     if (!mots.length) return [];
     const meilleures = new Map<string, Piste>();
     for (const { entree, attendu, theme } of this.lignes) {
