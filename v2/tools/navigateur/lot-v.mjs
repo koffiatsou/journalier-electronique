@@ -84,6 +84,9 @@ ok(await page.getByText('Utilisé ailleurs que pendant la séance').count() === 
 
 /* ───────── V3 : menu réductible ───────── */
 const largeur = async () => (await page.locator('.nav').boundingBox()).width;
+// Sur l'écran Séance le menu se replie tout seul (lot 6, voir lot6-seance-colonnes) : la largeur « par défaut » se mesure ailleurs.
+await page.evaluate(() => { location.hash = '#/accueil'; });
+await page.waitForTimeout(400);
 ok(await largeur() > 200, `menu : large par défaut en paysage (${Math.round(await largeur())} px)`);
 await page.getByRole('button', { name: 'Réduire le menu' }).click();
 ok(await largeur() < 90, `menu : réduit (${Math.round(await largeur())} px)`);

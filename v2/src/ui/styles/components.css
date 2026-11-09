@@ -52,7 +52,7 @@
 .chip[aria-pressed="true"] .tick { width: 14px; margin-right: 0; opacity: 1; transform: none; }
 
 /* ---------- point à évaluer : même carte pour observations, compétences et aides ---------- */
-.points { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--sp-3); align-items: start; }
+.points { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-3); align-items: start; }
 .point {
   display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-m); background: var(--surface);
   transition: border-color var(--t-ui) var(--ease-out), box-shadow var(--t-ui) var(--ease-out), background-color var(--t-ui) ease-out;
