@@ -1,8 +1,8 @@
 import { AIDES_SUGGEREES, INTERVENTIONS_SUGGEREES, NIVEAUX_LIBELLES, NIVEAUX_VIGILANCE } from './types.ts';
 
 /**
- * Lexique de l'écran Séance : ce que veut dire chaque mot proposé. Textes de départ, à relire et corriger avec les
- * collègues ; une phrase ou deux, sans jargon, « l'élève » neutre. Un test refuse un mot proposé sans définition.
+ * Lexique de l'écran Séance : ce que veut dire chaque mot proposé. Textes validés par l'utilisateur le
+ * 10/11/2026 ; une phrase ou deux, sans jargon, « l'élève » neutre. Un test refuse un mot proposé sans définition.
  */
 export interface EntreeLexique {
   terme: string;
