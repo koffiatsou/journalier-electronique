@@ -63,6 +63,12 @@ await lexiqueAides.waitFor();
 ok(/Support visuel/.test(await lexiqueAides.innerText()), 'le lexique des aides explique « Support visuel »');
 await lexiqueAides.getByRole('button', { name: 'Fermer' }).click();
 
+// 4 bis. « Format de la prochaine séance » reprend les mêmes mots que « Mon intervention ».
+await page.getByRole('button', { name: /Suite/ }).first().click();
+await page.waitForTimeout(600);
+const formats = await page.getByLabel('Format de la prochaine séance').locator('option').allInnerTexts();
+ok(JSON.stringify(formats) === JSON.stringify(['Sans changement', 'Accompagnement individuel', 'Accompagnement collectif (en classe)', 'Atelier groupe classe', 'Co-intervention', 'Co-enseignement']), `le format de la prochaine séance reprend les nouveaux mots (${formats.join(' | ')})`);
+
 // 5. Enregistrement puis export Word coloré.
 await page.getByRole('button', { name: /Rubrique 1|Séance|Créneau/ }).first().click().catch(() => undefined);
 await page.getByLabel(/Objectif de la leçon/).fill('Les fractions');

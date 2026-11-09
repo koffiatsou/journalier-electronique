@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ACTIONS_SUITE_SUGGEREES, AIDES_SUGGEREES, COLLABORATIONS_SUGGEREES, EFFETS_LIBELLES,
-  FILIERES_LIBELLES, MODALITES_SUITE, interventionsAffichees, NIVEAUX_LIBELLES, NIVEAUX_VIGILANCE, NIVEAU_MIN, OBSERVATIONS_SUGGEREES, PERIODES_DEFAUT, PRESENCE_LIBELLES, PRESENCE_PROF_ABSENT_VU, SITUATION_AIDE_LIBELLES, VIGILANCES_SUGGEREES, estVigilance
+  FILIERES_LIBELLES, interventionsAffichees, modalitesAffichees, NIVEAUX_LIBELLES, NIVEAUX_VIGILANCE, NIVEAU_MIN, OBSERVATIONS_SUGGEREES, PERIODES_DEFAUT, PRESENCE_LIBELLES, PRESENCE_PROF_ABSENT_VU, SITUATION_AIDE_LIBELLES, VIGILANCES_SUGGEREES, estVigilance
 } from '../../domain/types.ts';
 import type { Aide, Eleve, Effet, Niveau, Observation, Presence, Seance, SituationAide } from '../../domain/types.ts';
 import { LEXIQUE_ACCOMPAGNEMENTS, LEXIQUE_AIDES, LEXIQUE_NIVEAUX } from '../../domain/lexique.ts';
@@ -333,7 +333,7 @@ export function FormulaireSuite({ s, maj }: PropsFormulaire) {
         {(id) => (
           <Select id={id} value={suite.modalite} onChange={(e) => set({ modalite: e.target.value })}>
             <option value="">Sans changement</option>
-            {MODALITES_SUITE.map((m) => <option key={m}>{m}</option>)}
+            {modalitesAffichees(suite.modalite).map((m) => <option key={m}>{m}</option>)}
           </Select>
         )}
       </Field>

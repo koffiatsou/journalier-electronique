@@ -315,9 +315,12 @@ export const COLLABORATIONS_SUGGEREES = [
   'Questionner à la prochaine réunion d’intégration'
 ] as const;
 
-export const MODALITES_SUITE = [
-  'Maintenir l’individuel',
-  'Groupe',
-  'Cointervention',
-  'Coenseignement'
-] as const;
+/**
+ * « Format de la prochaine séance » : les mêmes mots que « Mon intervention » (depuis le 9/11/2026). Les anciens formats déjà
+ * enregistrés (« Maintenir l'individuel », « Groupe », « Cointervention », « Coenseignement ») restent affichés (`modalitesAffichees`).
+ */
+export const MODALITES_SUITE = INTERVENTIONS_SUGGEREES;
+
+/** Les formats à montrer : la liste, puis l'ancien format de la séance s'il n'y est plus. */
+export const modalitesAffichees = (actuelle: string): string[] =>
+  actuelle && !(MODALITES_SUITE as readonly string[]).includes(actuelle) ? [...MODALITES_SUITE, actuelle] : [...MODALITES_SUITE];
