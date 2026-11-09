@@ -17,6 +17,17 @@ lignes = []
 titre, courant = '', None
 with pdfplumber.open(PDF) as pdf:
     for pn, page in enumerate(pdf.pages, 1):
+        # Tableau « champs / compétences à développer / niveaux » : la 2e colonne est une liste de puces, la 1re donne le champ.
+        for tableau in page.extract_tables():
+            if not tableau or not any('Compétences à développer' in (c or '') for c in tableau[0]):
+                continue
+            for ligne_tab in tableau[1:]:
+                if len(ligne_tab) < 2 or not ligne_tab[0] or not ligne_tab[1]:
+                    continue
+                champ = clean(ligne_tab[0].split('•')[0].replace('\n', ' ')).rstrip('.')
+                for puce in ligne_tab[1].replace('\n', ' ').split('•'):
+                    if clean(puce):
+                        lignes.append({'p': pn, 'u': champ, 'a': puce})
         for brut in (page.extract_text() or '').split('\n'):
             l = brut.strip()
             if not l or PIED.search(l):

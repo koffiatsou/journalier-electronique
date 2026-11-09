@@ -76,7 +76,7 @@ Reste côté Élèves : l'avatar n'apparaît pas encore au Journalier, à l'agen
 | Espagnol, italien | secondaire supérieur 2017 uniquement |
 | Histoire, géographie, formation économique et sociale | tronc commun 2022 P1–S3 (530 lignes) ; S4–S6 : moments-clés et compétences de l'histoire (1999), compétences d'unité de géographie (HGT) et d'histoire-géographie (HPT 2014) : 87 lignes larges, sans les tableaux de ressources (`histoire-geographie.json`) |
 | Technique (manuel, technique, technologique, numérique) | tronc commun 2022 P1–S3 (458 lignes) + compétences terminales HGT (éducation technique et technologique, technologie, informatique : listes à puces, qualité moyenne) ; qualification non extraite |
-| Éducation physique et à la santé | tronc commun 2022 P1–S3 (691 lignes, `education-physique.json`) ; S4–S6 : 4 lignes seulement (document de 2000 fait de tableaux) |
+| Éducation physique et à la santé | tronc commun 2022 P1–S3 (691 lignes, `education-physique.json`) ; S4–S6 : 29 lignes (document de 2000 : les trois tableaux « champs / compétences » sont lus, la colonne des niveaux non) |
 | Arts (éducation culturelle et artistique) | tronc commun 2022 P1–S3 (472 lignes, `arts.json`) + éducation artistique 2004 et arts du cirque (listes à puces) |
 | Philosophie et citoyenneté | tronc commun 2022 P1–S3 (616 lignes, `philosophie.json`) + compétences terminales HGT et minimales HPT (listes à puces ; les deux documents sont identiques) |
 | Langues anciennes (latin) | tronc commun 2022 S2–S3 (76 lignes, `langues-anciennes.json`) + latin-grec 1999 (51 lignes) |

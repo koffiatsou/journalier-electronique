@@ -18,7 +18,7 @@ Exemples : `python3 extraire_tronc_commun.py 2022_REF_Mathematiques.pdf 25 150 M
 11. `extraire_sciences_humaines_superieur.py` — histoire 1999, géographie et histoire-géographie 2014 (S3–S6), fusionnés dans `histoire-geographie.json`.
 12. `extraire_eps.py` — éducation physique et à la santé (tronc commun, deux colonnes sans traits) → `education-physique.json`.
 13. `extraire_matiere_tc.py` — une matière du tronc commun au format compact (arts, philosophie et citoyenneté, latin).
-14. `extraire_ct_liste.py` — compétences terminales en listes à puces (éducation physique, artistique, technique, technologie, informatique, cirque, philosophie, latin-grec, formation économique et sociale) ; les tableaux à colonnes ne sont pas lus.
+14. `extraire_ct_liste.py` — compétences terminales en listes à puces (éducation physique, artistique, technique, technologie, informatique, cirque, philosophie, latin-grec, formation économique et sociale) ; seul le tableau « champs / compétences à développer / niveaux » est lu (éducation physique 2000), pas les autres tableaux à colonnes.
 Mesure du moteur : `node --import tsx tools/referentiel/mesurer.ts --echecs` (corpus dans `tests/corpus-referentiel.ts`).
 Scripts Python : `python` simple (pdfplumber installé pour l'utilisateur), pas `python -I`.
 Limites connues : voir AGENTS.md (histoire-géographie, technique et anglais/allemand du tronc commun non extraits).
