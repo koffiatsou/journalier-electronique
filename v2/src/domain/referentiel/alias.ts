@@ -29,7 +29,60 @@ export const ALIAS: Readonly<Record<string, TableAlias>> = {
     'ordonnees abscisses': 'repere orthonorme coordonnees',
     ordonnees: 'repere coordonnees',
     abscisses: 'repere coordonnees',
-    x: 'inconnue equation'
+    x: 'inconnue equation',
+    'regle de trois': 'proportionnalite grandeurs proportionnelles',
+    'regles de trois': 'proportionnalite grandeurs proportionnelles',
+    thales: 'proportionnalite triangles semblables',
+    pythagore: 'theoreme triangle rectangle',
+    pgcd: 'diviseur commun',
+    ppcm: 'multiple commun',
+    relatifs: 'entier relatif positif negatif',
+    discriminant: 'equation second degre',
+    mediane: 'statistique',
+    moyenne: 'statistique'
+  },
+  Français: {
+    cod: 'complement objet direct fonction',
+    coi: 'complement objet indirect fonction',
+    cc: 'complement circonstanciel fonction',
+    pp: 'participe passe accord',
+    gn: 'groupe nominal',
+    gv: 'groupe verbal',
+    'accord sujet verbe': 'accord sujet verbe',
+    dictee: 'orthographe',
+    conjugaison: 'verbe temps conjugaison',
+    'texte argumentatif': 'argumenter defendre opinion',
+    'champ lexical': 'lexique vocabulaire'
+  },
+  Sciences: {
+    mole: 'quantite de matiere',
+    ohm: 'tension intensite resistance courant electrique',
+    adn: 'gene chromosome heredite',
+    ph: 'acide base',
+    mitose: 'division cellulaire cellule',
+    densite: 'masse volumique masse volume',
+    newton: 'force',
+    mru: 'mouvement vitesse'
+  },
+  'Langues modernes': {
+    restaurant: 'commander situation vie quotidienne conversation',
+    'se presenter': 'identite personne presenter',
+    akkusativ: 'accusatif declinaison cas',
+    nombres: 'nombre numeraux cardinaux',
+    heure: 'temps horaire'
+  },
+  'Histoire-géographie': {
+    frise: 'frise chronologique temps',
+    carte: 'carte localiser plan croquis'
+  },
+  'Sciences économiques': {
+    'offre et demande': 'marche prix',
+    inflation: 'prix monnaie',
+    chomage: 'emploi travail marche du travail',
+    impots: 'impot taxe fiscalite finances publiques',
+    tva: 'fiscalite indirecte impot',
+    budget: 'budget menage consommation revenu',
+    bourse: 'bourse marche financier'
   }
 };
 
