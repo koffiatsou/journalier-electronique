@@ -59,8 +59,14 @@ describe('contexte', () => {
     assert.equal(cibleDeMatiere('Histoire')?.jeu, 'histoire-geographie');
     assert.equal(cibleDeMatiere('Technologie')?.jeu, 'technique');
     assert.equal(cibleDeMatiere('Informatique')?.jeu, 'technique');
-    assert.equal(cibleDeMatiere('Éducation physique'), null, 'l’éducation physique ne relève pas des sciences');
-    assert.equal(cibleDeMatiere('EPS'), null);
+    assert.equal(cibleDeMatiere('Éducation physique')?.jeu, 'education-physique', 'l’éducation physique ne relève pas des sciences');
+    assert.equal(cibleDeMatiere('EPS')?.jeu, 'education-physique');
+    assert.equal(cibleDeMatiere('FMTTN')?.jeu, 'technique');
+    assert.equal(cibleDeMatiere('Géo')?.jeu, 'histoire-geographie');
+    assert.equal(cibleDeMatiere('TIC')?.jeu, 'technique');
+    assert.equal(cibleDeMatiere('Latin')?.jeu, 'langues-anciennes');
+    assert.equal(cibleDeMatiere('Éducation artistique')?.jeu, 'arts');
+    assert.equal(cibleDeMatiere('Philosophie et citoyenneté')?.jeu, 'philosophie');
   });
   it('reconnaît le niveau et la forme', () => {
     assert.equal(anneeDeNiveau('S2'), 'S2');

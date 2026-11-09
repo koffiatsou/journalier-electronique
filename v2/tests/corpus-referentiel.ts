@@ -9,7 +9,7 @@ import type { Annee, FormeEnseignement } from '../src/domain/referentiel/index.t
  * Le corpus est gelé avant tout réglage du moteur ; ajouter des cas est permis, en retirer pour améliorer le score ne l'est pas.
  * Parité de l'indice : pair = lot de réglage, impair = lot de contrôle (jamais regardé pendant les réglages).
  */
-export type JeuCorpus = 'mathematiques' | 'francais' | 'sciences' | 'langues' | 'economie' | 'histoire-geographie' | 'technique';
+export type JeuCorpus = 'mathematiques' | 'francais' | 'sciences' | 'langues' | 'economie' | 'histoire-geographie' | 'technique' | 'education-physique' | 'arts' | 'philosophie' | 'langues-anciennes';
 
 export interface CasCorpus {
   jeu: JeuCorpus;
@@ -29,6 +29,10 @@ const e = (objectif: string, attendu: RegExp): CasCorpus => ({ jeu: 'economie', 
 const h = (objectif: string, annee: Annee, attendu: RegExp): CasCorpus => ({ jeu: 'histoire-geographie', objectif, annee, attendu });
 const t = (objectif: string, annee: Annee, attendu: RegExp): CasCorpus => ({ jeu: 'technique', objectif, annee, attendu });
 const hs = (objectif: string, annee: Annee, attendu: RegExp): CasCorpus => ({ jeu: 'histoire-geographie', objectif, annee, forme: 'G', attendu });
+const ep = (objectif: string, annee: Annee, attendu: RegExp): CasCorpus => ({ jeu: 'education-physique', objectif, annee, attendu });
+const ar = (objectif: string, annee: Annee, attendu: RegExp): CasCorpus => ({ jeu: 'arts', objectif, annee, attendu });
+const ph = (objectif: string, annee: Annee, attendu: RegExp): CasCorpus => ({ jeu: 'philosophie', objectif, annee, attendu });
+const la = (objectif: string, annee: Annee, attendu: RegExp): CasCorpus => ({ jeu: 'langues-anciennes', objectif, annee, attendu });
 const vague = (jeu: JeuCorpus, objectif: string, annee: Annee): CasCorpus => ({ jeu, objectif, annee });
 
 export const CORPUS: readonly CasCorpus[] = [
@@ -165,6 +169,21 @@ export const CORPUS: readonly CasCorpus[] = [
   t('hygiène en cuisine', 'S3', /securite|ingredient|hygien|sanitaire/),
   t('les réseaux sociaux', 'S1', /reseau|socionumerique/),
   t('recherche sur internet', 'S2', /recherche|operateur|moteur|internet/),
+  ep('échauffement et étirements', 'S1', /echauff|etirement|corps|effort/),
+  ep('course d’endurance', 'S2', /endurance|course|effort|rythme|cardiaque/),
+  ep('sports collectifs : passes et tactique', 'S3', /passe|collectif|equipe|partenaire|jeu/),
+  ep('gymnastique au sol', 'S1', /mouvement|equilibre|roul|sol|enchain|gym/),
+  ar('dessin d’observation', 'S1', /observ|dessin|plastique|visuel|represent/),
+  ar('découverte d’un instrument de musique', 'S2', /instrument|musique|musical|son/),
+  ar('visite du musée', 'S2', /musee|culturel|oeuvre|patrimoine|lieu/),
+  ar('mise en scène théâtrale', 'S3', /scene|theatr|corpor|expression|jeu/),
+  ph('le débat en classe', 'S2', /debat|argument|opinion|discussion/),
+  ph('les droits de l’enfant', 'S1', /droit|justice|regle|liberte/),
+  ph('démocratie et élections', 'S3', /democr|election|pouvoir|citoyen/),
+  ph('vivre ensemble et respect', 'S1', /respect|ensemble|autre|regle|vivre/),
+  la('déclinaisons latines', 'S3', /declinaison|cas|nom|desinence|flexion/),
+  la('vocabulaire latin et mots français', 'S2', /mot|lexique|famille|etymolog|origine|vocabulaire/),
+  la('la Rome antique', 'S3', /rome|romain|civilisation|antiquit/),
   vague('mathematiques', 'révisions', 'S2'),
   vague('mathematiques', 'interro', 'S3'),
   vague('mathematiques', 'exercices', 'S1'),
