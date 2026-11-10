@@ -1,6 +1,6 @@
 """Grammaire d'une langue moderne du tronc commun (référentiel de langues modernes 2022, P3-S3).
 
-Usage : python -I extraire_grammaire_langue.py <référentiel.pdf> <Langue> <sortie.json> [langues.json]
+Usage : python extraire_grammaire_langue.py <référentiel.pdf> <Langue> <sortie.json> [langues.json]
 Langue : Néerlandais, Allemand ou Anglais (le titre « Savoirs grammaticaux : <Langue> » repère les pages).
 Avec un cinquième argument, les lignes de cette langue du tronc commun sont remplacées dans ce fichier
 (src/data/referentiel/langues.json) : relancer le script donne toujours le même résultat.

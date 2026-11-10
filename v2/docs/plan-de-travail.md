@@ -53,7 +53,7 @@ Mis à jour le 3 novembre 2026 (lots 1 à 10, A, F, Q, S, SP et **U** terminés 
 |---|---|---|
 | R1 — Histoire‑géographie et technique | Histoire-géographie, technique, éducation physique, arts, philosophie, latin : tronc commun ✅ et S4–S6 en grandes lignes ✅ (9/11/2026) ; reste qualification technique, droit détaillé, relecture par échantillon | 🟡 |
 | R2 — Langues | Grammaire anglais/allemand du tronc commun ✅ (9/11/2026) ; reste correspondance CECRL ↔ année, grammaire du secondaire supérieur | 🟡 |
-| R3 — Qualité des pistes | Relecture par échantillon, lignes tronquées, alias de terrain, regroupement des formulations proches, essai sur de vrais objectifs (journaux réels) | ⏳ |
+| R3 — Qualité des pistes | Corpus de mesure gelé + planchers testés ✅, alias de terrain par matière ✅, tronc commun « en vigueur à partir de » ✅ (9–10/11/2026) ; reste : relecture par échantillon, regroupement des formulations proches, essai sur de vrais objectifs (journaux réels) | 🟡 |
 
 ### Qualité
 | Lot | Contenu | Statut |
