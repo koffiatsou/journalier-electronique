@@ -13,7 +13,7 @@ import type { Lot } from './mesure-referentiel.ts';
  * Attention : les échecs des deux lots avaient été
  * affichés avant d'écrire ces alias, donc le lot de contrôle n'est plus indépendant ; la mesure honnête est celle de départ.
  */
-const PLANCHER: Record<Lot, number> = { reglage: 73, controle: 72 };
+const PLANCHER: Record<Lot, number> = { reglage: 74, controle: 72 };
 
 describe('moteur de pistes : corpus d’objectifs de terrain', () => {
   for (const lot of ['reglage', 'controle'] as const) {
