@@ -133,7 +133,7 @@ if (webkit) {
   await w.page.evaluate(() => { location.hash = '#/seance'; });
   await w.page.getByRole('heading', { name: 'Nouvelle séance', level: 1 }).waitFor();
   await w.page.getByRole('button', { name: /^Étape suivante : 2/ }).tap();
-  await attendre(w.page, 1200);
+  await attendre(w.page, 2000); // repli + défilement animé + seconde visée
   const titreVisible = await w.page.evaluate(() => {
     const b = document.querySelector('#etape-2 .etape-bouton').getBoundingClientRect();
     const barre = document.querySelector('.barre-etapes').getBoundingClientRect();
@@ -144,7 +144,8 @@ if (webkit) {
   await w.page.getByRole('heading', { name: 'Agenda', level: 1 }).waitFor();
   await attendre(w.page, 500);
   await w.page.locator('.evt').first().tap();
-  ok(await w.page.getByRole('region', { name: 'Modifier l’activité' }).isVisible(), 'WebKit : un toucher sur une activité ouvre son panneau');
+  // Le panneau recouvre la page sur tablette : depuis le lot 4 il prend alors le rôle « dialog » (à côté de la page : « region »).
+  ok(await w.page.getByRole('dialog', { name: 'Modifier l’activité' }).or(w.page.getByRole('region', { name: 'Modifier l’activité' })).isVisible(), 'WebKit : un toucher sur une activité ouvre son panneau');
   await w.ctx.close();
   await webkit.close();
 }

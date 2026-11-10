@@ -1,6 +1,9 @@
 /** Durée de secours : un peu plus que le repli d'une rubrique (`--t-panel`, 280 ms), au cas où la transition ne se déclenche pas. */
 export const DELAI_SECOURS_REPLI_MS = 400;
 
+/** Délai avant la seconde visée du défilement : le défilement animé du navigateur dure moins d'une seconde. */
+export const DELAI_CORRECTION_DEFILEMENT_MS = 800;
+
 /** Propriété animée par le repli d'une rubrique (`.etape-corps`, seance.css). */
 const PROPRIETE_REPLI = 'grid-template-rows';
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Seance } from '../../domain/types.ts';
 import type { Magasin } from '../../state/store.ts';
 import { useMagasin } from '../../state/store.ts';
@@ -14,7 +14,7 @@ import { Apercu } from './Apercu.tsx';
 import { Etape } from './Etape.tsx';
 import { ConfirmerAbandon } from '../../ui/ConfirmerAbandon.tsx';
 import { Dialog } from '../../ui/Dialog.tsx';
-import { attendreFinRepli } from './defilement.ts';
+import { attendreFinRepli, DELAI_CORRECTION_DEFILEMENT_MS } from './defilement.ts';
 import { BarreEtapes } from './BarreEtapes.tsx';
 import { champsEnErreur, etatsEtapes, progression, resumesEtapes, seanceVide, verifier } from './brouillon.ts';
 import {
@@ -83,13 +83,24 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
   const resumes = resumesEtapes(s);
   const notes = s.observations.length + s.competences.length + s.aides.length;
 
+  /** Seconde visée en attente : annulée dès qu'une autre navigation commence (sinon elle tirerait la page vers une ancienne rubrique). */
+  const correction = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(correction.current), []);
+
   const aller = (i: number) => {
+    window.clearTimeout(correction.current);
     // Une rubrique ouverte AU-DESSUS de la cible se referme : on attend la fin du repli, sinon la cible bouge pendant le défilement.
     const precedente = ouvert >= 0 && ouvert < i ? document.getElementById(`etape-corps-${ouvert + 1}`) : null;
     setOuvert(i);
     void attendreFinRepli(precedente).then(() => {
       requestAnimationFrame(() => {
         document.getElementById(`etape-${i + 1}`)?.scrollIntoView({ block: 'start', behavior: reduireMouvement() ? 'auto' : 'smooth' });
+        // Sur une machine chargée (WebKit sur la CI), le repli peut ne pas être fini quand la position est calculée : la cible
+        // remonte ensuite et le titre se retrouve hors de l'écran. Une seconde visée, sans animation, rattrape l'écart ;
+        // si la position est déjà bonne, elle ne change rien.
+        correction.current = window.setTimeout(() => {
+          document.getElementById(`etape-${i + 1}`)?.scrollIntoView({ block: 'start', behavior: 'auto' });
+        }, DELAI_CORRECTION_DEFILEMENT_MS);
       });
     });
   };
