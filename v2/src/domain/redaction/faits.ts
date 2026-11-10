@@ -5,9 +5,9 @@ import type { Faits } from './types.ts';
 
 const sansVide = (liste: readonly string[]): string[] => liste.map(nettoyer).filter(Boolean);
 
-/* Anciens enregistrements : le texte de repli d'un co-enseignement n'est pas un objectif. */
+/* Anciens enregistrements : le texte de repli d'une co-intervention (ou, avant le 10/11/2026, d'un « co-enseignement ») n'est pas un objectif. */
 function objectifPropre(presence: Seance['presence'], texte: string): string {
-  if (presence === 'absent_eleve_coteach' && /^(co-enseignement|intervention en co-enseignement)/i.test(texte)) return '';
+  if (presence === 'absent_eleve_coteach' && /^(co-intervention|intervention en co-intervention|co-enseignement|intervention en co-enseignement)/i.test(texte)) return '';
   return texte;
 }
 

@@ -20,7 +20,7 @@ const EFFETS = ['Aucun effet', 'Effet partiel', 'Effet positif'] as const;
 export const TEXTE_ABSENCE = {
   absent_eleve: 'Élève absent — séance non tenue.',
   absent_prof: 'Professeur absent — cours annulé.',
-  absent_eleve_coteach: 'Élève absent — intervention en co-enseignement.',
+  absent_eleve_coteach: 'Élève absent — co-intervention.',
   absent_agent: 'Agent du pôle absent — séance non assurée.'
 } as const;
 

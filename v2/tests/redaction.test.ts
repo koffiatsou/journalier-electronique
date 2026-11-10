@@ -95,7 +95,7 @@ test('évolution : ignorée si autre matière ou niveau inchangé', () => {
   assert.ok(!/Évolution/.test(texte(seance(), { precedentes: [autre, pareil] })));
 });
 
-test('absences : quatre cas, co-enseignement avec partie pédagogique', () => {
+test('absences : quatre cas, co-intervention avec partie pédagogique', () => {
   const mk = (presence: Presence, extra = {}) =>
     texte(seance({ presence, matiere: 'Français', ...extra }));
   assert.ok(mk('absent_eleve').includes('Élève absent — séance non tenue.'));
@@ -104,7 +104,8 @@ test('absences : quatre cas, co-enseignement avec partie pédagogique', () => {
   const co = mk('absent_eleve_coteach', { contenuClasse: 'Révision du chapitre 3' });
   assert.ok(co.includes('PARTIE PÉDAGOGIQUE'));
   assert.ok(co.includes(`Contenu vu en classe${N}: Révision du chapitre 3`));
-  assert.ok(co.includes('Élève absent — intervention en co-enseignement.'));
+  assert.ok(co.includes('Élève absent — co-intervention.'));
+  assert.ok(!co.includes('co-enseignement'), 'l’ancien mot ne s’écrit plus dans le Journalier');
   assert.ok(!/Fonctionnement observé|Compétence travaillée/.test(co));
   assert.ok(!mk('absent_eleve').includes('PARTIE PÉDAGOGIQUE'));
 });
@@ -124,7 +125,15 @@ test('contrôle : détecte comptage et marqueurs parasites', () => {
   assert.ok(e.includes('comptage interdit') && e.includes('marqueur parasite'));
 });
 
-test('co-enseignement : le texte de repli n’est pas un objectif', () => {
+test('co-intervention : le texte de repli (ancien ou nouveau mot) n’est pas un objectif', () => {
+  for (const repli of ['Co-intervention / Notes : Chapitre 5', 'Intervention en co-intervention']) {
+    const t = texte(seance({ presence: 'absent_eleve_coteach', matiere: 'Français', contenuClasse: 'Chapitre 5', objectifLecon: repli }));
+    assert.ok(!/Objectif de la leçon.*[Cc]o-intervention/.test(t));
+    assert.ok(t.includes('Contenu vu en classe'));
+  }
+});
+
+test('co-enseignement (ancien mot) : le texte de repli n’est pas un objectif', () => {
   const t = texte(seance({ presence: 'absent_eleve_coteach', matiere: 'Français', contenuClasse: 'Chapitre 5', objectifLecon: 'Co-enseignement / Notes : Chapitre 5' }));
   assert.ok(!/Objectif de la leçon.*Co-enseignement/.test(t));
   assert.ok(t.includes('Contenu vu en classe'));

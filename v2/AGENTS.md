@@ -11,7 +11,7 @@ Application web pour les agents des Pôles territoriaux (WBE) qui accompagnent d
 
 ## Décisions validées (ne pas rediscuter sans demande)
 - Pile : React 19 + TypeScript strict, esbuild, zod (schémas), tests `node:test`. Pas de Vite. CSS simple avec variables.
-- Deux zones : pédagogique / orthopédagogique. Co-enseignement : pas de partie ortho, « Contenu vu en classe ».
+- Deux zones : pédagogique / orthopédagogique. « Élève absent — co-intervention » (ancien mot « co-enseignement », renommé le 10/11/2026 à l'écran ET dans le Journalier ; la valeur enregistrée `absent_eleve_coteach` ne change pas) : pas de partie ortho, « Contenu vu en classe ». Les anciens textes de repli « co-enseignement » sont toujours reconnus.
 - Observation : **Pas du tout / Un peu / Assez / Tout à fait** (4 niveaux depuis le 9/11/2026, voir « Retours des agents »). Effet d'une aide : Aucun effet / Effet partiel / Effet positif. Aucun niveau présélectionné ; seul le niveau choisi s'affiche, un toucher rouvre les trois.
 - Présences dont « Agent du pôle absent ». Un seul bouton d'export. Vocabulaire simple, « l'élève » neutre.
 - Historique et Word : aides regroupées par effet, en puces (« • Effet positif : … »).
