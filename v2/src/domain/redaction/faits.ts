@@ -5,9 +5,9 @@ import type { Faits } from './types.ts';
 
 const sansVide = (liste: readonly string[]): string[] => liste.map(nettoyer).filter(Boolean);
 
-/* Anciens enregistrements : le texte de repli d'un co-enseignement n'est pas un objectif. */
+/* Anciens enregistrements : le texte de repli d'une co-intervention (ou, avant le 10/11/2026, d'un « co-enseignement ») n'est pas un objectif. */
 function objectifPropre(presence: Seance['presence'], texte: string): string {
-  if (presence === 'absent_eleve_coteach' && /^(co-enseignement|intervention en co-enseignement)/i.test(texte)) return '';
+  if (presence === 'absent_eleve_coteach' && /^(co-intervention|intervention en co-intervention|co-enseignement|intervention en co-enseignement)/i.test(texte)) return '';
   return texte;
 }
 
@@ -20,6 +20,7 @@ export function versFaits(s: Seance, titulaire = ''): Faits {
     matiere: nettoyer(s.matiere),
     titulaire: nettoyer(titulaire),
     presence: s.presence,
+    profAbsent: s.profAbsent === true,
     interventions: sansVide(s.interventions),
     objectifLecon: objectifPropre(s.presence, nettoyer(s.objectifLecon)),
     contenuClasse: nettoyer(s.contenuClasse),

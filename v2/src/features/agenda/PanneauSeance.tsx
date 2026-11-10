@@ -1,8 +1,10 @@
+import { useRef } from 'react';
 import { jourComplet, libelle } from '../../domain/agenda/index.ts';
 import type { Occurrence, Periode } from '../../domain/agenda/index.ts';
 import { PRESENCE_LIBELLES } from '../../domain/types.ts';
 import type { Eleve, Seance } from '../../domain/types.ts';
 import { Button } from '../../ui/Button.tsx';
+import { useTiroir } from '../../ui/useTiroir.ts';
 
 interface Props {
   occurrence: Occurrence;
@@ -17,11 +19,13 @@ interface Props {
 
 /** Panneau d'une séance réalisée sans planification : on la retrouve ici, on l'ouvre pour la relire ou la modifier (rien à planifier). */
 export function PanneauSeance({ occurrence, periodes, heures, eleves, seance, onOuvrir, onFermer }: Props) {
+  const racine = useRef<HTMLElement>(null);
+  const recouvre = useTiroir(racine, { actif: true, onFermer });
   const eleve = eleves.find((e) => e.id === occurrence.activite.eleveId);
   const nom = eleve ? `${eleve.prenom} ${eleve.nom}` : undefined;
   const quand = `${periodes[occurrence.debut]?.label ?? ''}${occurrence.fin > occurrence.debut ? ` à ${periodes[occurrence.fin]?.label ?? ''}` : ''}`;
   return (
-    <section className="panneau feuille-bas" aria-label="Séance réalisée">
+    <section ref={racine} className="panneau feuille-bas" aria-label="Séance réalisée" {...(recouvre ? { role: 'dialog', 'aria-modal': true } : {})}>
       <div className="en-tete">
         <h2>{libelle(occurrence.activite, nom)}</h2>
         <Button onClick={onFermer} aria-label="Fermer le panneau">Fermer</Button>

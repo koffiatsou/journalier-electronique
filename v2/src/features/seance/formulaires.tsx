@@ -1,19 +1,23 @@
 import { useEffect, useState } from 'react';
 import {
-  ACTIONS_SUITE_SUGGEREES, AIDES_SUGGEREES, COLLABORATIONS_SUGGEREES, EFFETS_LIBELLES, INTERVENTIONS_SUGGEREES,
-  FILIERES_LIBELLES, MODALITES_SUITE, NIVEAUX_LIBELLES, NIVEAUX_VIGILANCE, OBSERVATIONS_SUGGEREES, PERIODES_DEFAUT, PRESENCE_LIBELLES, SITUATION_AIDE_LIBELLES, VIGILANCES_SUGGEREES, estVigilance
+  ACTIONS_SUITE_SUGGEREES, AIDES_SUGGEREES, COLLABORATIONS_SUGGEREES, EFFETS_LIBELLES,
+  FILIERES_LIBELLES, interventionsAffichees, modalitesAffichees, NIVEAUX_LIBELLES, NIVEAUX_VIGILANCE, NIVEAU_MIN, OBSERVATIONS_SUGGEREES, PERIODES_DEFAUT, PRESENCE_LIBELLES, PRESENCE_PROF_ABSENT_VU, SITUATION_AIDE_LIBELLES, VIGILANCES_SUGGEREES, estVigilance
 } from '../../domain/types.ts';
 import type { Aide, Eleve, Effet, Niveau, Observation, Presence, Seance, SituationAide } from '../../domain/types.ts';
+import { LEXIQUE_ACCOMPAGNEMENTS, LEXIQUE_AIDES, LEXIQUE_NIVEAUX } from '../../domain/lexique.ts';
 import { Button } from '../../ui/Button.tsx';
+import { BoutonLexique } from '../../ui/Lexique.tsx';
 import { Chips } from '../../ui/Chip.tsx';
 import { ChampSuggestions } from '../../ui/ChampSuggestions.tsx';
 import { Field, Input, Select, Textarea } from '../../ui/Field.tsx';
-import { anneeDeNiveau, cibleDeSeance, defautsSeance, formeDeFiliere } from '../../domain/referentiel/index.ts';
-import { elevesProposes, enseignantDuDossier, languesDe } from '../../domain/eleves/index.ts';
+import { anneeDeNiveau, cibleDeSeance, defautsSeance, formeDeFiliere, rentreeDeDate } from '../../domain/referentiel/index.ts';
+import { elevesProposes, enseignantDuDossier, languesDe, nomAffiche } from '../../domain/eleves/index.ts';
 import { ecoleDeEleve, nbPeriodesUtilisees } from '../../domain/agenda/index.ts';
 import type { Ecole } from '../../domain/agenda/index.ts';
 import type { Piste } from '../../domain/referentiel/index.ts';
 import { indexDe } from '../../domain/referentiel/charger.ts';
+import { ListeColonnes } from '../../ui/ListeColonnes.tsx';
+import type { ErreursChamps } from './brouillon.ts';
 import { Point, TEINTES_EFFET, TEINTES_NIVEAU, TEINTES_VIGILANCE } from '../../ui/Point.tsx';
 
 export interface PropsFormulaire {
@@ -21,11 +25,22 @@ export interface PropsFormulaire {
   maj: (patch: Partial<Seance>) => void;
 }
 
+/** Messages d'erreur à écrire sous les champs de l'étape 1 (vide tant que la personne n'a pas essayé d'enregistrer). */
+interface PropsCreneau extends PropsFormulaire { eleves: Eleve[]; ecoles?: readonly Ecole[]; erreurs?: ErreursChamps }
+
 const niveau = (n: number): Niveau => n as Niveau;
 const effet = (n: number): Effet => n as Effet;
 
 /* ───────── 1. Créneau et partie pédagogique ───────── */
-export function FormulaireCreneau({ s, maj, eleves, ecoles = [] }: PropsFormulaire & { eleves: Eleve[]; ecoles?: readonly Ecole[] }) {
+/** Les choix de présence, dans l'ordre affiché : « professeur absent, élève vu » est une séance tenue, juste après la présence normale. */
+const CHOIX_PRESENCE: { cle: string; presence: Presence; profAbsent: boolean; titre: string; aide: string }[] = [
+  ...(Object.keys(PRESENCE_LIBELLES) as Presence[]).flatMap((p) => {
+    const normal = { cle: p, presence: p, profAbsent: false, ...PRESENCE_LIBELLES[p] };
+    return p === 'present' ? [normal, { cle: 'present-prof-absent', presence: p, profAbsent: true, ...PRESENCE_PROF_ABSENT_VU }] : [normal];
+  })
+];
+
+export function FormulaireCreneau({ s, maj, eleves, ecoles = [], erreurs = {} }: PropsCreneau) {
   const eleve = eleves.find((e) => e.id === s.eleveId);
   // Les périodes proposées sont celles de l'école de l'élève (neuf au plus) ; on garde toujours celles déjà choisies.
   const nbPeriodes = ecoles.length
@@ -37,33 +52,34 @@ export function FormulaireCreneau({ s, maj, eleves, ecoles = [] }: PropsFormulai
   const absent = s.presence !== 'present';
   const coteach = s.presence === 'absent_eleve_coteach';
   const classeSeule = absent && !coteach;
+  const choisi = CHOIX_PRESENCE.find((c) => c.presence === s.presence && c.profAbsent === (s.profAbsent === true)) ?? CHOIX_PRESENCE[0]!;
 
   return (
     <>
       <fieldset className="presence" aria-label="Statut de présence">
-        {(Object.keys(PRESENCE_LIBELLES) as Presence[]).map((p) => (
-          <label key={p} className="presence-choix" data-actif={s.presence === p} data-presence={p}>
-            <input type="radio" name="presence" value={p} checked={s.presence === p} onChange={() => maj({ presence: p })} />
-            <span>{PRESENCE_LIBELLES[p].titre}</span>
+        {CHOIX_PRESENCE.map((c) => (
+          <label key={c.cle} className="presence-choix" data-actif={choisi.cle === c.cle} data-presence={c.presence}>
+            <input type="radio" name="presence" value={c.cle} checked={choisi.cle === c.cle} onChange={() => maj({ presence: c.presence, profAbsent: c.profAbsent })} />
+            <span>{c.titre}</span>
           </label>
         ))}
-        <p className="field-hint presence-aide">{PRESENCE_LIBELLES[s.presence].aide}</p>
+        <p className="field-hint presence-aide">{choisi.aide}</p>
       </fieldset>
 
       <div className="champs champs-3">
-        <Field label="Élève accompagné">
-          {(id) => (
-            <Select id={id} value={s.eleveId} onChange={(e) => {
+        <Field label="Élève accompagné" {...(erreurs.eleve ? { erreur: erreurs.eleve } : {})}>
+          {(id, champ) => (
+            <Select id={id} {...champ} value={s.eleveId} onChange={(e) => {
               const el = eleves.find((x) => x.id === e.target.value);
               maj({ eleveId: e.target.value, matiere: '', ...defautsSeance(el) });
             }}>
               <option value="">Choisir un élève</option>
-              {elevesProposes(eleves, s.eleveId).map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
+              {elevesProposes(eleves, s.eleveId).map((e) => <option key={e.id} value={e.id}>{nomAffiche(e)}</option>)}
             </Select>
           )}
         </Field>
-        <Field label="Date">
-          {(id) => <Input id={id} type="date" value={s.date} onChange={(e) => maj({ date: e.target.value })} />}
+        <Field label="Date" {...(erreurs.date ? { erreur: erreurs.date } : {})}>
+          {(id, champ) => <Input id={id} {...champ} type="date" value={s.date} onChange={(e) => maj({ date: e.target.value })} />}
         </Field>
         <Field label="Période">
           {(id) => (
@@ -81,9 +97,9 @@ export function FormulaireCreneau({ s, maj, eleves, ecoles = [] }: PropsFormulai
       </div>
 
       <div className="champs champs-3">
-        <Field label="Matière" aide={matieres.length ? 'Les matières du dossier de l’élève sont proposées en priorité.' : undefined}>
-          {(id) => (
-            <ChampSuggestions id={id} value={s.matiere} placeholder="Choisir ou écrire" suggestions={matieres} onChange={(matiere) => maj({ matiere })} />
+        <Field label="Matière" aide={matieres.length ? 'Les matières du dossier de l’élève sont proposées en priorité.' : undefined} {...(erreurs.matiere ? { erreur: erreurs.matiere } : {})}>
+          {(id, champ) => (
+            <ChampSuggestions id={id} {...champ} value={s.matiere} placeholder="Choisir ou écrire" suggestions={matieres} onChange={(matiere) => maj({ matiere })} />
           )}
         </Field>
         <Field label="Enseignant du cours" optionnel aide="Laissez vide : le nom du dossier de l’élève sera gardé. Écrivez un nom pour un remplacement.">
@@ -117,8 +133,8 @@ export function FormulaireCreneau({ s, maj, eleves, ecoles = [] }: PropsFormulai
             {(id) => <Input id={id} value={s.monObjectif} placeholder="Ce que vous visez durant cette séance" onChange={(e) => maj({ monObjectif: e.target.value })} />}
           </Field>
           <div className="field">
-            <span className="field-label">Mon intervention</span>
-            <Chips options={INTERVENTIONS_SUGGEREES} valeurs={s.interventions} onChange={(interventions) => maj({ interventions })} />
+            <div className="rubrique-entete"><span className="field-label">Mon intervention</span><BoutonLexique titre="Lexique des types d’accompagnement" entrees={LEXIQUE_ACCOMPAGNEMENTS} /></div>
+            <Chips options={interventionsAffichees(s.interventions)} valeurs={s.interventions} onChange={(interventions) => maj({ interventions })} />
           </div>
         </>
       ) : null}
@@ -147,14 +163,17 @@ export function FormulaireFonctionnement({ s, maj }: PropsFormulaire) {
   };
 
   const carte = (texte: string, personnalise = false, vigilance = false) => (
-    <Point key={texte} nom={texte} libelles={vigilance ? NIVEAUX_VIGILANCE : NIVEAUX_LIBELLES} teintes={vigilance ? TEINTES_VIGILANCE : TEINTES_NIVEAU}
+    <Point key={texte} nom={texte} libelles={vigilance ? NIVEAUX_VIGILANCE : NIVEAUX_LIBELLES} valeurMin={vigilance ? 0 : NIVEAU_MIN} teintes={vigilance ? TEINTES_VIGILANCE : TEINTES_NIVEAU}
       valeur={trouve(texte)?.niveau} onChoisir={(n) => fixe(texte, n, vigilance)} onRetirer={retire.bind(null, texte)}
       libelleRetirer={personnalise ? 'Retirer' : 'Pas observé'} />
   );
 
   return (
     <>
-      <p className="etape-aide">Pour chaque point observé, choisissez le niveau. Laissez de côté ce qui n’a pas été observé.</p>
+      <div className="rubrique-entete">
+        <p className="etape-aide">Pour chaque point observé, choisissez le niveau. Laissez de côté ce qui n’a pas été observé.</p>
+        <BoutonLexique titre="Lexique des niveaux" entrees={LEXIQUE_NIVEAUX} />
+      </div>
       {OBSERVATIONS_SUGGEREES.map((g) => (
         <div key={g.rubrique} className="rubrique">
           <h3>{g.rubrique}</h3>
@@ -202,11 +221,11 @@ function usePistes(s: Seance, eleve: Eleve | undefined, nombre: number): { piste
     let actif = true;
     const t = setTimeout(() => {
       void indexDe(jeu).then((index) => {
-        if (actif) setPistes(index.suggerer({ objectif, annee: anneeDeNiveau(s.niveauScolaire), forme: formeDeFiliere(s.forme), langue }, nombre));
+        if (actif) setPistes(index.suggerer({ objectif, annee: anneeDeNiveau(s.niveauScolaire), forme: formeDeFiliere(s.forme), langue, rentree: rentreeDeDate(s.date) }, nombre));
       }).catch(() => { if (actif) setPistes([]); });
     }, 300);
     return () => { actif = false; clearTimeout(t); };
-  }, [jeu, langue, s.niveauScolaire, s.forme, objectif, nombre]);
+  }, [jeu, langue, s.niveauScolaire, s.forme, s.date, objectif, nombre]);
   return { pistes: jeu && objectif ? pistes : [], langueAmbigue: ambigu };
 }
 
@@ -232,13 +251,14 @@ export function FormulaireCompetence({ s, maj, eleve }: PropsFormulaire & { elev
         <div className="rubrique">
           <h3>Pistes d’après l’objectif de la leçon</h3>
           <p className="etape-aide">Choisissez le niveau pour garder une piste, ou ignorez-les et saisissez la vôtre.</p>
-          <ul className="points">
-            {pistes.map((p) => (
-              <Point key={`${p.entree.n ?? ''}${p.entree.a}`}
-                nom={p.ecartAnnee ? `${p.entree.a} (programme de ${p.ecartAnnee})` : p.entree.a}
-                libelles={NIVEAUX_LIBELLES} teintes={TEINTES_NIVEAU} valeur={null} onChoisir={(n) => prendre(p, n)} />
-            ))}
-          </ul>
+          <ListeColonnes elements={pistes.map((p) => {
+            const nom = p.ecartAnnee ? `${p.entree.a} (programme de ${p.ecartAnnee})` : p.entree.a;
+            return {
+              cle: `${p.entree.n ?? ''}${p.entree.a}`,
+              longueur: nom.length,
+              noeud: <Point nom={nom} libelles={NIVEAUX_LIBELLES} valeurMin={NIVEAU_MIN} teintes={TEINTES_NIVEAU} valeur={null} onChoisir={(n) => prendre(p, n)} />
+            };
+          })} />
           {!plus ? <Button type="button" variante="secondaire" onClick={() => setPlus(true)}>Voir d’autres pistes</Button> : null}
         </div>
       ) : null}
@@ -251,7 +271,7 @@ export function FormulaireCompetence({ s, maj, eleve }: PropsFormulaire & { elev
       {s.competences.length ? (
         <ul className="points">
           {s.competences.map((c) => (
-            <Point key={c.texte} nom={c.texte} libelles={NIVEAUX_LIBELLES} teintes={TEINTES_NIVEAU} valeur={c.niveau}
+            <Point key={c.texte} nom={c.texte} libelles={NIVEAUX_LIBELLES} valeurMin={NIVEAU_MIN} teintes={TEINTES_NIVEAU} valeur={c.niveau}
               onChoisir={(n) => maj({ competences: s.competences.map((x) => (x.texte === c.texte ? { ...x, niveau: niveau(n) } : x)) })}
               onRetirer={() => maj({ competences: s.competences.filter((x) => x.texte !== c.texte) })} />
           ))}
@@ -285,7 +305,7 @@ export function FormulaireAides({ s, maj }: PropsFormulaire) {
         </div>
       </div>
       <div className="rubrique">
-        <h3>Aides utilisées</h3>
+        <div className="rubrique-entete"><h3>Aides utilisées</h3><BoutonLexique titre="Lexique des aides" entrees={LEXIQUE_AIDES} /></div>
         <p className="etape-aide">Pour chaque aide utilisée, choisissez son effet. Laissez de côté ce qui n’a pas servi.</p>
         <ul className="points">
           {[...AIDES_SUGGEREES, ...autres.map((a) => a.nom)].map((nom) => (
@@ -315,7 +335,7 @@ export function FormulaireSuite({ s, maj }: PropsFormulaire) {
         {(id) => (
           <Select id={id} value={suite.modalite} onChange={(e) => set({ modalite: e.target.value })}>
             <option value="">Sans changement</option>
-            {MODALITES_SUITE.map((m) => <option key={m}>{m}</option>)}
+            {modalitesAffichees(suite.modalite).map((m) => <option key={m}>{m}</option>)}
           </Select>
         )}
       </Field>

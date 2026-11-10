@@ -3,7 +3,7 @@ import {
   TYPES_AMENAGEMENT, ajouterAmenagement, basculerType, modifierAmenagement, proposerAmenagements, retirerAmenagement
 } from '../../domain/pia/index.ts';
 import { Button } from '../../ui/Button.tsx';
-import { Input } from '../../ui/Field.tsx';
+import { Textarea } from '../../ui/Field.tsx';
 import type { PropsOnglet } from './contexte.ts';
 
 export function OngletAmenagements({ pia, seances, changer }: PropsOnglet) {
@@ -40,7 +40,7 @@ export function OngletAmenagements({ pia, seances, changer }: PropsOnglet) {
                   <button key={t.id} type="button" className="chip" aria-pressed={a.types.includes(t.id)} title={t.libelle} aria-label={t.libelle} onClick={() => changer((p) => basculerType(p, a.id, t.id))}>{t.id}</button>
                 ))}
               </div>
-              <Input value={a.description} aria-label={`Aménagement ${i + 1}`} placeholder="Par exemple : consignes reformulées à l’oral" onChange={(ev) => changer((p) => modifierAmenagement(p, a.id, ev.target.value))} />
+              <Textarea rows={2} value={a.description} aria-label={`Aménagement ${i + 1}`} placeholder="Par exemple : consignes reformulées à l’oral" onChange={(ev) => changer((p) => modifierAmenagement(p, a.id, ev.target.value))} />
               <Button variante="discret" aria-label={`Retirer l’aménagement ${i + 1}`} onClick={() => changer((p) => retirerAmenagement(p, a.id))}>Retirer</Button>
             </li>
           ))}

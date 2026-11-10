@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { appliquerMenu, menuEnregistre } from '../ui/menu.ts';
+import { appliquerMenu, menuEffectif, menuEnregistre, REQUETE_REPLI } from '../ui/menu.ts';
 import type { ChoixMenu } from '../ui/menu.ts';
 import { appliquerTheme, themeEnregistre, themeSuivant } from '../ui/theme.ts';
 import type { Theme } from '../ui/theme.ts';
 import { IconeAccueil, IconeAgenda, IconeAuto, IconeCadenas, IconeEleves, IconeJournalier, IconeLune, IconeMenuAgrandir, IconeMenuReduire, IconePia, IconeSeance, IconeSoleil, IconeSynchro } from '../ui/icons.tsx';
+import { installerPositions, memoirePositions } from './positions.ts';
 import type { Aller, Page } from './useRoute.ts';
 
 const NAV: { page: Page; libelle: string; icone: (p: { taille?: number }) => ReactNode }[] = [
@@ -26,7 +27,7 @@ export const TITRES_PAGES: Record<Page, string> = {
   eleves: 'Élèves',
   pia: 'PIA',
   synchro: 'Synchronisation',
-  reprise: 'Reprise des données de la V75'
+  reprise: 'Reprise des données de l’ancienne version'
 };
 
 /**
@@ -42,10 +43,24 @@ const THEMES: Record<Theme, { icone: (p: { taille?: number }) => ReactNode; libe
 export function Shell({ page, onAller, essai, onVerrouiller, children }: { page: Page; onAller: Aller; essai: boolean; onVerrouiller: () => void; children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(themeEnregistre);
   const [menu, setMenu] = useState<ChoixMenu | null>(menuEnregistre);
-  const reduit = menu === 'reduit';
+  const [largeurDeRepli, setLargeurDeRepli] = useState(() => window.matchMedia(REQUETE_REPLI).matches);
+  const affiche = menuEffectif(menu, page, largeurDeRepli);
+  const reduit = affiche === 'reduit';
   const suivant = themeSuivant(theme);
   const IconeTheme = THEMES[theme].icone;
   const ecranPrecedent = useRef<Page | null>(null);
+  // Garde la position de défilement de chaque entrée de l'historique (voir positions.ts).
+  useEffect(() => installerPositions(memoirePositions()), []);
+  useEffect(() => {
+    const requete = window.matchMedia(REQUETE_REPLI);
+    const suivre = () => setLargeurDeRepli(requete.matches);
+    requete.addEventListener('change', suivre);
+    return () => requete.removeEventListener('change', suivre);
+  }, []);
+  // Le repli automatique de l'écran Séance n'est jamais retenu : seul un clic sur le bouton du menu est un choix.
+  useEffect(() => {
+    if (menu === null) appliquerMenu(affiche, false);
+  }, [menu, affiche]);
   // À chaque changement d'écran : nouveau titre d'onglet, et le focus passe au titre de l'écran (sinon un lecteur d'écran
   // ou le clavier restent sur le menu sans savoir que le contenu a changé). Rien n'est déplacé à l'ouverture.
   useEffect(() => {
@@ -57,7 +72,12 @@ export function Shell({ page, onAller, essai, onVerrouiller, children }: { page:
     const zone = document.getElementById('contenu');
     const titre = zone?.querySelector('h1');
     if (titre) titre.setAttribute('tabindex', '-1');
-    (titre ?? zone)?.focus({ preventScroll: false });
+    // Le focus ne fait plus défiler la page tout seul (il la centrait sur le titre, selon la hauteur de l'écran quittée) :
+    // on pose la position nous-mêmes. Entrée neuve (menu, lien) : en haut. « Précédent » / « Suivant » : là où l'on avait quitté.
+    (titre ?? zone)?.focus({ preventScroll: true });
+    const memoire = memoirePositions();
+    window.scrollTo({ top: memoire.aReprendre() ?? 0, left: 0, behavior: 'instant' });
+    memoire.degeler();
   }, [page]);
   return (
     <div className="shell">
@@ -100,7 +120,7 @@ export function Shell({ page, onAller, essai, onVerrouiller, children }: { page:
         </button>
       </div>
       <main className="contenu" id="contenu" tabIndex={-1}>
-        {essai ? <p className="bandeau-essai" role="note"><strong>Mode essai</strong> — données fictives seulement. N’écrivez jamais de vrais noms d’élèves ici.</p> : null}
+        {essai ? <p className="bandeau-essai" role="note"><strong>Mode essai</strong> — données d’essai seulement. N’écrivez jamais de vrais noms d’élèves ici.</p> : null}
         {children}
       </main>
     </div>

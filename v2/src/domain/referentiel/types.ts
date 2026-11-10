@@ -6,8 +6,8 @@ export interface EntreeReferentiel {
   n?: Annee;
   /** Dernière année couverte quand le référentiel vaut pour un degré (ex. S3 → S4). */
   nf?: Annee;
-  /** Cadre : TC = tronc commun, HGT = humanités générales et technologiques, HPT = professionnelles et techniques. */
-  f: 'TC' | 'HGT' | 'HPT';
+  /** Cadre : TC = tronc commun, HGT = humanités générales et technologiques, HPT = professionnelles et techniques, SOC = Socles de compétences (S2, jusqu'à la rentrée 2026 incluse). */
+  f: 'TC' | 'HGT' | 'HPT' | 'SOC';
   /** Nature interne : s = savoir, f = savoir-faire, c = compétence. Jamais affichée à l'agent. */
   t: 's' | 'f' | 'c';
   /** Thème ou unité. */
@@ -35,6 +35,8 @@ export interface Contexte {
   forme?: FormeEnseignement | undefined;
   /** Langue du dossier de l'élève (Néerlandais, Anglais…), pour les langues modernes. */
   langue?: string | undefined;
+  /** Rentrée de la séance (2026 pour 2026-2027) : les lignes du tronc commun pas encore en vigueur sont écartées. Absente = tout est proposé. */
+  rentree?: number | undefined;
 }
 
 export interface Piste {

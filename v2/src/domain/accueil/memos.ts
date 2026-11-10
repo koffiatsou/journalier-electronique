@@ -50,6 +50,18 @@ export function creerMemo(saisie: string, cible: { eleveId?: string; ecoleId?: s
 
 export const basculerMemo = (memos: readonly Memo[], id: string): Memo[] => memos.map((m) => (m.id === id ? { ...m, fait: !m.fait } : m));
 export const retirerMemo = (memos: readonly Memo[], id: string): Memo[] => memos.filter((m) => m.id !== id);
+
+/**
+ * Remet un mémo retiré à sa place d'origine (geste « Annuler » après une suppression).
+ * Sans effet si le mémo est déjà dans la liste (un double geste ne crée pas de doublon) ;
+ * si la liste a raccourci depuis, il est remis en dernier.
+ */
+export function remettreMemo(memos: readonly Memo[], memo: Memo, position: number): Memo[] {
+  if (memos.some((m) => m.id === memo.id)) return [...memos];
+  const liste = [...memos];
+  liste.splice(Math.min(Math.max(position, 0), liste.length), 0, memo);
+  return liste;
+}
 /** Retire les mémos faits. */
 export const viderFaits = (memos: readonly Memo[]): Memo[] => memos.filter((m) => !m.fait);
 

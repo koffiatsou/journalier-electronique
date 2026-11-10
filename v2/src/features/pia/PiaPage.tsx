@@ -15,7 +15,9 @@ import { Button } from '../../ui/Button.tsx';
 import { Field, Select } from '../../ui/Field.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { aujourdhuiISO } from '../seance/brouillon.ts';
+import { positionCentree } from '../seance/defilement.ts';
 import { nomEleve } from './contexte.ts';
+import { anneeSuivante, cleDeTri } from '../../domain/eleves/index.ts';
 import { OngletAmenagements } from './OngletAmenagements.tsx';
 import { OngletIdentite } from './OngletIdentite.tsx';
 import { OngletProfil } from './OngletProfil.tsx';
@@ -74,12 +76,26 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
     setEnImpression(false);
   }, [enImpression]);
   const refsOnglets = useRef<Record<string, HTMLButtonElement | null>>({});
+  // Téléphone : la liste d'onglets défile ; l'onglet actif est ramené dans la bande (sans jamais faire défiler la page elle-même).
+  useEffect(() => {
+    const actif = refsOnglets.current[onglet];
+    const bande = actif?.parentElement;
+    if (!actif || !bande) return;
+    const gauche = actif.getBoundingClientRect().left - bande.getBoundingClientRect().left + bande.scrollLeft;
+    bande.scrollTo({ left: positionCentree(gauche, actif.offsetWidth, bande.clientWidth, bande.scrollWidth), behavior: 'auto' });
+  }, [onglet]);
 
-  const triees = useMemo(() => [...eleves].sort((a, b) => nomEleve(a).localeCompare(nomEleve(b), 'fr')), [eleves]);
+  const triees = useMemo(() => [...eleves].sort((a, b) => cleDeTri(a).localeCompare(cleDeTri(b), 'fr')), [eleves]);
   const annees = useMemo(() => {
     const set = new Set([...anneesDisponibles(seances, aujourdhui), ...pias.map((p) => p.annee), annee]);
     return [...set].sort().reverse();
   }, [seances, pias, aujourdhui, annee]);
+  // Ouvrir la nouvelle année depuis l'écran (sinon seule l'adresse y menait) : une année d'avance sur la plus récente.
+  const anneesExistantes = useMemo(() => new Set([...anneesDisponibles(seances, aujourdhui), ...pias.map((p) => p.annee)]), [seances, pias, aujourdhui]);
+  const anneesProposees = useMemo(() => {
+    const suivante = anneeSuivante(annees[0] ?? '');
+    return suivante && !annees.includes(suivante) ? [suivante, ...annees] : annees;
+  }, [annees]);
 
   const aller = (suite: Partial<{ eleve: string; annee: string; onglet: string }>) => {
     const p = { eleve: eleveId, annee, onglet, ...suite };
@@ -104,7 +120,7 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
 
   const chargerExemple = async () => {
     await magasin.chargerExemple(exempleDemo(aujourdhui));
-    annoncer('Exemple fictif chargé : élèves Alpha et Bêta, leurs séances et un PIA');
+    annoncer('Exemple d’essai chargé : élèves Alpha et Bêta, leurs séances et un PIA');
     onAller('pia', { eleve: 'demo-alpha', annee: anneeScolaire(aujourdhui), onglet: 'preparer' });
   };
 
@@ -158,7 +174,7 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
           <Field label="Année scolaire">
             {(id) => (
               <Select id={id} value={annee} onChange={(ev) => aller({ annee: ev.target.value })}>
-                {annees.map((a) => <option key={a} value={a}>{a}</option>)}
+                {anneesProposees.map((a) => <option key={a} value={a}>{anneesExistantes.has(a) ? a : `${a} (nouvelle année)`}</option>)}
               </Select>
             )}
           </Field>
@@ -169,8 +185,8 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
         <section className="liste-carte pia-demo">
           <p className="vide-texte reunion-vide">Choisissez un élève pour ouvrir ou commencer son PIA.</p>
           <div className="pia-demo-corps">
-            <p className="field-hint">Pour essayer sans données réelles : deux élèves fictifs (Alpha et Bêta), leurs séances et un PIA d’Alpha à moitié rempli. Vous pourrez les supprimer ensuite depuis l’écran Élèves.</p>
-            <div><Button onClick={() => { void chargerExemple(); }}>Charger un exemple fictif</Button></div>
+            <p className="field-hint">Pour essayer sans données réelles : deux élèves d’essai (Alpha et Bêta), leurs séances et un PIA d’Alpha à moitié rempli. Vous pourrez les supprimer ensuite depuis l’écran Élèves.</p>
+            <div><Button onClick={() => { void chargerExemple(); }}>Charger un exemple d’essai</Button></div>
           </div>
         </section>
       ) : (
@@ -193,7 +209,7 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
                 <input type="checkbox" checked={deidentifie} onChange={(ev) => setDeidentifie(ev.target.checked)} />
                 <span>Version dé-identifiée (sans nom ni coordonnées : pour partager hors de l’équipe)<small className="reunion-raison">Le nom de l’élève est remplacé par « l’élève » dans les textes ; des personnes présentes, seule la fonction est gardée.</small></span>
               </label>
-              <p className="field-hint">« Imprimer / PDF » imprime les mêmes parties dans une mise en page simple (ce n’est pas le modèle officiel). Pour le PDF du modèle officiel, exportez en Word puis enregistrez en PDF depuis Word.</p>
+              <p className="field-hint">« Imprimer / PDF » imprime les mêmes parties dans une mise en page simple (ce n’est pas le modèle officiel). Pour le PDF du modèle officiel, exportez en Word puis enregistrez en PDF depuis Word. Le texte de réunion (onglet « Préparer ») ne fait pas partie de ces exports : utilisez son bouton « Copier le texte ».</p>
             </div>
           </details>
 
@@ -217,7 +233,7 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
 
           <div id="pia-panneau" role="tabpanel" aria-labelledby={`pia-onglet-${onglet}`} className="pia-panneau">
             {onglet === 'preparer' ? (
-              <Preparer eleve={eleve} pia={pia} changer={changer} seancesEleve={seancesEleve} filtre={filtre} onFiltre={setFiltre} onAller={onAller} onPv1={() => aller({ onglet: 'pv1' })} />
+              <Preparer eleve={eleve} pia={pia} changer={changer} seancesEleve={seancesEleve} filtre={{ ...filtre, annee }} onFiltre={setFiltre} onAller={onAller} onPv1={() => aller({ onglet: 'pv1' })} />
             ) : null}
             {onglet === 'identite' ? <OngletIdentite eleve={eleve} pia={pia} seances={seancesAnnee} changer={changer} /> : null}
             {onglet === 'profil' ? <OngletProfil eleve={eleve} pia={pia} seances={seancesAnnee} changer={changer} /> : null}

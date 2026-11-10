@@ -18,9 +18,9 @@
   height: calc(var(--barre-haut) + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 108px 0 var(--sp-4);
   background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line);
 }
-.barre-haut-logo { height: 36px; width: auto; flex: none; box-sizing: content-box; padding: 3px 6px; border-radius: 8px; background: #fff; border: 1px solid var(--line); }
+.barre-haut-logo { height: 36px; width: auto; flex: none; box-sizing: content-box; padding: 3px 6px; border-radius: 8px; background: var(--plaque-logo); border: 1px solid var(--line); }
 .barre-haut-texte { display: grid; line-height: 1.15; min-width: 0; }
-.barre-haut-texte small { color: var(--ink-3); font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.barre-haut-texte small { color: var(--ink-3); font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .nav {
   position: fixed; z-index: 50; left: 0; right: 0; bottom: 0; height: calc(var(--tabbar) + env(safe-area-inset-bottom));
@@ -29,10 +29,14 @@
   border-top: 1px solid var(--line);
 }
 .nav ul { list-style: none; margin: 0; padding: 0; height: var(--tabbar); display: grid; grid-template-columns: repeat(7, 1fr); }
+/* Écran très étroit (320 px) : les sept onglets en 12 px ne tiennent pas avec toutes les polices (sur Linux, « PIA » ne mesurait que 23 px de large, sous les 24 px minimaux) : la barre défile dans sa propre zone au lieu d'écraser les onglets. */
+@media screen and (max-width: 359px) {
+  .nav ul { grid-template-columns: repeat(7, minmax(52px, 1fr)); overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+}
 .nav .marque { display: none; }
 .nav-lien {
   height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  font-size: 0.66rem; font-weight: 600; color: var(--ink-3); text-decoration: none; min-width: 0;
+  font-size: 0.75rem; font-weight: 600; color: var(--ink-3); text-decoration: none; min-width: 0;
   transition: color var(--t-ui) ease-out;
 }
 .nav-lien:active { transform: scale(0.96); }
@@ -49,11 +53,11 @@
   .nav { position: sticky; top: 0; height: 100dvh; padding: var(--sp-5) var(--sp-3) 140px; border-top: 0; border-right: 1px solid var(--line); background: var(--surface); backdrop-filter: none; display: flex; flex-direction: column; gap: var(--sp-5); overflow-y: auto; }
   .nav ul { display: grid; grid-template-columns: 1fr; height: auto; gap: 4px; }
   .nav .marque { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 0 var(--sp-2); }
-  .marque-logo { width: 150px; height: auto; flex: none; box-sizing: content-box; padding: 6px 8px; border-radius: 10px; background: #fff; border: 1px solid var(--line); }
+  .marque-logo { width: 150px; height: auto; flex: none; box-sizing: content-box; padding: 6px 8px; border-radius: 10px; background: var(--plaque-logo); border: 1px solid var(--line); }
   .marque-texte { display: grid; line-height: 1.2; }
-  .marque-texte small { color: var(--ink-3); font-size: 0.72rem; }
+  .marque-texte small { color: var(--ink-3); font-size: 0.75rem; }
   .nav-lien, .nav-bascule { flex-direction: row; justify-content: flex-start; gap: 12px; height: 44px; padding: 0 var(--sp-3); border-radius: var(--r-s); font-size: 0.92rem; color: var(--ink-2); transition: background-color var(--t-ui) ease-out, color var(--t-ui) ease-out; }
-  .nav-lien:hover, .nav-bascule:hover { background: var(--surface-2); color: var(--ink); }
+  @media (hover: hover) { .nav-lien:hover, .nav-bascule:hover { background: var(--surface-2); color: var(--ink); } }
   .nav-lien[aria-current="page"] { background: var(--peda-soft); color: var(--peda-ink); }
   .nav-bascule { display: flex; align-items: center; width: 100%; border: 0; background: transparent; font: inherit; font-size: 0.92rem; font-weight: 600; cursor: pointer; margin-top: auto; }
   .nav-bascule:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
@@ -72,7 +76,7 @@
   :root:not([data-menu]) .marque-logo { width: 52px; padding: 4px 5px; border-radius: 8px; }
   :root:not([data-menu]) .marque-texte { display: none; }
   :root:not([data-menu]) .nav ul { width: 100%; }
-  :root:not([data-menu]) .nav-lien { flex-direction: column; justify-content: center; gap: 3px; height: 62px; padding: 0 2px; border-radius: var(--r-m); font-size: 0.68rem; }
+  :root:not([data-menu]) .nav-lien { flex-direction: column; justify-content: center; gap: 3px; height: 62px; padding: 0 2px; border-radius: var(--r-m); font-size: 0.75rem; }
   :root:not([data-menu]) .nav-bascule { justify-content: center; padding: 0; }
   :root:not([data-menu]) .nav-bascule span { display: none; }
   :root:not([data-menu]) .contenu { padding: var(--sp-5) var(--sp-5) var(--sp-7); }
@@ -122,7 +126,7 @@
   transition: background-color var(--t-ui) ease-out, color var(--t-ui) ease-out, transform var(--t-press) var(--ease-out);
 }
 .theme-bouton:active, .verrouiller-bouton:active { transform: scale(0.97); }
-.theme-bouton:hover, .verrouiller-bouton:hover { color: var(--ink); background: var(--surface-2); }
+@media (hover: hover) { .theme-bouton:hover, .verrouiller-bouton:hover { color: var(--ink); background: var(--surface-2); } }
 .theme-bouton:focus-visible, .verrouiller-bouton:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .theme-texte { display: none; }
 @media print { .outils, .barre-haut { display: none; } }

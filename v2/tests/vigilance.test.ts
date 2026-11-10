@@ -14,7 +14,7 @@ const s = (date: string, o: [string, N3][], extra: Partial<Seance> = {}): Seance
   seance({ ...vide, date, id: `s-${date}`, observations: o.map(([texte, niveau]) => ({ texte, niveau })), ...extra });
 const texte = (x: Seance, precedentes: Seance[] = []) => blocEnTexte(construireBloc(x, { precedentes }));
 
-describe('Points de vigilance : un niveau « Totalement » n’est jamais un acquis', () => {
+describe('Points de vigilance : un niveau « Tout à fait » n’est jamais un acquis', () => {
   it('le point connu et le point libre marqué sont reconnus ; un point ordinaire non', () => {
     assert.ok(estVigilance({ texte: DESENGAGE }));
     assert.ok(estVigilance({ texte: 'se désengage / évite la tâche.' }));
@@ -22,11 +22,11 @@ describe('Points de vigilance : un niveau « Totalement » n’est jamais un acq
     assert.ok(!estVigilance({ texte: 'Persévère dans la tâche' }));
   });
 
-  it('Journalier : échelle de fréquence, bloc à part, jamais « Totalement »', () => {
+  it('Journalier : échelle de fréquence, bloc à part, jamais « Tout à fait »', () => {
     const t = texte(s('2026-10-01', [[DESENGAGE, 2], ['Maintient son attention', 2]]));
-    assert.ok(t.includes(`• Totalement${N}: maintient son attention.`));
+    assert.ok(t.includes(`• Tout à fait${N}: maintient son attention.`));
     assert.ok(t.includes(`• Point de vigilance, tout au long${N}: se désengage / évite la tâche.`));
-    assert.ok(!t.includes(`Totalement${N}: se désengage`));
+    assert.ok(!t.includes(`Tout à fait${N}: se désengage`));
   });
 
   it('évolution : moins fréquent = progression, plus fréquent = à surveiller', () => {
@@ -58,7 +58,7 @@ describe('Points de vigilance : un niveau « Totalement » n’est jamais un acq
     assert.deepEqual(rapprocher([s('2026-10-01', [[DESENGAGE, 0]]), s('2026-10-08', [[DESENGAGE, 0]])]), []);
   });
 
-  it('accueil : « Partiellement » d’un point de vigilance n’est pas « à retravailler »', () => {
+  it('accueil : « Un peu » d’un point de vigilance n’est pas « à retravailler »', () => {
     const x = s('2026-10-01', [[DESENGAGE, 0], ['Entre dans la tâche', 0]]);
     assert.deepEqual(suiteDerniereSeance(x.eleveId, '2026-10-02', [x])?.aRetravailler, ['Entre dans la tâche']);
   });

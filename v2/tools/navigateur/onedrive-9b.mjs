@@ -45,7 +45,7 @@ const versReprise = async () => {
   await aller('Synchro');
   await page.getByRole('heading', { name: 'Synchronisation', level: 1 }).waitFor();
   await page.goto(`${URL_APP}#/reprise`);
-  await page.getByRole('heading', { name: 'Reprendre mes données de la V75', level: 1 }).waitFor();
+  await page.getByRole('heading', { name: 'Reprendre mes données de l’ancienne version', level: 1 }).waitFor();
 };
 const attendreMessage = async (re) => {
   try { await page.locator('.synchro-message', { hasText: re }).first().waitFor({ timeout: 15_000 }); } catch (e) {
@@ -66,13 +66,13 @@ ok(base !== 'journalier-v2-essai', `espace du compte à part (${base})`);
 
 /* ───────── 2. Reprise depuis OneDrive ───────── */
 await versReprise();
-await page.getByRole('heading', { name: 'Reprendre mes données de la V75', level: 1 }).waitFor();
+await page.getByRole('heading', { name: 'Reprendre mes données de l’ancienne version', level: 1 }).waitFor();
 await page.getByText('Connecté en tant que').waitFor();
-ok(await bouton('Lire le OneDrive de la V75').isVisible(), 'compte connecté : le bouton « Lire le OneDrive de la V75 » est proposé en premier');
-ok(await bouton('Chercher mes données de la V75 sur cet appareil').isVisible(), 'la lecture sur l’appareil reste proposée');
+ok(await bouton('Lire le OneDrive de l’ancienne version').isVisible(), 'compte connecté : le bouton « Lire le OneDrive de la V75 » est proposé en premier');
+ok(await bouton('Chercher mes données de l’ancienne version sur cet appareil').isVisible(), 'la lecture sur l’appareil reste proposée');
 await page.screenshot({ path: `${SORTIE}/9b-depart.png`, fullPage: true });
-await bouton('Lire le OneDrive de la V75').click();
-await attendreMessage(/OneDrive de la V75 lu/);
+await bouton('Lire le OneDrive de l’ancienne version').click();
+await attendreMessage(/OneDrive de l’ancienne version lu/);
 ok(/2 élèves/.test(await page.locator('.synchro-message-ok').first().innerText()), 'le résumé annonce 2 élèves');
 ok(await page.getByText('Séfora').first().isVisible() && await page.getByText('Nicoleta').first().isVisible(), 'les deux élèves de la V75 sont listés');
 ok(await page.getByText('refuse d’envoyer certaines séances').isVisible(), 'la remarque sur ce que la V75 envoie (ou pas) est affichée');
@@ -92,8 +92,8 @@ await page.screenshot({ path: `${SORTIE}/9b-controle.png`, fullPage: true });
 
 /* Relire sans quitter la page (« Lire une autre source ») : tout est reconnu, rien n'est dupliqué */
 await bouton('Lire une autre source (OneDrive ou cet appareil)').click();
-await bouton('Lire le OneDrive de la V75').click();
-await attendreMessage(/OneDrive de la V75 lu/);
+await bouton('Lire le OneDrive de l’ancienne version').click();
+await attendreMessage(/OneDrive de l’ancienne version lu/);
 ok((await page.getByText('Déjà repris, identique').count()) === 2, 'relire : les deux élèves sont reconnus (« Déjà repris, identique »)');
 ok((await lireBase(page, 'eleves', base)).length === eleves.length, 'aucun doublon');
 
@@ -131,7 +131,7 @@ await page.screenshot({ path: `${SORTIE}/9b-repartir-fini.png`, fullPage: true }
 /* ───────── 4. Téléphone et thème sombre ───────── */
 await page.setViewportSize({ width: 375, height: 800 });
 await versReprise();
-await page.getByRole('heading', { name: 'Reprendre mes données de la V75', level: 1 }).waitFor();
+await page.getByRole('heading', { name: 'Reprendre mes données de l’ancienne version', level: 1 }).waitFor();
 ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'téléphone : écran de reprise sans défilement horizontal');
 await page.emulateMedia({ colorScheme: 'dark' });
 await page.waitForTimeout(600); // les couleurs changent avec une courte transition
@@ -146,8 +146,8 @@ await page.setViewportSize({ width: 1280, height: 900 });
 await page.emulateMedia({ colorScheme: 'light' });
 faux.fichiersV75.clear();
 await versReprise();
-await bouton('Lire le OneDrive de la V75').click();
-await attendreMessage(/Aucune donnée de la V75 n’a été trouvée dans le OneDrive/);
+await bouton('Lire le OneDrive de l’ancienne version').click();
+await attendreMessage(/Aucune donnée de l’ancienne version n’a été trouvée dans le OneDrive/);
 ok(true, 'OneDrive sans dossier de la V75 : message clair, rien n’est créé');
 
 ok(erreurs.length === 0, `aucune erreur dans la console${erreurs.length ? ` : ${erreurs.join(' | ')}` : ''}`);

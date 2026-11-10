@@ -47,7 +47,7 @@ export function Verrou({ occupe, message, ancienneBase, chiffrementOk, onConnect
           <hr className="verrou-separation" />
           <h2 className="verrou-sous-titre">Pas de compte sous la main ?</h2>
           <div className="verrou-actions">
-            <Button disabled={occupe} onClick={onEssai}>Essayer avec des données fictives</Button>
+            <Button disabled={occupe} onClick={onEssai}>Essayer avec des données d’essai</Button>
           </div>
           <p className="synchro-discret">Un espace à part, sans lien avec Microsoft ni avec vos vraies données. N’y écrivez jamais de vrais noms d’élèves.</p>
         </>

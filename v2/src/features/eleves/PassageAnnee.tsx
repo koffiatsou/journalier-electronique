@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { anneeSuivante, appliquerPassage, elevesActifs, planPassage } from '../../domain/eleves/index.ts';
+import { anneeSuivante, appliquerPassage, cleDeTri, elevesActifs, nomAffiche, planPassage } from '../../domain/eleves/index.ts';
 import type { ActionPassage, LignePassage } from '../../domain/eleves/index.ts';
 import { anneeScolaire } from '../../domain/export/journalier.ts';
 import type { Eleve } from '../../domain/types.ts';
@@ -29,7 +29,7 @@ export function PassageAnnee({ eleves, couleurs, aujourdhui, onAppliquer, onAnnu
   const [lignes, setLignes] = useState<LignePassage[]>(() => planPassage(eleves, courante));
   const [viderTitulaire, setViderTitulaire] = useState(true);
 
-  const actifs = useMemo(() => elevesActifs(eleves).sort((a, b) => `${a.nom} ${a.prenom}`.localeCompare(`${b.nom} ${b.prenom}`, 'fr')), [eleves]);
+  const actifs = useMemo(() => elevesActifs(eleves).sort((a, b) => cleDeTri(a).localeCompare(cleDeTri(b), 'fr')), [eleves]);
   const parLigne = new Map(lignes.map((l) => [l.eleveId, l]));
 
   const changerCible = (c: string) => { setCible(c); setLignes(planPassage(eleves, c)); };
@@ -87,7 +87,7 @@ export function PassageAnnee({ eleves, couleurs, aujourdhui, onAppliquer, onAnnu
                     <div className="passage-eleve">
                       <Avatar eleve={e} couleur={couleurs.get(e.id) ?? 0} />
                       <span>
-                        <strong>{e.nom} {e.prenom}</strong>
+                        <strong>{nomAffiche(e)}</strong>
                         <span className="liste-detail">{e.classe || 'Sans classe'}{e.titulaire ? ` · ${e.titulaire}` : ''}</span>
                       </span>
                     </div>

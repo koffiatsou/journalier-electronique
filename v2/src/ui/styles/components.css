@@ -13,15 +13,20 @@
 @media (hover: hover) and (pointer: fine) { .btn-primary:hover { background: var(--peda-ink); border-color: var(--peda-ink); } }
 .btn-ghost { border-color: transparent; background: transparent; }
 .btn[disabled] { opacity: 0.5; pointer-events: none; }
+/* Inactif mais atteignable au clavier et lu par les lecteurs d'écran : la raison est écrite dessous (`Button` avec `raison`). */
+.btn[aria-disabled='true'] { opacity: 0.5; cursor: not-allowed; }
+.btn-raison { flex-basis: 100%; font-size: 0.8125rem; color: var(--ink-2); }
+.field-erreur { font-size: 0.8125rem; font-weight: 600; color: var(--danger); }
+.input[aria-invalid='true'], .select[aria-invalid='true'], .textarea[aria-invalid='true'] { border-color: var(--danger); }
 
 /* ---------- champs ---------- */
 .field { display: grid; gap: 6px; min-width: 0; }
 .field-label { font-weight: 600; font-size: 0.85rem; color: var(--ink); }
-.field-label .opt { font-weight: 450; color: var(--ink-3); margin-left: 6px; }
+.field-label .opt { font-weight: 400; color: var(--ink-3); margin-left: 6px; }
 .field-hint { font-size: 0.8rem; color: var(--ink-3); }
 .input, .select, .textarea {
   width: 100%; min-height: 42px; padding: 9px 12px;
-  border: 1px solid var(--line-strong); border-radius: var(--r-s);
+  border: 1px solid var(--contour-champ); border-radius: var(--r-s);
   background: var(--surface); color: var(--ink);
   transition: border-color var(--t-ui) ease-out, box-shadow var(--t-ui) ease-out;
 }
@@ -36,7 +41,7 @@
 .chip {
   display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px;
   border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface);
-  font-size: 0.88rem; font-weight: 550; color: var(--ink-2);
+  font-size: 0.88rem; font-weight: 600; color: var(--ink-2);
   transition: transform var(--t-press) var(--ease-out), background-color var(--t-ui) ease-out,
     border-color var(--t-ui) ease-out, color var(--t-ui) ease-out;
 }
@@ -47,14 +52,17 @@
 .chip[aria-pressed="true"] .tick { width: 14px; margin-right: 0; opacity: 1; transform: none; }
 
 /* ---------- point à évaluer : même carte pour observations, compétences et aides ---------- */
-.points { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--sp-3); align-items: start; }
+.points { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-3); align-items: start; }
+/* Cartes en colonnes équilibrées (ui/ListeColonnes.tsx) : chaque colonne garde sa propre hauteur, sans trou sous une carte courte. */
+.points-colonnes { display: flex; align-items: flex-start; gap: var(--sp-3); }
+.points-colonne { flex: 1 1 0; min-width: 0; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-3); }
 .point {
   display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-m); background: var(--surface);
   transition: border-color var(--t-ui) var(--ease-out), box-shadow var(--t-ui) var(--ease-out), background-color var(--t-ui) ease-out;
 }
 .point[data-etat="choisi"] { background: var(--surface-2); }
 .point[data-etat="ouvert"] { border-color: var(--accent); box-shadow: 0 0 0 3px var(--peda-soft); }
-.point-nom { font-weight: 550; line-height: 1.35; }
+.point-nom { font-weight: 600; line-height: 1.35; }
 .point-choix { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .pastille {
   display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; min-height: 36px; padding: 0 14px; border-radius: 999px;
@@ -73,11 +81,11 @@
 @media (hover: hover) and (pointer: fine) { .point-choix .pastille[data-teinte]:hover { background: var(--t-bg); color: var(--t-ink); border-color: var(--t-line); } }
 .pastille[aria-checked="true"] { background: var(--t-bg); color: var(--t-ink); border-color: var(--t-line); }
 .point-retirer { min-height: 36px; padding: 0 8px; font-size: 0.85rem; color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; }
-.level-missing { font-size: 0.78rem; font-weight: 650; color: var(--attention); background: var(--attention-soft); padding: 3px 10px; border-radius: 999px; }
+.level-missing { font-size: 0.78rem; font-weight: 700; color: var(--attention); background: var(--attention-soft); padding: 3px 10px; border-radius: 999px; }
 @keyframes level-in { from { opacity: 0; transform: translateY(3px) scale(0.98); } to { opacity: 1; transform: none; } }
 
 /* ---------- badges ---------- */
-.badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 0.76rem; font-weight: 650; background: var(--surface-2); color: var(--ink-2); }
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 0.76rem; font-weight: 700; background: var(--surface-2); color: var(--ink-2); }
 .badge-ok { background: var(--ok-soft); color: var(--ok); }
 .badge-attention { background: var(--attention-soft); color: var(--attention); }
 .badge-danger { background: var(--danger-soft); color: var(--danger); }
@@ -92,14 +100,20 @@
   background: var(--ink); color: var(--ground); font-weight: 600; box-shadow: var(--shadow-2);
   animation: toast-in var(--t-panel) var(--ease-out) both; pointer-events: auto;
 }
-.toast[data-leaving="true"] { animation: toast-out 180ms ease-in both; }
+.toast[data-leaving="true"] { animation: toast-out var(--t-sortie) ease-in both; }
+/* Geste proposé dans la notification (« Annuler ») : texte souligné, zone de 44 px, couleur sur le fond encre. */
+.toast-action {
+  margin-left: auto; min-height: 44px; padding: 0 12px; border: 0; border-radius: var(--r-s); background: transparent;
+  color: inherit; font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+.toast-action:focus-visible { outline: 2px solid var(--ground); outline-offset: 2px; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(12px) scale(0.96); } to { opacity: 1; transform: none; } }
 @keyframes toast-out { to { opacity: 0; transform: translateY(6px) scale(0.98); } }
 @media (min-width: 768px) { .toasts { bottom: 24px; } }
 
 /* ---------- fenêtre de dialogue (élément <dialog> natif) ---------- */
 .dialog { border: 0; padding: 0; border-radius: var(--r-l); background: var(--surface); color: var(--ink); box-shadow: var(--shadow-2); width: min(92vw, 520px); }
-.dialog::backdrop { background: rgb(13 20 36 / 45%); backdrop-filter: blur(2px); }
+.dialog::backdrop { background: var(--voile); backdrop-filter: blur(2px); }
 .dialog[open] { animation: dialog-in var(--t-panel) var(--ease-out) both; }
 @keyframes dialog-in { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: none; } }
-.dialog { max-height: 92dvh; overflow: auto; }
+.dialog { max-height: 92dvh; overflow: auto; overscroll-behavior: contain; }

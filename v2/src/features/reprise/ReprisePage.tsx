@@ -77,7 +77,7 @@ function Fiche({ f, plan, coche, onCocher, doublon }: { f: FicheReprise; plan: P
       {s.presents > 0 && s.nouveaux > 0 ? <p className="synchro-discret">{pluriel(s.presents, 'élément est', 'éléments sont')} déjà dans la V2 : ils ne seront pas touchés, seuls les {s.nouveaux} manquants seront ajoutés.</p> : null}
       {s.changes > 0 ? <p className="synchro-discret">{pluriel(s.changes, 'élément a', 'éléments ont')} changé dans la V2 depuis la dernière reprise : ils sont laissés tels quels, jamais remplacés.</p> : null}
       {doublon ? <p className="synchro-message synchro-message-info" role="note">Un élève qui s’appelle presque pareil existe déjà dans la V2 (« {doublon} »). Si c’est la même personne, ne cochez pas ce dossier pour éviter un doublon.</p> : null}
-      {f.eleve.nom.trim().includes(' ') ? <p className="synchro-discret">Le nom est repris entier dans la case « Nom » (la V75 n’avait qu’une case). Vous pourrez séparer prénom et nom dans la fiche de l’élève.</p> : null}
+      {f.eleve.nom.trim().includes(' ') ? <p className="synchro-discret">Le nom est repris entier dans la case « Nom » (l’ancienne version n’avait qu’une case). Vous pourrez séparer prénom et nom dans la fiche de l’élève.</p> : null}
       {f.alertes.length ? <ul className="reprise-alertes">{f.alertes.map((a) => <li key={a}>{a}</li>)}</ul> : null}
       {f.seances.length ? (
         <details>
@@ -103,8 +103,8 @@ function Fiche({ f, plan, coche, onCocher, doublon }: { f: FicheReprise; plan: P
       ) : null}
       {f.pia.texte ? (
         <details>
-          <summary>{f.pia.contenu ? 'PIA et objectifs de la V75 (à recopier dans le PIA de la V2)' : 'Coordonnées notées dans la V75 (CPMS, responsable…)'}</summary>
-          <p className="synchro-discret">Le PIA de la V2 est organisé autrement (profil, deux procès-verbaux, aménagements) : il n’est pas converti automatiquement, pour ne rien mal ranger. Voici ce que la V75 avait noté.</p>
+          <summary>{f.pia.contenu ? 'PIA et objectifs de l’ancienne version (à recopier dans le PIA de la V2)' : 'Coordonnées notées dans l’ancienne version (CPMS, responsable…)'}</summary>
+          <p className="synchro-discret">Le PIA de la V2 est organisé autrement (profil, deux procès-verbaux, aménagements) : il n’est pas converti automatiquement, pour ne rien mal ranger. Voici ce que l’ancienne version avait noté.</p>
           <pre className="reprise-pia">{f.pia.texte}</pre>
           <Button variante="discret" onClick={() => { void copier(); }}>{copie ? 'Copié' : 'Copier ce texte'}</Button>
         </details>
@@ -214,8 +214,8 @@ export function ReprisePage({ magasin, synchro, essai, onAller }: { magasin: Mag
   if (essai) {
     return (
       <div className="page reprise">
-        <header className="page-entete"><h1>Reprendre mes données de la V75</h1></header>
-        <p className="synchro-message synchro-message-info" role="note">Le mode essai est réservé aux données fictives : on n’y reprend jamais de vraies données d’élèves. Verrouillez le Journalier (bouton « Verrouiller »), puis connectez-vous avec votre compte Microsoft pour reprendre vos données.</p>
+        <header className="page-entete"><h1>Reprendre mes données de l’ancienne version</h1></header>
+        <p className="synchro-message synchro-message-info" role="note">Le mode essai est réservé aux données d’essai : on n’y reprend jamais de vraies données d’élèves. Verrouillez le Journalier (bouton « Verrouiller »), puis connectez-vous avec votre compte Microsoft pour reprendre vos données.</p>
       </div>
     );
   }
@@ -223,34 +223,34 @@ export function ReprisePage({ magasin, synchro, essai, onAller }: { magasin: Mag
   return (
     <div className="page reprise">
       <header className="page-entete">
-        <h1>Reprendre mes données de la V75</h1>
-        <p className="page-sous-titre">Copiez vos élèves, vos séances et votre agenda de la V75 vers la V2. La V75 n’est jamais modifiée : on la lit seulement, et rien n’est importé sans votre accord.</p>
+        <h1>Reprendre mes données de l’ancienne version</h1>
+        <p className="page-sous-titre">Copiez vos élèves, vos séances et votre agenda de l’ancienne version vers la V2. L’ancienne version n’est jamais modifiée : on la lit seulement, et rien n’est importé sans votre accord.</p>
       </header>
 
       {erreur ? <p className="erreur" role="alert">{erreur}</p> : null}
 
       <section className="synchro-bloc" aria-labelledby="reprise-1">
         <h2 id="reprise-1">1. Trouver mes données</h2>
-        <p className="synchro-discret">Avant de commencer, dans la V75 : faites une dernière synchronisation et, si vous le pouvez, gardez une copie de vos documents Word. Rien n’est supprimé dans la V75.</p>
-        <p>Deux endroits possibles. Si vos données de la V75 sont anciennes sur cet appareil, <strong>OneDrive est le plus sûr</strong> : c’est là que la V75 envoyait ses copies. Vous pouvez aussi lire les deux, l’un après l’autre : un élève ou une séance présent dans les deux n’est jamais dupliqué.</p>
+        <p className="synchro-discret">Avant de commencer, dans l’ancienne version : faites une dernière synchronisation et, si vous le pouvez, gardez une copie de vos documents Word. Rien n’est supprimé dans l’ancienne version.</p>
+        <p>Deux endroits possibles. Si vos données de l’ancienne version sont anciennes sur cet appareil, <strong>OneDrive est le plus sûr</strong> : c’est là que l’ancienne version envoyait ses copies. Vous pouvez aussi lire les deux, l’un après l’autre : un élève ou une séance présent dans les deux n’est jamais dupliqué.</p>
 
         <div className="reprise-source">
-          <h3>Dans OneDrive (les dossiers de la V75)</h3>
+          <h3>Dans OneDrive (les dossiers de l’ancienne version)</h3>
           {mode === 'microsoft' && !reconnexion ? (
-            <p className="synchro-discret">Connecté en tant que <strong>{compteMicrosoft?.nom}</strong>{compteMicrosoft?.courriel ? ` (${compteMicrosoft.courriel})` : ''}. Il faut que ce soit le compte Microsoft utilisé dans la V75. La V2 ne fait que lire : rien n’est modifié ni supprimé dans OneDrive.</p>
+            <p className="synchro-discret">Connecté en tant que <strong>{compteMicrosoft?.nom}</strong>{compteMicrosoft?.courriel ? ` (${compteMicrosoft.courriel})` : ''}. Il faut que ce soit le compte Microsoft utilisé dans l’ancienne version. La V2 ne fait que lire : rien n’est modifié ni supprimé dans OneDrive.</p>
           ) : mode === 'demonstration' ? (
-            <p className="synchro-discret">Indisponible en démonstration : il faut un vrai compte Microsoft (verrouillez le Journalier puis connectez-vous avec votre compte).</p>
+            <p className="synchro-discret">Indisponible en mode essai : il faut un vrai compte Microsoft (verrouillez le Journalier puis connectez-vous avec votre compte).</p>
           ) : !microsoftPossible ? (
             <p className="synchro-discret">Indisponible en mode essai : il faut un vrai compte Microsoft.</p>
           ) : reconnexion ? (
             <p className="synchro-discret">Votre session Microsoft a expiré : reconnectez-vous d’abord.</p>
           ) : (
-            <p className="synchro-discret">Il faut d’abord vous connecter avec le compte Microsoft utilisé dans la V75.</p>
+            <p className="synchro-discret">Il faut d’abord vous connecter avec le compte Microsoft utilisé dans l’ancienne version.</p>
           )}
           {etape.nom === 'depart' || etape.nom === 'aucun' ? (
             <div className="synchro-actions">
               {mode === 'microsoft' && !reconnexion
-                ? <Button variante="primaire" onClick={() => { void lireOneDrive(); }}>Lire le OneDrive de la V75</Button>
+                ? <Button variante="primaire" onClick={() => { void lireOneDrive(); }}>Lire le OneDrive de l’ancienne version</Button>
                 : microsoftPossible && mode !== 'demonstration'
                   ? <Button variante="primaire" onClick={() => { void synchro.connecter(); }}>{reconnexion ? 'Se reconnecter' : 'Se connecter avec Microsoft'}</Button>
                   : null}
@@ -259,22 +259,22 @@ export function ReprisePage({ magasin, synchro, essai, onAller }: { magasin: Mag
         </div>
 
         <div className="reprise-source">
-          <h3>Sur cet appareil (V75 ouverte dans ce navigateur)</h3>
-          <p>La V2 lit aussi le stockage de la V75 directement sur cet ordinateur, dans ce navigateur : ouvrez donc cette page là où vous utilisiez la V75, avec le même navigateur.</p>
-          {etape.nom === 'depart' || etape.nom === 'aucun' ? <div className="synchro-actions"><Button variante="secondaire" onClick={() => { void rechercher(); }}>Chercher mes données de la V75 sur cet appareil</Button></div> : null}
+          <h3>Sur cet appareil (ancienne version ouverte dans ce navigateur)</h3>
+          <p>La V2 lit aussi le stockage de l’ancienne version directement sur cet ordinateur, dans ce navigateur : ouvrez donc cette page là où vous utilisiez l’ancienne version, avec le même navigateur.</p>
+          {etape.nom === 'depart' || etape.nom === 'aucun' ? <div className="synchro-actions"><Button variante="secondaire" onClick={() => { void rechercher(); }}>Chercher mes données de l’ancienne version sur cet appareil</Button></div> : null}
         </div>
 
         {etape.nom === 'recherche' ? <p role="status">Recherche en cours…</p> : null}
-        {etape.nom === 'lecture' ? <p role="status">{progres || 'Lecture des données de la V75…'}</p> : null}
+        {etape.nom === 'lecture' ? <p role="status">{progres || 'Lecture des données de l’ancienne version…'}</p> : null}
         {etape.nom === 'aucun' && etape.source === 'appareil' ? (
-          <p className="synchro-message synchro-message-info" role="status">Aucune donnée de la V75 n’a été trouvée sur cet appareil. Soit vous utilisiez la V75 sur un autre ordinateur ou un autre navigateur, soit son stockage a été vidé. Essayez la lecture dans OneDrive, ou ouvrez la V2 là où vous utilisiez la V75.</p>
+          <p className="synchro-message synchro-message-info" role="status">Aucune donnée de l’ancienne version n’a été trouvée sur cet appareil. Soit vous utilisiez l’ancienne version sur un autre ordinateur ou un autre navigateur, soit son stockage a été vidé. Essayez la lecture dans OneDrive, ou ouvrez la V2 là où vous utilisiez l’ancienne version.</p>
         ) : null}
         {etape.nom === 'aucun' && etape.source === 'onedrive' ? (
-          <p className="synchro-message synchro-message-info" role="status">Aucune donnée de la V75 n’a été trouvée dans le OneDrive de ce compte. Vérifiez que vous êtes connecté avec le compte Microsoft de la V75 (écran Synchro), ou que la V75 a bien synchronisé. Sinon, essayez la lecture sur l’appareil où vous utilisiez la V75.</p>
+          <p className="synchro-message synchro-message-info" role="status">Aucune donnée de l’ancienne version n’a été trouvée dans le OneDrive de ce compte. Vérifiez que vous êtes connecté avec le compte Microsoft de l’ancienne version (écran Synchro), ou que l’ancienne version a bien synchronisé. Sinon, essayez la lecture sur l’appareil où vous utilisiez l’ancienne version.</p>
         ) : null}
         {etape.nom === 'comptes' ? (
           <>
-            <p>Plusieurs coffres de la V75 existent sur cet appareil. Lequel est le vôtre ?</p>
+            <p>Plusieurs coffres de l’ancienne version existent sur cet appareil. Lequel est le vôtre ?</p>
             <ul className="reprise-comptes">
               {etape.comptes.map((c) => (
                 <li key={c.id}>
@@ -285,19 +285,19 @@ export function ReprisePage({ magasin, synchro, essai, onAller }: { magasin: Mag
             </ul>
           </>
         ) : null}
-        {plan ? <p className="synchro-message synchro-message-ok" role="status">{plan.source === 'onedrive' ? 'OneDrive de la V75 lu' : 'Coffre de la V75 lu'} : <strong>{plan.compte.nom}</strong>{plan.compte.adresse ? ` (${plan.compte.adresse})` : ''}. {resume ? `${pluriel(resume.eleves, 'élève')}, ${pluriel(resume.seances, 'séance')} reprises, ${pluriel(resume.rdv, 'rendez-vous d’agenda', 'rendez-vous d’agenda')}.` : ''}</p> : null}
+        {plan ? <p className="synchro-message synchro-message-ok" role="status">{plan.source === 'onedrive' ? 'OneDrive de l’ancienne version lu' : 'Coffre de l’ancienne version lu'} : <strong>{plan.compte.nom}</strong>{plan.compte.adresse ? ` (${plan.compte.adresse})` : ''}. {resume ? `${pluriel(resume.eleves, 'élève')}, ${pluriel(resume.seances, 'séance')} reprises, ${pluriel(resume.rdv, 'rendez-vous d’agenda', 'rendez-vous d’agenda')}.` : ''}</p> : null}
       </section>
 
       {plan ? (
         <>
           {plan.source === 'onedrive' ? (
             <p className="synchro-message synchro-message-info" role="note">
-              Ce qui est affiché ici est ce que la V75 a réussi à envoyer dans OneDrive. D’après la lecture de son code, la V75 refuse d’envoyer certaines séances (celles qui contiennent une présence ou des notes de classe) et certains dossiers d’élèves : s’il en manque ici, lisez aussi « Sur cet appareil » ensuite. Rien n’est dupliqué : ce qui est déjà repris est reconnu.
+              Ce qui est affiché ici est ce que l’ancienne version a réussi à envoyer dans OneDrive. D’après la lecture de son code, l’ancienne version refuse d’envoyer certaines séances (celles qui contiennent une présence ou des notes de classe) et certains dossiers d’élèves : s’il en manque ici, lisez aussi « Sur cet appareil » ensuite. Rien n’est dupliqué : ce qui est déjà repris est reconnu.
             </p>
           ) : null}
           {plan.illisibles.length ? (
             <section className="synchro-message synchro-message-erreur" role="alert">
-              <p><strong>{pluriel(plan.illisibles.length, 'enregistrement de la V75 est illisible', 'enregistrements de la V75 sont illisibles')}</strong> (abîmés) et ne peuvent pas être repris :</p>
+              <p><strong>{pluriel(plan.illisibles.length, 'enregistrement de l’ancienne version est illisible', 'enregistrements de l’ancienne version sont illisibles')}</strong> (abîmés) et ne peuvent pas être repris :</p>
               <ul>{plan.illisibles.map((x) => <li key={x.quoi}>{x.quoi} — {x.raison}</li>)}</ul>
             </section>
           ) : null}
@@ -305,7 +305,7 @@ export function ReprisePage({ magasin, synchro, essai, onAller }: { magasin: Mag
 
           <section className="synchro-bloc" aria-labelledby="reprise-2">
             <h2 id="reprise-2">2. Vérifier élève par élève</h2>
-            <p>Cochez les élèves à reprendre. Ouvrez « Voir les séances » pour comparer avec la V75 : dates, matières, présences. Un élève déjà repris n’est jamais dupliqué.</p>
+            <p>Cochez les élèves à reprendre. Ouvrez « Voir les séances » pour comparer avec l’ancienne version : dates, matières, présences. Un élève déjà repris n’est jamais dupliqué.</p>
             {!plan.reprise.fiches.length ? <p className="vide-texte">Aucun élève n’a pu être repris de ce coffre.</p> : null}
             <ul className="reprise-fiches">
               {plan.reprise.fiches.map((f) => (
@@ -323,7 +323,7 @@ export function ReprisePage({ magasin, synchro, essai, onAller }: { magasin: Mag
             {plan.reprise.horaires ? (
               <label className="synchro-case">
                 <input type="checkbox" checked={horaires} onChange={(e) => setHoraires(e.target.checked)} />
-                <span>Reprendre les horaires des périodes réglés dans la V75 (seulement si vous n’avez pas déjà réglé les vôtres dans la V2)</span>
+                <span>Reprendre les horaires des périodes réglés dans l’ancienne version (seulement si vous n’avez pas déjà réglé les vôtres dans la V2)</span>
               </label>
             ) : null}
           </section>
@@ -331,7 +331,7 @@ export function ReprisePage({ magasin, synchro, essai, onAller }: { magasin: Mag
           {plan.reprise.ecarts.length ? (
             <section className="synchro-bloc" aria-labelledby="reprise-ecarts">
               <h2 id="reprise-ecarts">Ce qui n’a pas pu être repris ({plan.reprise.ecarts.length})</h2>
-              <p>Rien n’est perdu dans la V75, mais ces éléments ne peuvent pas entrer dans la V2 tels quels. Notez-les si besoin.</p>
+              <p>Rien n’est perdu dans l’ancienne version, mais ces éléments ne peuvent pas entrer dans la V2 tels quels. Notez-les si besoin.</p>
               <ul>{plan.reprise.ecarts.map((x, i) => <li key={`${x.quoi}-${i}`}><strong>{x.quoi}</strong> — {x.raison}</li>)}</ul>
             </section>
           ) : null}
@@ -378,7 +378,7 @@ export function ReprisePage({ magasin, synchro, essai, onAller }: { magasin: Mag
                 <Button variante="discret" onClick={() => onAller('agenda')}>Voir l’agenda</Button>
                 <Button variante="discret" onClick={() => { setErreur(null); setEtape({ nom: 'depart' }); window.scrollTo?.({ top: 0 }); }}>Lire une autre source (OneDrive ou cet appareil)</Button>
               </div>
-              <p className="synchro-discret">Pensez à ouvrir quelques séances au Journalier et à les comparer avec la V75 avant de cesser de l’utiliser.</p>
+              <p className="synchro-discret">Pensez à ouvrir quelques séances au Journalier et à les comparer avec l’ancienne version avant de cesser de l’utiliser.</p>
             </section>
           )}
         </>

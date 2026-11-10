@@ -1,9 +1,12 @@
 import { lireZip, ecrireZip } from './zip.ts';
+import { couleurDeMatiere } from './couleurs.ts';
+import type { ReglageCouleurs } from './couleurs.ts';
 import { identiteDe, nomFichier, preparerBlocs, remplirDocument } from './journalier.ts';
 import { deIdentifierPia, identiteAnonyme, nomFichierPia, remplirEntete, remplirPia } from './pia.ts';
 import type { OptionsPia } from './pia.ts';
 import type { Pia } from '../pia/types.ts';
 import type { Eleve, Seance } from '../types.ts';
+import { nomDeDocument } from '../eleves/affichage.ts';
 
 export { lireZip, ecrireZip } from './zip.ts';
 export { remplirDocument, preparerBlocs, nomFichier, anneeScolaire } from './journalier.ts';
@@ -20,17 +23,19 @@ export interface OptionsExport {
   periode?: string;
   /** Distingue des fichiers dé-identifiés d'un même export. */
   precision?: string;
+  /** « Colorer par matière » : en-têtes colorés selon la matière de chaque séance. Absent ou `actif: false` : gris du modèle. */
+  couleurs?: ReglageCouleurs;
 }
 
 /** Construit le Journalier Word d'un élève à partir du modèle papier (octets du .docx). */
 export async function construireJournalier(modele: Uint8Array, eleve: Eleve, seances: readonly Seance[], options: OptionsExport | boolean = {}): Promise<{ octets: Uint8Array; nom: string }> {
-  const { deidentifie = false, periode = '', precision = '' } = typeof options === 'boolean' ? { deidentifie: options } : options;
+  const { deidentifie = false, periode = '', precision = '', couleurs } = typeof options === 'boolean' ? { deidentifie: options } : options;
   const entrees = await lireZip(modele);
   const doc = entrees['word/document.xml'];
   if (!doc) throw new Error('Modèle Journalier invalide.');
   const dec = new TextDecoder();
   const enc = new TextEncoder();
-  entrees['word/document.xml'] = enc.encode(remplirDocument(dec.decode(doc), preparerBlocs(seances, eleve, deidentifie), identiteDe(eleve, deidentifie)));
+  entrees['word/document.xml'] = enc.encode(remplirDocument(dec.decode(doc), preparerBlocs(seances, eleve, deidentifie), identiteDe(eleve, deidentifie), couleurs?.actif ? (b) => (b.matiere.trim() ? couleurDeMatiere(b.matiere, couleurs.choix).fond : null) : undefined));
   signerPole(entrees);
   return { octets: ecrireZip(entrees), nom: nomFichier(eleve, seances, deidentifie, periode, precision) };
 }
@@ -61,7 +66,7 @@ export async function construirePia(modele: Uint8Array, piaComplet: Pia, eleve: 
   const identite = options.deidentifie
     ? identiteAnonyme(eleve.classe, pia.identite.option)
     : {
-      nom: `${eleve.nom} ${eleve.prenom}`.trim(), dateNaissance: eleve.dateNaissance, ecole: eleve.ecole, classe: eleve.classe,
+      nom: nomDeDocument(eleve), dateNaissance: eleve.dateNaissance, ecole: eleve.ecole, classe: eleve.classe,
       option: pia.identite.option, titulaire: eleve.titulaire, cpms: pia.identite.cpms,
       representantPole: pia.identite.representantPole, responsable: pia.identite.responsable
     };

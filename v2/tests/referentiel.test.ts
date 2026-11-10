@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { IndexReferentiel, anneeDeNiveau, analyserClasse, cibleDeMatiere, formeDeFiliere, formeDeTexte } from '../src/domain/referentiel/index.ts';
+import { IndexReferentiel, RENTREE_TRONC_COMMUN, enVigueur, anneeDeNiveau, developper, rentreeDeDate, rentreeDeLigne, analyserClasse, cibleDeMatiere, formeDeFiliere, formeDeTexte } from '../src/domain/referentiel/index.ts';
 import type { EntreeReferentiel } from '../src/domain/referentiel/index.ts';
 
 const e = (a: string, extra: Partial<EntreeReferentiel> = {}): EntreeReferentiel => ({ m: 'Mathématiques', f: 'TC', t: 'f', a, r: 'test', ...extra });
@@ -41,12 +41,69 @@ describe('moteur de pistes', () => {
   });
 });
 
+describe('alias de terrain par matière', () => {
+  it('une expression agit dans sa matière seulement', () => {
+    assert.match(developper('règle des signes', 'Mathématiques'), /positif/);
+    assert.equal(developper('les signes de ponctuation', 'Français'), 'les signes de ponctuation');
+    assert.equal(developper('x', 'Sciences'), 'x');
+    assert.equal(developper('règle des signes'), 'règle des signes');
+  });
+});
+
+describe('en vigueur à partir de', () => {
+  const idx = new IndexReferentiel([
+    e('Additionner des fractions de même dénominateur.', { n: 'S1', i: 'Fractions' }),
+    e('Additionner des fractions de dénominateurs différents.', { n: 'S2', i: 'Fractions' }),
+    e('Additionner des fractions algébriques.', { n: 'S3', f: 'HGT', i: 'Fractions' })
+  ]);
+  it('calcule la rentrée d’une date et d’une ligne', () => {
+    assert.equal(rentreeDeDate('2026-11-09'), 2026);
+    assert.equal(rentreeDeDate('2027-03-02'), 2026);
+    assert.equal(rentreeDeDate('2026-08-24'), 2026);
+    assert.equal(rentreeDeDate('n’importe quoi'), undefined);
+    assert.equal(rentreeDeLigne({ f: 'TC', n: 'S2' }), RENTREE_TRONC_COMMUN.S2);
+    assert.equal(rentreeDeLigne({ f: 'TC', n: 'P3' }), 0);
+    assert.equal(rentreeDeLigne({ f: 'HGT', n: 'S3' }), 0);
+  });
+  it('écarte le tronc commun pas encore en vigueur', () => {
+    const textes = (rentree: number | undefined) => idx.suggerer({ objectif: 'fractions', annee: 'S2', rentree }, 8).map((p) => p.entree.n);
+    assert.ok(!textes(2026).includes('S2'), 'S2 n’est au tronc commun qu’en 2027');
+    assert.ok(textes(2026).includes('S1'));
+    assert.ok(textes(2027).includes('S2'));
+    assert.ok(textes(undefined).includes('S2'), 'sans rentrée, tout est proposé');
+  });
+  it('propose les Socles seulement jusqu’à la rentrée 2026, et seulement si la rentrée est connue', () => {
+    const socle = e('Additionner des fractions simples.', { n: 'S2', f: 'SOC', i: 'Fractions' });
+    assert.equal(enVigueur(socle, 2026), true);
+    assert.equal(enVigueur(socle, 2027), false);
+    assert.equal(enVigueur(socle, undefined), false);
+    const i2 = new IndexReferentiel([socle, e('Additionner des fractions.', { n: 'S2', i: 'Fractions' })]);
+    assert.equal(i2.suggerer({ objectif: 'fractions', annee: 'S2', rentree: 2026 }, 4)[0]?.entree.f, 'SOC');
+    assert.equal(i2.suggerer({ objectif: 'fractions', annee: 'S2', rentree: 2027 }, 4)[0]?.entree.f, 'TC');
+  });
+  it('garde la compétence terminale de S3 avant 2028', () => {
+    const r = idx.suggerer({ objectif: 'fractions algébriques', annee: 'S3', rentree: 2026 }, 8);
+    assert.ok(r.some((p) => p.entree.f === 'HGT'));
+  });
+});
+
 describe('contexte', () => {
   it('reconnaît la matière', () => {
     assert.equal(cibleDeMatiere('Maths')?.jeu, 'mathematiques');
     assert.equal(cibleDeMatiere('Français')?.jeu, 'francais');
     assert.deepEqual(cibleDeMatiere('Néerlandais'), { jeu: 'langues', langue: 'Néerlandais' });
-    assert.equal(cibleDeMatiere('Géographie'), null);
+    assert.equal(cibleDeMatiere('Géographie')?.jeu, 'histoire-geographie');
+    assert.equal(cibleDeMatiere('Histoire')?.jeu, 'histoire-geographie');
+    assert.equal(cibleDeMatiere('Technologie')?.jeu, 'technique');
+    assert.equal(cibleDeMatiere('Informatique')?.jeu, 'technique');
+    assert.equal(cibleDeMatiere('Éducation physique')?.jeu, 'education-physique', 'l’éducation physique ne relève pas des sciences');
+    assert.equal(cibleDeMatiere('EPS')?.jeu, 'education-physique');
+    assert.equal(cibleDeMatiere('FMTTN')?.jeu, 'technique');
+    assert.equal(cibleDeMatiere('Géo')?.jeu, 'histoire-geographie');
+    assert.equal(cibleDeMatiere('TIC')?.jeu, 'technique');
+    assert.equal(cibleDeMatiere('Latin')?.jeu, 'langues-anciennes');
+    assert.equal(cibleDeMatiere('Éducation artistique')?.jeu, 'arts');
+    assert.equal(cibleDeMatiere('Philosophie et citoyenneté')?.jeu, 'philosophie');
   });
   it('reconnaît le niveau et la forme', () => {
     assert.equal(anneeDeNiveau('S2'), 'S2');

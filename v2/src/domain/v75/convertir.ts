@@ -114,7 +114,7 @@ const OBJECTIFS_AUTOMATIQUES_V75 = new Set(
 );
 
 const niveau = (v: unknown): Niveau | null => (v === 0 || v === 1 || v === 2 ? v : typeof v === 'string' && /^[012]$/.test(v) ? (Number(v) as Niveau) : null);
-const effet = (v: unknown): Effet | null => niveau(v);
+const effet = (v: unknown): Effet | null => { const n = niveau(v); return n === null || n < 0 ? null : (n as Effet); };
 const PRESENCES = Object.keys(PRESENCE_LIBELLES) as Presence[];
 const SITUATIONS: readonly SituationAide[] = ['none', 'existing', 'new', 'later'];
 const TRANSFERTS: readonly Transfert[] = ['observed', 'later', 'not_observed'];

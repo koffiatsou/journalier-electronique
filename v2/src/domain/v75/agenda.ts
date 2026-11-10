@@ -208,7 +208,7 @@ export function convertirAgenda(brut: unknown, ctx: ContexteAgenda): AgendaRepri
       sortie.activites.push({ activite: { id: idActiviteV2(idV75), ...commun, date, repetition: 'aucune', ...(etatV75 ? { etats: { [date]: etatV75 } } : {}) }, alertes: avertir });
       continue;
     }
-    if (etatV75 === 'annule') { sortie.ecarts.push({ quoi: decrire(), raison: 'série annulée dans la V75' }); continue; }
+    if (etatV75 === 'annule') { sortie.ecarts.push({ quoi: decrire(), raison: 'série annulée dans l’ancienne version' }); continue; }
 
     const portee = objet(ev.recurrenceRange);
     const depart = iso(portee.startDate) || iso(ev.date) || DEPART_V75;

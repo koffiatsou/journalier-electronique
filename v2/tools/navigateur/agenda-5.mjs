@@ -49,7 +49,7 @@ console.log('✓ données de départ créées');
 /* ───────── Semaine : congé d'automne en cours ───────── */
 await ouvrirAgenda();
 ok((await titre()).includes('26 – 30 octobre 2026'), 'la semaine affichée est celle du 26 octobre 2026');
-const entetes = page.getByRole('columnheader');
+const entetes = page.locator('.grille-entete > div:has(strong)');
 ok(await entetes.filter({ hasText: 'Congé d’automne' }).count() === 5, 'les cinq jours de la semaine sont marqués « Congé d’automne »');
 ok(await page.locator('.colonne.jour-vacances').count() === 5, 'les colonnes de la semaine sont grisées (vacances)');
 ok(await page.locator('.evt').count() >= 3, 'les activités de la semaine sont toujours là');

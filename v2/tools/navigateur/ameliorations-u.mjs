@@ -54,8 +54,8 @@ await page.locator('.apercu-ligne').first().waitFor();
 const lignes = await page.locator('.apercu-ligne').allInnerTexts();
 const evo = lignes.filter((l) => /Progression|À consolider/.test(l));
 ok(evo.length === 2, `évolution : deux lignes regroupées (${evo.length})`);
-ok(/^• Progression, Partiellement → Suffisamment/.test(evo[0]) && /comprend la notion travaillée/.test(evo[0]) && /maintient son attention/.test(evo[0]), 'évolution : progressions groupées sur une ligne');
-ok(/^• À consolider, Totalement → Suffisamment/.test(evo[1]) && /entre dans la tâche/.test(evo[1]), 'évolution : point à consolider à part');
+ok(/^• Progression, Un peu → Assez/.test(evo[0]) && /comprend la notion travaillée/.test(evo[0]) && /maintient son attention/.test(evo[0]), 'évolution : progressions groupées sur une ligne');
+ok(/^• À consolider, Tout à fait → Assez/.test(evo[1]) && /entre dans la tâche/.test(evo[1]), 'évolution : point à consolider à part');
 ok(await page.locator('.evo-progres').count() === 1 && await page.locator('.evo-consolider').count() === 1, 'évolution : deux libellés colorés');
 ok((await page.locator('.journalier-apercu').innerText()).includes('Évolution depuis la séance du 02/10'), 'évolution : la date de la séance comparée est dite une fois');
 
@@ -92,6 +92,7 @@ ok((await page.locator('.feuille').first().innerText()).includes('Mme Français'
 ok((await page.getByLabel('Enseignant du cours').getAttribute('placeholder')) === 'Mme Français', 'séance : le nom du dossier est proposé pour la matière');
 await page.getByLabel('Objectif de la leçon').fill('Le verbe').catch(() => undefined);
 await page.getByRole('button', { name: /Enregistrer la séance/ }).click();
+await page.getByRole('dialog', { name: /Aucun point noté/ }).getByRole('button', { name: 'Enregistrer quand même' }).click({ timeout: 1500 }).catch(() => undefined); // séance volontairement sans point noté
 await page.waitForTimeout(800);
 const seances = await lireBase(page, 'seances');
 const nouvelle = seances.find((s) => s.matiere === 'Français');

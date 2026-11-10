@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { disposer, enMinutes, heuresLibresDe, heuresOccurrence, infosJour, jourMois, libelle, libelleHeures, natureJour, nomJour, teinteDe } from '../../domain/agenda/index.ts';
+import { TYPES_LIBELLES, disposer, enMinutes, heuresLibresDe, heuresOccurrence, infosJour, jourMois, libelle, libelleHeures, natureJour, nomJour, teinteDe } from '../../domain/agenda/index.ts';
 import type { Ecole, Occurrence, Periode } from '../../domain/agenda/index.ts';
 import type { Eleve } from '../../domain/types.ts';
 import { geometrie, PH, yDeMinutes } from './geometrie.ts';
@@ -61,18 +61,25 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
   const suivi = useRef<{ o: Occurrence; mode: ModeGeste; x: number; y: number; actif: boolean; tactile: boolean; minuteur: number | undefined } | null>(null);
   const dernier = useRef<Geste | null>(null);
   const clicIgnore = useRef(false);
+  /** Pose l'écouteur qui empêche la page de défiler pendant un geste au doigt (défini dans l'effet, appelé au début d'un geste tactile). */
+  const armerDefilement = useRef<() => void>(() => undefined);
   const rappel = useRef({ onGeste, onSelection, onCreer });
   rappel.current = { onGeste, onSelection, onCreer };
 
   const nomDe = (o: Occurrence): string => eleves.find((e) => e.id === o.activite.eleveId) ? `${eleves.find((e) => e.id === o.activite.eleveId)!.prenom} ${eleves.find((e) => e.id === o.activite.eleveId)!.nom}` : '';
 
   useEffect(() => {
+    // Un écouteur « touchmove » non passif oblige le navigateur à attendre le script avant chaque défilement : on ne le pose
+    // que pendant un geste au doigt (début : `commencer*`), jamais en permanence sur la page.
+    const bloquerDefilement = (e: TouchEvent) => { if (suivi.current?.actif || suiviCreation.current?.actif) e.preventDefault(); };
+    const desarmer = () => window.removeEventListener('touchmove', bloquerDefilement);
+    armerDefilement.current = () => window.addEventListener('touchmove', bloquerDefilement, { passive: false });
     const bouger = (e: PointerEvent) => {
       const n = suiviCreation.current;
       if (n) {
         if (!n.actif) {
           const d = Math.hypot(e.clientX - n.x, e.clientY - n.y);
-          if (n.tactile) { if (d > 10) { window.clearTimeout(n.minuteur); suiviCreation.current = null; } return; }
+          if (n.tactile) { if (d > 10) { window.clearTimeout(n.minuteur); suiviCreation.current = null; desarmer(); } return; }
           if (d < SEUIL) return;
           n.actif = true;
         }
@@ -86,7 +93,7 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
       if (!s) return;
       if (!s.actif) {
         const d = Math.hypot(e.clientX - s.x, e.clientY - s.y);
-        if (s.tactile) { if (d > 10) { window.clearTimeout(s.minuteur); suivi.current = null; } return; }
+        if (s.tactile) { if (d > 10) { window.clearTimeout(s.minuteur); suivi.current = null; desarmer(); } return; }
         if (d < SEUIL) return;
         s.actif = true;
       }
@@ -99,6 +106,7 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
       setGeste(g);
     };
     const finir = () => {
+      desarmer();
       const n = suiviCreation.current;
       if (n) {
         window.clearTimeout(n.minuteur);
@@ -124,22 +132,21 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
       }
       setGeste(null);
     };
-    const bloquerDefilement = (e: TouchEvent) => { if (suivi.current?.actif || suiviCreation.current?.actif) e.preventDefault(); };
     window.addEventListener('pointermove', bouger, { passive: false });
     window.addEventListener('pointerup', finir);
     window.addEventListener('pointercancel', finir);
-    window.addEventListener('touchmove', bloquerDefilement, { passive: false });
     return () => {
+      desarmer();
       window.removeEventListener('pointermove', bouger);
       window.removeEventListener('pointerup', finir);
       window.removeEventListener('pointercancel', finir);
-      window.removeEventListener('touchmove', bloquerDefilement);
     };
   }, []);
 
   const commencer = (e: { button: number; pointerType: string; clientX: number; clientY: number; stopPropagation(): void }, o: Occurrence, mode: ModeGeste) => {
     if (e.button !== 0 || o.seanceId || heuresLibresDe(o.activite)) return; // une séance sans planification suit la séance ; des heures libres se changent dans le panneau
     const tactile = e.pointerType === 'touch';
+    if (tactile) armerDefilement.current();
     const s = { o, mode, x: e.clientX, y: e.clientY, actif: false, tactile, minuteur: undefined as number | undefined };
     if (tactile) s.minuteur = window.setTimeout(() => { if (suivi.current === s) { s.actif = true; navigator.vibrate?.(15); } }, APPUI_LONG);
     suivi.current = s;
@@ -149,6 +156,7 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
   const commencerCreation = (e: React.PointerEvent, date: string, periode: number) => {
     if (e.button !== 0) return;
     const tactile = e.pointerType === 'touch';
+    if (tactile) armerDefilement.current();
     const s = { date, depart: periode, courant: periode, x: e.clientX, y: e.clientY, actif: false, tactile, minuteur: undefined as number | undefined };
     if (tactile) s.minuteur = window.setTimeout(() => { if (suiviCreation.current === s) { s.actif = true; navigator.vibrate?.(15); setCreation({ date, depart: periode, courant: periode }); } }, APPUI_LONG);
     suiviCreation.current = s;
@@ -162,13 +170,13 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
 
   return (
     <div className="grille" style={{ '--nb-jours': jours.length } as Record<string, number>}>
-      <div className="grille-entete" role="row">
+      <div className="grille-entete">
         <div />
         {jours.map((j) => {
           const infos = infosJour(j);
           const nature = natureJour(infos);
           return (
-            <div key={j} className={`${j === aujourdhui ? 'aujourdhui' : ''} ${nature ? `jour-${nature}` : ''}`.trim()} role="columnheader">
+            <div key={j} className={`${j === aujourdhui ? 'aujourdhui' : ''} ${nature ? `jour-${nature}` : ''}`.trim()}>
               {nomJour(j).slice(0, 3)}.<strong>{Number(j.slice(8))}</strong>
               <span className="sr-only"> {jourMois(j)}</span>
               {infos.libelle ? <small className="marque-jour">{infos.libelle}</small> : null}
@@ -187,12 +195,13 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
           {geo.pauses.map((p) => <div key={p.y} className="pause-axe" style={{ top: p.y, height: p.h }}>{p.libelle}</div>)}
         </div>
         {jours.map((j) => (
-          <div key={j} className={`colonne ${natureJour(infosJour(j)) ? `jour-${natureJour(infosJour(j))}` : ''}`.trim()} style={{ height: total }} role="gridcell">
+          <div key={j} className={`colonne ${natureJour(infosJour(j)) ? `jour-${natureJour(infosJour(j))}` : ''}`.trim()} style={{ height: total }} role="group" aria-label={`${nomJour(j)} ${jourMois(j)}`}>
             {geo.pauses.map((p) => <div key={p.y} className="pause" style={{ top: p.y, height: p.h }} />)}
+            {/* Cases de création : geste à la souris et au doigt (glisser pour créer), hors de l'ordre de Tab et cachées aux lecteurs d'écran (40 arrêts n'apportaient rien).
+                Au clavier et au lecteur d'écran, « Nouvelle activité » (barre d'outils) crée une activité à la date voulue. */}
             {periodes.map((p, i) => (
-              <button key={p.label} type="button" className="cellule" data-date={j} data-periode={i}
+              <button key={p.label} type="button" className="cellule" data-date={j} data-periode={i} tabIndex={-1} aria-hidden="true"
                 style={{ top: geo.y[i]!, height: finY(i) - geo.y[i]! }}
-                aria-label={`Nouvelle activité, ${nomJour(j)} ${jourMois(j)}, ${p.label}${p.debut ? `, ${p.debut}` : ''}`}
                 onPointerDown={(e) => commencerCreation(e, j, i)}
                 onClick={() => { if (!clicIgnore.current) onCreer(j, i, i); }} />
             ))}
@@ -210,13 +219,13 @@ export function Grille({ jours, periodes, occurrences, eleves, couleurs, aujourd
               const alerte = alertes.has(o.cle);
               return (
                 <button key={o.cle} type="button" aria-pressed={selection === o.cle}
-                  className={`evt ${cls} ${alerte ? 'alerte' : ''} ${o.statut === 'annule' ? 'annule' : ''} ${o.statut === 'realise' ? 'realise' : ''} ${enCours && geste?.mode !== 'etirer' ? 'glisse' : ''}`}
+                  className={`evt ${cls} ${alerte ? 'alerte' : ''} ${o.statut === 'annule' ? 'annule' : ''} ${o.statut === 'realise' ? 'realise' : ''} ${o.absence ? 'absence' : ''} ${enCours && geste?.mode !== 'etirer' ? 'glisse' : ''}`}
                   style={style(o, yDeb, yFin)}
-                  aria-label={`${libelle(o.activite, nom || undefined)}, ${nomJour(o.date)} ${jourMois(o.date)}, ${libres ? '' : `${periodes[o.debut]!.label}${o.fin > o.debut ? ` à ${periodes[o.fin]!.label}` : ''}`}${heures ? `${libres ? '' : ', '}${heures}` : ''}${ecole ? `, ${ecole.nom}` : ''}${o.statut === 'annule' ? ', annulé' : o.statut === 'realise' ? ', réalisé' : ''}${alerte ? ', attention : chevauchement ou trajet trop court' : ''}`}
+                  aria-label={`${libelle(o.activite, nom || undefined)}, ${nomJour(o.date)} ${jourMois(o.date)}, ${libres ? '' : `${periodes[o.debut]!.label}${o.fin > o.debut ? ` à ${periodes[o.fin]!.label}` : ''}`}${heures ? `${libres ? '' : ', '}${heures}` : ''}${ecole ? `, ${ecole.nom}` : ''}${o.statut === 'annule' ? ', annulé' : o.absence ? ', absence : séance non tenue' : o.statut === 'realise' ? ', réalisé' : ''}${alerte ? ', attention : chevauchement ou trajet trop court' : ''}`}
                   onPointerDown={(e) => commencer(e, o, 'deplacer')}
                   onClick={() => { if (!clicIgnore.current) rappel.current!.onSelection(o); }}>
                   <strong>{libelle(o.activite, nom || undefined)}</strong>
-                  <small>{libres ? heures : `${periodes[o.debut]!.label}${o.fin > o.debut ? `–${periodes[o.fin]!.label}` : ''}`}{o.activite.matiere ? ` · ${o.activite.matiere}` : ''}{o.activite.lieu ? ` · ${o.activite.lieu}` : ''}</small>
+                  <small>{libres ? heures : `${periodes[o.debut]!.label}${o.fin > o.debut ? `–${periodes[o.fin]!.label}` : ''}`}{o.activite.matiere ? ` · ${o.activite.matiere}` : ''}{o.activite.lieu ? ` · ${o.activite.lieu}` : ''}{o.activite.type !== 'eleve' ? ` · ${TYPES_LIBELLES[o.activite.type]}` : ''}{o.absence ? ' · absence' : ''}</small>
                   {ecole ? <small className="evt-ecole">{heures && !libres ? `${heures} · ` : ''}{ecole.nom}</small> : null}
                   {o.seanceId || libres ? null : <span className="evt-poignee" onPointerDown={(e) => commencer(e, o, 'etirer')} aria-hidden="true" />}
                 </button>

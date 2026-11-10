@@ -3,7 +3,7 @@ import { ANNEES } from './types.ts';
 import type { Annee, FormeEnseignement } from './types.ts';
 import type { Filiere } from '../types.ts';
 
-export type Jeu = 'mathematiques' | 'francais' | 'langues' | 'sciences' | 'economie';
+export type Jeu = 'mathematiques' | 'francais' | 'langues' | 'sciences' | 'economie' | 'histoire-geographie' | 'technique' | 'education-physique' | 'arts' | 'philosophie' | 'langues-anciennes';
 
 export interface Cible {
   jeu: Jeu;
@@ -14,10 +14,16 @@ export interface Cible {
 /** Retrouve le jeu de données à partir de la matière saisie librement (« Maths », « Néerlandais »…). null = pas de référentiel disponible. */
 export function cibleDeMatiere(matiere: string): Cible | null {
   const m = sansAccents(matiere);
+  if (/education physique|\beps\b|\bep&s\b|gymnastique|natation|\bsport/.test(m)) return { jeu: 'education-physique' };
+  if (/latin|\bgrec|langues? anciennes?/.test(m)) return { jeu: 'langues-anciennes' };
   if (/\bmath/.test(m)) return { jeu: 'mathematiques' };
   if (/\bfran[cç]/.test(m)) return { jeu: 'francais' };
   if (/\b(sciences?|biolog|chimie|physique)/.test(m) && !/econom|sociales/.test(m)) return { jeu: 'sciences' };
   if (/econom|droit|gestion/.test(m)) return { jeu: 'economie' };
+  if (/philosoph|citoyennet|\bepc\b/.test(m)) return { jeu: 'philosophie' };
+  if (/\barts?\b|artistique|dessin|musique|plastique|\beca\b|cirque|theatre|danse/.test(m)) return { jeu: 'arts' };
+  if (/technique|technologi|numerique|informatique|\bfmttn\b|\btic\b|manuel/.test(m)) return { jeu: 'technique' };
+  if (/histoire|geograph|\bgeo\b|fhges|sciences humaines/.test(m)) return { jeu: 'histoire-geographie' };
   if (/neerland|\bnl\b/.test(m)) return { jeu: 'langues', langue: 'Néerlandais' };
   if (/anglais/.test(m)) return { jeu: 'langues', langue: 'Anglais' };
   if (/allemand/.test(m)) return { jeu: 'langues', langue: 'Allemand' };

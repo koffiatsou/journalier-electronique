@@ -95,3 +95,6 @@
 @media (hover: hover) and (pointer: fine) { .choix-bouton:hover, .choix-pastille:hover { border-color: var(--ink-3); } }
 .choix-bouton[aria-checked='true'], .choix-pastille[aria-checked='true'] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--surface) inset; }
 .choix-bouton:focus-visible, .choix-pastille:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Gérer le dossier (lot 6.6) : séparé des actions de tous les jours ; « Supprimer… » est poussé à l'autre bout de la ligne. */
+.dossier-gestion { margin-top: var(--sp-5); padding-top: var(--sp-4); border-top: 1px solid var(--line); justify-content: space-between; }

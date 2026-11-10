@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NB_COULEURS, NOMS_COULEURS, ecoleParDefaut, rattachement } from '../../domain/agenda/index.ts';
 import type { Ecole } from '../../domain/agenda/index.ts';
+import { eleveSaisi } from '../../domain/brouillons/index.ts';
+import type { BrouillonFormulaire } from '../../domain/brouillons/index.ts';
 import { LANGUES_MODERNES, languesDe } from '../../domain/eleves/index.ts';
 import { analyserClasse } from '../../domain/referentiel/index.ts';
 import { sansAccents } from '../../domain/referentiel/texte.ts';
 import { FILIERES_LIBELLES } from '../../domain/types.ts';
 import type { EnseignantCours, Eleve, Filiere } from '../../domain/types.ts';
 import { Button } from '../../ui/Button.tsx';
+import { BrouillonRetrouve } from '../../ui/BrouillonRetrouve.tsx';
 import { Chips } from '../../ui/Chip.tsx';
 import { Field, Input, Select } from '../../ui/Field.tsx';
 import { ChoixAvatar } from './ChoixAvatar.tsx';
@@ -31,14 +34,26 @@ interface Props {
   ecoles: readonly Ecole[];
   onEnregistrer: (e: Eleve) => void;
   onAnnuler: () => void;
+  /** Nouvel élève seulement : brouillon retrouvé (proposé, jamais appliqué sans accord), garde de la saisie, effacement. */
+  brouillon?: BrouillonFormulaire<Eleve> | null;
+  onSaisie?: (e: Eleve) => void;
+  onEffacerBrouillon?: () => void;
 }
 
-export function FicheEleve({ eleve, couleurParDefaut, ecoles, onEnregistrer, onAnnuler }: Props) {
+export function FicheEleve({ eleve, couleurParDefaut, ecoles, onEnregistrer, onAnnuler, brouillon = null, onSaisie, onEffacerBrouillon }: Props) {
   const [e, setE] = useState(eleve);
+  const [proposition, setProposition] = useState(brouillon);
+  const ouverture = useRef(true);
+  // On ne garde rien tant que la fiche est vierge ni tant que la proposition de reprise n'a pas reçu de réponse.
+  useEffect(() => {
+    if (ouverture.current) { ouverture.current = false; return; }
+    if (proposition || !onSaisie || !eleveSaisi(e)) return;
+    onSaisie(e);
+  }, [e]); // eslint-disable-line react-hooks/exhaustive-deps
   const [autre, setAutre] = useState('');
   const maj = (p: Partial<Eleve>) => setE((x) => ({ ...x, ...p }));
   const valide = e.nom.trim() !== '' && e.prenom.trim() !== '';
-  const soumettre = (ev: { preventDefault(): void }) => { ev.preventDefault(); if (valide) onEnregistrer({ ...e, nom: e.nom.trim(), prenom: e.prenom.trim() }); };
+  const soumettre = (ev: { preventDefault(): void }) => { ev.preventDefault(); if (valide) { onEnregistrer({ ...e, nom: e.nom.trim(), prenom: e.prenom.trim() }); onEffacerBrouillon?.(); } };
   const filiereDeduite = analyserClasse(e.classe)?.filiere;
   const ecoleAttachee = rattachement(e, ecoles);
 
@@ -62,12 +77,22 @@ export function FicheEleve({ eleve, couleurParDefaut, ecoles, onEnregistrer, onA
 
   return (
     <form className="fiche-eleve" onSubmit={soumettre}>
+      {proposition ? (
+        <BrouillonRetrouve quoi="Une fiche d’élève" enregistreLe={proposition.enregistreLe}
+          onReprendre={() => { setE(proposition.donnees); setProposition(null); }}
+          onRepartir={() => { onEffacerBrouillon?.(); setProposition(null); }} />
+      ) : null}
       <div className="champs champs-2">
-        <Field label="Nom">{(id) => <Input id={id} value={e.nom} onChange={(ev) => maj({ nom: ev.target.value })} autoFocus />}</Field>
-        <Field label="Prénom">{(id) => <Input id={id} value={e.prenom} onChange={(ev) => maj({ prenom: ev.target.value })} />}</Field>
+        <Field label="Nom" obligatoire>{(id, champ) => <Input id={id} {...champ} value={e.nom} onChange={(ev) => maj({ nom: ev.target.value })} autoFocus />}</Field>
+        <Field label="Prénom" obligatoire>{(id, champ) => <Input id={id} {...champ} value={e.prenom} onChange={(ev) => maj({ prenom: ev.target.value })} />}</Field>
       </div>
       <div className="champs champs-2">
-        <Field label="Classe" aide={deduction(e.classe) || 'Ex. : 3CB, 1DB, 4TQ, 5P'}>
+        <Field label="Date de naissance" optionnel aide="Pour l’identité du PIA et les documents Word.">
+          {(id) => <Input id={id} type="date" value={e.dateNaissance} onChange={(ev) => maj({ dateNaissance: ev.target.value })} />}
+        </Field>
+      </div>
+      <div className="champs champs-2">
+        <Field label="Classe"aide={deduction(e.classe) || 'Ex. : 3CB, 1DB, 4TQ, 5P'}>
           {(id) => <Input id={id} value={e.classe} placeholder="3CB" onChange={(ev) => maj({ classe: ev.target.value })} />}
         </Field>
         <Field label="Niveau d’étude" optionnel aide={filiereDeduite && !e.filiere ? 'Déduit de la classe.' : undefined}>
@@ -144,6 +169,7 @@ export function FicheEleve({ eleve, couleurParDefaut, ecoles, onEnregistrer, onA
             <button key={i} type="button" className={`c-${i}`} aria-pressed={e.couleur === i} aria-label={NOMS_COULEURS[i]} onClick={() => maj({ couleur: i })} />
           ))}
         </div>
+        <p className="field-hint">Couleur choisie : {typeof e.couleur === 'number' ? NOMS_COULEURS[e.couleur] : `${NOMS_COULEURS[couleurParDefaut]} (automatique)`}</p>
       </div>
 
       <ChoixAvatar
@@ -154,8 +180,8 @@ export function FicheEleve({ eleve, couleurParDefaut, ecoles, onEnregistrer, onA
       />
 
       <div className="fiche-actions">
-        <Button type="submit" variante="primaire" disabled={!valide}>Enregistrer</Button>
-        <Button type="button" onClick={onAnnuler}>Annuler</Button>
+        <Button type="submit" variante="primaire" raison={valide ? undefined : 'Écrivez d’abord le nom et le prénom.'}>Enregistrer</Button>
+        <Button type="button" onClick={() => { onEffacerBrouillon?.(); onAnnuler(); }}>Annuler</Button>
       </div>
     </form>
   );

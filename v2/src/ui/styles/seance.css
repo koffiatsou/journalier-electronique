@@ -13,8 +13,12 @@
 .barre-etapes, .barre-etapes > * { min-width: 0; max-width: 100%; }
 .barre-etapes-liste { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--sp-2); overflow-x: auto; scrollbar-width: none; }
 .barre-etapes-liste li { flex: none; }
+/* Il reste des rubriques cachées d'un côté : le bord s'estompe (la bande a ses barres de défilement masquées). */
+.barre-etapes-liste[data-debord~='droite'] { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); }
+.barre-etapes-liste[data-debord~='gauche'] { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent); }
+.barre-etapes-liste[data-debord='gauche droite'] { -webkit-mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
 .barre-etape { --zone: var(--peda); --zone-soft: var(--peda-soft); --zone-ink: var(--peda-ink); display: inline-flex; align-items: center; gap: var(--sp-2); min-height: 40px; padding: 0 var(--sp-3) 0 6px;
-  border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); color: var(--ink-2); font-size: 0.88rem; font-weight: 550; white-space: nowrap;
+  border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); color: var(--ink-2); font-size: 0.88rem; font-weight: 600; white-space: nowrap;
   transition: background-color var(--t-ui) ease-out, border-color var(--t-ui) ease-out, transform var(--t-press) var(--ease-out); }
 .barre-etape:active { transform: scale(0.97); }
 .barre-etape[data-zone="ortho"] { --zone: var(--ortho); --zone-soft: var(--ortho-soft); --zone-ink: var(--ortho-ink); }
@@ -29,7 +33,7 @@
 .jauge-texte { font-size: 0.8rem; color: var(--ink-2); white-space: nowrap; }
 
 /* étapes */
-.etape { --zone: var(--peda); --zone-soft: var(--peda-soft); --zone-ink: var(--peda-ink); scroll-margin-top: calc(var(--barre-haut, 0px) + 108px);
+.etape { --zone: var(--peda); --zone-soft: var(--peda-soft); --zone-ink: var(--peda-ink);
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--shadow-1);
   transition: border-color var(--t-ui) ease-out, box-shadow var(--t-ui) ease-out; }
 .etape[data-zone="ortho"] { --zone: var(--ortho); --zone-soft: var(--ortho-soft); --zone-ink: var(--ortho-ink); }
@@ -40,7 +44,7 @@
 .etape-num { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 50%; font-size: 0.85rem; font-weight: 700; background: var(--zone-soft); color: var(--zone-ink); transition: background-color var(--t-ui) ease-out, color var(--t-ui) ease-out; }
 .etape[data-ouvert="true"] .etape-num { background: var(--zone); color: var(--on-accent); }
 .etape-texte { flex: 1; min-width: 0; display: grid; gap: 2px; }
-.etape-nom { font-weight: 650; font-size: 1.02rem; }
+.etape-nom { font-weight: 700; font-size: 1.02rem; }
 .etape-resume { color: var(--ink-2); font-size: 0.86rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .etape-fait { flex: none; color: var(--ok); }
 .etape-chevron { flex: none; color: var(--ink-3); transition: transform var(--t-panel) var(--ease-out); }
@@ -66,7 +70,7 @@
 /* statut de présence */
 .presence { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-2); }
 .presence-aide { flex-basis: 100%; }
-.presence-choix { position: relative; display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 999px; font-size: 0.88rem; font-weight: 550; color: var(--ink-2); background: var(--surface); transition: transform var(--t-press) var(--ease-out), background-color var(--t-ui) ease-out, border-color var(--t-ui) ease-out; }
+.presence-choix { position: relative; display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 999px; font-size: 0.88rem; font-weight: 600; color: var(--ink-2); background: var(--surface); transition: transform var(--t-press) var(--ease-out), background-color var(--t-ui) ease-out, border-color var(--t-ui) ease-out; }
 .presence-choix input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
 .presence-choix:active { transform: scale(0.97); }
 .presence-choix:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
@@ -75,6 +79,12 @@
 
 /* observations */
 .rubrique { display: grid; gap: var(--sp-2); }
+.rubrique-entete { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+.lexique { display: grid; gap: var(--sp-3); margin: 0; }
+.lexique-entree { display: grid; gap: 2px; padding-left: var(--sp-3); border-left: 3px solid var(--ortho); }
+.lexique dt { font-weight: 600; }
+.lexique dd { margin: 0; color: var(--ink-2); }
+.lexique-exemple { color: var(--ink-3); }
 .rubrique h3 { font-size: 0.92rem; color: var(--zone-ink); }
 .ajout { display: flex; gap: var(--sp-2); align-items: end; }
 .ajout > :first-child { flex: 1; }
@@ -100,7 +110,7 @@
 .feuille-zone h3 { font-size: 0.78rem; letter-spacing: 0.02em; color: var(--zone-ink, var(--ink-2)); }
 .feuille-zone[data-zone="peda"] h3 { color: var(--peda-ink); }
 .feuille-zone[data-zone="ortho"] h3 { color: var(--ortho-ink); }
-.feuille .etiquette { font-weight: 650; }
+.feuille .etiquette { font-weight: 700; }
 .feuille ul { margin: 2px 0 0; padding-left: 18px; }
 .feuille-bloc { display: grid; gap: 2px; }
 
@@ -118,13 +128,13 @@
 .rappel { margin-top: var(--sp-3); padding: var(--sp-3); border-top: 1px solid var(--line); display: grid; gap: 4px; font-size: 0.9rem; }
 .rappel h3 { font-size: 0.85rem; color: var(--ink-2); }
 .rappel ul { margin: 0; padding-left: 18px; }
-.rappel .etiquette { font-weight: 650; }
+.rappel .etiquette { font-weight: 700; }
 
 /* feuille : colonne à droite sur grand écran, tiroir sur petit écran */
 .apercu-fermer { margin-left: auto; min-height: 36px; padding: 0 var(--sp-3); border: 0; background: none; color: var(--ink-2); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 @media (max-width: 1099px) {
   .apercu {
-    position: fixed; z-index: 45; left: 12px; right: 12px; bottom: calc(var(--tabbar) + 12px + 72px + env(safe-area-inset-bottom)); max-height: 58dvh; overflow: auto;
+    position: fixed; z-index: 45; left: 12px; right: 12px; bottom: calc(var(--tabbar) + 12px + 72px + env(safe-area-inset-bottom)); max-height: 58dvh; overflow: auto; overscroll-behavior: contain;
     box-shadow: var(--shadow-2); visibility: hidden; opacity: 0; transform: translateY(12px);
     transition: opacity var(--t-ui) ease-out, transform var(--t-panel) var(--ease-out), visibility 0s linear var(--t-panel);
   }
@@ -144,6 +154,10 @@
 .journalier-filtres { display: grid; gap: var(--sp-4); padding: var(--sp-4) var(--sp-5); overflow: visible; }
 .journalier-grille { display: grid; gap: var(--sp-4); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); align-items: start; }
 .journalier-recherche { display: grid; gap: var(--sp-1); padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--line); }
+.couleurs-matieres { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-2); }
+.couleurs-matieres li { display: grid; grid-template-columns: 22px minmax(0, 1fr) minmax(0, 12rem); align-items: center; gap: var(--sp-3); }
+.couleurs-nom { overflow-wrap: anywhere; }
+.echantillon { border: 1px solid var(--line-strong); border-radius: 4px; }
 .journalier-export { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3) var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--line); }
 .journalier-resume { flex: 1 1 100%; color: var(--ink-2); }
 .journalier-export .field-hint { flex-basis: 100%; }
@@ -162,9 +176,9 @@
 .journalier-apercu > div { padding: var(--sp-3) var(--sp-4); border-radius: var(--r-m); border-left: 3px solid; display: grid; gap: 4px; }
 .journalier-apercu .zone-peda { border-color: var(--peda); background: var(--peda-soft); }
 .journalier-apercu .zone-ortho { border-color: var(--ortho); background: var(--ortho-soft); }
-.journalier-apercu h4 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-2); margin: 0; }
+.journalier-apercu h4 { font-size: 0.78rem; color: var(--ink-2); margin: 0; }
 .journalier-apercu .apercu-ligne { padding-left: 1.2em; text-indent: -0.9em; }
-.evo-titre { font-weight: 650; }
+.evo-titre { font-weight: 700; }
 .evo-progres { color: var(--ok); }
 .evo-consolider { color: var(--attention); }
 .journalier-vide { padding: var(--sp-4) var(--sp-5); }
@@ -174,3 +188,19 @@
   .journalier-liste li { grid-template-columns: 1fr; }
   .journalier-actions { justify-content: flex-start; margin-left: calc(-1 * var(--sp-3)); }
 }
+
+/* Brouillon retrouvé : proposé en haut de l'écran Séance, cadre complet (jamais de filet d'un seul côté). */
+.brouillon-retrouve {
+  display: grid; gap: var(--sp-3); margin-bottom: var(--sp-4); padding: var(--sp-4);
+  border: 1px solid var(--attention); border-radius: var(--r-m); background: var(--attention-soft);
+}
+.brouillon-retrouve p { margin: 0; }
+
+/* Écran Séance : la barre d'étapes (collée en haut) et la barre « Enregistrer » (fixée en bas) cachent la page ; on réserve leur place.
+   108 px = barre d'étapes (85) + air ; 112 px = barre « Enregistrer » (83) + espace sous elle (12) + air. */
+:root:has(.page.seance) {
+  scroll-padding-top: calc(var(--barre-haut, 0px) + 108px);
+  scroll-padding-bottom: calc(var(--tabbar, 0px) + 112px);
+}
+
+.apercu-outils { display: flex; justify-content: flex-end; }

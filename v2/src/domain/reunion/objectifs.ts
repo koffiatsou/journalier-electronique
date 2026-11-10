@@ -3,7 +3,7 @@
  * Rien n'est décidé ici : on propose, l'agent retient, reformule ou ajoute les siens.
  * Les propositions ne reposent que sur ce qui a été noté dans les séances (aucune invention).
  */
-import { NIVEAUX_VIGILANCE } from '../types.ts';
+import { NIVEAUX_LIBELLES, NIVEAUX_VIGILANCE, NIVEAU_MIN } from '../types.ts';
 import type { SuiviAide, SuiviCompetence, SuiviObservation, Synthese, SyntheseMatiere } from '../redaction/index.ts';
 import { NBSP, dateCourte, majusculePremiere as Maj, minusculePremiere as min } from '../redaction/langue.ts';
 
@@ -35,8 +35,8 @@ export const MAX_AIDES_A_GARDER = 2;
 export const MAX_AIDES_A_REVOIR = 1;
 export const MAX_VIGILANCES = 2;
 
-const MOTS = ['partiellement', 'suffisamment', 'totalement'] as const;
-const mot = (n: number): string => MOTS[n] ?? '';
+const MOTS = NIVEAUX_LIBELLES.map((m) => m.toLowerCase());
+const mot = (n: number): string => MOTS[n - NIVEAU_MIN] ?? '';
 const sansPoint = (t: string): string => t.replace(/[.\s]+$/, '');
 const derniere = <T,>(liste: readonly T[]): T | undefined => liste[liste.length - 1];
 const idDe = (matiere: string, genre: GenreObjectif, source: string): string => `${matiere}|${genre}|${source}`;
@@ -74,10 +74,10 @@ function depuisObservations(matiere: string, suivis: readonly SuiviObservation[]
   candidates.sort((a, b) =>
     a.niveau - b.niveau || Number(b.recul) - Number(a.recul) || b.serie - a.serie || b.date.localeCompare(a.date));
   return candidates.slice(0, MAX_OBSERVATIONS).map(({ o, niveau }) => ({
-    id: idDe(matiere, niveau === 0 ? 'progresser' : 'consolider', o.texte),
+    id: idDe(matiere, niveau <= 0 ? 'progresser' : 'consolider', o.texte),
     matiere,
-    genre: niveau === 0 ? 'progresser' : 'consolider',
-    texte: `${niveau === 0 ? 'Faire progresser' : 'Consolider'}${NBSP}: ${min(sansPoint(o.texte))}.`,
+    genre: niveau <= 0 ? 'progresser' : 'consolider',
+    texte: `${niveau <= 0 ? 'Faire progresser' : 'Consolider'}${NBSP}: ${min(sansPoint(o.texte))}.`,
     raison: raisonObservation(o.suite)
   }));
 }
@@ -112,7 +112,7 @@ function depuisCompetences(matiere: string, suivis: readonly SuiviCompetence[]):
       matiere,
       genre: 'competence' as const,
       texte: `Continuer à travailler la compétence${NBSP}: ${min(sansPoint(c.texte))}.`,
-      raison: c.niveau === null ? 'Compétence notée sans niveau.' : `Niveau noté : ${mot(c.niveau)}.`
+      raison: c.libre ? 'Précision libre notée dans la séance : à relire avant de la retenir.' : c.niveau === null ? 'Compétence notée sans niveau.' : `Niveau noté : ${mot(c.niveau)}.`
     }));
 }
 

@@ -1,5 +1,6 @@
 import { developper } from './alias.ts';
 import { racines, racinesAdministratives } from './texte.ts';
+import { enVigueur } from './vigueur.ts';
 import { ANNEES } from './types.ts';
 import type { Annee, Contexte, EntreeReferentiel, Piste } from './types.ts';
 
@@ -16,9 +17,12 @@ const DEJA_COUVERT = /\bconsignes?\b|ce qui est demand/i;
 export class IndexReferentiel {
   private readonly lignes: Ligne[];
   private readonly poids = new Map<string, number>();
+  /** Matière du jeu (champ `m` des lignes) : choisit la table d'alias de terrain. */
+  private readonly matiere: string | undefined;
 
   constructor(toutes: readonly EntreeReferentiel[]) {
     const entrees = toutes.filter((x) => typeof x.a === 'string' && x.a.length > 0);
+    this.matiere = entrees[0]?.m;
     const df = new Map<string, number>();
     this.lignes = entrees.map((entree) => {
       const attendu = new Set(racines(entree.a));
@@ -37,12 +41,13 @@ export class IndexReferentiel {
    * Aucune piste quand l'objectif est vague (« révisions », « interro »…).
    */
   suggerer(ctx: Contexte, k = 4): Piste[] {
-    const mots = [...new Set(racines(developper(ctx.objectif)))].filter((t) => !racinesAdministratives.has(t));
+    const mots = [...new Set(racines(developper(ctx.objectif, this.matiere)))].filter((t) => !racinesAdministratives.has(t));
     if (!mots.length) return [];
     const meilleures = new Map<string, Piste>();
     for (const { entree, attendu, theme } of this.lignes) {
       if (entree.l && ctx.langue && entree.l !== ctx.langue) continue;
       if (!formeCompatible(entree, ctx) || DEJA_COUVERT.test(entree.a)) continue;
+      if (!enVigueur(entree, ctx.rentree)) continue;
       let score = 0;
       let touche = false;
       for (const t of mots) {
@@ -67,7 +72,7 @@ export class IndexReferentiel {
 }
 
 function formeCompatible(e: EntreeReferentiel, ctx: Contexte): boolean {
-  if (e.f === 'TC' || !ctx.forme) return true;
+  if (e.f === 'TC' || e.f === 'SOC' || !ctx.forme) return true;
   return e.f === 'HGT' ? ctx.forme === 'G' || ctx.forme === 'TTR' : ctx.forme === 'TQ' || ctx.forme === 'P';
 }
 

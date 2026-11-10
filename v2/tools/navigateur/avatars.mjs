@@ -106,7 +106,7 @@ ok(fondAvant !== fondApres, `changer la couleur de l’agenda recolore l’avata
 
 /* ───────── Enregistrement : vérifié dans la base ───────── */
 await page.getByRole('button', { name: 'Enregistrer' }).click();
-await page.getByText('Alpha Élève enregistré').first().waitFor();
+await page.getByText('Élève Alpha enregistré').first().waitFor();
 const attendu = { style: 'manga', teint: 2, cheveux: 4, coiffure: 5, visage: 4, accessoire: 1 };
 let alpha = (await lireBase('eleves')).find((e) => e.id === 'demo-alpha');
 ok(JSON.stringify(alpha.avatar) === JSON.stringify(attendu), `base : avatar enregistré ${JSON.stringify(alpha.avatar)}`);
@@ -121,6 +121,7 @@ ok(await carte('Alpha').locator('.avatar').getAttribute('aria-hidden') === 'true
 await page.screenshot({ path: `${SORTIE}/avatar-cartes-bureau.png`, fullPage: true });
 ok(await carte('Alpha').locator('.avatar').evaluate((e) => getComputedStyle(e).overflow) === 'hidden', 'le dessin est découpé dans le rond (pas de coins carrés)');
 await carte('Alpha').click();
+await page.locator('.dossier-identite').waitFor(); // le dossier s'ouvre par l'adresse (hashchange), plus au clic même
 ok(await page.locator('.dossier-identite .avatar-l svg').count() === 1, 'dossier : grand avatar dessiné');
 await page.screenshot({ path: `${SORTIE}/avatar-dossier-bureau.png`, fullPage: true });
 await versEleves();
@@ -131,7 +132,7 @@ await page.getByRole('button', { name: 'Annuler' }).click();
 // Archiver ne perd pas l'avatar
 await carte('Alpha').click();
 await page.getByRole('button', { name: 'Archiver', exact: true }).click();
-await page.getByText('Alpha Élève archivé').first().waitFor();
+await page.getByText('Élève Alpha archivé').first().waitFor();
 alpha = (await lireBase('eleves')).find((e) => e.id === 'demo-alpha');
 ok(JSON.stringify(alpha.avatar) === JSON.stringify(attendu), 'archiver conserve l’avatar');
 await page.getByRole('button', { name: 'Suivre à nouveau' }).click();
@@ -142,13 +143,13 @@ await ouvrirFiche('Alpha');
 ok(await coche('Style', 'Manga') && await coche('Accessoire', 'Lunettes rondes'), 'rouvrir la fiche : le choix enregistré est affiché');
 await choisir('Style', 'Minimaliste');
 await page.getByRole('button', { name: 'Enregistrer' }).click();
-await page.getByText('Alpha Élève enregistré').first().waitFor();
+await page.getByText('Élève Alpha enregistré').first().waitFor();
 alpha = (await lireBase('eleves')).find((e) => e.id === 'demo-alpha');
 ok(alpha.avatar.style === 'minimal' && alpha.avatar.coiffure === 5, 'changer le style garde les autres réglages');
 await ouvrirFiche('Alpha');
 await page.getByRole('radio', { name: 'Initiales', exact: true }).click();
 await page.getByRole('button', { name: 'Enregistrer' }).click();
-await page.getByText('Alpha Élève enregistré').first().waitFor();
+await page.getByText('Élève Alpha enregistré').first().waitFor();
 alpha = (await lireBase('eleves')).find((e) => e.id === 'demo-alpha');
 ok(!('avatar' in alpha), 'base : « Initiales » retire complètement l’avatar');
 await versEleves();

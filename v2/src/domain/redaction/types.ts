@@ -8,6 +8,7 @@ export interface Faits {
   matiere: string;
   titulaire: string;
   presence: Presence;
+  profAbsent: boolean;
   interventions: string[];
   objectifLecon: string;
   contenuClasse: string;
@@ -49,6 +50,8 @@ export type TonLigne = 'progres' | 'consolider';
 export interface Bloc {
   type: 'seance' | 'absence';
   presence: Presence;
+  /** Matière de la séance, seule (l'en-tête « Cours » peut y ajouter « professeur absent ») : sert à colorer l'export Word. */
+  matiere: string;
   entete: { date: string; cours: string; titulaire: string };
   peda: Peda | null;
   ortho: LigneOrtho[];

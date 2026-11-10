@@ -34,6 +34,13 @@ LANG=C.UTF-8 node tools/navigateur/accueil-suite.mjs # de bout en bout : objecti
 LANG=C.UTF-8 node tools/navigateur/captures.mjs    # captures de tous les écrans (4 tailles × clair/sombre) pour relire l'habillage (lot F)
 LANG=C.UTF-8 node tools/navigateur/ameliorations-u.mjs # lot U : panneau de l'agenda, horaire libre, enseignants, évolution
 LANG=C.UTF-8 node tools/navigateur/lot-v.mjs # lot V : matière en pastilles, points de vigilance, menu réductible
+LANG=C.UTF-8 node tools/navigateur/lot1-donnees.mjs # audit lot 1 : brouillon de séance, suppressions confirmées, « Annuler »
+LANG=C.UTF-8 node tools/navigateur/lot2-defilement.mjs # audit lot 2 : défilement natif (rubriques, focus, bande, dialogues)
+LANG=C.UTF-8 node tools/navigateur/lot4-clavier.mjs # audit lot 4 : vraies touches (Tab, Échap), tiroirs, grille, noms, erreurs, mouvement réduit
+LANG=C.UTF-8 node tools/navigateur/lot5-coherence.mjs # audit lot 5 : capitales, graisses, jetons, vocabulaire, ordre des noms
+LANG=C.UTF-8 node tools/navigateur/lot6-naissance.mjs # audit lot 6 : date de naissance (aussi lot6-annee, lot6-apres-seance, lot6-premier-eleve, lot6-sorties, lot6-doublon, lot6-agenda, lot6-pia, lot6-brouillons, lot6-fiche, lot6-vide, lot6-adresse-fiche, lot6-couleurs, lot6-pia-entete, lot6-seance-colonnes, lot6-agenda-protege, retours-agents)
+LANG=C.UTF-8 node tools/navigateur/lot3-tactile.mjs # audit lot 3 : zones de 44 px, textes de 12 px, survols, contrastes (contexte tactile à 390 et 768 px)
+LANG=C.UTF-8 node tools/navigateur/lot2b-tactile.mjs # audit lot 2b : gestes tactiles (profil iPad), position au retour, WebKit si installé
 LANG=C.UTF-8 node tools/navigateur/seance-sp.mjs     # lot SP : barre d'étapes, jauge, résumés, « Étape suivante », zones de texte
 LANG=C.UTF-8 node tools/navigateur/site.mjs      # la V2 servie sous /journalier-electronique/ comme sur GitHub Pages : connexion, adresse de retour Microsoft, modèles Word (lot S)
 LANG=C.UTF-8 node tools/navigateur/coffre.mjs    # coffre chiffré : verrou, mode essai, rien en clair, clé perdue, migration, copie avec mot de passe
@@ -41,7 +48,7 @@ LANG=C.UTF-8 node tools/navigateur/coffre.mjs    # coffre chiffré : verrou, mod
 LANG=C.UTF-8 node --import tsx tools/navigateur/synchro.mjs   # synchronisation : démonstration, conflits, Outlook, copie de secours, connexion Microsoft (faux Microsoft)
 ```
 
-**Playwright** (outil de vérification, jamais une dépendance de l'application) : en local, `npm install --no-save playwright@1.63.0` puis `npx playwright install chromium` dans `v2/` (ou la variable `PLAYWRIGHT=<chemin>/playwright/index.mjs`). La CI le fait toute seule (`.github/workflows/ci.yml`, version épinglée). Les parcours d'un autre nom que `_…` sont tous repris par `npm run navigateur`.
+**Playwright** (outil de vérification, jamais une dépendance de l'application) : en local, `npm install --no-save playwright@1.63.0` puis `npx playwright install chromium webkit` (WebKit : moteur de Safari, utilisé par le parcours `lot2b-tactile`, ignoré avec un avertissement s'il manque) dans `v2/` (ou la variable `PLAYWRIGHT=<chemin>/playwright/index.mjs`). La CI le fait toute seule (`.github/workflows/ci.yml`, version épinglée). Les parcours d'un autre nom que `_…` sont tous repris par `npm run navigateur`.
 
 **Sans accès au registre npm** (environnement de travail de Claude) : les paquets aux bonnes versions (esbuild, zod, React, TypeScript, tsx) sont souvent déjà installés sur la machine ; on les relie dans `v2/node_modules` (liens symboliques, dossier ignoré par Git) et on ajoute `@types/react`, `@types/react-dom` (DefinitelyTyped) et `csstype` récupérés depuis GitHub.
 
@@ -53,7 +60,7 @@ Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des l
 | --- | --- |
 | Moteur de rédaction (blocs, synthèse, absences, dé-identification) | porté et testé |
 | Écran Séance (5 étapes, feuille vivante) | disponible |
-| Référentiel de compétences (pistes) | partiel (lots R1–R3) |
+| Référentiel de compétences (pistes) | onze matières, tronc commun et S3–S6 (lots R1–R3 en partie : voir `docs/etat-des-lieux.md`) ; fait en local sur la branche `v2/lot-r-referentiel`, pas encore fusionné |
 | Élèves (cartes, recherche, fiche, archivage, suppression, passage d'année, plusieurs langues) | disponible (lots 2 et 2b, avatars dessinés compris) |
 | Écran Journalier (période, modifier/supprimer, export Word élève ou tous) | disponible (lot 1) |
 | Agenda (semaine / jour / mois, couleurs, glisser‑déplacer, jours fériés et vacances scolaires FWB, horaires des périodes réglables) | disponible (lots 5 et 6 : + semaine type, création en glissant sur plusieurs périodes, impression) |
@@ -69,6 +76,13 @@ Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des l
 | Finition visuelle (palette « Encre et papier », menu adapté à la tablette en portrait, logo, icônes) | **lot F terminé** (palette, cadre, logo, icônes ; tous les écrans relus) ; reste le retour de l'utilisateur sur sa tablette |
 | Finitions techniques : accessibilité (lien « Aller au contenu », titre et focus à chaque écran, cibles, mouvement réduit), vérification des données par schémas (zod), parcours navigateur dans la CI | **lot Q terminé** ; reste : première exécution du contrôle GitHub, essai au lecteur d'écran |
 | Séance : barre d'étapes, jauge, résumés par rubrique, couleur par zone, « Étape suivante » | **lot SP terminé** et validé |
+| Audit du 6-7 novembre, lot 1 (protéger les données) : brouillon de séance, confirmations, « Annuler » | **fait en local, en attente de validation** |
+| Audit du 6-7 novembre, lot 2 (défilement natif) : atterrissage des rubriques, focus, bande, dialogues | **fait en local, en attente de validation** |
+| Audit du 6-7 novembre, lot 2b (gestes tactiles de l'agenda, position au retour) | **fait en local, en attente de validation** |
+| Audit du 6-7 novembre, lot 3 (tactile et lisibilité : 44 px, 12 px, contrastes) | **fait en local, en attente de validation** |
+| Audit du 6-7 novembre, lot 4 (clavier, lecteur d'écran, mouvement réduit) | **fait en local, en attente de validation** |
+| Audit du 6-7 novembre, lot 5 (cohérence : jetons, vocabulaire, ordre des noms) | **fait en local, en attente de validation** |
+| Audit du 6-7 novembre, lot 6 (fonctionnel : date de naissance, nouvelle année PIA, premier élève…) | **fait en local, en attente de validation** |
 | Retouches du 4 novembre (tablette) : matière en pastilles, points de vigilance, menu réductible, fiche élève | **lot V terminé** |
 | Retouches du 3 novembre : encodage depuis l'agenda, horaire libre, enseignants par cours, évolution lisible | **lot U terminé** ; reste : référentiel (lots R) |
 | Mise en service : la V2 à l'adresse principale, la V75 en secours dans `/v75/`, assemblage du site vérifié (chaque page appelle des fichiers existants de sa propre version), adresse de retour Microsoft de la V2 = celle de la V75 | **lot S terminé** ; reste : déclarer l'adresse `/v75/` chez Entra, regarder le contrôle GitHub, essais réels, puis fusionner la demande #37 (= la bascule) |

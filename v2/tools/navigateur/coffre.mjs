@@ -25,7 +25,7 @@ const suivre = (p) => {
   p.on('pageerror', (e) => erreurs.push(String(e)));
 };
 const bouton = (page, nom) => page.getByRole('button', { name: nom });
-const essayer = (page) => bouton(page, 'Essayer avec des données fictives');
+const essayer = (page) => bouton(page, 'Essayer avec des données d’essai');
 const verrouille = (page) => page.getByRole('heading', { name: 'Journalier verrouillé', level: 1 });
 const attendreVerrou = async (page) => { await verrouille(page).waitFor({ timeout: 15_000 }); };
 
@@ -69,7 +69,7 @@ await essayer(page).click();
 await page.getByRole('link', { name: 'Accueil' }).waitFor();
 await page.locator('.bandeau-essai').waitFor();
 ok(true, 'le mode essai ouvre le Journalier avec un bandeau « Mode essai »');
-await bouton(page, 'Charger les données de démonstration').click();
+await bouton(page, 'Charger les données d’essai').click();
 await page.locator('.bandeau-demo').waitFor();
 await attendreDemo(page);
 const bases = await basesPresentes(page);
@@ -78,7 +78,7 @@ ok(bases.length === 1 && bases[0] === BASE_ESSAI, `une seule base, à part : ${b
 const brut = await contenuBrut(page, BASE_ESSAI);
 const texteBrut = JSON.stringify(brut);
 ok(Object.keys(brut).includes('eleves') && brut.eleves.length === 2, 'la base contient bien les deux élèves fictifs…');
-for (const mot of ['Alpha', 'Bêta', 'Remédiation', 'Mathématiques', 'École fictive', 'Reformulation', 'Maintient son attention']) ok(!texteBrut.includes(mot), `…mais « ${mot} » n’apparaît nulle part en clair`);
+for (const mot of ['Alpha', 'Bêta', 'Remédiation', 'Mathématiques', 'École d’essai', 'Reformulation', 'Maintient son attention']) ok(!texteBrut.includes(mot), `…mais « ${mot} » n’apparaît nulle part en clair`);
 ok(['eleves', 'seances', 'activites', 'pia', 'reglages', 'meta'].every((t) => !brut[t] || brut[t].every((r) => typeof r.c === 'string' && r.c.startsWith('j2c1.'))), 'toutes les rangées sont des textes chiffrés « j2c1.… »');
 ok(brut.seances.every((r) => r.lien && !r.c.includes(r.lien)), 'chaque séance garde seulement le lien technique vers l’élève (pour tout supprimer d’un coup)');
 ok(new Set(brut.eleves.map((r) => r.c)).size === brut.eleves.length && new Set(brut.seances.map((r) => r.c.split('.')[1])).size === brut.seances.length, 'chaque rangée a son propre vecteur aléatoire');

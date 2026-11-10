@@ -7,14 +7,14 @@
 export const BASE_ESSAI = 'journalier-v2-essai';
 const LIEN = new Set(['seances', 'activites', 'pia']);
 
-/** Ouvre l'adresse ; si l'écran verrouillé s'affiche, passe par « Essayer avec des données fictives ». */
+/** Ouvre l'adresse ; si l'écran verrouillé s'affiche, passe par « Essayer avec des données d’essai ». */
 export async function aller(page, adresse) {
   await page.goto(adresse);
   await entrer(page);
 }
 
 export async function entrer(page) {
-  const essai = page.getByRole('button', { name: 'Essayer avec des données fictives' });
+  const essai = page.getByRole('button', { name: 'Essayer avec des données d’essai' });
   const menu = page.getByRole('link', { name: 'Accueil' }).first();
   await Promise.race([
     essai.waitFor({ timeout: 15_000 }).catch(() => undefined),
@@ -91,12 +91,12 @@ export const viderTable = (page, table) => page.evaluate(async ([nomBase, nomTab
 }, [BASE_ESSAI, table]);
 
 /**
- * Charge les deux élèves fictifs (Alpha et Bêta) SEULS : la démonstration du lot 8 ajoute aussi des séances, un agenda
+ * Charge les deux élèves d’essai (Alpha et Bêta) SEULS : la démonstration du lot 8 ajoute aussi des séances, un agenda
  * et un PIA, qu'on retire ici pour retrouver le point de départ attendu par ces parcours. Revient à l'accueil.
  */
 export async function ajouterElevesFictifs(page) {
   await page.evaluate(() => { location.hash = '#/accueil'; });
-  await page.getByRole('button', { name: 'Charger les données de démonstration' }).click();
+  await page.getByRole('button', { name: 'Charger les données d’essai' }).click();
   await page.locator('.bandeau-demo').waitFor();
   // L'écriture chiffrée se fait en arrière-plan : on attend qu'elle soit complète avant de retirer quoi que ce soit.
   for (let i = 0; i < 100; i += 1) {

@@ -1,0 +1,32 @@
+/* ---------- au doigt : zones à toucher de 44 px au moins (audit lot 3) ----------
+   Chargé en dernier. Sur ordinateur le pointeur reste fin et rien ne change.
+   `screen` : sur une tablette l'impression peut aussi voir un pointeur « grossier » ; la mise en page papier ne bouge pas.
+   Les sélecteurs sont aussi précis que ceux qu'ils relèvent (`.journalier-actions .btn`…) : ce fichier gagne par son rang, pas par `!important`. */
+@media screen and (pointer: coarse) {
+  :root { --cible-tactile: 44px; }
+  :is(.btn, .chip, .pastille, .input, .select, .barre-etape, .point-retirer, .apercu-fermer, .presence-choix, .case-anonyme,
+    .legende button, .reunion-apercu summary, .jours-onglets button, .bascule button, .journalier-actions .btn,
+    .btn-feuille, .memo-liste label, .mois-jour, .mois-evt) {
+    min-height: var(--cible-tactile);
+  }
+  :is(.btn, .chip, .bascule button, .mois-jour, .mois-ajout) { min-width: var(--cible-tactile); }
+  /* Pastilles de couleur : le dessin garde ses 28 px, seule la zone à toucher passe à 44 px. */
+  .pastilles-couleur button:not(.auto), .pastilles-couleur button:not(.auto)[aria-pressed='true'] {
+    position: relative; width: var(--cible-tactile); height: var(--cible-tactile); border: 0; background: none; box-shadow: none;
+  }
+  .pastilles-couleur button:not(.auto)::before {
+    content: ''; position: absolute; left: 50%; top: 50%; width: 28px; height: 28px; margin: -14px 0 0 -14px;
+    border: 2px solid transparent; border-radius: 50%; background: var(--c-bord);
+  }
+  .pastilles-couleur button:not(.auto)[aria-pressed='true']::before { border-color: var(--ink); box-shadow: 0 0 0 2px var(--surface) inset; }
+
+  /* Mois : le « + » est toujours visible (il n'y a pas de survol au doigt) et assez grand ; sa bordure se voit. */
+  .mois-ajout { width: var(--cible-tactile); height: var(--cible-tactile); opacity: 1; border-color: var(--ink-3); }
+
+  /* Poignée d'étirement d'une activité : le dessin ne change pas, seule la zone sensible grandit vers le haut, sans dépasser 24 px : une activité d une période (56 px) garde son centre libre pour le déplacer. */
+  .evt-poignee { height: 12px; }
+  .evt-poignee::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 24px; }
+
+  /* Lien de reprise des données : une vraie ligne à toucher. */
+  .synchro a { display: inline-flex; align-items: center; min-height: var(--cible-tactile); }
+}

@@ -39,7 +39,10 @@ export function occurrences(activites: readonly Activite[], du: string, au: stri
   const out: Occurrence[] = [];
   for (const a of activites) {
     for (const date of datesDansIntervalle(a, du, au)) {
-      out.push({ cle: `${a.id}@${date}`, activite: a, date, debut: a.debut, fin: a.fin, statut: statutDe(a, date, seances) });
+      const statut = statutDe(a, date, seances);
+      const encodee = seanceDuCreneau(a, date, a.debut, a.fin, seances);
+      const absence = statut === 'realise' && encodee !== undefined && encodee.presence !== 'present';
+      out.push({ cle: `${a.id}@${date}`, activite: a, date, debut: a.debut, fin: a.fin, statut, ...(absence ? { absence } : {}) });
     }
   }
   return out.sort((x, y) => x.date.localeCompare(y.date) || x.debut - y.debut || x.cle.localeCompare(y.cle));
@@ -68,7 +71,7 @@ export function occurrencesAgenda(activites: readonly Activite[], du: string, au
     const d = Math.min(debut, fin);
     const f = Math.max(debut, fin);
     if (prevues.some((o) => seanceDuCreneau(o.activite, o.date, o.debut, o.fin, [s]))) continue;
-    out.push({ cle: `seance:${s.id}@${s.date}`, activite: activiteDeSeance(s, d, f), date: s.date, debut: d, fin: f, statut: 'realise', seanceId: s.id });
+    out.push({ cle: `seance:${s.id}@${s.date}`, activite: activiteDeSeance(s, d, f), date: s.date, debut: d, fin: f, statut: 'realise', seanceId: s.id, ...(s.presence !== 'present' ? { absence: true } : {}) });
   }
   return out.sort((x, y) => x.date.localeCompare(y.date) || x.debut - y.debut || x.cle.localeCompare(y.cle));
 }

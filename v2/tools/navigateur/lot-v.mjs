@@ -77,13 +77,16 @@ await libre.waitFor();
 await libre.getByRole('button', { name: /choisir un niveau/i }).click();
 await libre.getByRole('radio', { name: 'Souvent' }).click();
 const feuille = await page.locator('.feuille').first().innerText();
-ok(/Point de vigilance, tout au long/i.test(feuille) && /se désengage/i.test(feuille), 'vigilance : la feuille écrit la fréquence, pas « Totalement »');
-ok(!/Totalement\s*:\s*se désengage/i.test(feuille), 'vigilance : jamais classé parmi les acquis');
+ok(/Point de vigilance, tout au long/i.test(feuille) && /se désengage/i.test(feuille), 'vigilance : la feuille écrit la fréquence, pas « Tout à fait »');
+ok(!/Tout à fait\s*:\s*se désengage/i.test(feuille), 'vigilance : jamais classé parmi les acquis');
 await page.screenshot({ path: `${SORTIE}/v-vigilance.png`, fullPage: true });
 ok(await page.getByText('Utilisé ailleurs que pendant la séance').count() === 0, 'séance : la question « Utilisé ailleurs » n’existe plus');
 
 /* ───────── V3 : menu réductible ───────── */
 const largeur = async () => (await page.locator('.nav').boundingBox()).width;
+// Sur l'écran Séance le menu se replie tout seul (lot 6, voir lot6-seance-colonnes) : la largeur « par défaut » se mesure ailleurs.
+await page.evaluate(() => { location.hash = '#/accueil'; });
+await page.waitForTimeout(400);
 ok(await largeur() > 200, `menu : large par défaut en paysage (${Math.round(await largeur())} px)`);
 await page.getByRole('button', { name: 'Réduire le menu' }).click();
 ok(await largeur() < 90, `menu : réduit (${Math.round(await largeur())} px)`);

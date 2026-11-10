@@ -19,10 +19,10 @@ page.on('console', (m) => { if (m.type() === 'error') erreurs.push(m.text()); })
 page.on('pageerror', (e) => erreurs.push(String(e)));
 const photo = (nom) => page.screenshot({ path: `${SORTIE}/${prefixe}-${nom}.png`, fullPage: true });
 await page.goto(URL_APP);
-await page.getByRole('button', { name: 'Essayer avec des données fictives' }).click();
+await page.getByRole('button', { name: 'Essayer avec des données d’essai' }).click();
 await page.getByRole('link', { name: 'Accueil' }).first().waitFor({ timeout: 15_000 });
 await page.locator('.chargement').waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => undefined);
-await page.getByRole('button', { name: 'Charger les données de démonstration' }).click();
+await page.getByRole('button', { name: 'Charger les données d’essai' }).click();
 await page.locator('.bandeau-demo').waitFor({ state: 'detached', timeout: 15_000 }).catch(() => undefined);
 await page.waitForTimeout(3800);
 
@@ -53,7 +53,7 @@ if (await modifier.count()) { await modifier.click(); await page.waitForTimeout(
 // PIA : exemple fictif puis chaque onglet
 await page.evaluate(() => { location.hash = '#/pia'; });
 await page.waitForTimeout(600);
-await page.getByRole('button', { name: 'Charger un exemple fictif' }).click().catch(() => undefined);
+await page.getByRole('button', { name: 'Charger un exemple d’essai' }).click().catch(() => undefined);
 await page.waitForTimeout(1500);
 await photo('pia-0');
 const onglets = page.getByRole('tab');

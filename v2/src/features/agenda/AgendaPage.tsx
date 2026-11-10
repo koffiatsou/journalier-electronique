@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  PERIODES_AGENDA, ajouterJours, ajouterMois, annuler, avertissementsEcoles, calendrierConnu, couleursEleves, deplacer, dupliquer, ecoleDeOccurrence,
-  ecoleParDefaut, heuresDe, horairesReference, indexJour, jourMois, libelleHeures, lundiDe, marquerRealisee, nomJour,
+  PERIODES_AGENDA, ajouterJours, ajouterMois, annuler, avertissementsEcoles, avertissementsVacances, calendrierConnu, couleursEleves, deplacer, dupliquer, ecoleDeOccurrence,
+  ecoleParDefaut, heuresDe, horairesReference, indexJour, jourComplet, jourMois, libelle, libelleHeures, lundiDe, marquerRealisee, nomJour,
   occurrencesAgenda as calculer, redimensionner, seanceDuCreneau, semaine, semainesDuMois, supprimer, titreMois, titreSemaine, versISO
 } from '../../domain/agenda/index.ts';
 import type { Changement, Occurrence, Portee } from '../../domain/agenda/index.ts';
+import { nomAffiche } from '../../domain/eleves/index.ts';
 import { defautsSeance } from '../../domain/referentiel/index.ts';
 import type { Magasin } from '../../state/store.ts';
 import { useMagasin } from '../../state/store.ts';
 import { Button } from '../../ui/Button.tsx';
+import { Dialog } from '../../ui/Dialog.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Grille } from './Grille.tsx';
 import { HorairesDialog } from './HorairesDialog.tsx';
@@ -48,6 +50,7 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
   const trajet = useMagasin(magasin, (e) => e.trajet);
   const semaineType = useMagasin(magasin, (e) => e.semaineType);
   const { annoncer } = useToast();
+  const brouillonActivite = useMagasin(magasin, (s) => s.brouillonActivite);
   const etroit = useMedia(ETROIT);
   const large = useMedia(LARGE);
   const [focus, setFocus] = useState(jourDeDepart);
@@ -58,6 +61,7 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
   const [brouillon, setBrouillon] = useState<Brouillon | null>(null);
   const [filtre, setFiltre] = useState<string | null>(null);
   const [filtreEcole, setFiltreEcole] = useState('');
+  const [aSupprimer, setASupprimer] = useState<{ occ: Occurrence; portee: Portee } | null>(null);
 
   // Sur téléphone, la semaine est trop large : on affiche le jour.
   const vueEffective = etroit && vue === 'semaine' ? 'jour' : vue;
@@ -76,7 +80,10 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
   // Les lignes de la grille : les périodes de l'école choisie, sinon celles de toutes les écoles (heures de l'école par défaut d'abord).
   const jusqua = Math.max(0, ...visibles.map((o) => o.fin));
   const horaires = useMemo(() => horairesReference(ecoleFiltree ? [ecoleFiltree] : ecoles, jusqua), [ecoleFiltree, ecoles, jusqua]);
-  const avertissements = useMemo(() => avertissementsEcoles(toutes, eleves, ecoles, trajet), [toutes, eleves, ecoles, trajet]);
+  const avertissements = useMemo(() => [
+    ...avertissementsEcoles(toutes, eleves, ecoles, trajet),
+    ...avertissementsVacances(toutes, (o) => { const e = eleves.find((x) => x.id === o.activite.eleveId); return e ? nomAffiche(e) : undefined; })
+  ], [toutes, eleves, ecoles, trajet]);
   const alertes = useMemo(() => new Set(avertissements.flatMap((a) => a.cles)), [avertissements]);
   const occSelection = selection ? toutes.find((o) => o.cle === selection) ?? null : null;
   const panneauOuvert = Boolean(occSelection || brouillon);
@@ -122,7 +129,15 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
     globalThis.location.hash = '/seance';
   };
 
-  const supprimerOcc = (o: Occurrence, portee: Portee) => { appliquer(supprimer(o, portee), 'Activité supprimée'); fermer(); };
+  /** Suppression en deux temps : le bouton ouvre une confirmation (même geste que dans le Journalier), jamais de suppression d'un seul toucher. */
+  const demanderSuppression = (o: Occurrence, portee: Portee) => setASupprimer({ occ: o, portee });
+  const confirmerSuppression = () => {
+    if (!aSupprimer) return;
+    appliquer(supprimer(aSupprimer.occ, aSupprimer.portee), 'Activité supprimée');
+    setASupprimer(null);
+    fermer();
+  };
+  const eleveSupprime = aSupprimer ? eleves.find((e) => e.id === aSupprimer.occ.activite.eleveId) : undefined;
 
   return (
     <div className="page agenda">
@@ -175,7 +190,7 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
         <div className="agenda-alertes" role="status">
           <strong>{avertissements.length === 1 ? 'Un point à vérifier' : `${avertissements.length} points à vérifier`}</strong>
           <ul>
-            {avertissements.slice(0, 4).map((a) => <li key={`${a.cles[0]}|${a.cles[1]}`}>{a.texte}</li>)}
+            {avertissements.slice(0, 4).map((a) => <li key={a.cles.join('|')}>{a.texte}</li>)}
           </ul>
           {avertissements.length > 4 ? <small>et {avertissements.length - 4} autre{avertissements.length - 4 > 1 ? 's' : ''} dans les semaines affichées.</small> : null}
         </div>
@@ -201,6 +216,8 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
         </div>
       ) : null}
 
+
+
       <div className={`agenda-corps ${panneauOuvert && large ? 'avec-panneau' : ''}`}>
         {mois ? (
           <Mois jour={focus} periodes={horaires} alertes={alertes} occurrences={visibles} eleves={eleves} couleurs={couleurs} aujourdhui={aujourdhui}
@@ -223,21 +240,46 @@ export function AgendaPage({ magasin }: { magasin: Magasin }) {
         ) : occSelection ? (
           <Panneau key={occSelection.cle} occurrence={occSelection} ecoles={ecoles} nouveau={null} eleves={eleves}
             onChanger={(c) => appliquer(c, 'Activité enregistrée')} onFermer={fermer} onEncoder={encoder}
-            onDupliquer={(o) => { appliquer(dupliquer(o, ajouterJours(o.date, 7), o.debut), 'Dupliquée à la semaine suivante'); fermer(); }}
+            onDupliquer={(o) => {
+              // Une série existe déjà la semaine suivante : dupliquer y poserait un doublon exact.
+              if (o.activite.repetition === 'hebdomadaire') { annoncer('Cette activité se répète déjà chaque semaine : rien à dupliquer.'); return; }
+              appliquer(dupliquer(o, ajouterJours(o.date, 7), o.debut), 'Dupliquée à la semaine suivante'); fermer();
+            }}
             onAnnuler={(o) => { appliquer(annuler(o, o.statut !== 'annule'), o.statut === 'annule' ? 'Activité rétablie' : 'Activité annulée'); fermer(); }}
             onRealiser={(o) => { appliquer(marquerRealisee(o, o.statut !== 'realise')); fermer(); }}
-            onSupprimer={supprimerOcc} />
+            onSupprimer={demanderSuppression} />
         ) : brouillon ? (
           <Panneau key={`n-${brouillon.date}-${brouillon.debut}`} occurrence={null} ecoles={ecoles} nouveau={brouillon} eleves={eleves}
             onChanger={(c) => appliquer(c, 'Activité ajoutée')} onFermer={fermer} onEncoder={encoder}
-            onDupliquer={() => undefined} onAnnuler={() => undefined} onRealiser={() => undefined} onSupprimer={() => undefined} />
+            onDupliquer={() => undefined} onAnnuler={() => undefined} onRealiser={() => undefined} onSupprimer={() => undefined}
+            brouillon={brouillonActivite} onSaisie={(c) => magasin.enregistrerBrouillonActivite(c)} onEffacerBrouillon={() => { void magasin.effacerBrouillonActivite(); }} />
         ) : null}
       </div>
+
+      <p className="legende-signes" aria-label="Légende des signes">
+        <span>✓ séance réalisée</span> · <span>✕ absence (séance non tenue)</span> · <span>barré et hachuré : annulé</span> · <span>fond uni : jour férié</span> · <span>fond hachuré : vacances</span>
+      </p>
 
       <SemaineTypeDialog ouvert={semaineTypeOuverte} jour={jourCourant} aujourdhui={aujourdhui} modele={semaineType} periodes={horaires}
         eleves={eleves} activites={activites} seances={seances} onFermer={() => setSemaineTypeOuverte(false)}
         onEnregistrer={(m) => { void magasin.enregistrerSemaineType(m).then(() => annoncer(m ? 'Semaine type enregistrée' : 'Semaine type supprimée')); }}
         onAppliquer={(c, n) => appliquer(c, `${n} activité${n > 1 ? 's' : ''} ajoutée${n > 1 ? 's' : ''}`)} />
+
+      <Dialog ouvert={aSupprimer !== null} titre="Supprimer cette activité ?" onFermer={() => setASupprimer(null)}>
+        {aSupprimer ? (
+          <>
+            <p>
+              <strong>{libelle(aSupprimer.occ.activite, eleveSupprime ? `${eleveSupprime.prenom} ${eleveSupprime.nom}` : undefined)}</strong>, {jourComplet(aSupprimer.occ.date)}.
+              {' '}{aSupprimer.occ.activite.repetition === 'hebdomadaire' && aSupprimer.portee === 'serie' ? 'Toute la série disparaîtra de l’agenda. ' : 'Cette date disparaîtra de l’agenda. '}
+              Cette action est définitive.
+            </p>
+            <div className="fiche-actions">
+              <Button variante="primaire" className="btn-danger-plein" onClick={confirmerSuppression}>Supprimer</Button>
+              <Button data-focus-initial onClick={() => setASupprimer(null)}>Annuler</Button>
+            </div>
+          </>
+        ) : null}
+      </Dialog>
 
       <HorairesDialog ouvert={horairesOuverts} ecoles={ecoles} trajet={trajet} eleves={eleves} onFermer={() => setHorairesOuverts(false)}
         onEnregistrer={async (liste, minutes) => {

@@ -3,7 +3,7 @@
  * à cliquer pour s'inspirer, jamais imposées ; et des rapprochements tirés des séances.
  * Rien n'est jamais écrit dans le PIA sans que l'agent le choisisse. Textes à relire par l'utilisateur.
  */
-import { NIVEAUX_VIGILANCE, OBSERVATIONS_SUGGEREES, estVigilance } from '../types.ts';
+import { NIVEAUX_LIBELLES, NIVEAUX_VIGILANCE, NIVEAU_MIN, OBSERVATIONS_SUGGEREES, estVigilance } from '../types.ts';
 import type { Seance } from '../types.ts';
 import { minusculePremiere as min } from '../redaction/langue.ts';
 import type { Aspect, CleRetour, Colonne } from './types.ts';
@@ -200,7 +200,7 @@ export const MAX_RAPPROCHEMENTS = 3;
 export const MIN_SEANCES = 2;
 
 const norme = (t: string): string => t.replace(/[.\s]+$/, '').replace(/\s+/g, ' ').trim().toLowerCase();
-const MOTS = ['partiellement', 'suffisamment', 'totalement'] as const;
+const MOTS = NIVEAUX_LIBELLES.map((m) => m.toLowerCase());
 const sansPoint = (t: string): string => t.replace(/[.\s]+$/, '');
 
 const ASPECT_DE_TEXTE: ReadonlyMap<string, Aspect> = new Map(
@@ -214,8 +214,8 @@ interface Entree { seanceId: string; date: string; matiere: string; niveau: numb
 
 /**
  * Observations qui reviennent sur plusieurs séances (de n'importe quelle matière), rangées par aspect.
- * Le DERNIER niveau noté décide : « Totalement » = ressource ; « Partiellement » = difficulté et objectif
- * (« Faire progresser ») ; « Suffisamment » = objectif (« Consolider »). Les absences ne comptent pas.
+ * Le DERNIER niveau noté décide : « Tout à fait » = ressource ; « Un peu » ou « Pas du tout » = difficulté et objectif
+ * (« Faire progresser ») ; « Assez » = objectif (« Consolider »). Les absences ne comptent pas.
  */
 export function rapprocher(seances: readonly Seance[]): Rapprochement[] {
   const parTexte = new Map<string, { texte: string; entrees: Entree[] }>();
@@ -240,7 +240,7 @@ export function rapprocher(seances: readonly Seance[]): Rapprochement[] {
     const nbSeances = new Set(entrees.map((e) => e.seanceId)).size;
     if (nbSeances < MIN_SEANCES) continue;
     const matieres = [...new Set(entrees.map((e) => e.matiere))];
-    const dernier = fin.vigilance ? `dernière fréquence : ${(NIVEAUX_VIGILANCE[fin.niveau] ?? '').toLowerCase()}` : `dernier niveau : ${MOTS[fin.niveau] ?? ''}`;
+    const dernier = fin.vigilance ? `dernière fréquence : ${(NIVEAUX_VIGILANCE[fin.niveau] ?? '').toLowerCase()}` : `dernier niveau : ${MOTS[fin.niveau - NIVEAU_MIN] ?? ''}`;
     const raison = `Noté lors de ${nbSeances} séances${matieres.length > 1 ? ` (${matieres.join(', ')})` : ` en ${matieres[0] ?? ''}`} ; ${dernier}.`;
     const ajouter = (colonne: Colonne, phrase: string) =>
       candidats.push({ id: `${aspect}|${colonne}|${cle}`, aspect, colonne, texte: phrase, raison, poids: nbSeances, recent: fin.date });
@@ -251,7 +251,7 @@ export function rapprocher(seances: readonly Seance[]): Rapprochement[] {
       continue;
     }
     if (fin.niveau === 2) ajouter('ressources', `Acquis : ${t}`);
-    if (fin.niveau === 0) {
+    if (fin.niveau <= 0) {
       ajouter('difficultes', `Pas encore acquis : ${t}`);
       ajouter('objectifs', `Faire progresser : ${t}`);
     }

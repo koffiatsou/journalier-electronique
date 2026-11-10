@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react';
 import type { Aller } from '../../app/useRoute.ts';
 import { couleursEleves } from '../../domain/agenda/index.ts';
 import { telechargerJournalier, telechargerJournaliers } from '../../domain/export/telecharger.ts';
-import { enseignantDeSeance } from '../../domain/eleves/index.ts';
+import { cleDeTri, enseignantDeSeance, nomAffiche } from '../../domain/eleves/index.ts';
 import { anneesDisponibles, bornes, construirePeriode, libellePeriode, rechercherSeances, seancesDuJournalier } from '../../domain/journalier/index.ts';
 import type { Periode } from '../../domain/journalier/index.ts';
-import { construireBloc } from '../../domain/redaction/index.ts';
+import { blocEnTexte, construireBloc } from '../../domain/redaction/index.ts';
 import { dateFR } from '../../domain/redaction/langue.ts';
 import { PRESENCE_LIBELLES } from '../../domain/types.ts';
 import type { Eleve, Seance } from '../../domain/types.ts';
@@ -16,6 +16,9 @@ import { Badge } from '../../ui/Badge.tsx';
 import { texteLigne } from '../../ui/LigneEvolution.tsx';
 import { Button } from '../../ui/Button.tsx';
 import { Dialog } from '../../ui/Dialog.tsx';
+import { couleursEnregistrees, retenirCouleurs } from '../../ui/couleursExport.ts';
+import type { ReglageCouleurs } from '../../domain/export/couleurs.ts';
+import { CouleursExport } from './CouleursExport.tsx';
 import { Field, Input, Select } from '../../ui/Field.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 
@@ -31,15 +34,30 @@ interface Filtre { eleveId: string; genre: Genre; annee: string; du: string; au:
 /** Le choix est gardé le temps de la visite (retour après une modification de séance). */
 let dernier: Filtre | null = null;
 
-const nomEleve = (e: Eleve | undefined): string => (e ? `${e.nom} ${e.prenom}`.trim() : 'Élève supprimé');
+const nomEleve = (e: Eleve | undefined): string => (e ? nomAffiche(e) : 'Élève supprimé');
+
+/** Nom accessible d'un bouton de ligne : le mot visible d'abord (WCAG 2.5.3), puis de quelle séance il s'agit. */
+const nomBouton = (geste: string, s: Seance, e: Eleve | undefined): string => `${geste} la séance du ${dateFR(s.date)}, ${nomEleve(e)}${s.matiere ? `, ${s.matiere}` : ''}`;
 const pluriel = (n: number, mot: string): string => `${n} ${mot}${n > 1 ? 's' : ''}`;
 const creneau = (s: Seance): string => (s.periodeFin && s.periodeFin !== s.periodeDebut ? `${s.periodeDebut} → ${s.periodeFin}` : s.periodeDebut);
 
 /** Texte de la séance tel qu'il ira dans le Journalier (aperçu repliable). */
 function ApercuSeance({ seance, eleve, precedentes }: { seance: Seance; eleve: Eleve | undefined; precedentes: Seance[] }) {
   const b = construireBloc(seance, { titulaire: enseignantDeSeance(seance, eleve), precedentes });
+  const { annoncer } = useToast();
+  const copier = async () => {
+    try {
+      await globalThis.navigator.clipboard.writeText(blocEnTexte(b));
+      annoncer('Texte de la séance copié');
+    } catch {
+      annoncer('Copie impossible ici : exportez le Journalier en Word');
+    }
+  };
   return (
-    <div className="journalier-apercu">
+    <div className="journalier-apercu" id={`apercu-${seance.id}`}>
+      <div className="apercu-outils">
+        <Button variante="discret" aria-label={nomBouton('Copier le texte de', seance, eleve)} onClick={() => { void copier(); }}>Copier le texte</Button>
+      </div>
       {b.peda ? (
         <div className="zone-peda">
           <h4>Partie pédagogique</h4>
@@ -79,6 +97,8 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
   const [ouverte, setOuverte] = useState<string | null>(null);
   const [aSupprimer, setASupprimer] = useState<Seance | null>(null);
   const [enCours, setEnCours] = useState(false);
+  const [couleursWord, setCouleursWord] = useState(couleursEnregistrees);
+  const changerCouleursWord = (r: ReglageCouleurs) => { setCouleursWord(r); retenirCouleurs(r); };
 
   const periode = construirePeriode(f);
   const resultat = bornes(periode, aujourdhui);
@@ -88,14 +108,15 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
   const recherche = f.requete.trim() !== '';
   const affichees = recherche ? rechercherSeances(liste, f.requete, parEleve) : liste;
   const couleurs = couleursEleves(eleves);
-  const triees = [...eleves].sort((a, b) => nomEleve(a).localeCompare(nomEleve(b), 'fr'));
+  const triees = [...eleves].sort((a, b) => cleDeTri(a).localeCompare(cleDeTri(b), 'fr'));
   const eleve = f.eleveId ? parEleve.get(f.eleveId) : undefined;
   const nbEleves = new Set(liste.map((s) => s.eleveId)).size;
+  const matieresExportees = [...new Set(liste.map((s) => s.matiere.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'));
 
   const exporter = async () => {
     if (!liste.length) return;
     setEnCours(true);
-    const options = { deidentifie: f.anonyme, periode: libellePeriode(periode, aujourdhui, true) };
+    const options = { deidentifie: f.anonyme, periode: libellePeriode(periode, aujourdhui, true), couleurs: couleursWord };
     try {
       if (eleve) {
         annoncer(`${await telechargerJournalier(eleve, liste, options)} téléchargé`);
@@ -175,6 +196,7 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
             )}
           </p>
           <label className="case-anonyme"><input type="checkbox" checked={f.anonyme} onChange={(ev) => maj({ anonyme: ev.target.checked })} /> Sans nom ni titulaire (pour partager)</label>
+          <CouleursExport matieres={matieresExportees} reglage={couleursWord} onChange={changerCouleursWord} />
           <Button variante="primaire" disabled={!liste.length || enCours} onClick={() => { void exporter(); }}>
             {enCours ? 'Préparation…' : 'Exporter le Journalier (Word)'}
           </Button>
@@ -215,9 +237,9 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
                     <span className="liste-detail">{creneau(s)}{s.objectifLecon ? ` · ${s.objectifLecon}` : ''}</span>
                   </div>
                   <div className="journalier-actions">
-                    <Button variante="discret" aria-expanded={ouvert} onClick={() => setOuverte(ouvert ? null : s.id)}>{ouvert ? 'Masquer' : 'Voir'}</Button>
-                    <Button variante="discret" onClick={() => modifier(s)}>Modifier</Button>
-                    <Button variante="discret" className="btn-danger" onClick={() => setASupprimer(s)}>Supprimer</Button>
+                    <Button variante="discret" aria-expanded={ouvert} {...(ouvert ? { 'aria-controls': `apercu-${s.id}` } : {})} aria-label={nomBouton(ouvert ? 'Masquer' : 'Voir', s, e)} onClick={() => setOuverte(ouvert ? null : s.id)}>{ouvert ? 'Masquer' : 'Voir'}</Button>
+                    <Button variante="discret" aria-label={nomBouton('Modifier', s, e)} onClick={() => modifier(s)}>Modifier</Button>
+                    <Button variante="discret" className="btn-danger" aria-label={nomBouton('Supprimer', s, e)} onClick={() => setASupprimer(s)}>Supprimer</Button>
                   </div>
                   {ouvert ? <ApercuSeance seance={s} eleve={e} precedentes={seances.filter((x) => x.eleveId === s.eleveId && x.date < s.date)} /> : null}
                 </li>
@@ -240,7 +262,7 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
             </p>
             <div className="fiche-actions">
               <Button variante="primaire" className="btn-danger-plein" onClick={() => { void supprimer(); }}>Supprimer</Button>
-              <Button onClick={() => setASupprimer(null)}>Annuler</Button>
+              <Button data-focus-initial onClick={() => setASupprimer(null)}>Annuler</Button>
             </div>
           </>
         ) : null}

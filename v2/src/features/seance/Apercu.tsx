@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import type { Eleve, Seance } from '../../domain/types.ts';
 import { enseignantDeSeance } from '../../domain/eleves/index.ts';
 import { construireBloc } from '../../domain/redaction/index.ts';
 import { IconeFeuille } from '../../ui/icons.tsx';
+import { useTiroir } from '../../ui/useTiroir.ts';
 import { texteLigne } from '../../ui/LigneEvolution.tsx';
 
 const dateFr = (iso: string): string => iso.split('-').reverse().join('/');
@@ -49,9 +50,12 @@ export function Apercu({ seance, eleve, precedentes, tiroirOuvert, onFermer }: P
   const dernier = useMemo(() => rappel(seance, precedentes), [seance, precedentes]);
   const souvent = useMemo(() => frequents(seance, precedentes), [seance, precedentes]);
   const vide = (v: string) => v || '—';
+  const ref = useRef<HTMLElement>(null);
+  const recouvre = useTiroir(ref, { actif: tiroirOuvert, onFermer });
 
   return (
-    <aside className="apercu" data-tiroir={tiroirOuvert} id="feuille-apercu" aria-label="Aperçu de la feuille du Journalier">
+    <aside ref={ref} className="apercu" data-tiroir={tiroirOuvert} id="feuille-apercu" aria-label="Aperçu de la feuille du Journalier"
+      {...(recouvre ? { role: 'dialog', 'aria-modal': true } : {})}>
       <header className="apercu-entete">
         <IconeFeuille taille={18} />
         <h2>Feuille du Journalier</h2>

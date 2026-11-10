@@ -8,8 +8,8 @@ import type { Activite } from '../domain/agenda/types.ts';
 
 /** Élèves fictifs, uniquement pour essayer l'application sans données réelles. */
 export const ELEVES_DEMO: Eleve[] = [
-  { id: 'demo-alpha', nom: 'Alpha', prenom: 'Élève', classe: '1CB', ecole: 'École fictive', titulaire: 'M. Test', dateNaissance: '', matieres: ['Mathématiques', 'Français', 'Néerlandais'], langues: ['Néerlandais'] },
-  { id: 'demo-beta', nom: 'Bêta', prenom: 'Élève', classe: '4TQ', ecole: 'École fictive', titulaire: 'Mme Exemple', dateNaissance: '', matieres: ['Français', 'Sciences'] }
+  { id: 'demo-alpha', nom: 'Alpha', prenom: 'Élève', classe: '1CB', ecole: 'École d’essai', titulaire: 'M. Test', dateNaissance: '', matieres: ['Mathématiques', 'Français', 'Néerlandais'], langues: ['Néerlandais'] },
+  { id: 'demo-beta', nom: 'Bêta', prenom: 'Élève', classe: '4TQ', ecole: 'École d’essai', titulaire: 'Mme Exemple', dateNaissance: '', matieres: ['Français', 'Sciences'] }
 ];
 
 /* ───────── Exemple complet pour essayer le PIA ───────── */
@@ -37,7 +37,7 @@ export function exempleDemo(aujourdhui: string): ExempleDemo {
   const maintenant = `${aujourdhui}T10:00:00.000Z`;
   const base = (id: string, date: string, matiere: string, surcharge: Partial<Seance> = {}, eleveId = 'demo-alpha'): Seance => ({
     id, eleveId, date, periodeDebut: '1e H', periodeFin: '1e H', matiere, niveauScolaire: 'S1', forme: 'Général (G)',
-    presence: 'present', interventions: ['Accompagnement individuel'], objectifLecon: 'Objectif fictif', contenuClasse: '', monObjectif: '',
+    presence: 'present', interventions: ['Accompagnement individuel'], objectifLecon: 'Objectif d’essai', contenuClasse: '', monObjectif: '',
     observations: [], remarque: '', competences: [], precisionCompetence: '', situationAide: 'none', aides: [], precisionAide: '',
     transfert: null, suite: { actions: [], modalite: '', objectif: '', collaborations: [], precision: '' },
     creeLe: maintenant, modifieLe: maintenant, ...surcharge
@@ -58,8 +58,8 @@ export function exempleDemo(aujourdhui: string): ExempleDemo {
 
   let p = piaVierge('demo-alpha', annee, maintenant);
   p = modifierIdentite(p, 'option', 'Sciences');
-  p = modifierIdentite(p, 'cpms', 'CPMS fictif — 02 000 00 00');
-  p = modifierIdentite(p, 'responsable', 'Parent fictif — 0470 00 00 00');
+  p = modifierIdentite(p, 'cpms', 'CPMS d’essai — 02 000 00 00');
+  p = modifierIdentite(p, 'responsable', 'Parent d’essai — 0470 00 00 00');
   p = modifierCase(p, 'autonomie', 'ressources', 'Prépare et range son matériel sans rappel.');
   p = modifierCase(p, 'cognitif', 'ressources', 'Bonne mémoire visuelle.');
   p = modifierCase(p, 'cognitif', 'difficultes', 'A du mal à contrôler sa production avant de la rendre.');
@@ -69,7 +69,7 @@ export function exempleDemo(aujourdhui: string): ExempleDemo {
     { id: 'demo-r2', matiere: '', texte: 'Utiliser seul son agenda.', libre: true }
   ]);
   p = modifierPv1(p, 'date', decaler(aujourdhui, -14));
-  p = ajouterPresent(ajouterPresent(p, 'M. Test, titulaire'), 'Parent fictif, parent');
+  p = ajouterPresent(ajouterPresent(p, 'M. Test, titulaire'), 'Parent d’essai, parent');
   p = modifierPv1(p, 'axe', 'Cognitif');
   p = ajouterObjectifPeriode(p, { matiere: 'Mathématiques', texte: 'Contrôler sa production avant de la rendre.', criteres: 'Relit seul 4 productions sur 5 pendant trois semaines.', source: 'demo-r1' });
   p = modifierPv1(p, 'ressources', 'Une séance en plus par semaine en mathématiques.');
@@ -81,14 +81,14 @@ export function exempleDemo(aujourdhui: string): ExempleDemo {
   const lundi = lundiDe(aujourdhui);
   const finAnnee = `${Number(annee.slice(0, 4)) + 1}-06-30`;
   const act = (id: string, surcharge: Partial<Activite>): Activite => ({
-    id, type: 'eleve', titre: '', lieu: 'Local fictif', note: '', date: lundi, debut: 0, fin: 0, repetition: 'aucune', creeLe: maintenant, modifieLe: maintenant, ...surcharge
+    id, type: 'eleve', titre: '', lieu: 'Local d’essai', note: '', date: lundi, debut: 0, fin: 0, repetition: 'aucune', creeLe: maintenant, modifieLe: maintenant, ...surcharge
   });
   const activites: Activite[] = [
     act('demo-a1', { eleveId: 'demo-alpha', titre: 'Remédiation fractions', matiere: 'Mathématiques', date: lundi, debut: 1, fin: 1, repetition: 'hebdomadaire', jusquau: finAnnee }),
     act('demo-a2', { eleveId: 'demo-alpha', titre: 'Aide en français', matiere: 'Français', date: ajouterJours(lundi, 2), debut: 3, fin: 3, repetition: 'hebdomadaire', jusquau: finAnnee }),
     act('demo-a3', { eleveId: 'demo-beta', titre: 'Sciences : le vocabulaire', matiere: 'Sciences', date: ajouterJours(lundi, 1), debut: 2, fin: 3, repetition: 'hebdomadaire', jusquau: finAnnee }),
     act('demo-a4', { type: 'collaboration', titre: 'Concertation avec M. Test', date: ajouterJours(lundi, 3), debut: 5, fin: 5, lieu: 'Salle des professeurs' }),
-    act('demo-a5', { type: 'formation', titre: 'Formation fictive : outils numériques', date: ajouterJours(lundi, 9), debut: 0, fin: 2, lieu: 'En ligne' })
+    act('demo-a5', { type: 'formation', titre: 'Formation d’essai : outils numériques', date: ajouterJours(lundi, 9), debut: 0, fin: 2, lieu: 'En ligne' })
   ];
   return { eleves: ELEVES_DEMO, seances, pias: [p], activites };
 }

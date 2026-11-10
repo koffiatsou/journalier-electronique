@@ -15,19 +15,19 @@ page.on('console', (m) => { if (m.type() === 'error') erreurs.push(m.text()); })
 page.on('pageerror', (e) => erreurs.push(String(e)));
 
 await aller(page, URL_APP);
-await page.getByRole('button', { name: 'Charger les données de démonstration' }).click();
+await page.getByRole('button', { name: 'Charger les données d’essai' }).click();
 await page.locator('.bandeau-demo').waitFor();
 await page.locator('.creneau').first().waitFor();
 
 // 1. séance saisie à la main, hier, pour Élève Bêta, avec l'étape « Suite » remplie
 await page.getByRole('link', { name: 'Séance' }).first().click();
-await page.getByLabel('Élève accompagné').selectOption({ label: 'Bêta Élève' });
+await page.getByLabel('Élève accompagné').selectOption({ label: 'Élève Bêta' });
 await page.getByLabel('Date', { exact: true }).fill('2026-10-26');
 await page.getByLabel('Matière').fill('Sciences');
 await page.getByLabel('Mon objectif').fill('Retenir le vocabulaire du cycle de l’eau');
 await page.locator('#etape-2 .etape-bouton').click();
 await page.locator('#etape-corps-2').getByRole('button', { name: 'Maintient son attention' }).click();
-await page.locator('#etape-corps-2 li', { hasText: 'Maintient son attention' }).getByRole('radio', { name: 'Partiellement' }).click();
+await page.locator('#etape-corps-2 li', { hasText: 'Maintient son attention' }).getByRole('radio', { name: 'Un peu' }).click();
 await page.locator('#etape-4 .etape-bouton').click();
 await page.locator('#etape-corps-4 li', { hasText: 'Support visuel' }).getByRole('button', { name: 'choisir un niveau' }).click();
 await page.locator('#etape-corps-4 li', { hasText: 'Support visuel' }).getByRole('radio', { name: 'Effet positif' }).click();
@@ -35,11 +35,12 @@ await page.locator('#etape-corps-4 li', { hasText: 'Guidage verbal' }).getByRole
 await page.locator('#etape-corps-4 li', { hasText: 'Guidage verbal' }).getByRole('radio', { name: 'Effet partiel' }).click();
 await page.locator('#etape-5 .etape-bouton').click();
 await page.getByRole('button', { name: 'Préparer un support' }).click();
-await page.getByLabel('Format de la prochaine séance').selectOption('Groupe');
+await page.getByLabel('Format de la prochaine séance').selectOption('Atelier groupe classe');
 await page.getByLabel('Objectif pour la prochaine séance').fill('Légender seul le schéma du cycle de l’eau');
 await page.getByRole('button', { name: 'Adaptation à partager avec l’équipe' }).click();
 await page.locator('#etape-corps-5').getByLabel('Précision').fill('Apporter la fiche plastifiée.');
 await page.getByRole('button', { name: 'Enregistrer la séance' }).click();
+await page.getByRole('dialog', { name: /Aucun point noté/ }).getByRole('button', { name: 'Enregistrer quand même' }).click({ timeout: 1500 }).catch(() => undefined); // séance volontairement sans point noté
 await page.getByText('Séance enregistrée').first().waitFor();
 console.log('✓ séance saisie et enregistrée par l’écran Séance');
 
@@ -50,10 +51,10 @@ const bloc = await page.locator('.creneau-suite').innerText();
 ok(bloc.includes('26/10/2026') && bloc.includes('Sciences'), 'la date et la matière de la séance d’origine sont indiquées');
 ok(bloc.includes('Mon objectif') && bloc.includes('Retenir le vocabulaire du cycle de l’eau'), 'mon objectif repris');
 ok(/Ce qui a aidé\s+Support visuel/.test(bloc) && !bloc.includes('Guidage verbal'), 'seule l’aide à effet positif est reprise');
-ok(/À retravailler\s+Maintient son attention/.test(bloc), 'le point observé « Partiellement » est repris');
+ok(/À retravailler\s+Maintient son attention/.test(bloc), 'le point observé « Un peu » est repris');
 ok(bloc.includes('Légender seul le schéma du cycle de l’eau'), 'objectif prévu repris');
 ok(bloc.includes('Préparer un support'), 'action reprise');
-ok(!bloc.includes('Groupe') && !bloc.includes('Format'), 'le format de la prochaine séance n’est pas repris');
+ok(!bloc.includes('Atelier groupe classe') && !bloc.includes('Format'), 'le format de la prochaine séance n’est pas repris');
 ok(bloc.includes('Adaptation à partager avec l’équipe'), 'concertation reprise');
 ok(bloc.includes('Apporter la fiche plastifiée.'), 'précision reprise');
 ok(!bloc.includes('Reformuler la consigne'), 'la note de la séance de démonstration plus ancienne n’est plus affichée');

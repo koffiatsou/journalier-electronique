@@ -27,13 +27,17 @@ const docx = async (telechargement, nom) => {
   return chemin;
 };
 const xmlDuDocx = (chemin) => execFileSync('unzip', ['-p', chemin, 'word/document.xml']).toString();
+// Python sous Windows écrit sa sortie en cp1252 (un « é » = 1 octet) alors que Node la lit en UTF-8 : le nom du fichier
+// accentué arrivait abîmé. PYTHONUTF8=1 force l'UTF-8 sur toutes les machines (sans effet sur Linux, où c'est déjà le cas).
+const python = (code, ...arguments_) => execFileSync('python3', ['-c', code, ...arguments_], { env: { ...process.env, PYTHONUTF8: '1' } }).toString();
 
 async function nouvelleSeance(date, matiere) {
   await page.goto(`${URL_APP}#/seance`);
-  await page.getByLabel('Élève accompagné').selectOption({ label: 'Alpha Élève' });
+  await page.getByLabel('Élève accompagné').selectOption({ label: 'Élève Alpha' });
   await page.getByLabel('Date', { exact: true }).fill(date);
   await page.getByLabel('Matière').fill(matiere);
   await page.getByRole('button', { name: 'Enregistrer la séance' }).click();
+  await page.getByRole('dialog', { name: /Aucun point noté/ }).getByRole('button', { name: 'Enregistrer quand même' }).click({ timeout: 1500 }).catch(() => undefined); // séance volontairement sans point noté
   await page.getByText('Séance enregistrée').first().waitFor();
 }
 
@@ -72,7 +76,7 @@ await page.getByRole('button', { name: 'Voir' }).first().click();
 ok(await page.locator('.journalier-apercu').count() === 1, 'aperçu du texte affiché');
 
 // Export Word pour un élève, période septembre → octobre
-await page.getByLabel('Élève', { exact: true }).selectOption({ label: 'Alpha Élève (1CB)' });
+await page.getByLabel('Élève', { exact: true }).selectOption({ label: 'Élève Alpha (1CB)' });
 let [t] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Exporter le Journalier (Word)' }).click()]);
 ok(t.suggestedFilename() === 'Journalier - Alpha - du 01-09-2026 au 31-10-2026.docx', `nom du fichier : ${t.suggestedFilename()}`);
 let xml = xmlDuDocx(await docx(t, 'alpha.docx'));
@@ -88,9 +92,9 @@ await page.getByLabel('Sans nom ni titulaire (pour partager)').check();
 ok(t.suggestedFilename() === 'Journaliers - dé-identifiés - 2025-2026.zip', `archive : ${t.suggestedFilename()}`);
 const zip = await docx(t, 'tous.zip');
 // unzip ignore le marqueur UTF-8 : Python le respecte (comme l’explorateur de Windows).
-const contenu = execFileSync('python3', ['-c', 'import zipfile,sys;print("\\n".join(zipfile.ZipFile(sys.argv[1]).namelist()))', zip]).toString().trim().split('\n');
+const contenu = python('import zipfile,sys;print("\\n".join(zipfile.ZipFile(sys.argv[1]).namelist()))', zip).trim().split('\n');
 ok(contenu.length === 1 && contenu[0] === 'Journalier - dé-identifié - 1CB - 2025-2026.docx', `contenu de l’archive : ${contenu.join(', ')}`);
-xml = execFileSync('python3', ['-c', 'import zipfile,sys,io;z=zipfile.ZipFile(sys.argv[1]);d=zipfile.ZipFile(io.BytesIO(z.read(sys.argv[2])));print(d.read("word/document.xml").decode())', zip, contenu[0]]).toString();
+xml = python('import zipfile,sys,io;z=zipfile.ZipFile(sys.argv[1]);d=zipfile.ZipFile(io.BytesIO(z.read(sys.argv[2])));print(d.read("word/document.xml").decode())', zip, contenu[0]);
 ok(xml.includes('15/06/2026') && !xml.includes('Alpha') && !xml.includes('M. Test'), 'docx de l’archive : bonne période, sans nom ni titulaire');
 await page.getByLabel('Sans nom ni titulaire (pour partager)').uncheck();
 
@@ -101,6 +105,7 @@ await page.getByRole('heading', { name: 'Modifier la séance du 20/10/2026' }).w
 ok(await page.getByLabel('Matière').inputValue() === 'Mathématiques', 'la séance s’ouvre avec ses données');
 await page.getByLabel('Matière').fill('Sciences');
 await page.getByRole('button', { name: 'Enregistrer les modifications' }).click();
+await page.getByRole('dialog', { name: /Aucun point noté/ }).getByRole('button', { name: 'Enregistrer quand même' }).click({ timeout: 1500 }).catch(() => undefined); // séance volontairement sans point noté
 await page.getByRole('heading', { name: 'Journalier', level: 1 }).waitFor();
 ok(page.url().includes('eleve=demo-alpha'), 'retour au Journalier de l’élève');
 ok(await lignes().count() === 2 && await page.locator('.journalier-liste', { hasText: 'Sciences' }).count() === 1, 'modification visible, pas de doublon');
@@ -119,7 +124,7 @@ ok(await lignes().count() === 1, 'suppression et modification conservées après
 
 // Depuis Élèves
 await page.getByRole('link', { name: 'Élèves' }).click();
-await page.getByRole('button', { name: /Bêta Élève/ }).click();
+await page.getByRole('button', { name: /Élève Bêta/ }).click();
 await page.getByRole('button', { name: 'Voir le Journalier' }).click();
 ok(await page.getByLabel('Élève', { exact: true }).inputValue() === 'demo-beta', 'Élèves → Journalier filtré sur l’élève');
 ok(await page.getByText('Aucune séance dans cette période.').count() === 1, 'message quand il n’y a rien');

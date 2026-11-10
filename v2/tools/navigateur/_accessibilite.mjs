@@ -175,14 +175,33 @@ function lirePage(options) {
   return problemes;
 }
 
-/** Mouvement réduit : aucune transition ni animation longue quand l'appareil le demande (WCAG 2.3.3). */
+/**
+ * Mouvement réduit (WCAG 2.3.3) : plus de déplacement, d'échelle, de rotation ni de changement de taille quand l'appareil le demande.
+ * Les fondus (opacité, couleur, fond, bordure, ombre) restent permis : ils ne sont pas du mouvement et portent le retour d'état.
+ */
 function lireMouvement() {
   const longs = [];
-  const duree = (v) => Math.max(0, ...v.split(',').map((x) => { const t = x.trim(); return t.endsWith('ms') ? parseFloat(t) / 1000 : parseFloat(t) || 0; }));
+  const SEUIL_S = 0.05;
+  const MOUVEMENT = /^(all|transform|translate|scale|rotate|width|height|min-|max-|margin|padding|top$|left$|right$|bottom$|inset|grid-template|gap|flex|font-size)/;
+  const secondes = (t) => { const x = t.trim(); return x.endsWith('ms') ? parseFloat(x) / 1000 : parseFloat(x) || 0; };
+  const nom = (el) => `<${el.localName}${typeof el.className === 'string' && el.className ? `.${el.className.split(' ')[0]}` : ''}>`;
   for (const el of document.body.querySelectorAll('*')) {
     const s = getComputedStyle(el);
-    const t = duree(s.transitionDuration); const a = s.animationName !== 'none' ? duree(s.animationDuration) : 0;
-    if (t > 0.05 || a > 0.05) longs.push(`<${el.localName}${typeof el.className === 'string' && el.className ? `.${el.className.split(' ')[0]}` : ''}> transition ${t}s animation ${a}s`);
+    const proprietes = s.transitionProperty.split(',').map((x) => x.trim());
+    const durees = s.transitionDuration.split(',').map(secondes);
+    const delais = s.transitionDelay.split(',').map(secondes);
+    proprietes.forEach((p, i) => {
+      const d = (durees[i % durees.length] ?? 0) + (delais[i % delais.length] ?? 0);
+      if (d > SEUIL_S && MOUVEMENT.test(p)) longs.push(`${nom(el)} transition de « ${p} » : ${d}s`);
+    });
+  }
+  for (const a of document.getAnimations()) {
+    const el = a.effect?.target;
+    if (!el || a.effect.getComputedTiming().iterations === Infinity) continue;
+    const duree = a.effect.getComputedTiming().duration;
+    const proprietes = new Set(a.effect.getKeyframes().flatMap((k) => Object.keys(k)));
+    const bouge = ['transform', 'translate', 'scale', 'rotate', 'width', 'height', 'margin', 'top', 'left'].filter((p) => proprietes.has(p));
+    if (duree > SEUIL_S * 1000 && bouge.length) longs.push(`${nom(el)} animation « ${a.animationName ?? ''} » anime ${bouge.join(', ')}`);
   }
   return longs;
 }

@@ -1,14 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   NB_COULEURS, NOMS_COULEURS, TYPES_LIBELLES, creer, ecoleDeEleve, ecoleParDefaut, editer, heuresLibresDe, jourComplet, libelle, nbPeriodesUtilisees,
   periodesCouvertes, verifierHeuresLibres
 } from '../../domain/agenda/index.ts';
 import type { Activite, Changement, Ecole, Edition, Occurrence, Portee, TypeActivite } from '../../domain/agenda/index.ts';
-import { elevesProposes, languesDe } from '../../domain/eleves/index.ts';
+import { activiteSaisie } from '../../domain/brouillons/index.ts';
+import type { BrouillonFormulaire, ChampsActivite } from '../../domain/brouillons/index.ts';
+import { elevesProposes, languesDe, nomAffiche } from '../../domain/eleves/index.ts';
 import type { Eleve } from '../../domain/types.ts';
+import { BrouillonRetrouve } from '../../ui/BrouillonRetrouve.tsx';
 import { Button } from '../../ui/Button.tsx';
 import { ChampSuggestions } from '../../ui/ChampSuggestions.tsx';
+import { ConfirmerAbandon } from '../../ui/ConfirmerAbandon.tsx';
 import { Field, Input, Select, Textarea } from '../../ui/Field.tsx';
+import { useTiroir } from '../../ui/useTiroir.ts';
 
 export interface Brouillon { date: string; debut: number; fin: number }
 
@@ -24,12 +29,16 @@ interface Props {
   onAnnuler: (o: Occurrence) => void;
   onRealiser: (o: Occurrence) => void;
   onSupprimer: (o: Occurrence, portee: Portee) => void;
+  /** Nouvelle activité seulement : brouillon retrouvé (proposé, jamais appliqué sans accord), garde de la saisie, effacement. */
+  brouillon?: BrouillonFormulaire<ChampsActivite> | null;
+  onSaisie?: (c: ChampsActivite) => void;
+  onEffacerBrouillon?: () => void;
 }
 
 const TYPES = Object.keys(TYPES_LIBELLES) as TypeActivite[];
 
 /** Panneau d'une activité : création et modification, sans fenêtre modale. */
-export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFermer, onEncoder, onDupliquer, onAnnuler, onRealiser, onSupprimer }: Props) {
+export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFermer, onEncoder, onDupliquer, onAnnuler, onRealiser, onSupprimer, brouillon = null, onSaisie, onEffacerBrouillon }: Props) {
   const a: Activite | null = occurrence?.activite ?? null;
   const base = useMemo<Activite>(() => a ?? creer({ type: 'eleve', date: nouveau?.date ?? '', debut: nouveau?.debut ?? 0, fin: nouveau?.fin ?? 0 }), [a, nouveau]);
   const [type, setType] = useState<TypeActivite>(base.type);
@@ -51,6 +60,30 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
   const [libre, setLibre] = useState(Boolean(libresDeBase));
   const [heureDebut, setHeureDebut] = useState(libresDeBase?.debut ?? '');
   const [heureFin, setHeureFin] = useState(libresDeBase?.fin ?? '');
+  const racine = useRef<HTMLElement>(null);
+  // Quitter sans enregistrer : on ne demande que si quelque chose a changé depuis l'ouverture.
+  const saisie = JSON.stringify([type, eleveId, nomLibre, titre, matiere, lieu, note, date, debut, fin, repetition, jusquau, couleur ?? null, ecoleId, libre, heureDebut, heureFin]);
+  const saisieInitiale = useRef(saisie);
+  const [confirmation, setConfirmation] = useState(false);
+  const [proposition, setProposition] = useState(brouillon);
+  const ouverture = useRef(true);
+  // Nouvelle activité : on garde la saisie (jamais avant la première frappe ni avant la réponse à la proposition de reprise).
+  useEffect(() => {
+    if (ouverture.current) { ouverture.current = false; return; }
+    if (occurrence || proposition || !onSaisie) return;
+    const champs: ChampsActivite = {
+      type, eleveId, nomLibre, titre, matiere, lieu, note, date, debut, fin, repetition, jusquau, couleur: couleur ?? null, ecoleId, libre, heureDebut, heureFin
+    };
+    if (activiteSaisie(champs)) onSaisie(champs);
+  }, [saisie]); // eslint-disable-line react-hooks/exhaustive-deps
+  const reprendre = (c: ChampsActivite) => {
+    setType(c.type); setEleveId(eleves.some((e) => e.id === c.eleveId) ? c.eleveId : ''); setNomLibre(c.nomLibre); setTitre(c.titre); setMatiere(c.matiere);
+    setLieu(c.lieu); setNote(c.note); setDate(c.date); setDebut(c.debut); setFin(c.fin); setRepetition(c.repetition); setJusquau(c.jusquau);
+    setCouleur(c.couleur ?? undefined); setEcoleId(c.ecoleId); setLibre(c.libre); setHeureDebut(c.heureDebut); setHeureFin(c.heureFin);
+    setProposition(null);
+  };
+  const fermer = () => { if (saisie !== saisieInitiale.current) setConfirmation(true); else onFermer(); };
+  const recouvre = useTiroir(racine, { actif: true, onFermer: fermer });
   const serie = a?.repetition === 'hebdomadaire';
   const eleve = eleves.find((e) => e.id === eleveId);
   // Les heures affichées sont celles de l'école de l'élève (ou de l'école choisie pour une autre activité).
@@ -65,6 +98,8 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
   // Les heures libres ne concernent pas un accompagnement d'élève (il suit les périodes, comme sa séance).
   const libreActif = libre && type !== 'eleve';
   const erreurHeures = libreActif ? verifierHeuresLibres(heureDebut, heureFin) : null;
+  const raisonSansElement = type === 'eleve' ? (eleveId || nomLibre.trim() ? undefined : 'Choisissez d’abord l’élève.') : !titre.trim() ? 'Indiquez d’abord le titre.' : date === '' ? 'Indiquez d’abord le jour.' : undefined;
+  const raisonInvalide = raisonSansElement ?? erreurHeures ?? undefined;
   const valide = (type === 'eleve' ? Boolean(eleveId || nomLibre.trim()) : Boolean(titre.trim()) && date !== '') && !erreurHeures;
 
   const enregistrer = () => {
@@ -96,16 +131,22 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
       const act = creer({ ...champs });
       onChanger({ enregistrer: [act], supprimer: [] });
     }
+    onEffacerBrouillon?.();
     onFermer();
   };
 
   const nom = eleve ? `${eleve.prenom} ${eleve.nom}` : undefined;
   return (
-    <section className="panneau feuille-bas" aria-label={occurrence ? 'Modifier l’activité' : 'Nouvelle activité'}>
+    <section ref={racine} className="panneau feuille-bas" aria-label={occurrence ? 'Modifier l’activité' : 'Nouvelle activité'}
+      {...(recouvre ? { role: 'dialog', 'aria-modal': true } : {})}>
       <div className="en-tete">
         <h2>{occurrence ? libelle(base, nom) : 'Nouvelle activité'}</h2>
-        <Button onClick={onFermer} aria-label="Fermer le panneau">Fermer</Button>
+        <Button onClick={fermer} aria-label="Fermer le panneau">Fermer</Button>
       </div>
+      {proposition ? (
+        <BrouillonRetrouve quoi="Une activité" enregistreLe={proposition.enregistreLe} onReprendre={() => reprendre(proposition.donnees)}
+          onRepartir={() => { onEffacerBrouillon?.(); setProposition(null); }} />
+      ) : null}
       {occurrence && occurrence.activite.type === 'eleve' && occurrence.statut !== 'annule' ? (
         <div className="actions encoder-haut">
           <Button variante="primaire" onClick={() => onEncoder(occurrence)}>{occurrence.statut === 'realise' ? 'Ouvrir la séance' : 'Encoder la séance'}</Button>
@@ -126,7 +167,7 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
             {(id) => (
               <Select id={id} value={eleveId} onChange={(e) => setEleveId(e.target.value)}>
                 <option value="">Autre (nom libre)</option>
-                {elevesProposes(eleves, eleveId).map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
+                {elevesProposes(eleves, eleveId).map((e) => <option key={e.id} value={e.id}>{nomAffiche(e)}</option>)}
               </Select>
             )}
           </Field>
@@ -201,6 +242,7 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
             <button key={i} type="button" className={`c-${i}`} aria-pressed={couleur === i} aria-label={NOMS_COULEURS[i]} onClick={() => setCouleur(i)} />
           ))}
         </div>
+        <p className="field-hint">Couleur choisie : {typeof couleur === 'number' ? NOMS_COULEURS[couleur] : 'automatique'}</p>
       </div>
 
       {serie ? (
@@ -212,7 +254,7 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
       ) : null}
 
       <div className="actions barre-fixe">
-        <Button variante="primaire" disabled={!valide} onClick={enregistrer}>{occurrence ? 'Enregistrer' : 'Ajouter à l’agenda'}</Button>
+        <Button variante="primaire" raison={raisonInvalide} onClick={enregistrer}>{occurrence ? (serie ? (portee === 'serie' ? 'Enregistrer toute la série' : 'Enregistrer cette date') : 'Enregistrer') : 'Ajouter à l’agenda'}</Button>
         {occurrence && occurrence.activite.type !== 'eleve' && occurrence.statut !== 'annule' ? <Button onClick={() => onRealiser(occurrence)}>{occurrence.statut === 'realise' ? 'Remettre à prévu' : 'Marquer réalisé'}</Button> : null}
       </div>
       {occurrence ? (
@@ -222,6 +264,7 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
           <Button variante="discret" onClick={() => onSupprimer(occurrence, portee)}>Supprimer{serie ? (portee === 'serie' ? ' la série' : ' cette date') : ''}</Button>
         </div>
       ) : null}
+      <ConfirmerAbandon ouvert={confirmation} perte="Les changements faits dans ce panneau ne sont pas enregistrés." onContinuer={() => setConfirmation(false)} onAbandonner={() => { onEffacerBrouillon?.(); onFermer(); }} />
     </section>
   );
 }

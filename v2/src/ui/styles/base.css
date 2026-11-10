@@ -1,5 +1,15 @@
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+html {
+  -webkit-text-size-adjust: 100%;
+  /* La barre de défilement garde sa place : la page ne saute plus de 15 px quand elle apparaît ou disparaît (ouverture d'une fenêtre). */
+  scrollbar-gutter: stable;
+  /* Ce qui est collé ou fixé ne doit jamais cacher ce qu'on amène à l'écran (focus au clavier, ancres, « Étape suivante ») :
+     en haut la barre du téléphone, en bas la barre d'onglets. Les écrans qui ajoutent des barres complètent ces valeurs. */
+  scroll-padding-top: calc(var(--barre-haut, 0px) + var(--sp-3));
+  scroll-padding-bottom: calc(var(--tabbar, 0px) + var(--sp-4));
+}
+/* Fenêtre de dialogue ouverte : la page derrière ne défile plus. */
+html:has(dialog[open]) { overflow: hidden; }
 body {
   margin: 0;
   font: 400 15px/1.5 var(--font);
@@ -10,8 +20,8 @@ body {
 }
 h1, h2, h3, h4, p { margin: 0; }
 h1 { font-size: 1.6rem; line-height: 1.2; letter-spacing: -0.02em; font-weight: 700; }
-h2 { font-size: 1.15rem; line-height: 1.3; letter-spacing: -0.01em; font-weight: 650; }
-h3 { font-size: 1rem; font-weight: 650; }
+h2 { font-size: 1.15rem; line-height: 1.3; letter-spacing: -0.01em; font-weight: 700; }
+h3 { font-size: 1rem; font-weight: 700; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 a:not([class]) { color: var(--peda-ink); text-underline-offset: 3px; }

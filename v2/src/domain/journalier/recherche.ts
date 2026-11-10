@@ -11,7 +11,7 @@ import type { Eleve, Seance } from '../types.ts';
 export function texteSeance(s: Seance, eleve?: Eleve): string {
   return sansAccents([
     eleve ? `${eleve.nom} ${eleve.prenom} ${eleve.classe}` : '',
-    s.date, dateFR(s.date), s.periodeDebut, s.matiere, s.niveauScolaire, PRESENCE_LIBELLES[s.presence].titre,
+    s.date, dateFR(s.date), s.periodeDebut, s.matiere, s.niveauScolaire, PRESENCE_LIBELLES[s.presence].titre, s.profAbsent ? 'professeur absent' : '',
     ...s.interventions, s.objectifLecon, s.contenuClasse, s.monObjectif,
     ...s.observations.map((o) => o.texte), s.remarque,
     ...s.competences.map((c) => c.texte), s.precisionCompetence,

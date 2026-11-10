@@ -7,12 +7,21 @@ import type { AvatarEleve } from './avatar/types.ts';
  * Journalier papier. Aucune logique ici, uniquement des types et des constantes.
  */
 
-/** Niveau constaté pour une observation ou une compétence : 0 partiel, 1 suffisant, 2 total. */
-export type Niveau = 0 | 1 | 2;
+/**
+ * Niveau constaté pour une observation ou une compétence : -1 pas du tout, 0 un peu, 1 assez, 2 tout à fait.
+ * Les séances d'avant le 9/11/2026 ont 0, 1, 2 (alors écrits « Partiellement », « Suffisamment », « Totalement ») :
+ * « Pas du tout » a pris la valeur -1 pour que rien ne soit à convertir et que l'ordre reste le même.
+ */
+export type Niveau = -1 | 0 | 1 | 2;
+/** Valeur du niveau le plus faible : la première pastille de l'échelle. */
+export const NIVEAU_MIN = -1;
 /** Effet d'une aide : 0 aucun, 1 partiel, 2 positif. */
 export type Effet = 0 | 1 | 2;
 
-export const NIVEAUX_LIBELLES = ['Partiellement', 'Suffisamment', 'Totalement'] as const;
+/** Les mots de l'échelle, du plus faible au plus fort : le mot d'un niveau `n` est à la position `n - NIVEAU_MIN`. */
+export const NIVEAUX_LIBELLES = ['Pas du tout', 'Un peu', 'Assez', 'Tout à fait'] as const;
+/** Mot d'un niveau (vide si la valeur est inconnue). Ne sert pas aux points de vigilance, qui ont leur échelle. */
+export const libelleNiveau = (n: number): string => NIVEAUX_LIBELLES[n - NIVEAU_MIN] ?? '';
 /** Échelle d'un point de vigilance : mêmes valeurs 0, 1, 2 que `Niveau`, lues comme une fréquence. */
 export const NIVEAUX_VIGILANCE = ['Ponctuellement', 'Souvent', 'Tout au long'] as const;
 
@@ -25,13 +34,19 @@ export type Presence =
   | 'absent_prof'
   | 'absent_agent';
 
+/** Choix de présence « Professeur absent, élève vu en individuel » : une séance tenue (présence normale) avec `profAbsent`. */
+export const PRESENCE_PROF_ABSENT_VU = {
+  titre: 'Professeur absent — élève vu en individuel',
+  aide: 'La séance a bien lieu, hors de la classe : remplissez les rubriques comme d’habitude. Le Journalier note « professeur absent » à côté du cours.'
+} as const;
+
 export const PRESENCE_LIBELLES: Record<Presence, { titre: string; aide: string }> = {
   present: {
     titre: 'Présence normale',
     aide: 'Séance d’accompagnement habituelle avec l’élève présent.'
   },
   absent_eleve_coteach: {
-    titre: 'Élève absent — co-enseignement',
+    titre: 'Élève absent — co-intervention',
     aide: 'Vous restez en classe : indiquez le contenu vu. Pas de partie orthopédagogique.'
   },
   absent_eleve: {
@@ -78,6 +93,8 @@ export interface Seance {
   niveauScolaire: string;
   forme: string;
   presence: Presence;
+  /** Professeur absent mais élève vu en individuel : la séance a lieu (présence « normale »), l'absence du professeur est seulement notée. */
+  profAbsent?: boolean;
   interventions: string[];
 
   /* Partie pédagogique */
@@ -262,13 +279,24 @@ export const NATURE_AIDES: Readonly<Record<string, NatureAide>> = {
 
 export const natureAide = (nom: string): NatureAide | null => NATURE_AIDES[nom.trim()] ?? null;
 
+/**
+ * Façons d'intervenir (voir `lexique.ts` pour les définitions). Les séances déjà enregistrées gardent leurs anciens mots
+ * (« Accompagnement groupe classe », « Atelier / sous-groupe », « Cointervention », « Coenseignement ») : ils restent
+ * affichés et décochables dans le formulaire (`interventionsAffichees`), jamais réécrits.
+ */
 export const INTERVENTIONS_SUGGEREES = [
   'Accompagnement individuel',
-  'Accompagnement groupe classe',
-  'Atelier / sous-groupe',
-  'Cointervention',
-  'Coenseignement'
+  'Accompagnement collectif (en classe)',
+  'Atelier groupe classe',
+  'Co-intervention',
+  'Co-enseignement'
 ] as const;
+
+/** Les choix à montrer pour une séance : les suggestions, puis les anciens mots que la séance contient encore. */
+export const interventionsAffichees = (choisies: readonly string[]): string[] => [
+  ...INTERVENTIONS_SUGGEREES,
+  ...choisies.filter((v) => !(INTERVENTIONS_SUGGEREES as readonly string[]).includes(v))
+];
 
 export const ACTIONS_SUITE_SUGGEREES = [
   'Maintenir l’accompagnement',
@@ -287,9 +315,12 @@ export const COLLABORATIONS_SUGGEREES = [
   'Questionner à la prochaine réunion d’intégration'
 ] as const;
 
-export const MODALITES_SUITE = [
-  'Maintenir l’individuel',
-  'Groupe',
-  'Cointervention',
-  'Coenseignement'
-] as const;
+/**
+ * « Format de la prochaine séance » : les mêmes mots que « Mon intervention » (depuis le 9/11/2026). Les anciens formats déjà
+ * enregistrés (« Maintenir l'individuel », « Groupe », « Cointervention », « Coenseignement ») restent affichés (`modalitesAffichees`).
+ */
+export const MODALITES_SUITE = INTERVENTIONS_SUGGEREES;
+
+/** Les formats à montrer : la liste, puis l'ancien format de la séance s'il n'y est plus. */
+export const modalitesAffichees = (actuelle: string): string[] =>
+  actuelle && !(MODALITES_SUITE as readonly string[]).includes(actuelle) ? [...MODALITES_SUITE, actuelle] : [...MODALITES_SUITE];

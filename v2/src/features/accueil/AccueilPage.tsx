@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { exempleDemo } from '../../data/demo.ts';
-import { aEncoder, basculerMemo, creerMemo, deplacements, journeeDu, lignesSuite, memosDuCreneau, retirerMemo, viderFaits } from '../../domain/accueil/index.ts';
+import { aEncoder, basculerMemo, creerMemo, deplacements, journeeDu, lignesSuite, memosDuCreneau, remettreMemo, retirerMemo, viderFaits } from '../../domain/accueil/index.ts';
 import type { Creneau, Deplacement, Memo } from '../../domain/accueil/index.ts';
 import { PERIODES_AGENDA, ajouterJours, jourComplet, seanceDuCreneau } from '../../domain/agenda/index.ts';
 import type { Occurrence } from '../../domain/agenda/index.ts';
@@ -59,12 +59,12 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
 
   const aujourdhui = aujourdhuiISO();
   const nbDemo = eleves.filter((e) => estDemo(e.id)).length + activites.filter((a) => estDemo(a.id)).length;
-  const chargerDemo = async () => { await magasin.chargerExemple(exempleDemo(aujourdhui)); annoncer('Données de démonstration chargées'); };
+  const chargerDemo = async () => { await magasin.chargerExemple(exempleDemo(aujourdhui)); annoncer('Données d’essai chargées'); };
   const effacerDemo = async () => {
     if (!confirmer) { setConfirmer(true); return; }
     const b = await magasin.effacerDemo();
     setConfirmer(false);
-    annoncer(`Démonstration effacée : ${b.eleves} élèves, ${b.seances} séances, ${b.activites} rendez-vous`);
+    annoncer(`Données d’essai effacées : ${b.eleves} élèves, ${b.seances} séances, ${b.activites} rendez-vous`);
   };
 
   /* Le jour affiché : aujourd'hui, ou à défaut le prochain jour où quelque chose est prévu (dans les deux semaines). */
@@ -113,6 +113,12 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
     setTexteMemo('');
     setCibleMemo('');
   };
+  /** Retire un mémo, puis propose « Annuler » pendant quelques secondes : la croix est petite et se touche sans le vouloir. */
+  const supprimerMemo = (m: Memo) => {
+    const position = magasin.lire().memos.findIndex((x) => x.id === m.id);
+    changerMemos((l) => retirerMemo(l, m.id));
+    annoncer('Mémo supprimé', { libelle: 'Annuler', faire: () => changerMemos((l) => remettreMemo(l, m, position)) });
+  };
   const memosTries = [...memos].sort((a, b) => Number(a.fait) - Number(b.fait));
   const nbFaits = memos.filter((m) => m.fait).length;
   const elevesActifs = eleves.filter((e) => !e.archiveLe).sort((a, b) => a.nom.localeCompare(b.nom, 'fr') || a.prenom.localeCompare(b.prenom, 'fr'));
@@ -127,9 +133,11 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
       {!eleves.length ? (
         <section className="vide">
           <h2>Aucun élève pour l’instant</h2>
-          <p>Chargez les données de démonstration (deux élèves fictifs, des séances, un agenda et un PIA) pour tout essayer sans compte et sans données réelles. Rien ne quitte votre appareil.</p>
-          <Button variante="primaire" onClick={() => { void chargerDemo(); }}>Charger les données de démonstration</Button>
-          <p className="synchro-discret">Vous utilisiez la V75 ? <a href="#/reprise">Reprendre mes données de la V75</a>.</p>
+          <p>Commencez par ajouter un élève : ses séances, son agenda et son PIA se rangent ensuite autour de son dossier.</p>
+          <Button variante="primaire" onClick={() => onAller('eleves', { nouveau: '1' })}>Ajouter mon premier élève</Button>
+          <p className="synchro-discret">Pour tout essayer sans données réelles (deux élèves d’essai, des séances, un agenda et un PIA ; rien ne quitte votre appareil) :</p>
+          <Button variante="secondaire" onClick={() => { void chargerDemo(); }}>Charger les données d’essai</Button>
+          <p className="synchro-discret">Vous utilisiez l’ancienne version ? <a href="#/reprise">Reprendre mes données de l’ancienne version</a>.</p>
         </section>
       ) : (
         <>
@@ -242,7 +250,7 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
                   </optgroup>
                   {plusieursEcoles ? <optgroup label="Rappeler dans l’école">{ecoles.map((e) => <option key={e.id} value={`c:${e.id}`}>{e.nom}</option>)}</optgroup> : null}
                 </Select>
-                <Button type="submit" variante="primaire" disabled={!texteMemo.trim()}>Ajouter</Button>
+                <Button type="submit" variante="primaire" raison={texteMemo.trim() ? undefined : 'Écrivez d’abord le mémo.'}>Ajouter</Button>
               </form>
               {memosTries.length ? (
                 <ul className="memo-liste">
@@ -252,7 +260,7 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
                         <input type="checkbox" checked={m.fait} onChange={() => changerMemos((l) => basculerMemo(l, m.id))} />
                         <span className="memo-texte">{m.texte}{cibleDe(m) ? <small>{cibleDe(m)}</small> : null}</span>
                       </label>
-                      <button type="button" className="memo-retirer" aria-label={`Supprimer le mémo : ${m.texte}`} onClick={() => changerMemos((l) => retirerMemo(l, m.id))}>×</button>
+                      <button type="button" className="memo-retirer" aria-label={`Supprimer le mémo : ${m.texte}`} onClick={() => supprimerMemo(m)}>×</button>
                     </li>
                   ))}
                 </ul>
@@ -282,7 +290,7 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
             ) : (
               <>
                 <p>
-                  {sync.mode === 'demonstration' ? 'Synchronisation de démonstration. ' : ''}
+                  {sync.mode === 'demonstration' ? 'Synchronisation d’essai. ' : ''}
                   {sync.derniere ? <>Dernière synchronisation : {quand(sync.derniere.le)}.</> : 'Pas encore synchronisé depuis cet appareil.'}
                   {sync.derniere?.erreurs.length ? <> <Badge ton="danger">{sync.derniere.erreurs.length} en erreur</Badge></> : null}
                 </p>
@@ -294,16 +302,16 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
       )}
 
       {nbDemo ? (
-        <section className="bandeau-demo" aria-label="Données de démonstration">
-          <p><strong>Des données de démonstration sont présentes.</strong> Elles sont fictives, n’iront jamais vers votre vrai compte Microsoft, et vous pouvez les effacer sans toucher à vos vraies données.</p>
+        <section className="bandeau-demo" aria-label="Données d’essai">
+          <p><strong>Des données d’essai sont présentes.</strong> Elles ne sont pas réelles, n’iront jamais vers votre vrai compte Microsoft, et vous pouvez les effacer sans toucher à vos vraies données.</p>
           <div className="bandeau-demo-actions">
             <Button onClick={() => onAller('synchro')}>Essayer la synchronisation</Button>
-            <Button variante={confirmer ? 'primaire' : 'discret'} onClick={() => { void effacerDemo(); }}>{confirmer ? 'Oui, effacer la démonstration' : 'Effacer la démonstration'}</Button>
+            <Button variante={confirmer ? 'primaire' : 'discret'} onClick={() => { void effacerDemo(); }}>{confirmer ? 'Oui, effacer les données d’essai' : 'Effacer les données d’essai'}</Button>
             {confirmer ? <Button variante="discret" onClick={() => setConfirmer(false)}>Garder</Button> : null}
           </div>
         </section>
       ) : (
-        eleves.length ? <p className="page-sous-titre"><Button variante="discret" onClick={() => { void chargerDemo(); }}>Ajouter des données de démonstration</Button></p> : null
+        eleves.length ? <p className="page-sous-titre"><Button variante="discret" onClick={() => { void chargerDemo(); }}>Ajouter des données d’essai</Button></p> : null
       )}
     </div>
   );
