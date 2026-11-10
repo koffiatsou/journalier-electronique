@@ -29,6 +29,10 @@
   border-top: 1px solid var(--line);
 }
 .nav ul { list-style: none; margin: 0; padding: 0; height: var(--tabbar); display: grid; grid-template-columns: repeat(7, 1fr); }
+/* Écran très étroit (320 px) : les sept onglets en 12 px ne tiennent pas avec toutes les polices (sur Linux, « PIA » ne mesurait que 23 px de large, sous les 24 px minimaux) : la barre défile dans sa propre zone au lieu d'écraser les onglets. */
+@media screen and (max-width: 359px) {
+  .nav ul { grid-template-columns: repeat(7, minmax(52px, 1fr)); overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+}
 .nav .marque { display: none; }
 .nav-lien {
   height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
