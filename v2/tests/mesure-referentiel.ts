@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { IndexReferentiel } from '../src/domain/referentiel/index.ts';
+import { ANNEES, IndexReferentiel, enVigueur } from '../src/domain/referentiel/index.ts';
 import type { EntreeReferentiel } from '../src/domain/referentiel/index.ts';
 import { sansAccents } from '../src/domain/referentiel/texte.ts';
 import { CORPUS } from './corpus-referentiel.ts';
@@ -37,10 +37,15 @@ function lotDe(indice: number): Lot {
   return indice % 2 === 0 ? 'reglage' : 'controle';
 }
 
-function existe(cas: CasCorpus, donnees: readonly EntreeReferentiel[]): boolean {
+/**
+ * Un cas n'est « répondable » que si une ligne contient le sujet. Avec une rentrée, elle doit en plus être EN VIGUEUR et valoir pour l'année
+ * de l'élève : sinon l'absence de piste est le bon comportement (le sujet n'est pas dans le cadre que l'élève suit cette année-là).
+ */
+function existe(cas: CasCorpus, donnees: readonly EntreeReferentiel[], rentree: number | undefined): boolean {
   const attendu = cas.attendu;
   if (!attendu) return false;
-  return donnees.some((x) => (!x.l || !cas.langue || x.l === cas.langue) && attendu.test(texteDe(x)));
+  const memeAnnee = (x: EntreeReferentiel): boolean => rentree === undefined || !cas.annee || !x.n || (ANNEES.indexOf(cas.annee) >= ANNEES.indexOf(x.n) && ANNEES.indexOf(cas.annee) <= ANNEES.indexOf(x.nf ?? x.n));
+  return donnees.some((x) => (!x.l || !cas.langue || x.l === cas.langue) && enVigueur(x, rentree) && memeAnnee(x) && attendu.test(texteDe(x)));
 }
 
 export function mesurer(lot: Lot, rentree?: number, construire: (donnees: EntreeReferentiel[]) => IndexReferentiel = (d) => new IndexReferentiel(d)): Mesure {
@@ -61,7 +66,7 @@ export function mesurer(lot: Lot, rentree?: number, construire: (donnees: Entree
       else resultat.echecs.push(`vague « ${cas.objectif} » : ${pistes.length} piste(s) proposée(s)`);
       return;
     }
-    if (!existe(cas, donnees)) {
+    if (!existe(cas, donnees, rentree)) {
       resultat.hors_donnees += 1;
       return;
     }

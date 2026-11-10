@@ -38,6 +38,8 @@ export const ALIAS: Readonly<Record<string, TableAlias>> = {
     ppcm: 'multiple commun',
     relatifs: 'entier relatif positif negatif',
     discriminant: 'equation second degre',
+    factoriser: 'expression algebrique forme',
+    developper: 'expression algebrique forme',
     mediane: 'statistique',
     moyenne: 'statistique'
   },

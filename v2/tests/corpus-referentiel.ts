@@ -137,7 +137,7 @@ export const CORPUS: readonly CasCorpus[] = [
   s('le cycle de l’eau', 'S1', /eau|cycle/),
   s('les organes des sens', 'S1', /sens|organe/),
   s('la respiration', 'S2', /respir|poumon|echange/),
-  s('volcans et séismes', 'S3', /volcan|seisme|tectoni|terre/),
+  s('volcans et séismes', 'S3', /volcan|seisme|tectoni/),
   s('lumière et miroirs', 'S2', /lumiere|reflexion|miroir|rayon/),
   s('le microscope', 'S1', /microscop|observ|cellule/),
   s('la pression des gaz', 'S4', /pression|gaz/, 'G'),

@@ -15,14 +15,20 @@ import type { Lot } from './mesure-referentiel.ts';
  */
 const PLANCHER: Record<Lot, number> = { reglage: 74, controle: 72 };
 
-/** Même mesure avec la rentrée 2026-2027 : S2 et S3 du tronc commun ne sont pas encore en vigueur. */
-const PLANCHER_2026: Record<Lot, number> = { reglage: 73, controle: 70 };
+/**
+ * Même mesure avec la rentrée 2026-2027 : S2 et S3 du tronc commun ne sont pas encore en vigueur ; un sujet n'est « répondable » que si une ligne
+ * en vigueur, valable pour l'année de l'élève, le contient (sinon il est compté « hors données », ce n'est pas un échec du moteur).
+ */
+const PLANCHER_2026: Record<Lot, number> = { reglage: 60, controle: 66 };
+/** Sujets que le cadre en vigueur en 2026-2027 ne contient pas pour l'année de l'élève (absence de piste normale) : ce nombre ne doit pas grossir sans qu'on le voie. */
+const HORS_DONNEES_2026: Record<Lot, number> = { reglage: 14, controle: 6 };
 
 describe('moteur de pistes : corpus d’objectifs de terrain', () => {
   for (const lot of ['reglage', 'controle'] as const) {
     it(`lot ${lot}, rentrée 2026 : le tronc commun de S2 et S3 n’est pas encore proposé`, () => {
       const m = mesurer(lot, 2026);
       assert.ok(m.trouves >= PLANCHER_2026[lot], `${m.trouves}/${m.repondables} (plancher ${PLANCHER_2026[lot]}) ; échecs : ${m.echecs.join(' ; ')}`);
+      assert.ok(m.hors_donnees <= HORS_DONNEES_2026[lot], `${m.hors_donnees} sujets hors du cadre en vigueur (au plus ${HORS_DONNEES_2026[lot]})`);
       assert.equal(m.vagues_sans_piste, m.vagues);
     });
   }
