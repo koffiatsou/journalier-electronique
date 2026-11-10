@@ -16,6 +16,7 @@ import { ecoleDeEleve, nbPeriodesUtilisees } from '../../domain/agenda/index.ts'
 import type { Ecole } from '../../domain/agenda/index.ts';
 import type { Piste } from '../../domain/referentiel/index.ts';
 import { indexDe } from '../../domain/referentiel/charger.ts';
+import { ListeColonnes } from '../../ui/ListeColonnes.tsx';
 import type { ErreursChamps } from './brouillon.ts';
 import { Point, TEINTES_EFFET, TEINTES_NIVEAU, TEINTES_VIGILANCE } from '../../ui/Point.tsx';
 
@@ -250,13 +251,14 @@ export function FormulaireCompetence({ s, maj, eleve }: PropsFormulaire & { elev
         <div className="rubrique">
           <h3>Pistes d’après l’objectif de la leçon</h3>
           <p className="etape-aide">Choisissez le niveau pour garder une piste, ou ignorez-les et saisissez la vôtre.</p>
-          <ul className="points">
-            {pistes.map((p) => (
-              <Point key={`${p.entree.n ?? ''}${p.entree.a}`}
-                nom={p.ecartAnnee ? `${p.entree.a} (programme de ${p.ecartAnnee})` : p.entree.a}
-                libelles={NIVEAUX_LIBELLES} valeurMin={NIVEAU_MIN} teintes={TEINTES_NIVEAU} valeur={null} onChoisir={(n) => prendre(p, n)} />
-            ))}
-          </ul>
+          <ListeColonnes elements={pistes.map((p) => {
+            const nom = p.ecartAnnee ? `${p.entree.a} (programme de ${p.ecartAnnee})` : p.entree.a;
+            return {
+              cle: `${p.entree.n ?? ''}${p.entree.a}`,
+              longueur: nom.length,
+              noeud: <Point nom={nom} libelles={NIVEAUX_LIBELLES} valeurMin={NIVEAU_MIN} teintes={TEINTES_NIVEAU} valeur={null} onChoisir={(n) => prendre(p, n)} />
+            };
+          })} />
           {!plus ? <Button type="button" variante="secondaire" onClick={() => setPlus(true)}>Voir d’autres pistes</Button> : null}
         </div>
       ) : null}
