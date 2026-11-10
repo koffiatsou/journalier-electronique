@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { IndexReferentiel, RENTREE_TRONC_COMMUN, anneeDeNiveau, developper, rentreeDeDate, rentreeDeLigne, analyserClasse, cibleDeMatiere, formeDeFiliere, formeDeTexte } from '../src/domain/referentiel/index.ts';
+import { IndexReferentiel, RENTREE_TRONC_COMMUN, enVigueur, anneeDeNiveau, developper, rentreeDeDate, rentreeDeLigne, analyserClasse, cibleDeMatiere, formeDeFiliere, formeDeTexte } from '../src/domain/referentiel/index.ts';
 import type { EntreeReferentiel } from '../src/domain/referentiel/index.ts';
 
 const e = (a: string, extra: Partial<EntreeReferentiel> = {}): EntreeReferentiel => ({ m: 'Mathématiques', f: 'TC', t: 'f', a, r: 'test', ...extra });
@@ -71,6 +71,15 @@ describe('en vigueur à partir de', () => {
     assert.ok(textes(2026).includes('S1'));
     assert.ok(textes(2027).includes('S2'));
     assert.ok(textes(undefined).includes('S2'), 'sans rentrée, tout est proposé');
+  });
+  it('propose les Socles seulement jusqu’à la rentrée 2026, et seulement si la rentrée est connue', () => {
+    const socle = e('Additionner des fractions simples.', { n: 'S2', f: 'SOC', i: 'Fractions' });
+    assert.equal(enVigueur(socle, 2026), true);
+    assert.equal(enVigueur(socle, 2027), false);
+    assert.equal(enVigueur(socle, undefined), false);
+    const i2 = new IndexReferentiel([socle, e('Additionner des fractions.', { n: 'S2', i: 'Fractions' })]);
+    assert.equal(i2.suggerer({ objectif: 'fractions', annee: 'S2', rentree: 2026 }, 4)[0]?.entree.f, 'SOC');
+    assert.equal(i2.suggerer({ objectif: 'fractions', annee: 'S2', rentree: 2027 }, 4)[0]?.entree.f, 'TC');
   });
   it('garde la compétence terminale de S3 avant 2028', () => {
     const r = idx.suggerer({ objectif: 'fractions algébriques', annee: 'S3', rentree: 2026 }, 8);

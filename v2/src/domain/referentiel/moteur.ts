@@ -1,6 +1,6 @@
 import { developper } from './alias.ts';
 import { racines, racinesAdministratives } from './texte.ts';
-import { rentreeDeLigne } from './vigueur.ts';
+import { enVigueur } from './vigueur.ts';
 import { ANNEES } from './types.ts';
 import type { Annee, Contexte, EntreeReferentiel, Piste } from './types.ts';
 
@@ -47,7 +47,7 @@ export class IndexReferentiel {
     for (const { entree, attendu, theme } of this.lignes) {
       if (entree.l && ctx.langue && entree.l !== ctx.langue) continue;
       if (!formeCompatible(entree, ctx) || DEJA_COUVERT.test(entree.a)) continue;
-      if (ctx.rentree !== undefined && rentreeDeLigne(entree) > ctx.rentree) continue;
+      if (!enVigueur(entree, ctx.rentree)) continue;
       let score = 0;
       let touche = false;
       for (const t of mots) {
@@ -72,7 +72,7 @@ export class IndexReferentiel {
 }
 
 function formeCompatible(e: EntreeReferentiel, ctx: Contexte): boolean {
-  if (e.f === 'TC' || !ctx.forme) return true;
+  if (e.f === 'TC' || e.f === 'SOC' || !ctx.forme) return true;
   return e.f === 'HGT' ? ctx.forme === 'G' || ctx.forme === 'TTR' : ctx.forme === 'TQ' || ctx.forme === 'P';
 }
 

@@ -14,6 +14,15 @@ export function rentreeDeLigne(entree: Pick<EntreeReferentiel, 'f' | 'n'>): numb
   return RENTREE_TRONC_COMMUN[entree.n] ?? 0;
 }
 
+/** Dernière rentrée où les Socles de compétences s'appliquent à S2 (le tronc commun les remplace dès 2027). */
+export const DERNIERE_RENTREE_SOCLES = 2026;
+
+/** Une ligne est-elle en vigueur pour cette rentrée ? Les Socles ne sont proposés que lorsque la rentrée est connue. */
+export function enVigueur(entree: Pick<EntreeReferentiel, 'f' | 'n'>, rentree: number | undefined): boolean {
+  if (entree.f === 'SOC') return rentree !== undefined && rentree <= DERNIERE_RENTREE_SOCLES;
+  return rentree === undefined || rentreeDeLigne(entree) <= rentree;
+}
+
 /** Rentrée de l'année scolaire d'une date (AAAA-MM-JJ) : 1er août → 31 juillet. undefined si la date est illisible. */
 export function rentreeDeDate(iso: string): number | undefined {
   const m = /^(\d{4})-(\d{2})/.exec(iso);
