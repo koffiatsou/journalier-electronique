@@ -43,7 +43,7 @@ function existe(cas: CasCorpus, donnees: readonly EntreeReferentiel[]): boolean 
   return donnees.some((x) => (!x.l || !cas.langue || x.l === cas.langue) && attendu.test(texteDe(x)));
 }
 
-export function mesurer(lot: Lot, construire: (donnees: EntreeReferentiel[]) => IndexReferentiel = (d) => new IndexReferentiel(d)): Mesure {
+export function mesurer(lot: Lot, rentree?: number, construire: (donnees: EntreeReferentiel[]) => IndexReferentiel = (d) => new IndexReferentiel(d)): Mesure {
   const resultat: Mesure = { repondables: 0, trouves: 0, hors_donnees: 0, vagues: 0, vagues_sans_piste: 0, echecs: [] };
   const index = new Map<JeuCorpus, IndexReferentiel>();
   CORPUS.forEach((cas, i) => {
@@ -54,7 +54,7 @@ export function mesurer(lot: Lot, construire: (donnees: EntreeReferentiel[]) => 
       idx = construire(donnees);
       index.set(cas.jeu, idx);
     }
-    const pistes = idx.suggerer({ objectif: cas.objectif, annee: cas.annee, forme: cas.forme, langue: cas.langue }, NOMBRE_PISTES);
+    const pistes = idx.suggerer({ objectif: cas.objectif, annee: cas.annee, forme: cas.forme, langue: cas.langue, rentree }, NOMBRE_PISTES);
     if (!cas.attendu) {
       resultat.vagues += 1;
       if (pistes.length === 0) resultat.vagues_sans_piste += 1;

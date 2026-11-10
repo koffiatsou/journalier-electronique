@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { IndexReferentiel, anneeDeNiveau, developper, analyserClasse, cibleDeMatiere, formeDeFiliere, formeDeTexte } from '../src/domain/referentiel/index.ts';
+import { IndexReferentiel, RENTREE_TRONC_COMMUN, anneeDeNiveau, developper, rentreeDeDate, rentreeDeLigne, analyserClasse, cibleDeMatiere, formeDeFiliere, formeDeTexte } from '../src/domain/referentiel/index.ts';
 import type { EntreeReferentiel } from '../src/domain/referentiel/index.ts';
 
 const e = (a: string, extra: Partial<EntreeReferentiel> = {}): EntreeReferentiel => ({ m: 'Mathématiques', f: 'TC', t: 'f', a, r: 'test', ...extra });
@@ -47,6 +47,34 @@ describe('alias de terrain par matière', () => {
     assert.equal(developper('les signes de ponctuation', 'Français'), 'les signes de ponctuation');
     assert.equal(developper('x', 'Sciences'), 'x');
     assert.equal(developper('règle des signes'), 'règle des signes');
+  });
+});
+
+describe('en vigueur à partir de', () => {
+  const idx = new IndexReferentiel([
+    e('Additionner des fractions de même dénominateur.', { n: 'S1', i: 'Fractions' }),
+    e('Additionner des fractions de dénominateurs différents.', { n: 'S2', i: 'Fractions' }),
+    e('Additionner des fractions algébriques.', { n: 'S3', f: 'HGT', i: 'Fractions' })
+  ]);
+  it('calcule la rentrée d’une date et d’une ligne', () => {
+    assert.equal(rentreeDeDate('2026-11-09'), 2026);
+    assert.equal(rentreeDeDate('2027-03-02'), 2026);
+    assert.equal(rentreeDeDate('2026-08-24'), 2026);
+    assert.equal(rentreeDeDate('n’importe quoi'), undefined);
+    assert.equal(rentreeDeLigne({ f: 'TC', n: 'S2' }), RENTREE_TRONC_COMMUN.S2);
+    assert.equal(rentreeDeLigne({ f: 'TC', n: 'P3' }), 0);
+    assert.equal(rentreeDeLigne({ f: 'HGT', n: 'S3' }), 0);
+  });
+  it('écarte le tronc commun pas encore en vigueur', () => {
+    const textes = (rentree: number | undefined) => idx.suggerer({ objectif: 'fractions', annee: 'S2', rentree }, 8).map((p) => p.entree.n);
+    assert.ok(!textes(2026).includes('S2'), 'S2 n’est au tronc commun qu’en 2027');
+    assert.ok(textes(2026).includes('S1'));
+    assert.ok(textes(2027).includes('S2'));
+    assert.ok(textes(undefined).includes('S2'), 'sans rentrée, tout est proposé');
+  });
+  it('garde la compétence terminale de S3 avant 2028', () => {
+    const r = idx.suggerer({ objectif: 'fractions algébriques', annee: 'S3', rentree: 2026 }, 8);
+    assert.ok(r.some((p) => p.entree.f === 'HGT'));
   });
 });
 

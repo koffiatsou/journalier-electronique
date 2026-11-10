@@ -2,8 +2,10 @@
 import { mesurer } from '../../tests/mesure-referentiel.ts';
 
 const avecEchecs = process.argv.includes('--echecs');
+const indice = process.argv.indexOf('--rentree');
+const rentree = indice >= 0 ? Number(process.argv[indice + 1]) : undefined;
 for (const lot of ['reglage', 'controle'] as const) {
-  const m = mesurer(lot);
+  const m = mesurer(lot, rentree);
   console.log(`${lot} : ${m.trouves}/${m.repondables} trouvés, ${m.hors_donnees} hors données, ${m.vagues_sans_piste}/${m.vagues} objectifs vagues sans piste`);
   if (avecEchecs) for (const x of m.echecs) console.log(`  - ${x}`);
 }

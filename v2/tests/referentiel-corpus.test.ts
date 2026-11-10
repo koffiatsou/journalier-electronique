@@ -15,7 +15,17 @@ import type { Lot } from './mesure-referentiel.ts';
  */
 const PLANCHER: Record<Lot, number> = { reglage: 74, controle: 72 };
 
+/** Même mesure avec la rentrée 2026-2027 : S2 et S3 du tronc commun ne sont pas encore en vigueur. */
+const PLANCHER_2026: Record<Lot, number> = { reglage: 73, controle: 70 };
+
 describe('moteur de pistes : corpus d’objectifs de terrain', () => {
+  for (const lot of ['reglage', 'controle'] as const) {
+    it(`lot ${lot}, rentrée 2026 : le tronc commun de S2 et S3 n’est pas encore proposé`, () => {
+      const m = mesurer(lot, 2026);
+      assert.ok(m.trouves >= PLANCHER_2026[lot], `${m.trouves}/${m.repondables} (plancher ${PLANCHER_2026[lot]}) ; échecs : ${m.echecs.join(' ; ')}`);
+      assert.equal(m.vagues_sans_piste, m.vagues);
+    });
+  }
   for (const lot of ['reglage', 'controle'] as const) {
     it(`lot ${lot} : le nombre de pistes trouvées ne baisse pas`, () => {
       const m = mesurer(lot);

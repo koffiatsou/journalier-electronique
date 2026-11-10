@@ -10,7 +10,7 @@ import { BoutonLexique } from '../../ui/Lexique.tsx';
 import { Chips } from '../../ui/Chip.tsx';
 import { ChampSuggestions } from '../../ui/ChampSuggestions.tsx';
 import { Field, Input, Select, Textarea } from '../../ui/Field.tsx';
-import { anneeDeNiveau, cibleDeSeance, defautsSeance, formeDeFiliere } from '../../domain/referentiel/index.ts';
+import { anneeDeNiveau, cibleDeSeance, defautsSeance, formeDeFiliere, rentreeDeDate } from '../../domain/referentiel/index.ts';
 import { elevesProposes, enseignantDuDossier, languesDe, nomAffiche } from '../../domain/eleves/index.ts';
 import { ecoleDeEleve, nbPeriodesUtilisees } from '../../domain/agenda/index.ts';
 import type { Ecole } from '../../domain/agenda/index.ts';
@@ -220,11 +220,11 @@ function usePistes(s: Seance, eleve: Eleve | undefined, nombre: number): { piste
     let actif = true;
     const t = setTimeout(() => {
       void indexDe(jeu).then((index) => {
-        if (actif) setPistes(index.suggerer({ objectif, annee: anneeDeNiveau(s.niveauScolaire), forme: formeDeFiliere(s.forme), langue }, nombre));
+        if (actif) setPistes(index.suggerer({ objectif, annee: anneeDeNiveau(s.niveauScolaire), forme: formeDeFiliere(s.forme), langue, rentree: rentreeDeDate(s.date) }, nombre));
       }).catch(() => { if (actif) setPistes([]); });
     }, 300);
     return () => { actif = false; clearTimeout(t); };
-  }, [jeu, langue, s.niveauScolaire, s.forme, objectif, nombre]);
+  }, [jeu, langue, s.niveauScolaire, s.forme, s.date, objectif, nombre]);
   return { pistes: jeu && objectif ? pistes : [], langueAmbigue: ambigu };
 }
 

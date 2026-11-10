@@ -35,6 +35,8 @@ export interface Contexte {
   forme?: FormeEnseignement | undefined;
   /** Langue du dossier de l'élève (Néerlandais, Anglais…), pour les langues modernes. */
   langue?: string | undefined;
+  /** Rentrée de la séance (2026 pour 2026-2027) : les lignes du tronc commun pas encore en vigueur sont écartées. Absente = tout est proposé. */
+  rentree?: number | undefined;
 }
 
 export interface Piste {
