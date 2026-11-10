@@ -35,7 +35,7 @@ await page.locator('#etape-corps-4 li', { hasText: 'Guidage verbal' }).getByRole
 await page.locator('#etape-corps-4 li', { hasText: 'Guidage verbal' }).getByRole('radio', { name: 'Effet partiel' }).click();
 await page.locator('#etape-5 .etape-bouton').click();
 await page.getByRole('button', { name: 'Préparer un support' }).click();
-await page.getByLabel('Format de la prochaine séance').selectOption('Groupe');
+await page.getByLabel('Format de la prochaine séance').selectOption('Atelier groupe classe');
 await page.getByLabel('Objectif pour la prochaine séance').fill('Légender seul le schéma du cycle de l’eau');
 await page.getByRole('button', { name: 'Adaptation à partager avec l’équipe' }).click();
 await page.locator('#etape-corps-5').getByLabel('Précision').fill('Apporter la fiche plastifiée.');
@@ -54,7 +54,7 @@ ok(/Ce qui a aidé\s+Support visuel/.test(bloc) && !bloc.includes('Guidage verba
 ok(/À retravailler\s+Maintient son attention/.test(bloc), 'le point observé « Un peu » est repris');
 ok(bloc.includes('Légender seul le schéma du cycle de l’eau'), 'objectif prévu repris');
 ok(bloc.includes('Préparer un support'), 'action reprise');
-ok(!bloc.includes('Groupe') && !bloc.includes('Format'), 'le format de la prochaine séance n’est pas repris');
+ok(!bloc.includes('Atelier groupe classe') && !bloc.includes('Format'), 'le format de la prochaine séance n’est pas repris');
 ok(bloc.includes('Adaptation à partager avec l’équipe'), 'concertation reprise');
 ok(bloc.includes('Apporter la fiche plastifiée.'), 'précision reprise');
 ok(!bloc.includes('Reformuler la consigne'), 'la note de la séance de démonstration plus ancienne n’est plus affichée');

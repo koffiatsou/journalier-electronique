@@ -46,7 +46,7 @@ export const PRESENCE_LIBELLES: Record<Presence, { titre: string; aide: string }
     aide: 'Séance d’accompagnement habituelle avec l’élève présent.'
   },
   absent_eleve_coteach: {
-    titre: 'Élève absent — co-enseignement',
+    titre: 'Élève absent — co-intervention',
     aide: 'Vous restez en classe : indiquez le contenu vu. Pas de partie orthopédagogique.'
   },
   absent_eleve: {
