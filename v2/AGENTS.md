@@ -35,6 +35,7 @@ Application web pour les agents des Pôles territoriaux (WBE) qui accompagnent d
 - Jamais de push sur `main` (déploie GitHub Pages) : branche + PR, l'utilisateur fusionne.
 - `npm run check` (typecheck + tests + build) doit passer avant tout commit.
 - Pas de `innerHTML`, pas de script inline (CSP stricte). Le moteur de rédaction est pur et testé.
+- **Compilation (corrigé le 10/11/2026)** : `scripts/build.mjs` choisit le script de la page par `choisirSorties` (entrée `src/main.tsx` seulement : esbuild marque aussi `entryPoint` les morceaux chargés à la demande, dont les fichiers du référentiel ; l'ancien « premier qui a un entryPoint » pouvait appeler un de ces morceaux et laisser l'écran vide) ; sous Windows, `npm run build` ne compilait RIEN (garde `import.meta.url === file://…` jamais vraie) : un « build vert » d'avant cette date ne prouve rien sur ce poste ; vérifier que `dist/index.html` appelle bien `main-….js`.
 - Réponses à l'utilisateur en français, simples, sans jargon.
 
 ## Où trouver quoi
