@@ -60,7 +60,7 @@ Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des l
 | --- | --- |
 | Moteur de rédaction (blocs, synthèse, absences, dé-identification) | porté et testé |
 | Écran Séance (5 étapes, feuille vivante) | disponible |
-| Référentiel de compétences (pistes) | onze matières, tronc commun et S3–S6 (lots R1–R3 en partie : voir `docs/etat-des-lieux.md`) ; fait en local sur la branche `v2/lot-r-referentiel`, pas encore fusionné |
+| Référentiel de compétences (pistes) | onze matières, tronc commun et S3–S6 (lots R1–R3 en partie : voir `docs/etat-des-lieux.md`) ; fusionné dans `main` le 10/11/2026 (demande #50) |
 | Élèves (cartes, recherche, fiche, archivage, suppression, passage d'année, plusieurs langues) | disponible (lots 2 et 2b, avatars dessinés compris) |
 | Écran Journalier (période, modifier/supprimer, export Word élève ou tous) | disponible (lot 1) |
 | Agenda (semaine / jour / mois, couleurs, glisser‑déplacer, jours fériés et vacances scolaires FWB, horaires des périodes réglables) | disponible (lots 5 et 6 : + semaine type, création en glissant sur plusieurs périodes, impression) |
