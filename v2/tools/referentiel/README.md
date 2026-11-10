@@ -19,6 +19,8 @@ Exemples : `python3 extraire_tronc_commun.py 2022_REF_Mathematiques.pdf 25 150 M
 12. `extraire_eps.py` — éducation physique et à la santé (tronc commun, deux colonnes sans traits) → `education-physique.json`.
 13. `extraire_matiere_tc.py` — une matière du tronc commun au format compact (arts, philosophie et citoyenneté, latin).
 14. `extraire_ct_liste.py` — compétences terminales en listes à puces (éducation physique, artistique, technique, technologie, informatique, cirque, philosophie, latin-grec, formation économique et sociale) ; seul le tableau « champs / compétences à développer / niveaux » est lu (éducation physique 2000), pas les autres tableaux à colonnes.
+15. `extraire_uaa.py` — tableaux d'unités d'acquis d'apprentissage lus avec **PyMuPDF** (`pip install pymupdf`), bien plus fiables que pdfplumber sur ces mises en page : géographie, histoire-géographie HPT, philosophie, formation économique et sociale, informatique, sciences 2014 (générales, de base, qualifiantes). Colonnes « Appliquer / Transférer » entremêlées dans les sciences : seules les ressources et les « Connaitre » sont gardées.
+Le skill « PDF → Excel » utilise le même moteur que pdfplumber : il n'apporte rien de plus sur ces documents. Non lus faute de mieux : technologie 2004, éducation technique, artistique 2004, arts du cirque, latin-grec (listes à puces, qualité moyenne).
 Mesure du moteur : `node --import tsx tools/referentiel/mesurer.ts --echecs` (corpus dans `tests/corpus-referentiel.ts`).
 Scripts Python : `python` simple (pdfplumber installé pour l'utilisateur), pas `python -I`.
 Limites connues : voir AGENTS.md (histoire-géographie, technique et anglais/allemand du tronc commun non extraits).

@@ -9,10 +9,11 @@ import type { Lot } from './mesure-referentiel.ts';
  * Après l'ajout de l'histoire-géographie (10 cas) : réglage 54/61, contrôle 53/61.
  * Après les alias de terrain par matière : réglage 60/61, contrôle 59/61. Après la technique et l'histoire-géographie S4–S6 (11 cas écrits sans regarder les résultats) : réglage 65/67, contrôle 64/66.
  * Après l'éducation physique, les arts, la philosophie et les langues anciennes (15 cas écrits sans regarder les résultats) : réglage 72/74, contrôle 72/74.
+ * Après la relecture des tableaux d'unités avec PyMuPDF (sciences S3–S6 fines, géographie, histoire-géographie, philosophie) : réglage 73/74, contrôle 72/74.
  * Attention : les échecs des deux lots avaient été
  * affichés avant d'écrire ces alias, donc le lot de contrôle n'est plus indépendant ; la mesure honnête est celle de départ.
  */
-const PLANCHER: Record<Lot, number> = { reglage: 72, controle: 72 };
+const PLANCHER: Record<Lot, number> = { reglage: 73, controle: 72 };
 
 describe('moteur de pistes : corpus d’objectifs de terrain', () => {
   for (const lot of ['reglage', 'controle'] as const) {

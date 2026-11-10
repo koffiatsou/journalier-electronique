@@ -74,7 +74,7 @@ Reste côté Élèves : l'avatar n'apparaît pas encore au Journalier, à l'agen
 | Néerlandais | tronc commun 2022 (grammaire fine) + secondaire supérieur 2017 |
 | Anglais, allemand | grammaire du tronc commun P5–S3 (9/11/2026, 165 et 157 lignes) + secondaire supérieur 2017 |
 | Espagnol, italien | secondaire supérieur 2017 uniquement |
-| Histoire, géographie, formation économique et sociale | tronc commun 2022 P1–S3 (530 lignes) ; S4–S6 : moments-clés et compétences de l'histoire (1999), compétences d'unité de géographie (HGT) et d'histoire-géographie (HPT 2014) : 87 lignes larges, sans les tableaux de ressources (`histoire-geographie.json`) |
+| Histoire, géographie, formation économique et sociale | tronc commun 2022 P1–S3 (530 lignes) ; S4–S6 : moments-clés et compétences de l'histoire (1999), tableaux d'unités de géographie (HGT, 233 lignes) et d'histoire-géographie (HPT 2014, 180 lignes) lus avec PyMuPDF (`histoire-geographie.json`) |
 | Technique (manuel, technique, technologique, numérique) | tronc commun 2022 P1–S3 (458 lignes) + compétences terminales HGT (éducation technique et technologique, technologie, informatique : listes à puces, qualité moyenne) ; qualification non extraite |
 | Éducation physique et à la santé | tronc commun 2022 P1–S3 (691 lignes, `education-physique.json`) ; S4–S6 : 29 lignes (document de 2000 : les trois tableaux « champs / compétences » sont lus, la colonne des niveaux non) |
 | Arts (éducation culturelle et artistique) | tronc commun 2022 P1–S3 (472 lignes, `arts.json`) + éducation artistique 2004 et arts du cirque (listes à puces) |
@@ -88,7 +88,7 @@ Points restants :
 3. Droit détaillé : seulement les « objets à croiser » des sciences économiques.
 4. Anglais et allemand du tronc commun : grammaire faite (P5–S3) ; les compétences par habileté sont communes à toutes les langues (lignes sans langue).
 5. Langues du secondaire supérieur : classées par niveau du CECRL, sans année ; grammaire par langue lue des annexes de façon heuristique.
-6. Sciences et sciences économiques du secondaire supérieur : compétences d'unité (larges), pas de savoir-faire fins.
+6. Sciences du secondaire supérieur : relues avec PyMuPDF (9/11/2026) : 943 lignes fines par unité (savoirs, savoir-faire, compétences) pour sciences générales et de base, 334 pour la formation scientifique qualifiante. Sciences économiques (2000) : compétences d'unité seulement.
 7. Qualité d'extraction : quelques lignes tronquées ou sans thème (maths HGT, français 2014), phrases parfois coupées ; à relire par échantillon.
 8. Vérifier les pistes sur de vrais objectifs de leçon (journaux réels) et enrichir la table d'alias du langage de terrain.
 9. Regrouper les compétences proches (l'agent voit parfois plusieurs formulations voisines).
