@@ -1,8 +1,8 @@
 // Lot S : la V2 prend l'adresse principale du site. Ce parcours la sert « comme GitHub Pages » (sous /journalier-electronique/,
 // rien ailleurs) et vérifie dans un vrai navigateur :
 //   - l'écran de connexion s'ouvre et l'application démarre sous ce chemin (modèles Word, logo, essai) sans erreur ;
-//   - l'adresse de retour envoyée à Microsoft est <site>/journalier-electronique/msal-redirect.html : celle que la V75
-//     utilisait déjà, avec la même inscription (même client_id), donc rien à ajouter chez Microsoft pour la V2 ;
+//   - l'adresse de retour envoyée à Microsoft est <site>/journalier-electronique/msal-redirect.html, avec le client_id
+//     de l'inscription Entra de l'application ;
 //   - la page de retour répond.
 // Il sert le dossier dist/ (compilé s'il manque). Lancer : LANG=C.UTF-8 node tools/navigateur/site.mjs
 import { createServer } from 'node:http';
@@ -19,8 +19,8 @@ const SORTIE = process.env.SORTIE ?? `${os.tmpdir()}/journalier-navigateur`;
 mkdirSync(SORTIE, { recursive: true });
 const PORT = Number(process.env.PORT_SITE ?? 5198);
 const BASE = '/journalier-electronique/';
-// Inscription Microsoft (Entra) de la V75, reprise telle quelle par la V2 : mêmes adresses de retour déclarées.
-const CLIENT_ID_V75 = '65c3db78-9bad-4a08-8eac-404b83e368cb';
+// Inscription Microsoft (Entra) de l'application.
+const CLIENT_ID = '65c3db78-9bad-4a08-8eac-404b83e368cb';
 const ok = (c, m) => { if (!c) throw new Error(`ÉCHEC : ${m}`); console.log(`✓ ${m}`); };
 
 if (!existsSync(path.join(dist, 'index.html'))) {
@@ -60,7 +60,7 @@ try {
   await popup.waitForLoadState();
   const adresse = new URL(popup.url());
   ok(adresse.hostname === 'login.microsoftonline.com', 'la fenêtre de connexion mène chez Microsoft');
-  ok(adresse.searchParams.get('client_id') === CLIENT_ID_V75, 'même inscription Microsoft que la V75 (même client_id)');
+  ok(adresse.searchParams.get('client_id') === CLIENT_ID, 'inscription Microsoft de l’application (client_id attendu)');
   ok(adresse.searchParams.get('redirect_uri') === `${site}msal-redirect.html`, `adresse de retour = <site>/journalier-electronique/msal-redirect.html (reçu : ${adresse.searchParams.get('redirect_uri')})`);
   await popup.close();
   await page.getByRole('button', { name: 'Annuler' }).click();

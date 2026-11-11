@@ -137,7 +137,6 @@ export function Accueil({ magasin, synchro, onAller }: PropsAccueil) {
           <Button variante="primaire" onClick={() => onAller('eleves', { nouveau: '1' })}>Ajouter mon premier élève</Button>
           <p className="synchro-discret">Pour tout essayer sans données réelles (deux élèves d’essai, des séances, un agenda et un PIA ; rien ne quitte votre appareil) :</p>
           <Button variante="secondaire" onClick={() => { void chargerDemo(); }}>Charger les données d’essai</Button>
-          <p className="synchro-discret">Vous utilisiez l’ancienne version ? <a href="#/reprise">Reprendre mes données de l’ancienne version</a>.</p>
         </section>
       ) : (
         <>

@@ -10,7 +10,7 @@ export type TypeObjet = 'eleve' | 'seance' | 'activite' | 'pia' | 'reglage';
 /** Ordre de traitement : les élèves d'abord (une séance ne doit jamais arriver sans son élève). */
 export const TYPES_OBJETS: readonly TypeObjet[] = ['eleve', 'seance', 'activite', 'pia', 'reglage'];
 
-/** Dossier OneDrive de chaque type (sous le dossier « v2 » de l'application, jamais celui de la V75). */
+/** Dossier OneDrive de chaque type (sous le dossier « v2 » de l'application). */
 export const DOSSIERS: Readonly<Record<TypeObjet, string>> = {
   eleve: 'eleves',
   seance: 'seances',

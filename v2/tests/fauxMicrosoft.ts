@@ -14,8 +14,6 @@ const erreur = (statut: number, code: string): Response => json({ error: { code,
 
 export class FauxMicrosoft {
   fichiers = new Map<string, FichierFaux>();
-  /** Données de la V75, à la RACINE du dossier de l'application (à côté de « v2 »), chemins relatifs : « eleves/abc/profil.json ». Lecture seule pour l'application. */
-  fichiersV75 = new Map<string, FichierFaux>();
   calendriers = new Map<string, { nom: string; evenements: Map<string, EvenementFaux> }>();
   /** Journal des requêtes Graph reçues : « METHOD /chemin ». */
   journal: string[] = [];
@@ -82,12 +80,6 @@ export class FauxMicrosoft {
     return json({ token_type: 'Bearer', scope: scopes.join(' '), expires_in: 3600, access_token: acces, refresh_token: refresh, id_token: `${entete}.${charge}.x` });
   }
 
-  /** Dépose un fichier JSON comme la V75 l'aurait envoyé dans OneDrive. */
-  deposerV75(chemin: string, contenu: unknown): void {
-    const n = this.prochain();
-    this.fichiersV75.set(chemin, { id: `v75-item-${n}`, etag: `"{v75-${n}},1"`, contenu: typeof contenu === 'string' ? contenu : JSON.stringify(contenu) });
-  }
-
   /** Invalide les jetons déjà donnés (comme une session expirée côté Microsoft). */
   expirerSessions(): void { this.jetons.clear(); this.refresh.clear(); }
 
@@ -104,7 +96,7 @@ export class FauxMicrosoft {
       return this.jeton(new URLSearchParams(String(corps ?? '')));
     }
     if (adresse.hostname === 'faux.sharepoint.com') {
-      const f = [...this.fichiers.values(), ...this.fichiersV75.values()].find((x) => adresse.pathname === `/telecharger/${x.id}`);
+      const f = [...this.fichiers.values()].find((x) => adresse.pathname === `/telecharger/${x.id}`);
       return f ? new Response(f.contenu, { status: 200 }) : new Response('', { status: 404 });
     }
     if (adresse.hostname !== 'graph.microsoft.com') return new Response('', { status: 404 });
@@ -118,24 +110,6 @@ export class FauxMicrosoft {
     const accordes = jeton ? this.jetons.get(jeton) : undefined;
     if (!accordes) return erreur(401, 'InvalidAuthenticationToken');
     const texte = typeof corps === 'string' ? corps : '';
-
-    /* OneDrive : données de la V75, à la racine du dossier de l'application (lecture seule) ; « v2 » est à la V2 */
-    const v75 = /^\/me\/drive\/special\/approot(?::\/((?!v2(?:\/|:|$))[^:]+):)?\/children$/.exec(chemin);
-    if (v75) {
-      if (methode !== 'GET') return erreur(405, 'methodNotAllowed');
-      if (!accordes.includes('Files.ReadWrite.AppFolder')) return erreur(403, 'accessDenied');
-      const prefixe = v75[1] ? `${v75[1]}/` : '';
-      const enfants = new Map<string, { id: string; etag: string; dossier: boolean }>();
-      for (const [c, f] of this.fichiersV75) {
-        if (!c.startsWith(prefixe)) continue;
-        const reste = c.slice(prefixe.length);
-        const i = reste.indexOf('/');
-        if (i < 0) enfants.set(reste, { id: f.id, etag: f.etag, dossier: false });
-        else enfants.set(reste.slice(0, i), { id: `dossier-${prefixe}${reste.slice(0, i)}`, etag: '', dossier: true });
-      }
-      if (!enfants.size && prefixe) return erreur(404, 'itemNotFound'); // la racine, elle, existe toujours
-      return this.page(adresse, [...enfants].map(([nom, e]) => e.dossier ? { id: e.id, name: nom, folder: {} } : { id: e.id, name: nom, eTag: e.etag, file: {} }));
-    }
 
     /* OneDrive */
     let m = /^\/me\/drive\/special\/approot:\/v2\/([^/:]+):\/children$/.exec(chemin);
@@ -164,7 +138,7 @@ export class FauxMicrosoft {
     }
     m = /^\/me\/drive\/items\/([^/]+)$/.exec(chemin);
     if (m) {
-      const trouve = [...this.fichiers, ...this.fichiersV75].find(([c, f]) => !c.startsWith('__') && f.id === m![1]);
+      const trouve = [...this.fichiers].find(([c, f]) => !c.startsWith('__') && f.id === m![1]);
       if (methode === 'GET') {
         if (!trouve) return erreur(404, 'itemNotFound');
         return json({ id: trouve[1].id, '@microsoft.graph.downloadUrl': `https://faux.sharepoint.com/telecharger/${trouve[1].id}` });
@@ -172,7 +146,6 @@ export class FauxMicrosoft {
       if (methode === 'DELETE') {
         if (!trouve) return erreur(404, 'itemNotFound');
         if (entetes.get('If-Match') && entetes.get('If-Match') !== trouve[1].etag) return erreur(412, 'preconditionFailed');
-        if (this.fichiersV75.has(trouve[0])) return erreur(405, 'methodNotAllowed');
         this.fichiers.delete(trouve[0]);
         return new Response(null, { status: 204 });
       }

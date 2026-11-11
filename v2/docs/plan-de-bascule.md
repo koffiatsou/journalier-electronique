@@ -1,5 +1,7 @@
 # Plan de bascule : de la V75 à la V2
 
+> **Document historique (11/11/2026) : la V75 a été retirée du site et du dépôt** (étiquette Git `v75-archive`). Il n'y a plus de `/v75/`, plus de reprise de ses données, plus de retour arrière vers elle ; ce qui suit décrit la bascule telle qu'elle a eu lieu.
+
 > **État au 28/10/2026 : la bascule est faite.** La demande #37 a été fusionnée le 27/10/2026 à 22 h 51 ; la #39 (lot SP, sécurité, verrou npm) l'a été le 28/10/2026. Les passages ci-dessous qui parlent « d'avant la fusion » restent valables pour l'historique et le retour arrière.
 
 Document pour l'utilisateur, à adapter avant de le donner à l'équipe. Rien n'est supprimé dans la V75 : elle reste utilisable en secours, à une autre adresse (lot S).

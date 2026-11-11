@@ -1,7 +1,7 @@
 import { decoder, depuisBase64, encoder, versBase64 } from './octets.ts';
 
 /*
- * Chiffrement d'un enregistrement (AES-GCM 256 bits), comme dans le coffre de la V75.
+ * Chiffrement d'un enregistrement (AES-GCM 256 bits).
  *
  * - Chaque enregistrement a son propre IV aléatoire (12 octets) : deux chiffrements du même texte diffèrent.
  * - Des « données authentifiées » (AAD) lient le texte chiffré à son propriétaire, à sa table et à son identifiant :

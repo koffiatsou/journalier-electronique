@@ -26,8 +26,7 @@ export const TITRES_PAGES: Record<Page, string> = {
   journalier: 'Journalier des séances',
   eleves: 'Élèves',
   pia: 'PIA',
-  synchro: 'Synchronisation',
-  reprise: 'Reprise des données de l’ancienne version'
+  synchro: 'Synchronisation'
 };
 
 /**

@@ -1,9 +1,9 @@
 # Journalier V2 — React + TypeScript
 
-Réécriture du Journalier électronique. **Depuis le lot S, la V2 est la version définitive : elle occupe l'adresse principale du site ; la V75 reste en secours dans `/v75/`** (voir `docs/plan-de-bascule.md`). Le site publié est assemblé par `npm run site` : V2 à la racine, V75 compilée avec `--base=/journalier-electronique/v75/`.
+Journalier électronique des Pôles territoriaux WBE (React + TypeScript). **La V2 est la seule version : elle occupe l'adresse principale du site.** Le site publié est le dossier `v2/dist`, tel que compilé par `npm run check`. L'ancienne version (V75) a été retirée du dépôt le 11/11/2026 (étiquette Git `v75-archive` pour la retrouver).
 
 ## Pourquoi une réécriture
-La V75 est née par ajouts successifs (≈ 33 000 lignes de JavaScript sans structure imposée). La V2 repart d'une architecture claire, vérifiée par le compilateur et par des tests, avec un design soigné et fluide.
+La première version (V75) est née par ajouts successifs (≈ 33 000 lignes de JavaScript sans structure imposée). La V2 repart d'une architecture claire, vérifiée par le compilateur et par des tests, avec un design soigné et fluide.
 
 ## Principes
 - **Domaine pur** (`src/domain`) : types du Journalier et règles de rédaction. Aucune dépendance au navigateur, entièrement testé.
@@ -18,7 +18,6 @@ cd v2
 npm install
 npm run dev        # compile puis sert http://localhost:5173
 npm run check      # typecheck + tests + build (utilisé par la CI)
-npm run site       # lot S : assemble ../site (V2 à la racine + V75 de ../dist dans v75/) et vérifie toutes les adresses ; la V75 doit avoir été compilée à la racine du dépôt avec : npm run build -- --base=/journalier-electronique/v75/
 npm run navigateur # rejoue TOUS les parcours dans un vrai navigateur (Playwright à installer : voir ci-dessous) ; utilisé par la CI
 LANG=C.UTF-8 node tools/navigateur/accessibilite.mjs # audit d'accessibilité de tous les écrans (clavier, contrastes, mouvement réduit…) (lot Q)
 LANG=C.UTF-8 node tools/navigateur/journalier.mjs   # parcours dans un vrai navigateur (Playwright, serveur sur le port 5199)
@@ -69,8 +68,7 @@ Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des l
 | OneDrive / Outlook (synchronisation sûre, conflits, copie de secours, mode démonstration) | disponible (lot 8) ; **première vraie connexion à essayer par l'utilisateur** |
 | Données de démonstration (bouton sur l'accueil, effaçables) | disponible (lot 8) |
 | Coffre chiffré (écran verrouillé, mode essai, migration de l'ancienne base, copie de secours avec mot de passe) | disponible (lot 7) |
-| Reprise V75 (lecture du stockage local de la V75, vérification élève par élève, contrôle après import ; plan de bascule dans `docs/plan-de-bascule.md`) | disponible (lot 9) ; **à essayer avec de vraies données par l'utilisateur** |
-| Reprise depuis OneDrive (lecture des dossiers de la V75, en lecture seule) et « Repartir de OneDrive » (nouvel ordinateur) | disponible (lot 9b) ; **à essayer avec un vrai compte par l'utilisateur** |
+| « Repartir de OneDrive » (nouvel ordinateur) | disponible (lot 9b) ; **à essayer avec un vrai compte par l'utilisateur** |
 | Agenda : les séances réalisées (même non planifiées) apparaissent dans l'agenda | disponible (lot 9c) |
 | Agenda : horaires par école (plusieurs écoles, heures réelles sur les cases, avertissement de chevauchement ou de trajet, heures réelles dans Outlook) | disponible (lot 10) ; **à essayer avec les vraies écoles par l'utilisateur** |
 | Finition visuelle (palette « Encre et papier », menu adapté à la tablette en portrait, logo, icônes) | **lot F terminé** (palette, cadre, logo, icônes ; tous les écrans relus) ; reste le retour de l'utilisateur sur sa tablette |
@@ -85,7 +83,7 @@ Un lot de travail par conversation : voir `docs/plan-de-travail.md` (liste des l
 | Audit du 6-7 novembre, lot 6 (fonctionnel : date de naissance, nouvelle année PIA, premier élève…) | **fait en local, en attente de validation** |
 | Retouches du 4 novembre (tablette) : matière en pastilles, points de vigilance, menu réductible, fiche élève | **lot V terminé** |
 | Retouches du 3 novembre : encodage depuis l'agenda, horaire libre, enseignants par cours, évolution lisible | **lot U terminé** ; reste : référentiel (lots R) |
-| Mise en service : la V2 à l'adresse principale, la V75 en secours dans `/v75/`, assemblage du site vérifié (chaque page appelle des fichiers existants de sa propre version), adresse de retour Microsoft de la V2 = celle de la V75 | **lot S terminé** ; reste : déclarer l'adresse `/v75/` chez Entra, regarder le contrôle GitHub, essais réels, puis fusionner la demande #37 (= la bascule) |
+| Mise en service : la V2 à l'adresse principale (fusion de la demande #37, 27/10/2026) ; la V75 retirée du site et du dépôt (11/11/2026) | **terminé** ; reste à l'utilisateur : retirer l'adresse `/v75/` chez Entra |
 
 ## Outils de build
 `esbuild` compile le TypeScript et React (script `scripts/build.mjs`). Pas de Vite : l'environnement de développement initial n'avait pas accès au registre npm, et `esbuild` suffit à ce stade.

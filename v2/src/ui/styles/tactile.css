@@ -26,7 +26,4 @@
   /* Poignée d'étirement d'une activité : le dessin ne change pas, seule la zone sensible grandit vers le haut, sans dépasser 24 px : une activité d une période (56 px) garde son centre libre pour le déplacer. */
   .evt-poignee { height: 12px; }
   .evt-poignee::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 24px; }
-
-  /* Lien de reprise des données : une vraie ligne à toucher. */
-  .synchro a { display: inline-flex; align-items: center; min-height: var(--cible-tactile); }
 }

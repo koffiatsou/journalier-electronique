@@ -1,7 +1,6 @@
 import { descriptionEvenement, repereDans } from '../domain/synchro/outlook.ts';
 import type { EvenementExistant, EvenementSouhaite } from '../domain/synchro/outlook.ts';
 import { ajouterJours } from '../domain/agenda/dates.ts';
-import type { ElementOneDrive, LecteurOneDriveV75 } from '../domain/v75/onedrive.ts';
 import { ErreurAcces, ErreurVersion } from './nuage.ts';
 import type { CalendrierNuage, FichierDistant, Nuage } from './nuage.ts';
 import { schemaCalendrier, schemaElementDrive, schemaErreurGraph, schemaEvenement, schemaFichierEcrit, schemaMetaFichier, schemaPage } from './schemas-microsoft.ts';
@@ -10,7 +9,7 @@ import type { z } from 'zod';
 
 /*
  * Microsoft Graph : OneDrive (dossier privé de l'application) et calendrier Outlook.
- * Les fichiers sont dans « Applications/<nom de l'application>/v2/… » : jamais dans les dossiers de la V75.
+ * Les fichiers sont dans « Applications/<nom de l'application>/v2/… » : jamais à la racine du dossier de l'application.
  */
 
 const BASE = 'https://graph.microsoft.com/v1.0';
@@ -143,30 +142,6 @@ export function creerNuageGraph(o: OptionsGraph): Nuage {
         if (!(e instanceof Introuvable)) throw e; // déjà supprimé : tant mieux
       }
     }
-  };
-}
-
-/**
- * Lecture seule des données de la V75 : elle range ses dossiers (eleves, agenda, pia…) directement à la RACINE du dossier privé
- * de l'application (« Journalier » n'est que son nom interne pour cette racine, voir `graphRelativeAppPath` dans la V75) ;
- * la V2 range les siens dans le sous-dossier « v2 », à côté. Seules des requêtes GET sont faites : la V75 n'est jamais modifiée.
- */
-export function creerLecteurV75Graph(o: OptionsGraph): LecteurOneDriveV75 {
-  const c = creerClient(o);
-  const segments = (chemin: string): string => chemin.split('/').filter(Boolean).map(encodeURIComponent).join('/');
-  return {
-    async lister(chemin) {
-      const complet = segments(chemin);
-      const dossier = complet ? `approot:/${complet}:` : 'approot';
-      try {
-        const items = await c.pages('fichiers', schemaElementDrive, `${BASE}/me/drive/special/${dossier}/children?$select=id,name,eTag,file,folder&$top=200`);
-        return items.map((i): ElementOneDrive => ({ nom: i.name, id: i.id, dossier: !!i.folder }));
-      } catch (e) {
-        if (e instanceof Introuvable) return null;
-        throw e;
-      }
-    },
-    lire: (id) => c.telecharger(id)
   };
 }
 

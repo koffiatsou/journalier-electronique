@@ -8,9 +8,7 @@ import type { Magasin } from '../state/store.ts';
 import { portLocal, portRegistre } from './adaptateurs.ts';
 import { Connexion } from './connexion.ts';
 import type { Compte, Stockage } from './connexion.ts';
-import { lireOneDriveV75 } from '../domain/v75/onedrive.ts';
-import type { LectureOneDriveV75, LecteurOneDriveV75 } from '../domain/v75/onedrive.ts';
-import { creerCalendrierGraph, creerLecteurV75Graph, creerNuageGraph } from './graph.ts';
+import { creerCalendrierGraph, creerNuageGraph } from './graph.ts';
 import { ErreurAcces, ErreurVersion } from './nuage.ts';
 import type { CalendrierNuage, Nuage } from './nuage.ts';
 import { appliquerRestauration, preparerCopie, preparerRestauration } from './secours.ts';
@@ -62,7 +60,6 @@ export interface DependancesSynchro {
   /** Remplaçables dans les tests. */
   nuageMicrosoft?: () => Nuage;
   calendrierMicrosoft?: () => CalendrierNuage;
-  lecteurV75?: () => LecteurOneDriveV75;
   /** Faux : espace du mode essai, jamais relié à un vrai compte Microsoft (par défaut : vrai). */
   autoriserMicrosoft?: boolean;
 }
@@ -193,7 +190,7 @@ export function creerSynchro(d: DependancesSynchro) {
     minuteur = setTimeout(() => { minuteur = null; void synchroniserMaintenant(true); }, d.delaiAutoMs ?? 30_000);
   }
 
-  // Tout changement de données ici déclenche un envoi, après un moment de calme (comme en V75, 30 secondes).
+  // Tout changement de données ici déclenche un envoi, après un moment de calme (30 secondes).
   let vu = d.magasin.lire();
   const cesserMagasin = d.magasin.abonner(() => {
     const e = d.magasin.lire();
@@ -399,20 +396,6 @@ export function creerSynchro(d: DependancesSynchro) {
         });
         return r;
       } catch (e) { signaler(e); return null; } finally { enSynchro = false; }
-    },
-
-    /**
-     * Lit en lecture seule le dossier « Journalier » que la V75 a rangé dans OneDrive (reprise des données).
-     * `null` si ce n'est pas possible ici (pas connecté à un vrai compte) ; sinon `trouve` dit si la V75 a laissé des données.
-     */
-    async lireV75DansOneDrive(progres?: (texte: string) => void): Promise<LectureOneDriveV75 | null> {
-      if (etat.mode !== 'microsoft' || !pret() || etat.enCours) return null;
-      maj({ enCours: 'lecture', message: null });
-      try {
-        const r = await lireOneDriveV75(d.lecteurV75?.() ?? creerLecteurV75Graph({ jeton: d.connexion }), progres);
-        maj({ enCours: null });
-        return r;
-      } catch (e) { signaler(e); return null; }
     },
 
     /* Copie de secours (avec un mot de passe, le fichier est chiffré) */
