@@ -13,6 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    # Image officielle de Playwright : les navigateurs (Chromium, WebKit) et leurs bibliothèques système sont déjà dedans.
+    # Avant, `playwright install --with-deps` passait par apt ; le 11/11/2026 le réseau du serveur n'a plus atteint les dépôts
+    # Ubuntu et la CI restait bloquée 30 minutes. L'image est épinglée par son empreinte (comme les actions) ; son étiquette
+    # est v1.63.0-noble. Elle doit rester de la MÊME version que le paquet `playwright` installé plus bas : les mettre à jour ensemble.
+    container:
+      image: mcr.microsoft.com/playwright@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --ipc=host
+
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -31,13 +39,11 @@ jobs:
           npm run check
 
       # Parcours dans un vrai navigateur (lot Q) : l'accessibilité, l'agenda, la séance, le PIA, la synchronisation…
-      # Playwright est un outil de vérification : installé ici seulement, sans toucher à v2/package.json ni aux dépendances de l'application.
+      # Playwright est un outil de vérification : ajouté ici seulement, sans toucher à v2/package.json ni aux dépendances de l'application.
       # WebKit (le moteur de Safari) sert au parcours lot2b-tactile : un iPad n'utilise que ce moteur, même avec Chrome.
-      - name: V2 — installer l'outil de test Playwright (hors package.json)
+      - name: V2 — ajouter l'outil de test Playwright (hors package.json)
         working-directory: v2
-        run: |
-          npm install --no-save --no-audit --no-fund playwright@1.63.0
-          npx playwright install --with-deps chromium webkit
+        run: npm install --no-save --no-audit --no-fund playwright@1.63.0
 
       - name: V2 — parcours dans un vrai navigateur
         working-directory: v2
