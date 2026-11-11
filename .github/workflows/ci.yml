@@ -33,11 +33,23 @@ jobs:
       # Parcours dans un vrai navigateur (lot Q) : l'accessibilité, l'agenda, la séance, le PIA, la synchronisation…
       # Playwright est un outil de vérification : installé ici seulement, sans toucher à v2/package.json ni aux dépendances de l'application.
       # WebKit (le moteur de Safari) sert au parcours lot2b-tactile : un iPad n'utilise que ce moteur, même avec Chrome.
+      # `--with-deps` passe par apt, donc par le réseau de la machine de CI. Quand ce réseau ne répond pas, apt réessaie
+      # pendant des minutes (constaté le 11/11/2026 : 6 min 48 s perdues, puis le job entier coupé à 30 min).
+      # On borne donc chaque essai à 6 minutes et on réessaie 3 fois ; si les 3 essais échouent, l'étape échoue avec un message clair.
       - name: V2 — installer l'outil de test Playwright (hors package.json)
         working-directory: v2
+        timeout-minutes: 20
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.63.0
-          npx playwright install --with-deps chromium webkit
+          for essai in 1 2 3; do
+            if timeout 6m npx playwright install --with-deps chromium webkit; then
+              exit 0
+            fi
+            echo "Essai ${essai} sur 3 échoué (réseau apt ?). Nouvel essai dans 20 secondes."
+            sleep 20
+          done
+          echo "Installation de Playwright impossible après 3 essais." >&2
+          exit 1
 
       - name: V2 — parcours dans un vrai navigateur
         working-directory: v2
