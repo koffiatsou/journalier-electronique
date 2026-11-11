@@ -1,5 +1,7 @@
 # Démarrage : audit, lots 5 et 6 (cohérence, puis fonctionnel) et chantier « importer un PIA »
 
+> **Document historique (11/11/2026)** : ce fichier de passage date du 7/11/2026. La V75 et son écran de reprise ont depuis été retirés du dépôt (étiquette Git `v75-archive`) : les fichiers `reprise.css`, `#/reprise` et le lien « Reprendre mes données de la V75 » cités plus bas n'existent plus. Pour l'état réel, lire `docs/etat-des-lieux.md` et `docs/plan-de-travail.md`.
+
 > Fichier de passage entre deux conversations. À lire en entier avant de toucher au code. Rédigé le 7 novembre 2026, à la fin du lot 2. **À lancer après les lots 3 et 4** (`docs/demarrage-lots-3-4.md`) : l'environnement, la méthode et les pièges Windows y sont décrits une fois pour toutes ; **les relire**.
 
 ## Texte à coller pour démarrer la nouvelle conversation

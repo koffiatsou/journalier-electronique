@@ -1,605 +1,74 @@
-# Security
+# Sécurité
 
-> Référence de sécurité du Journalier électronique — état documentaire à jour (octobre 2026).
+> Référence de sécurité du Journalier électronique (V2, React + TypeScript). Mise à jour le 11/11/2026, après le retrait de la V75.
 
-Les contrôles décrits ici portent sur le code et la configuration versionnés. Les paramètres du tenant Entra, les règles actives du dépôt GitHub et les résultats courants des alertes GitHub ne sont pas vérifiables à partir du seul dépôt; toute mention de ces paramètres externes doit être lue avec la date de leur dernier contrôle effectif.
+Les contrôles décrits ici portent sur le code et la configuration versionnés dans ce dépôt. Les paramètres du tenant Microsoft Entra, les règles actives du dépôt GitHub et l'état courant des alertes GitHub ne se vérifient pas à partir du seul dépôt : à contrôler dans GitHub et dans Entra avant de s'y fier.
 
-## V74 — contrôle de la migration legacy
+L'ancienne version (V75) et sa documentation de sécurité ont été retirées du dépôt ; elles restent lisibles à l'étiquette Git `v75-archive`.
 
-La migration des anciennes données est conçue comme une opération **non destructive et à permission minimale**.
+## 1. Signaler un problème
 
-- Elle utilise uniquement `Files.ReadWrite.AppFolder`.
-- Elle ne tente pas de lire directement `Mes fichiers/Journalier`.
-- L'utilisateur doit fournir une copie `Journalier-legacy` dans l'AppFolder.
-- La copie source n'est pas supprimée.
-- Les données sont validées avant import.
-- Les conflits avec des données déjà présentes dans `Journalier/` bloquent l'import au lieu d'écraser silencieusement les données.
-- Le `studentId` historique est conservé pour assurer la continuité des séances.
-- Le `ownerId` technique est normalisé vers l'identité du compte actuellement connecté.
-- Une ancienne valeur PIA n'est pas convertie automatiquement en PIA annuel validé.
-- Aucune opération de suppression distante n'est exposée par le module de migration.
+Ne pas ouvrir de ticket public pour une faille ni y joindre des données d'élèves. Écrire directement à la personne responsable du projet (propriétaire du dépôt) ou utiliser le signalement privé de GitHub (« Report a vulnerability », onglet Security) s'il est activé.
 
-### Retrait du module transitoire de migration
+## 2. Ce qu'il faut protéger
 
-Le module transitoire `src/v74/v74-migration.js` a été retiré après accomplissement des migrations initiales des dossiers legacy, réduisant ainsi la surface de code exposée. Le pont `window.JournalierMigrationBridge` demeure pour assurer la continuité des fonctions utilitaires partagées (`v72MarkPiaPending`, `v72MarkPiaSynced`, `validateStrictPIA`).
+L'application manipule des données d'élèves mineurs (séances, observations, PIA) : confidentialité stricte, RGPD.
 
-## V74 — rapports, PIA et exports
+- **Aucune donnée réelle d'élève** dans le dépôt, les tests, les exemples ou les captures. Les exemples et les tests utilisent des données fictives (voir `v2/docs/exemples/`).
+- Les données restent **sur l'appareil de l'agent** (navigateur) ; l'application n'a **aucun serveur**. La seule sortie de données est la synchronisation vers **l'espace OneDrive de l'agent** (et son agenda Outlook), avec son propre compte Microsoft.
 
-Les évolutions V74 réutilisent le DataStore et les mécanismes de synchronisation existants; elles n'ajoutent ni backend ni permission Graph. Les propositions PIA restent à valider par le professionnel. Les exports dé-identifiés sont une sortie distincte des exports professionnels nominatifs et doivent être ré-audités si le schéma PIA ou les données exportées évoluent.
+## 3. Stockage local
 
-Toute modification de `index.html` doit déclencher une vérification de la CSP. Lorsque le contenu d'un script inline est modifié ou qu'un nouveau script inline est introduit, les mécanismes CSP correspondants doivent être recalculés. Un build réussi ne vérifie pas à lui seul le comportement de la CSP dans un navigateur.
+- Base IndexedDB du navigateur, **chiffrée enregistrement par enregistrement** : AES-GCM 256 bits, IV aléatoire de 12 octets par enregistrement, données authentifiées liées au propriétaire, à la table et à l'identifiant (un enregistrement recopié ailleurs ne se déchiffre plus). Code : `v2/src/domain/coffre/`.
+- La clé est créée **non extractable** : l'application s'en sert, personne ne peut la lire ni l'exporter.
+- L'écran est **verrouillé** tant que l'agent n'est pas connecté ; « Verrouiller » ferme la session. Le mode essai (données fictives) est à part et ne se synchronise jamais avec un vrai compte.
+- **Copie de secours** : fichier `.json` que l'agent garde lui-même. Avec un mot de passe (8 caractères au moins), le fichier est chiffré (PBKDF2-SHA256, 600 000 tours, puis AES-GCM). Sans mot de passe, il est **en clair** : à ranger comme un dossier d'élève.
+- Limite connue : un appareil partagé ou non verrouillé, un navigateur compromis ou une extension malveillante restent hors de portée de ce chiffrement.
 
-### CSP
+## 4. Connexion Microsoft
 
-L'état actuel de `index.html` ne contient pas de script inline : les scripts applicatifs sont chargés depuis des fichiers locaux (`self`). `script-src` n'autorise donc pas `unsafe-inline`. La couche UX responsive ajoute uniquement une feuille CSS locale et ne demande aucune nouvelle origine CSP.
+- Flux « code d'autorisation avec PKCE » (méthode recommandée pour une application web sans serveur). **Aucun mot de passe** ne passe par l'application ; aucun secret client (inscription Entra de type application monopage).
+- Les jetons restent dans l'onglet (`sessionStorage`) : fermer le navigateur déconnecte.
+- Droits demandés, et pas d'autres : `openid`, `profile`, `offline_access`, **`Files.ReadWrite.AppFolder`** (dossier propre à l'application, pas tout OneDrive) et **`Calendars.ReadWrite`** (liaison avec l'agenda Outlook, seulement si l'agent l'accepte).
+- Les identifiants de l'inscription (`clientId`, `tenantId`) sont publics, pas des secrets. L'adresse de retour déclarée chez Entra est `<site>/msal-redirect.html` ; toute autre adresse devenue inutile (par exemple `<site>/v75/msal-redirect.html`) doit être retirée de l'inscription.
 
-`style-src 'unsafe-inline'` reste présent car le dépôt utilise encore des attributs `style` et des styles dynamiquement injectés par le runtime. Cette permission n'est pas introduite par la passe UX responsive.
+## 5. OneDrive et Outlook
 
-La directive `frame-ancestors` n'est pas applicable depuis une balise `<meta>` (les navigateurs l'ignorent et génèrent un avertissement dans la console). Elle a donc été retirée des balises `<meta>` de l'application. Une protection effective contre l'encadrement doit être délivrée par un en-tête HTTP serveur (`Content-Security-Policy: frame-ancestors 'none'`) lorsque l'hébergement le permet.
+- Les fichiers sont écrits dans le dossier de l'application sous `v2/` (`eleves`, `seances`, `agenda`, `reglages`) ; protégés par Microsoft, **pas par un mot de passe supplémentaire** (décision validée).
+- Aucun écrasement silencieux : les conflits sont présentés à l'agent. Les données `demo-…` ne partent jamais vers un vrai compte. Un événement Outlook qui ne porte pas le repère de l'application n'est jamais modifié.
+- Les réponses de Microsoft Graph et le contenu des fichiers lus sont **validés par des schémas zod** avant usage (`v2/src/domain/synchro/schemas.ts`, `v2/src/synchro/schemas-microsoft.ts`) : une réponse inattendue donne une erreur claire, pas un comportement indéfini. Un fichier abîmé est signalé, jamais ignoré en silence.
 
-## 1. Objet
+## 6. Application web
 
-Ce document décrit les mécanismes de sécurité actuellement présents dans le projet, les contrôles effectués et les limites connues.
+- **Politique de sécurité du contenu (CSP)** dans `v2/index.html` : `default-src 'self'`, `script-src 'self'`, `style-src 'self'`, `object-src 'none'`, `base-uri 'none'`, `form-action 'none'` ; `connect-src` limité à `login.microsoftonline.com`, `graph.microsoft.com`, `*.sharepoint.com` et `*.files.1drv.com`.
+- **Aucun script ni gestionnaire d'événement en ligne.** React échappe le texte ; aucun HTML construit à la main.
+- Pas de service worker, pas de statistiques, pas de pistage, pas de ressource externe (polices, scripts) chargée depuis un tiers.
+- Les exports Word (Journalier, PIA) sont produits dans le navigateur ; une version **dé-identifiée** existe pour les partager hors du cercle des professionnels concernés.
 
-Il ne constitue pas une certification de sécurité ni une garantie d'absence de vulnérabilité.
+## 7. Dépendances
 
----
+- Trois dépendances d'exécution seulement (`react`, `react-dom`, `zod`), **versions exactes** (sans `^`) et `v2/package-lock.json` versionné ; installation par `npm ci`.
+- Dependabot surveille `/v2` (npm) et les actions GitHub, chaque semaine (`.github/dependabot.yml`). Une mise à jour se relit avant fusion : elle passe par une PR et par la CI.
+- `npm audit` doit rester à 0 faille avant fusion d'une mise à jour de sécurité.
 
-## 2. Modèle de sécurité
+## 8. GitHub, CI et déploiement
 
-Le Journalier traite des données potentiellement sensibles relatives à des élèves.
+- **Pages** : le site est servi en HTTPS depuis GitHub Pages ; le dossier publié est `v2/dist`, compilé par `.github/workflows/main.yml`.
+- **Actions** : permissions explicites et minimales (`contents: read` ; le déploiement ajoute `pages: write` et `id-token: write`). Les actions sont **épinglées par leur empreinte complète** (SHA de commit).
+- **CI** (`.github/workflows/ci.yml`, sur chaque PR vers `main`) : `npm run check` (types, tests, compilation) puis les parcours dans un vrai navigateur (Playwright : Chromium et WebKit), dont l'audit d'accessibilité.
+- **Analyse de code** : CodeQL (réglage par défaut) sur le code JavaScript/TypeScript, les actions GitHub et Python.
+- **`main`** : la protection (PR obligatoire, statut CI exigé, pas de force push) est un paramètre GitHub, non vérifiable ici ; à revalider dans les réglages du dépôt.
+- **Secrets** : aucun secret dans le dépôt ni dans l'historique récent ; `.env*` est ignoré par Git. Ne jamais committer un jeton, un mot de passe ou une clé.
 
-L'architecture actuelle repose sur plusieurs principes :
+## 9. Règles pour les prochaines modifications
 
-- identité fournie par Microsoft Entra ID ;
-- isolation des données par utilisateur ;
-- stockage local chiffré ;
-- synchronisation explicite vers l'AppFolder OneDrive ;
-- permissions Microsoft Graph limitées au besoin actuel ;
-- validation des données avant synchronisation ;
-- détection des conflits lors des écritures distantes ;
-- séparation entre données pédagogiques et couche de synchronisation.
+1. Ne jamais ajouter de donnée réelle d'élève (code, tests, exemples, captures, messages de commit).
+2. Ne pas affaiblir la CSP (pas de `unsafe-inline`, pas de nouvel hôte dans `connect-src` sans décision explicite) ; le parcours `tools/navigateur/site.mjs` et les tests la surveillent.
+3. Ne pas élargir les droits Microsoft (`DROITS` dans `v2/src/synchro/connexion.ts`) sans décision explicite.
+4. Toute nouvelle dépendance se discute avant ; version exacte, lockfile mis à jour.
+5. Aucune erreur avalée en silence, surtout dans le chiffrement et la synchronisation.
+6. Ne pas renommer la base locale ni le dossier OneDrive `v2/` : ce serait perdre le lien avec les données déjà enregistrées.
 
-L'application fonctionne selon un modèle **local-first**.
+## 10. Limites
 
----
-
-## 3. Identité et authentification
-
-L'authentification est assurée par Microsoft Entra ID avec MSAL Browser.
-
-Configuration actuellement utilisée :
-
-- `openid`
-- `profile`
-- `Files.ReadWrite.AppFolder`
-
-La permission Microsoft Graph utilisée pour le stockage est :
-
-```text
-Files.ReadWrite.AppFolder
-```
-
-L'application n'utilise pas de `client_secret` dans le frontend.
-
-L'identité Entra est utilisée pour isoler les données locales. L'application ne doit pas adopter automatiquement une identité propriétaire provenant des données distantes.
-
----
-
-## 4. Stockage local
-
-Les données locales sont stockées dans IndexedDB. Depuis le 30 septembre 2026, la persistance métier utilise le coffre granulaire `journalier-secure-v74` plutôt qu'un unique enregistrement d'état. Les élèves, séances, événements Agenda, PIA et registres de synchronisation sont isolés en enregistrements distincts.
-
-Chaque enregistrement métier est protégé par AES-GCM 256 bits avec une `CryptoKey` non extractible, un IV aléatoire propre à l'enregistrement et des données authentifiées (AAD) liées à l'identité du compte, au type et à l'identifiant de l'objet. Une empreinte SHA-256 du ciphertext est conservée pour les diagnostics d'intégrité.
-
-Les écritures sont appliquées par transaction IndexedDB ; `durability: 'strict'` est demandé lorsque le navigateur le supporte. L'ancien coffre `journalier-secure-v72` reste conservé pour la migration et n'est pas supprimé automatiquement.
-
-Si le coffre historique existe mais que son gros enregistrement `states` est devenu illisible, l'application ne prétend pas avoir récupéré les données : elle conserve la source, initialise un coffre granulaire séparé et peut tenter une récupération depuis l'AppFolder OneDrive.
-
-La granularité réduit le rayon d'impact d'une corruption locale : une valeur métier est isolée des autres. Elle ne supprime cependant pas les risques propres au navigateur : un XSS exécuté dans la même origine peut agir dans le contexte applicatif. La CSP, l'échappement des données et les contrôles d'entrée restent donc indispensables.
-
-Le fonctionnement détaillé du stockage local est décrit dans `ARCHITECTURE.md` et `docs/STOCKAGE_LOCAL_V74.md`.
-
----
-
-## 5. Données PIA
-
-Le traitement du PIA est conçu pour être réalisé localement dans le navigateur.
-
-Le document PIA original n'est pas supposé être automatiquement envoyé vers Microsoft Graph pendant son analyse.
-
-Il faut distinguer :
-
-- anonymisation ;
-- pseudonymisation ;
-- données directement identifiantes.
-
-Le fait qu'une donnée soit traitée localement ne constitue pas à lui seul une garantie générale de conformité : la gestion des données introduites dans l'application doit rester conforme aux règles institutionnelles applicables.
-
----
-
-### Cycle de vie de la clé locale
-
-La clé du nouveau coffre est générée côté navigateur et conservée comme `CryptoKey` non extractible. L'application ne place pas la clé dans le code source, dans le dépôt ou dans localStorage. La perte de cette clé rend le ciphertext local correspondant indéchiffrable ; la récupération fonctionnelle doit alors repartir d'une copie distante disponible dans OneDrive.
-
-## 6. Microsoft Graph et OneDrive
-
-L'application utilise l'AppFolder OneDrive de l'utilisateur.
-
-Structure actuelle :
-
-```text
-AppFolder
-└── Journalier/
-    ├── profil/
-    ├── eleves/
-    ├── agenda/
-    ├── pia/{studentId}/pia.json
-    └── system/
-```
-
-Les opérations Graph sont réalisées avec les permissions prévues pour l'AppFolder.
-
-Les écritures utilisent les ETags lorsque le mécanisme de synchronisation l'exige.
-
-Un conflit `HTTP 412 Precondition Failed` est traité comme un conflit de synchronisation et non comme une autorisation d'écraser silencieusement la donnée distante.
-
-Lorsqu’une séance existante est réattribuée à un autre élève, le fichier distant change de dossier dans `Journalier/eleves/{studentId}/seances/`. L’ancienne référence distante et son ETag sont conservés temporairement dans le registre de synchronisation. La nouvelle copie est écrite sur son nouvel emplacement sans réutiliser l’ETag de l’ancien fichier, puis l’ancienne copie est supprimée avec son propre ETag. Un `HTTP 412 Precondition Failed` pendant ce déplacement bloque l’opération et est présenté comme un conflit ; aucune suppression forcée n’est effectuée. Cette évolution ne requiert aucune permission Graph supplémentaire.
-
----
-
-## 7. Téléchargement des fichiers Graph
-
-Pour la lecture du contenu JSON distant, l'application utilise l'URL de téléchargement pré-authentifiée fournie par Microsoft Graph via :
-
-```text
-@microsoft.graph.downloadUrl
-```
-
-L'application vérifie notamment :
-
-- que l'URL utilise HTTPS ;
-- que le domaine appartient aux domaines attendus ;
-- que le contenu retourné peut être interprété comme JSON.
-
-Cette approche évite d'utiliser directement une requête navigateur vers l'endpoint `/content` avec le jeton d'autorisation.
-
----
-
-## 8. Validation des données
-
-Les données utilisées par le système de synchronisation sont validées avant leur prise en compte.
-
-Les validations portent notamment sur :
-
-- la structure attendue des objets ;
-- l'identité du propriétaire ;
-- les identifiants ;
-- les types de données ;
-- les éléments de synchronisation ;
-- les contenus JSON.
-
-Les données de test du mécanisme AppFolder disposent d'un traitement distinct afin de ne pas être confondues avec les données métier.
-
----
-
-## 9. Protection contre les écritures concurrentes
-
-La synchronisation utilise les ETags Microsoft Graph.
-
-Lorsqu'une version distante a changé entre la lecture et l'écriture, l'application peut recevoir :
-
-```text
-HTTP 412 Precondition Failed
-```
-
-Ce mécanisme permet de détecter une modification concurrente plutôt que d'effectuer une écriture aveugle.
-
-La résolution du conflit reste une opération explicite.
-
----
-
-## 10. Content Security Policy et sécurité du frontend
-
-L'application utilise une Content Security Policy.
-
-La CSP limite notamment les origines autorisées pour les connexions nécessaires au fonctionnement de l'application.
-
-Les scripts applicatifs actuels sont externes et limités à l'origine `self` par `script-src`.
-
-Le code comporte également des mécanismes de protection contre certaines injections HTML/XSS.
-
----
-
-## 10 bis. Couche UX responsive
-
-`src/styles/journalier-ux-responsive.css` est une feuille locale. Elle n'introduit ni chargement de ressource tierce, ni JavaScript, ni nouvelle permission Graph. La passe responsive n'élargit donc pas la surface réseau de la CSP.
-
-Les simulations responsive ont également contrôlé les débordements horizontaux et la taille des contrôles tactiles ; ces contrôles sont des validations d'interface et ne constituent pas un audit de sécurité complet.
-
-## 11. Sécurité GitHub
-
-### GitHub Pages
-
-Le projet est déployé sur GitHub Pages.
-
-Le dépôt utilise HTTPS pour le site publié.
-
-Aucun domaine personnalisé n'est actuellement utilisé.
-
-### Protection de `main`
-
-Les règles de protection et Rulesets sont des paramètres externes à Git et ne sont pas vérifiables dans ce dépôt. Lors du dernier contrôle externe consigné, elles imposaient notamment :
-
-- Pull Request obligatoire avant fusion ;
-- vérification du statut CI ;
-- restriction des suppressions ;
-- blocage des force pushes.
-
-Revalider ces paramètres dans GitHub avant de les considérer comme actifs.
-
----
-
-## 12. GitHub Actions
-
-Les workflows disposent de permissions explicites.
-
-Le workflow de déploiement utilise notamment :
-
-```text
-contents: read
-pages: write
-id-token: write
-```
-
-Le workflow CI utilise :
-
-```text
-contents: read
-```
-
-La création et l'approbation automatique de Pull Requests par les workflows ne sont pas autorisées dans les paramètres actuellement audités.
-
-Les Actions utilisées dans les workflows sont référencées par leur SHA complet.
-
-Cela concerne actuellement :
-
-- `actions/checkout`
-- `actions/setup-node`
-- `actions/configure-pages`
-- `actions/upload-pages-artifact`
-- `actions/deploy-pages`
-
-Cette configuration limite le risque lié au déplacement ultérieur d'un tag d'Action.
-
----
-
-## 13. Secrets et historique Git
-
-Un contrôle GitHub Secret Scanning a été effectué.
-
-Résultat observé :
-
-```text
-0 Open
-0 Closed
-No secrets found
-```
-
-Un audit complémentaire de l'historique Git a également été effectué.
-
-Les recherches ont porté notamment sur des motifs correspondant à :
-
-- `client_secret`
-- mots de passe ;
-- access tokens ;
-- refresh tokens ;
-- bearer tokens ;
-- clés privées ;
-- API keys ;
-- secret keys.
-
-Aucun secret exploitable n'a été identifié lors de cet audit.
-
-Une occurrence de `accessToken` a été retrouvée dans `index.html`, mais elle correspond à un terme de programmation et non à une valeur de token exposée.
-
-Ces contrôles ne constituent pas une preuve mathématique de l'absence de tout secret historique ou futur.
-
----
-
-## 14. Dépendances
-
-Le projet utilise npm.
-
-Le lockfile est versionné dans Git.
-
-La dépendance Vite a été mise à niveau vers :
-
-```text
-vite 8.3.0
-```
-
-Un `npm ci` et un build de production ont été exécutés après cette mise à jour.
-
-Le résultat observé était :
-
-```text
-0 vulnerabilities
-```
-
-La surveillance automatisée des dépendances est maintenant configurée avec Dependabot.
-
-La configuration couvre :
-
-- les dépendances npm ;
-- les GitHub Actions ;
-- une fréquence hebdomadaire ;
-- jusqu'à 5 Pull Requests Dependabot ouvertes par écosystème.
-
-Les alertes de sécurité et les mises à jour de sécurité Dependabot sont également activées dans les paramètres du dépôt.
-
-Cette automatisation constitue un mécanisme de surveillance continue, mais ne garantit pas l'absence de vulnérabilité future.
-
----
-
-## 15. CI et déploiement
-
-Le workflow CI vérifie le build lors des Pull Requests vers `main`.
-
-Le workflow de déploiement construit ensuite l'application et la publie sur GitHub Pages après fusion sur `main`.
-
-La protection de `main` et le contrôle CI réduisent le risque qu'une modification non vérifiée soit directement publiée.
-
----
-
-## 16. Code scanning / CodeQL
-
-Le dépôt utilise GitHub CodeQL avec le **Default setup**.
-
-La configuration actuelle analyse notamment :
-
-- JavaScript / TypeScript ;
-- GitHub Actions.
-
-La première analyse CodeQL effectuée après l'activation s'est terminée avec succès.
-
-Résultat observé :
-
-```text
-0 code scanning alerts
-```
-
-Ce résultat correspond à l'état du dépôt au moment de l'analyse et ne constitue pas une garantie d'absence de vulnérabilité future.
-
----
-
-## 17. Diagnostic AppFolder
-
-Le projet possède un mécanisme de diagnostic permettant de vérifier le fonctionnement de l'AppFolder.
-
-Le test :
-
-1. crée temporairement un dossier ;
-2. écrit un fichier JSON de test ;
-3. relit le fichier ;
-4. vérifie son contenu ;
-5. supprime le fichier ;
-6. supprime le dossier temporaire.
-
-Ce test ne constitue pas une opération métier et ne doit pas être confondu avec la synchronisation normale du Journalier.
-
-Le test AppFolder a été validé après correction du mécanisme de lecture Graph.
-
----
-
-## 18. Contrôles effectués
-
-À la date de rédaction de ce document :
-
-### 🟢 Contrôlé
-
-- authentification Entra ID ;
-- fonctionnement MSAL ;
-- accès AppFolder ;
-- écriture / lecture / suppression du test AppFolder ;
-- permissions Graph utilisées ;
-- protection de `main` ;
-- CI sur Pull Request ;
-- SHA pinning des GitHub Actions ;
-- Secret Scanning ;
-- audit de l'historique Git ;
-- build Vite ;
-- `npm ci` ;
-- absence de vulnérabilités npm lors du dernier audit effectué ;
-- configuration Dependabot Alerts ;
-- configuration Dependabot Security Updates ;
-- configuration Dependabot Version Updates ;
-- surveillance hebdomadaire des dépendances npm ;
-- surveillance hebdomadaire des GitHub Actions ;
-- CodeQL / Code scanning ;
-- première analyse CodeQL ;
-- absence d'alerte CodeQL lors de cette analyse ;
-- vérification du parcours prévision → formulaire → sauvegarde → rapprochement ;
-- validation de `getEncodedForEvent()` ;
-- tests E2E déjà réalisés sur le parcours réel de l'application ;
-- déploiement GitHub Pages ;
-- HTTPS du site publié.
-
-### 🟠 À maintenir / surveiller
-
-- évolution des dépendances npm ;
-- évolution des runtimes GitHub Actions ;
-- évolution de l'environnement `ubuntu-latest` ;
-- politique générale des GitHub Actions ;
-- règles de sécurité GitHub ;
-- évolution des permissions Entra / Graph ;
-- évolution des mécanismes de synchronisation ;
-- nouvelles alertes Dependabot ;
-- nouvelles alertes CodeQL.
-
-### 🔵 À traiter ultérieurement
-
-- éventuelle restriction de la politique « Allow all actions » ;
-- tests de sécurité complémentaires ;
-- éventuelle mise en place d'une revue automatisée des dépendances dans les Pull Requests ;
-- évolution vers une architecture institutionnelle partagée si les besoins du projet changent.
-
----
-
-## 19. Limites
-
-Les contrôles décrits dans ce document ne constituent pas :
-
-- un audit de sécurité indépendant ;
-- une certification ;
-- une analyse juridique ou RGPD complète ;
-- une garantie d'absence de vulnérabilité ;
-- une garantie que les données introduites dans l'application sont appropriées pour tout contexte institutionnel.
-
-La sécurité réelle dépend également de l'environnement Microsoft 365, du compte utilisateur, du navigateur, du poste utilisé, des politiques institutionnelles et de la configuration Entra.
-
----
-
-## 20. Règles pour les futures modifications
-
-Toute modification touchant :
-
-- l'authentification ;
-- les permissions Graph ;
-- le stockage local ;
-- le chiffrement ;
-- la synchronisation ;
-- la CSP ;
-- les workflows GitHub Actions ;
-- les dépendances ;
-- le déploiement ;
-
-doit entraîner une réévaluation de ce document.
-
-Une modification de sécurité importante doit être testée avant fusion dans `main`.
-
-Les nouveaux secrets ne doivent jamais être placés dans le frontend, le dépôt Git ou les fichiers publiés par GitHub Pages.
-
----
-
-## 21. Principe directeur
-
-Le Journalier doit appliquer le principe suivant :
-
-> **Minimiser les données exposées, limiter les permissions, vérifier les données avant synchronisation et ne jamais remplacer silencieusement une donnée distante lors d'un conflit.**
-
-La sécurité doit être considérée comme une propriété évolutive du projet et non comme un état définitif.
-
-
-# 22. Contrôles spécifiques V74
-
-## 22.1 Périmètre
-
-V74 est une extension côté navigateur. Elle ne doit pas contourner l’authentification, le DataStore ou le SyncManager existants.
-
-## 22.2 Données pédagogiques
-
-Les séances et PIA sont des données potentiellement sensibles. V74 conserve les mêmes protections que la couche historique de données : identité Entra, isolation par utilisateur, stockage local protégé et synchronisation vers l’AppFolder.
-
-## 22.3 Continuité et validation
-
-Le PIA précédent est utilisé comme source de continuité. Il n’est jamais considéré comme une vérité automatiquement validée. Les objectifs générés par V74 restent à l’état `PROPOSITION` jusqu’à une action du professionnel.
-
-## 22.4 Dé-identification
-
-L’export modèle dé-identifié retire les identifiants directs (`eleve`, `studentId`, `ecole`, `classe`) et neutralise la continuité nominative. V74.1 retire également les dates de preuve, identifiants de séances, métadonnées de génération et nom de fichier source. La dé-identification doit continuer à être auditée si le schéma PIA évolue.
-
-## 22.5 Import documentaire local
-
-Les PIA précédents sont acceptés en Word `.docx` ou PDF `.pdf`. Le document est traité localement et n’est pas transmis à Microsoft Graph pendant l’analyse. V74.1 ne conserve pas le fichier original ni son nom de fichier. Des limites de taille et de décompression sont appliquées pour réduire les risques de consommation excessive de mémoire. Un PDF scanné sans couche texte exploitable est refusé plutôt que soumis à une interprétation incertaine.
-
-## 22.6 Causalité
-
-V74 ne doit pas transformer la co-présence d’une observation, d’une aide et d’un effet dans une séance en relation causale. Les relations sont documentaires et longitudinales.
-
-## 22.7 Journalisation / traçabilité
-
-Le PIA généré conserve les identifiants de séances et les états de convergence nécessaires à l’explication des propositions. Cette traçabilité est professionnelle et ne doit pas être publiée dans un corpus dé-identifié si elle contient des identifiants.
-
-## 22.8 Règle pour les prochaines évolutions
-
-Toute nouvelle fonction V74/V75 doit vérifier au minimum :
-
-- authentification Entra ;
-- périmètre Graph/AppFolder ;
-- persistance DataStore ;
-- dé-identification des exports ;
-- absence de secret dans le frontend ou le dépôt ;
-- CSP/XSS ;
-- validation des entrées ;
-- conflits/ETag ;
-- absence de causalité ou de décision pédagogique automatique ;
-- cohérence avec le modèle PIA existant.
-
-
-### V74.1.0 — interface, import/export et sécurité documentaire
-- Les imports Word/PDF restent locaux et sont convertis en structure PIA.
-- Le document original et son nom de fichier ne sont pas conservés par Journalier.
-- Les exports Word/PDF sont produits localement à partir de la structure interne.
-- Les exports dé-identifiés retirent également les dates, identifiants de séances et métadonnées de génération.
-- Le tableau de bord d’accueil ne produit aucun score pédagogique : il affiche des fréquences descriptives.
-- Les mémos personnels utilisent le DataStore local chiffré.
-
-### V74.0.1 — continuité et validation
-- Les données du PIA restent dans le même périmètre de stockage par compte/agent.
-- La validation des propositions est une action explicite du professionnel.
-- Le PIA précédent n’est jamais promu automatiquement au rang de vérité ; il est conservé comme source de continuité.
-- Les exports dé-identifiés retirent les identifiants élève connus par le moteur.
-- Les relations entre questions de séance restent documentaires et non causales.
-
-## V74 — Agenda et CSP
-
-La refonte Agenda n'ajoute aucune origine réseau ni script inline. Les nouvelles actions utilisent les mécanismes existants de délégation d'événements et les contrôleurs locaux. La CSP de `index.html` conserve `script-src 'self'` et les mêmes domaines Microsoft Graph/Entra. Les métadonnées Outlook sont stockées comme données métier locales et ne déclenchent aucune synchronisation Outlook dans cette version.
-
----
-
-# 23. Contrôles de sécurité & RGPD — Référentiel WBE et Assistant IA Local
-
-## 23.1 Référentiel des Aménagements Raisonnables WBE (`src/app/referentiel-amenagements.js`)
-
-Le référentiel compile 544 fiches d'aménagements et d'outils concrets (Fondamental Wapi A et Kit Secondaire WBE).
-
-- **Hébergement et distribution statique :**
-  - La base de connaissances est stockée sous forme de ressource statique dans `public/referentiel_amenagements_wbe.json`.
-  - Elle est chargée localement via `fetch('./referentiel_amenagements_wbe.json')`, strictement couverte par la directive CSP `connect-src 'self'`.
-  - Aucune dépendance externe, aucun CDN tiers, aucune télémétrie distante.
-- **Intégrité et sécurité des données :**
-  - Le fichier JSON est en lecture seule (`Read-Only`). L'application n'effectue aucune écriture distante ou locale modifiant cette base.
-  - Toutes les données insérées dynamiquement dans le DOM (titres, puces, descriptions) sont systématiquement assainies via la fonction d'échappement HTML `esc()` ou injectées par les API textuelles sécurisées (`textContent`, `createElement`).
-  - Aucun vecteur d'injection XSS n'est introduit lors de la manipulation des fiches d'aménagements.
-
-## 23.1 Retrait du prototype de modèle génératif local
-
-L'essai d'intégration d'un modèle génératif local (Gemma 3 270M avec Transformers.js) a été retiré de l'application :
-- Les fichiers sources (`src/app/local-ai-model-manager.js`, `src/app/local-ai-pipeline.js`, `src/app/local-ai-worker.js`), les tests associés et la dépendance `@huggingface/transformers` ont été supprimés.
-- Les domaines externes Hugging Face et la directive `'wasm-unsafe-eval'` ont été retirés de la politique de sécurité du contenu (CSP).
-- Une purge transparente des caches éventuels (`journalier-ai-model-gemma-270m-v1`, `transformers-cache`) et des marqueurs locaux est effectuée au démarrage.
-
-## 23.2 Assistant de rédaction local (`src/app/local-ai-assistant.js`)
-
-L'application intègre un assistant de rédaction déterministe pour faciliter la formalisation des observations d'élèves :
-
-- **Traitement local dans le navigateur :**
-  - Les reformulations, corrections orthographiques et suggestions d'aménagements reposent exclusivement sur un dictionnaire interne et sur les fiches du référentiel WBE.
-  - Aucun appel vers un service d'IA distant n'est effectué.
-- **Principe de validation humaine obligatoire :**
-  - L'assistant ne modifie jamais directement ni automatiquement le contenu des fiches d'élèves, des séances ou des PIA.
-  - Toute action ouvre une modale comparative dédiée présentant le texte original en regard du texte proposé.
-  - L'utilisateur professionnel conserve la décision finale par un clic volontaire : `✓ Remplacer le texte`, `+ Ajouter à la suite`, ou `Annuler`.
-- **Protection des données sensibles :**
-  - Le fonctionnement hors-ligne préserve la confidentialité des dossiers même en déplacement ou sur réseau public.
-
-# 24. V75 — moteur de rédaction et export du Journalier
-
-- Le moteur de rédaction (`redaction-engine.js`) est **déterministe et local** : aucun appel réseau, aucune IA générative.
-- L'export Word du Journalier lit le modèle `./modeles/Journalier_modele_papier.docx` (même origine) ; le texte inséré est échappé en XML 1.0 et les métadonnées du document (auteur, dernier auteur) sont neutralisées.
-- L'export « sans le nom de l'élève » remplace le nom et le prénom dans **tout** le texte (accents et casse ignorés, mots entiers) ; l'identité du tableau d'en-tête est vidée. Il ne remplace pas une relecture avant diffusion.
-- Aucun script ni gestionnaire inline n'a été ajouté (CSP inchangée : `script-src 'self'`).
-- Les nouveaux modules sont des scripts classiques servis depuis `src/app/` ; ils sont déclarés dans `vite.config.js` (`copyClassicAppScripts`) pour figurer dans le build.
-- Un nom de fichier exporté est assaini (caractères interdits retirés) comme pour les autres exports.
-
+Ce document n'est ni un audit indépendant, ni une certification, ni une analyse RGPD complète, ni une garantie d'absence de vulnérabilité. La sécurité réelle dépend aussi du compte Microsoft 365, du navigateur, du poste utilisé, des règles de l'établissement et de la configuration Entra.
