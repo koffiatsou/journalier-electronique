@@ -1,7 +1,7 @@
 /**
  * Remplissage du PIA officiel (modèle Word) : on garde le document du modèle tel quel et on ne fait
  * qu'écrire dans ses cases (jamais de reconstruction, pour que la mise en forme reste celle de l'école).
- * Structure vérifiée du modèle : voir `docs/PIA_MODELE_STRUCTURE.md` à la racine du dépôt.
+ * Structure vérifiée du modèle : voir `v2/docs/PIA_MODELE_STRUCTURE.md`.
  * Fonctions pures (testables sans navigateur). Procès-verbal 2 : tableaux T6 à T8 (lot 4b).
  */
 import { ASPECTS, RESULTATS } from '../pia/types.ts';

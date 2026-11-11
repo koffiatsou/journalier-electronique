@@ -7,7 +7,6 @@ import { AgendaPage } from '../features/agenda/AgendaPage.tsx';
 import { ElevesPage } from '../features/eleves/ElevesPage.tsx';
 import { JournalierPage } from '../features/journalier/JournalierPage.tsx';
 import { PiaPage } from '../features/pia/PiaPage.tsx';
-import { ReprisePage } from '../features/reprise/ReprisePage.tsx';
 import { SynchroPage } from '../features/synchro/SynchroPage.tsx';
 import type { Synchro } from '../synchro/service.ts';
 import { SeancePage } from '../features/seance/SeancePage.tsx';
@@ -57,7 +56,6 @@ export function App({ magasin, synchro, adresseRetour, essai, notices, onVerroui
         {pret && page === 'journalier' ? <JournalierPage key={parametres.eleve ?? ''} magasin={magasin} onAller={aller} eleveInitial={parametres.eleve ?? null} /> : null}
         {pret && page === 'eleves' ? <ElevesPage key={parametres.nouveau ?? ''} magasin={magasin} onAller={aller} nouveau={parametres.nouveau === '1'} eleveInitial={parametres.eleve ?? ''} /> : null}
         {pret && page === 'synchro' ? <SynchroPage synchro={synchro} adresseRetour={adresseRetour} /> : null}
-        {pret && page === 'reprise' ? <ReprisePage magasin={magasin} synchro={synchro} essai={essai} onAller={aller} /> : null}
         {pret && page === 'pia' ? <PiaPage key={`${parametres.eleve ?? ''}|${parametres.annee ?? ''}`} magasin={magasin} onAller={aller} parametres={parametres} /> : null}
       </Shell>
     </FournisseurToast>

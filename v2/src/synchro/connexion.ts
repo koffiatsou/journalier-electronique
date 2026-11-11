@@ -11,7 +11,7 @@ import type { ReponseJeton } from './schemas-microsoft.ts';
  */
 
 /**
- * Identifiants de l'application dans Entra ID : les mêmes que la V75 (ce sont des identifiants publics, pas des secrets).
+ * Identifiants de l'application dans Entra ID  (ce sont des identifiants publics, pas des secrets).
  * L'adresse de retour de la V2 doit être ajoutée une fois à cette inscription (voir l'écran Synchronisation).
  */
 export const IDENTIFIANTS_MICROSOFT = {

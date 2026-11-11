@@ -2,7 +2,7 @@
   "name": "journalier-v2",
   "private": true,
   "version": "2.0.0-alpha.1",
-  "description": "Journalier électronique — réécriture React + TypeScript (en parallèle de la V75)",
+  "description": "Journalier électronique — réécriture React + TypeScript",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -13,8 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test \"tests/**/*.test.ts\"",
     "check": "npm run typecheck && npm test && npm run build",
-    "navigateur": "node tools/navigateur/tout.mjs",
-    "site": "node --import tsx scripts/assembler-site.ts"
+    "navigateur": "node tools/navigateur/tout.mjs"
   },
   "dependencies": {
     "react": "19.2.8",

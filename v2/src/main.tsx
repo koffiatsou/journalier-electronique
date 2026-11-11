@@ -16,7 +16,6 @@ import './ui/styles/eleves.css';
 import './ui/styles/reunion.css';
 import './ui/styles/pia.css';
 import './ui/styles/synchro.css';
-import './ui/styles/reprise.css';
 import './ui/styles/verrou.css';
 import './ui/styles/tactile.css';
 import './ui/styles/mouvement.css';

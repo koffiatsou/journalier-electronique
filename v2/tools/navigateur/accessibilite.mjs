@@ -39,8 +39,7 @@ const ECRANS = [
   ['pia pv1', (p) => route(p, '#/pia?eleve=demo-alpha&onglet=pv1')],
   ['pia pv2', (p) => route(p, '#/pia?eleve=demo-alpha&onglet=pv2')],
   ['pia aménagements', (p) => route(p, '#/pia?eleve=demo-alpha&onglet=amenagements')],
-  ['synchro', (p) => route(p, '#/synchro')],
-  ['reprise', (p) => route(p, '#/reprise')]
+  ['synchro', (p) => route(p, '#/synchro')]
 ];
 
 async function chargerDemo(page) {

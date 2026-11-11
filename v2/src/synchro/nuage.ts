@@ -50,7 +50,7 @@ export interface CalendrierNuage {
 
 /**
  * Passage obligé entre le texte clair et ce qui part dans le nuage. Rien n'est transformé, volontairement : au lot 7,
- * il a été décidé (« comme la V75 ») que OneDrive est protégé par Microsoft seul. Si un mot de passe OneDrive est demandé
+ * il a été décidé que OneDrive est protégé par Microsoft seul. Si un mot de passe OneDrive est demandé
  * plus tard, c'est ici qu'il se branchera, sans toucher au reste.
  */
 export interface Scelleur {

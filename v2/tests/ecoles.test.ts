@@ -7,7 +7,6 @@ import {
   verifierEcoles, verifierHoraires
 } from '../src/domain/agenda/index.ts';
 import type { Ecole, Periode } from '../src/domain/agenda/index.ts';
-import { lirePeriodesV75 } from '../src/domain/v75/agenda.ts';
 import { evenementsSouhaites, normaliserObjet } from '../src/domain/synchro/index.ts';
 import type { Eleve } from '../src/domain/types.ts';
 import { creerMagasin } from '../src/state/store.ts';
@@ -323,14 +322,7 @@ describe('écoles : Outlook et synchronisation', () => {
   });
 });
 
-describe('reprise V75 : huit périodes', () => {
-  it('les huit périodes de la V75 donnent des horaires à neuf périodes, la neuvième non utilisée', () => {
-    const periods = PERIODES_AGENDA.slice(0, 8).map((p) => ({ label: p.label, start: p.debut, end: p.fin }));
-    const { horaires } = lirePeriodesV75({ periods });
-    assert.equal(horaires?.length, 9);
-    assert.equal(horaires?.[8]?.debut, '');
-    assert.equal(lirePeriodesV75({ periods: periods.slice(0, 5) }).horaires, null);
-  });
+describe('écoles par défaut', () => {
   it('ecolesParDefaut reste valide', () => {
     assert.deepEqual(verifierEcoles(ecolesParDefaut().ecoles), []);
   });

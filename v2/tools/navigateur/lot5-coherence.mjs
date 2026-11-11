@@ -2,7 +2,6 @@
 // Lancer : npm run dev (port 5199), puis  LANG=C.UTF-8 node tools/navigateur/lot5-coherence.mjs
 //   A : aucun texte en capitales forcées (`text-transform: uppercase`) ;
 //   B : graisses de police : seulement 400, 600 et 700 (la police du système n'a pas les autres) ;
-//   C : l'écran de reprise utilise des jetons qui existent (lisible en sombre, filets visibles) ;
 //   D : un seul vocabulaire pour le mode sans compte (« mode essai », « données d'essai ») ;
 //   E : un seul ordre des noms, prénom puis nom, sur tous les écrans.
 import { aller } from './_coffre.mjs';
@@ -11,7 +10,6 @@ const pw = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const { chromium } = pw;
 const URL_APP = process.env.URL_APP ?? 'http://localhost:5199/';
 const GRAISSES_PERMISES = new Set(['400', '600', '700']);
-const CONTRASTE_TEXTE = 4.5;
 const erreurs = [];
 const echecs = [];
 const ok = (cond, msg) => { if (!cond) { echecs.push(msg); console.log(`✗ ${msg}`); } else console.log(`✓ ${msg}`); };
@@ -48,8 +46,7 @@ const ECRANS = [
   ['PIA, profil', async (p) => aller_(p, '#/pia?eleve=demo-alpha&onglet=profil')],
   ['PIA, procès-verbal 1', async (p) => aller_(p, '#/pia?eleve=demo-alpha&onglet=pv1')],
   ['PIA, aménagements', async (p) => aller_(p, '#/pia?eleve=demo-alpha&onglet=amenagements')],
-  ['Synchro', async (p) => aller_(p, '#/synchro')],
-  ['Reprise', async (p) => aller_(p, '#/reprise')]
+  ['Synchro', async (p) => aller_(p, '#/synchro')]
 ];
 
 /* ───────── A + B + D + E : relevés sur chaque écran ───────── */
@@ -89,39 +86,6 @@ const ECRANS = [
   ok(graisses.length === 0, `B graisses : seulement 400, 600 et 700${graisses.length ? ' — ' + graisses.slice(0, 5).join(' ; ') : ''}`);
   ok(mots.length === 0, `D vocabulaire unique pour le mode sans compte${mots.length ? ' — ' + mots.slice(0, 5).join(' ; ') : ''}`);
   ok(ordre.length === 0, `E prénom puis nom partout (jamais « Alpha Élève »)${ordre.length ? ' — ' + ordre.slice(0, 5).join(' ; ') : ''}`);
-  await ctx.close();
-}
-
-/* ───────── C : l'écran de reprise en thème sombre (le texte doit rester lisible, les filets visibles) ───────── */
-for (const theme of ['dark', 'light']) {
-  const { ctx, page } = await ouvrir(theme, 1280, false);
-  await aller_(page, '#/accueil');
-  const r = await page.evaluate(() => {
-    const c = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
-    const rgba = (css) => { c.clearRect(0, 0, 1, 1); c.fillStyle = '#000'; c.fillStyle = css; c.fillRect(0, 0, 1, 1); const d = c.getImageData(0, 0, 1, 1).data; return [d[0], d[1], d[2]]; };
-    const lum = ([r, g, b]) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
-    const rapport = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
-    const hote = document.querySelector('.contenu') ?? document.body;
-    hote.insertAdjacentHTML('beforeend', '<div class="reprise-fiche"><pre class="reprise-pia">Texte de contrôle</pre></div>');
-    const pre = hote.querySelector('.reprise-pia');
-    const fiche = hote.querySelector('.reprise-fiche');
-    const sonde = document.createElement('div');
-    sonde.style.borderColor = 'var(--line)';
-    sonde.style.backgroundColor = 'var(--surface-2)';
-    sonde.style.borderStyle = 'solid';
-    hote.appendChild(sonde);
-    const cs = getComputedStyle(pre);
-    const csSonde = getComputedStyle(sonde);
-    const sortie = {
-      contraste: rapport(rgba(cs.color), rgba(cs.backgroundColor)),
-      filetOk: getComputedStyle(fiche).borderTopColor === csSonde.borderTopColor,
-      fondOk: cs.backgroundColor === csSonde.backgroundColor
-    };
-    return sortie;
-  });
-  ok(r.contraste >= CONTRASTE_TEXTE, `C ${theme} : texte de la fiche de reprise ≥ ${CONTRASTE_TEXTE}:1 (${r.contraste.toFixed(2)}:1)`);
-  ok(r.filetOk, `C ${theme} : le filet d'une fiche de reprise est la couleur « --line »`);
-  ok(r.fondOk, `C ${theme} : le fond du texte repris est la couleur « --surface-2 »`);
   await ctx.close();
 }
 

@@ -107,6 +107,12 @@ L'utilisateur a **validé tous les lots** (1 à 10, A, F, Q, S, SP) ; seul le r�
 
 - **`package-lock.json` (28/10/2026)** : généré et commité (`v2/package-lock.json`, 13 paquets) ; les deux fichiers de mise en ligne et de contrôle (`ci.yml`, `main.yml`) installent la V2 avec `npm ci` (versions exactes du fichier, échec si `package.json` et le verrou divergent) et gardent le cache npm sur les deux verrous. Quand on change une dépendance : `npm install` dans `v2/`, puis commiter `package.json` ET `package-lock.json` ensemble. Playwright reste hors du verrou (`--no-save`).
 
+## Retrait de la V75 — fait (11/11/2026)
+- **Décision de l'utilisateur** : retirer entièrement la V75 (les collègues testent la V2 et n'ont aucune donnée V75 ; l'utilisateur ressaisira les siennes selon la nouvelle structure, ses PIA V75 n'étant pas convertis).
+- **Fait** : (1) liens et écran de reprise (`#/reprise`), `src/domain/v75/`, `src/data/stockage-v75.ts`, lecteur OneDrive de la V75 (`creerLecteurV75Graph`, `lireV75DansOneDrive`) et leurs tests et parcours supprimés ; (2) le site publié est `v2/dist` (`main.yml`, `ci.yml`, plus de `/v75/`, `npm run site` et `scripts/assembler-site.ts` supprimés ; Dependabot surveille `/v2`) ; (3) code V75 de la racine supprimé (`src`, `tests`, `public`, `index.html`, `package.json`, documents V74/V75…) ; `docs/PIA_MODELE_STRUCTURE.md` et `docs/exemples/` déplacés dans `v2/docs/`. La V75 reste lisible dans l'historique Git (étiquette `v75-archive`).
+- **Reste à l'utilisateur** : retirer l'adresse `<site>/v75/msal-redirect.html` de l'inscription Entra ; ne rien supprimer de ses dossiers OneDrive de la V75 (racine du dossier de l'application) tant qu'il n'a pas ressaisi ce dont il a besoin ; décider du sort de `SECURITY.md` (politique de sécurité de la V75, laissée telle quelle).
+- **Les lots 9, 9b, S, ci-dessous, décrivent la V75 et la reprise : ils sont gardés comme historique.**
+
 ## Essais de l'utilisateur (28/10/2026) — faits
 L'utilisateur a indiqué le 28/10/2026 avoir **déjà réalisé** : (1) la relecture de l'écran Séance sur sa tablette ; (2) l'ouverture de la V75 dans `/v75/` ; (3) la déclaration de l'adresse `/v75/` chez Microsoft (Entra). Ne plus les lister comme « reste à l'utilisateur ». Il reste seulement ce qui est écrit au lot concerné et non repris ici (par exemple l'essai au lecteur d'écran et au clavier seul, lot Q ; ses essais réels de synchronisation). En cas de doute, demander.
 
