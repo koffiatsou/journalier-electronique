@@ -55,7 +55,7 @@ L'application manipule des données d'élèves mineurs (séances, observations, 
 
 - **Pages** : le site est servi en HTTPS depuis GitHub Pages ; le dossier publié est `v2/dist`, compilé par `.github/workflows/main.yml`.
 - **Actions** : permissions explicites et minimales (`contents: read` ; le déploiement ajoute `pages: write` et `id-token: write`). Les actions sont **épinglées par leur empreinte complète** (SHA de commit).
-- **CI** (`.github/workflows/ci.yml`, sur chaque PR vers `main`) : `npm run check` (types, tests, compilation) puis les parcours dans un vrai navigateur (Playwright : Chromium et WebKit), dont l'audit d'accessibilité.
+- **CI** (`.github/workflows/ci.yml`, sur chaque PR vers `main`) : `npm run check` (types, tests, compilation) puis les parcours dans un vrai navigateur (Playwright : Chromium et WebKit), dont l'audit d'accessibilité. Ils tournent dans l'image officielle de Playwright (`mcr.microsoft.com/playwright`), **épinglée par son empreinte** et dont la version correspond à celle du paquet npm `playwright` ; les deux se mettent à jour ensemble.
 - **Analyse de code** : CodeQL (réglage par défaut) sur le code JavaScript/TypeScript, les actions GitHub et Python.
 - **`main`** : la protection (PR obligatoire, statut CI exigé, pas de force push) est un paramètre GitHub, non vérifiable ici ; à revalider dans les réglages du dépôt.
 - **Secrets** : aucun secret dans le dépôt ni dans l'historique récent ; `.env*` est ignoré par Git. Ne jamais committer un jeton, un mot de passe ou une clé.
