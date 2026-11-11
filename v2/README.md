@@ -13,6 +13,7 @@ La première version (V75) est née par ajouts successifs (≈ 33 000 lignes de 
 - **Garde-fous** : TypeScript strict, tests automatiques, `npm run check` obligatoire avant fusion (typecheck + tests + build).
 
 ## Commandes
+Prérequis : Node 26 (version LTS) ou plus récent, comme la CI et le déploiement.
 ```bash
 cd v2
 npm install
