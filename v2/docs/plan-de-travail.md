@@ -11,7 +11,7 @@ Mis à jour le 3 novembre 2026 (lots 1 à 10, A, F, Q, S, SP et **U** terminés 
 1. `cd v2 && npm run check` vert (typecheck + tests + build). Si le registre npm est bloqué, relier les paquets déjà présents sur la machine dans `v2/node_modules` (voir README, « Sans accès au registre »).
 2. Vérification dans un vrai navigateur : scripts Playwright dans `v2/tools/navigateur/` (en ajouter un par lot) ; aucune erreur console.
 3. Mettre à jour : `docs/etat-des-lieux.md` (Fait / Reste), ce plan (statut du lot, lot suivant conseillé), `AGENTS.md` (décisions durables, nouveaux dossiers), `docs/decisions.md` (une ligne par décision), `README.md` (tableau d'avancement).
-4. Commit + push sur `v2/react-ts` (jamais `main`), puis **nouvelle demande de fusion vers `main`** (la #37 est fusionnée depuis le 27/10/2026). Départ d'une session : `git checkout v2/react-ts && git pull && git merge origin/main`. La fusion publie le site : elle se fait avec l'accord de l'utilisateur, contrôles GitHub verts.
+4. Commit + push de la branche du lot (une branche par travail, créée depuis `main` à jour ; jamais `main` directement), puis **demande de fusion vers `main`**. Départ d'une session : `git switch main && git pull --ff-only && git switch -c v2/<nom-du-travail>`. La fusion publie le site : elle se fait avec l'accord de l'utilisateur, contrôles GitHub verts.
 5. Dire à l'utilisateur en français simple : ce qui marche, ce qui reste, **quel lot lancer ensuite**.
 
 ## Statuts
@@ -110,7 +110,8 @@ L'utilisateur a **validé tous les lots** (1 à 10, A, F, Q, S, SP) ; seul le r�
 ## Retrait de la V75 — fait (11/11/2026)
 - **Décision de l'utilisateur** : retirer entièrement la V75 (les collègues testent la V2 et n'ont aucune donnée V75 ; l'utilisateur ressaisira les siennes selon la nouvelle structure, ses PIA V75 n'étant pas convertis).
 - **Fait** : (1) liens et écran de reprise (`#/reprise`), `src/domain/v75/`, `src/data/stockage-v75.ts`, lecteur OneDrive de la V75 (`creerLecteurV75Graph`, `lireV75DansOneDrive`) et leurs tests et parcours supprimés ; (2) le site publié est `v2/dist` (`main.yml`, `ci.yml`, plus de `/v75/`, `npm run site` et `scripts/assembler-site.ts` supprimés ; Dependabot surveille `/v2`) ; (3) code V75 de la racine supprimé (`src`, `tests`, `public`, `index.html`, `package.json`, documents V74/V75…) ; `docs/PIA_MODELE_STRUCTURE.md` et `docs/exemples/` déplacés dans `v2/docs/`. La V75 reste lisible dans l'historique Git (étiquette `v75-archive`).
-- **Reste à l'utilisateur** : retirer l'adresse `<site>/v75/msal-redirect.html` de l'inscription Entra ; ne rien supprimer de ses dossiers OneDrive de la V75 (racine du dossier de l'application) tant qu'il n'a pas ressaisi ce dont il a besoin ; décider du sort de `SECURITY.md` (politique de sécurité de la V75, laissée telle quelle).
+- **Reste à l'utilisateur** : retirer l'adresse `<site>/v75/msal-redirect.html` de l'inscription Entra ; ne rien supprimer de ses dossiers OneDrive de la V75 (racine du dossier de l'application) tant qu'il n'a pas ressaisi ce dont il a besoin .
+- **Documentation remise à jour (11/11/2026)** : `SECURITY.md` réécrit pour la V2 ; flux Git corrigé (une branche par travail, depuis `main`) dans `AGENTS.md`, `CONTRIBUTING.md` et ce plan ; demande de fusion : #52 (fusionnée le 11/11/2026).
 - **Les lots 9, 9b, S, ci-dessous, décrivent la V75 et la reprise : ils sont gardés comme historique.**
 
 ## Essais de l'utilisateur (28/10/2026) — faits

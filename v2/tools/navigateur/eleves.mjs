@@ -5,9 +5,9 @@
 // suppression complète (séances et agenda compris, vérifiée dans la base), recherche dans le Journalier.
 import { mkdirSync } from 'node:fs';
 import os from 'node:os';
-import { execFileSync } from 'node:child_process';
 
 import { ajouterElevesFictifs, aller, ecrireBase as ecrireChiffre, lireBase as lireChiffre , recharger } from './_coffre.mjs';
+import { lireXmlDocx } from './_docx.mjs';
 
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const URL_APP = process.env.URL_APP ?? 'http://localhost:5199/';
@@ -183,7 +183,7 @@ await recJ.fill('français');
 await page.getByLabel('Élève', { exact: true }).selectOption({ label: 'Élève Alpha (2CB)' });
 const [t] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Exporter le Journalier (Word)' }).click()]);
 await t.saveAs(`${SORTIE}/alpha-recherche.docx`);
-const xml = execFileSync('unzip', ['-p', `${SORTIE}/alpha-recherche.docx`, 'word/document.xml']).toString();
+const xml = lireXmlDocx(`${SORTIE}/alpha-recherche.docx`);
 ok(xml.includes('14/09/2026') && xml.includes('20/10/2026'), 'l’export Word contient toute la période, même avec une recherche affichée');
 await recJ.fill('');
 
