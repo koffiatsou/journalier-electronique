@@ -7,6 +7,7 @@ import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 
 import { ajouterElevesFictifs, aller , recharger } from './_coffre.mjs';
+import { lireXmlDocx } from './_docx.mjs';
 
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const URL_APP = process.env.URL_APP ?? 'http://localhost:5199/';
@@ -26,7 +27,6 @@ const docx = async (telechargement, nom) => {
   await telechargement.saveAs(chemin);
   return chemin;
 };
-const xmlDuDocx = (chemin) => execFileSync('unzip', ['-p', chemin, 'word/document.xml']).toString();
 // Python sous Windows écrit sa sortie en cp1252 (un « é » = 1 octet) alors que Node la lit en UTF-8 : le nom du fichier
 // accentué arrivait abîmé. PYTHONUTF8=1 force l'UTF-8 sur toutes les machines (sans effet sur Linux, où c'est déjà le cas).
 const python = (code, ...arguments_) => execFileSync('python3', ['-c', code, ...arguments_], { env: { ...process.env, PYTHONUTF8: '1' } }).toString();
@@ -79,7 +79,7 @@ ok(await page.locator('.journalier-apercu').count() === 1, 'aperçu du texte aff
 await page.getByLabel('Élève', { exact: true }).selectOption({ label: 'Élève Alpha (1CB)' });
 let [t] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Exporter le Journalier (Word)' }).click()]);
 ok(t.suggestedFilename() === 'Journalier - Alpha - du 01-09-2026 au 31-10-2026.docx', `nom du fichier : ${t.suggestedFilename()}`);
-let xml = xmlDuDocx(await docx(t, 'alpha.docx'));
+let xml = lireXmlDocx(await docx(t, 'alpha.docx'));
 ok(xml.includes('14/09/2026') && xml.includes('20/10/2026') && !xml.includes('15/06/2026'), 'le fichier Word respecte la période');
 ok(xml.indexOf('14/09/2026') < xml.indexOf('20/10/2026'), 'ordre chronologique dans le Word');
 
