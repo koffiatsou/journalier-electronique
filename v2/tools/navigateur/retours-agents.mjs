@@ -1,11 +1,11 @@
 // Retours des agents (9/11/2026) : professeur absent mais élève vu, types d'accompagnement précisés, lexique, quatre niveaux,
 // en-têtes du Journalier Word colorés par matière.
 // Lancer : npm run dev (port 5199), puis  LANG=C.UTF-8 node tools/navigateur/retours-agents.mjs
-import { execFileSync } from 'node:child_process';
 import { mkdtempSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { aller, lireBase } from './_coffre.mjs';
+import { lireXmlDocx } from './_docx.mjs';
 
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const URL_APP = process.env.URL_APP ?? 'http://localhost:5199/';
@@ -90,7 +90,7 @@ await page.locator('.journalier-filtres select').first().selectOption(choixAlpha
 const [telechargement] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Exporter le Journalier (Word)' }).click()]);
 const fichier = path.join(mkdtempSync(path.join(os.tmpdir(), 'retours-')), 'journalier.docx');
 await telechargement.saveAs(fichier);
-const xml = execFileSync('python', ['-c', 'import zipfile,sys;print(zipfile.ZipFile(sys.argv[1]).read("word/document.xml").decode())', fichier], { encoding: 'utf8', maxBuffer: 50_000_000 });
+const xml = lireXmlDocx(fichier);
 ok(xml.includes('w:fill="D9C3E6"'), 'le Journalier Word colore les en-têtes avec la couleur choisie (violet)');
 ok(/Mathématiques \(professeur absent\)/.test(xml), 'la case « Cours » dit « professeur absent »');
 ok(/Pas du tout/.test(xml), 'le niveau « Pas du tout » est écrit dans le Journalier');
