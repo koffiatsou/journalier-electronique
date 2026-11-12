@@ -351,7 +351,7 @@ export function FormulaireAides({ s, maj }: PropsFormulaire) {
       </Groupe>
       <Groupe titre="Aides utilisées" compte={compteDe(s.aides.length, 'utilisée')} actions={<BoutonLexique titre="Lexique des aides" entrees={LEXIQUE_AIDES} />}>
         <p className="etape-aide">Pour chaque aide utilisée, choisissez son effet. Laissez de côté ce qui n’a pas servi.</p>
-        <ul className="points">
+        <ul className="points points-trois">
           {[...AIDES_SUGGEREES, ...autres.map((a) => a.nom)].map((nom) => (
             <Point key={nom} nom={nom} libelles={EFFETS_LIBELLES} teintes={TEINTES_EFFET} valeur={trouve(nom)?.effet}
               onChoisir={(n) => fixe(nom, n)} onRetirer={() => retire(nom)} libelleRetirer="Pas utilisée" />
