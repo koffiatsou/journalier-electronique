@@ -24,32 +24,40 @@ export function seanceVide(eleveId = '', date = aujourdhuiISO()): Seance {
   };
 }
 
-/** Étapes 2 à 5 : sans objet quand l'élève est absent. */
+/** Étapes 2 à 5 (Compétence, Fonctionnement, Aides, Suite) : sans objet quand l'élève est absent. */
 export const etapesUtiles = (p: Presence): readonly boolean[] =>
   p === 'present' ? [true, true, true, true, true] : [true, false, false, false, true];
 
 export type EtatEtape = 'vide' | 'remplie' | 'sans-objet';
 
-/** Une étape est « remplie » dès qu'une de ses rubriques contient quelque chose. */
-export function etatsEtapes(s: Seance): EtatEtape[] {
+/** Position de la rubrique « Compétence travaillée » dans la liste des étapes (juste après le créneau, qui contient les objectifs). */
+export const INDEX_COMPETENCE = 1;
+
+/** Vrai quand la séance contient déjà une compétence ou une précision : la rubrique ne doit alors jamais être cachée. */
+export const aCompetenceSaisie = (s: Seance): boolean => s.competences.length > 0 || s.precisionCompetence.trim() !== '';
+
+/**
+ * Une étape est « remplie » dès qu'une de ses rubriques contient quelque chose.
+ * `competenceMasquee` : la rubrique Compétence est cachée à l'écran, elle ne compte alors ni comme à faire ni comme faite.
+ */
+export function etatsEtapes(s: Seance, competenceMasquee = false): EtatEtape[] {
   const utiles = etapesUtiles(s.presence);
   const rempli = [
     Boolean(s.eleveId && s.matiere),
+    aCompetenceSaisie(s),
     s.observations.length > 0 || s.remarque.trim() !== '',
-    s.competences.length > 0 || s.precisionCompetence.trim() !== '',
     s.aides.length > 0 || s.precisionAide.trim() !== '' || s.situationAide !== 'none',
     s.suite.actions.length > 0 || s.suite.collaborations.length > 0 || s.suite.modalite !== ''
       || s.suite.objectif.trim() !== '' || s.suite.precision.trim() !== ''
   ];
-  return rempli.map((r, i) => (!utiles[i] ? 'sans-objet' : r ? 'remplie' : 'vide'));
+  return rempli.map((r, i) => (!utiles[i] || (competenceMasquee && i === INDEX_COMPETENCE) ? 'sans-objet' : r ? 'remplie' : 'vide'));
 }
 
-/** Niveaux et effets encore à choisir : à compléter avant d'enregistrer. */
+/** Niveaux et effets encore à choisir : à compléter avant d'enregistrer. Les compétences en sont exclues : leur niveau est facultatif. */
 export function niveauxManquants(s: Seance): string[] {
   if (s.presence !== 'present') return [];
   return [
     ...s.observations.filter((o) => o.niveau === null).map((o) => o.texte),
-    ...s.competences.filter((c) => c.niveau === null).map((c) => c.texte),
     ...s.aides.filter((a) => a.effet === null).map((a) => a.nom)
   ];
 }
@@ -91,13 +99,13 @@ const periodeDuCreneau = (s: Seance): string =>
  * Résumé d'une ligne de chaque rubrique (sous son titre quand elle est fermée) ; `null` quand la rubrique est vide
  * ou sans objet : l'écran n'affiche alors rien.
  */
-export function resumesEtapes(s: Seance): (string | null)[] {
-  const etats = etatsEtapes(s);
+export function resumesEtapes(s: Seance, competenceMasquee = false): (string | null)[] {
+  const etats = etatsEtapes(s, competenceMasquee);
   const suite = s.suite;
   const textes: string[] = [
     [s.matiere, periodeDuCreneau(s)].filter((t) => t.trim() !== '').join(' · '),
-    s.observations.length ? enumerer(s.observations.map((o) => o.texte)) : s.remarque.trim(),
     s.competences.length ? enumerer(s.competences.map((c) => c.texte)) : s.precisionCompetence.trim(),
+    s.observations.length ? enumerer(s.observations.map((o) => o.texte)) : s.remarque.trim(),
     s.aides.length ? enumerer(s.aides.map((a) => a.nom)) : s.situationAide !== 'none' ? `Adaptations : ${SITUATION_AIDE_LIBELLES[s.situationAide].toLowerCase()}` : s.precisionAide.trim(),
     suite.objectif.trim() || enumerer(suite.actions) || enumerer(suite.collaborations) || suite.modalite || suite.precision.trim()
   ];
@@ -106,8 +114,8 @@ export function resumesEtapes(s: Seance): (string | null)[] {
 
 export interface Progression { faites: number; total: number }
 
-/** « N rubriques renseignées sur M » : les rubriques sans objet (élève absent) ne comptent pas dans M. */
-export function progression(s: Seance): Progression {
-  const etats = etatsEtapes(s);
+/** « N rubriques renseignées sur M » : les rubriques sans objet (élève absent, Compétence masquée) ne comptent pas dans M. */
+export function progression(s: Seance, competenceMasquee = false): Progression {
+  const etats = etatsEtapes(s, competenceMasquee);
   return { faites: etats.filter((e) => e === 'remplie').length, total: etats.filter((e) => e !== 'sans-objet').length };
 }

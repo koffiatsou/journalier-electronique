@@ -23,6 +23,7 @@ export const LEXIQUE_AIDES: readonly EntreeLexique[] = [
   { terme: 'Outil numérique', definition: 'Ordinateur, tablette, logiciel, correcteur, synthèse vocale, calculatrice… utilisé comme aide.' },
   { terme: 'Matériel', definition: 'Objet concret ou matériel de manipulation : cubes, bandes de fractions, règle, surligneurs, guide-ligne…' },
   { terme: 'Environnement', definition: 'Changer le cadre de travail : place dans la classe, endroit plus calme, moins de distractions, casque anti-bruit.' },
+  { terme: 'Renforcement positif', definition: 'Encourager, féliciter ou valoriser ce qui est réussi ou l’effort fourni, pour soutenir la confiance et la motivation de l’élève.', exemple: '« Bravo, tu as relu la consigne avant de commencer. »' },
   { terme: 'Autre', definition: 'Toute aide qui n’est pas dans la liste. Précisez-la dans la case « Précision » juste dessous.' }
 ];
 

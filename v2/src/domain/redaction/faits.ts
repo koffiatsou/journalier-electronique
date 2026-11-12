@@ -1,4 +1,4 @@
-import { estVigilance, natureAide } from '../types.ts';
+import { CLIMAT_LIBELLES, estVigilance, natureAide } from '../types.ts';
 import type { Seance } from '../types.ts';
 import { nettoyer } from './langue.ts';
 import type { Faits } from './types.ts';
@@ -22,6 +22,8 @@ export function versFaits(s: Seance, titulaire = ''): Faits {
     presence: s.presence,
     profAbsent: s.profAbsent === true,
     interventions: sansVide(s.interventions),
+    climat: s.climat ? (CLIMAT_LIBELLES[s.climat] ?? '') : '',
+    precisionClimat: nettoyer(s.precisionClimat ?? ''),
     objectifLecon: objectifPropre(s.presence, nettoyer(s.objectifLecon)),
     contenuClasse: nettoyer(s.contenuClasse),
     monObjectif: nettoyer(s.monObjectif),

@@ -159,6 +159,12 @@ function coursAffiche(faits: Faits): string {
   return faits.matiere ? `${faits.matiere} (professeur absent)` : 'Professeur absent';
 }
 
+/** « Serein et propice aux apprentissages. » puis la précision de l'agent ; null quand rien n'est renseigné. */
+function ligneClimat(f: Faits): string | null {
+  const morceaux = [f.climat ? finPhrase(f.climat) : '', f.precisionClimat ? finPhrase(Maj(f.precisionClimat)) : ''].filter(Boolean);
+  return morceaux.length ? morceaux.join(' ') : null;
+}
+
 export function construireBloc(seance: Seance, contexte: ContexteBloc = {}): Bloc {
   const faits = versFaits(seance, contexte.titulaire);
   const estAbsence = faits.presence !== 'present' && faits.presence !== 'absent_eleve_coteach';
@@ -190,6 +196,8 @@ export function construireBloc(seance: Seance, contexte: ContexteBloc = {}): Blo
   }
 
   const l: LigneOrtho[] = [];
+  const climat = ligneClimat(faits);
+  if (climat) l.push({ label: 'Climat de classe', texte: climat });
   const fonct = ligneFonctionnement(faits);
   if (fonct || faits.remarque) {
     const lignes = fonct ? [...fonct] : [];

@@ -24,6 +24,11 @@
 .pia-idees summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; color: var(--ortho-ink); }
 .pia-idees-groupe { display: grid; gap: var(--sp-2); }
 .pia-idees[open] { display: grid; gap: var(--sp-2); }
+.pia-retenus { display: grid; gap: var(--sp-2); padding-bottom: var(--sp-3); border-bottom: 1px solid var(--line); }
+.pia-retenus h3 { margin: 0; font-size: 1.02rem; font-weight: 600; }
+.pia-retenu { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); }
+.pia-retenu .reunion-proposition { flex: 1 1 260px; }
+.pia-retenu select { flex: 0 1 220px; }
 .pia-liste-idees { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-1); }
 
 .pia-lignes, .pia-amenagements, .pia-objectifs { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-3); }

@@ -14,18 +14,19 @@ import { Apercu } from './Apercu.tsx';
 import { Etape } from './Etape.tsx';
 import { ConfirmerAbandon } from '../../ui/ConfirmerAbandon.tsx';
 import { Dialog } from '../../ui/Dialog.tsx';
-import { attendreFinRepli, DELAI_CORRECTION_DEFILEMENT_MS } from './defilement.ts';
+import { annulerCorrection, attendreFinRepli, programmerCorrection } from './defilement.ts';
 import { BarreEtapes } from './BarreEtapes.tsx';
-import { champsEnErreur, etatsEtapes, progression, resumesEtapes, seanceVide, verifier } from './brouillon.ts';
+import { aCompetenceSaisie, champsEnErreur, etatsEtapes, INDEX_COMPETENCE, progression, resumesEtapes, seanceVide, verifier } from './brouillon.ts';
+import { competenceMasqueeEnregistree, retenirCompetenceMasquee } from '../../ui/competenceMasquee.ts';
 import {
-  FormulaireAides, FormulaireCompetence, FormulaireCreneau, FormulaireFonctionnement, FormulaireSuite
+  FormulaireAides, FormulaireCompetence, FormulaireCreneau, FormulaireFonctionnement, FormulaireSuite, GROUPES_FONCTIONNEMENT
 } from './formulaires.tsx';
 
-/** `zone` : bleu = partie pédagogique (1 et 3), vert-bleu = partie orthopédagogique (2, 4 et 5) ; `court` : nom dans la barre d'étapes. */
+/** `zone` : bleu = partie pédagogique (1 et 2), vert-bleu = partie orthopédagogique (3, 4 et 5) ; `court` : nom dans la barre d'étapes. */
 const ETAPES = [
   { titre: 'Créneau et partie pédagogique', court: 'Créneau', zone: 'peda' },
-  { titre: 'Fonctionnement observé', court: 'Fonctionnement', zone: 'ortho' },
   { titre: 'Compétence travaillée', court: 'Compétence', zone: 'peda' },
+  { titre: 'Fonctionnement observé', court: 'Fonctionnement', zone: 'ortho' },
   { titre: 'Ce qui a aidé', court: 'Ce qui a aidé', zone: 'ortho' },
   { titre: 'Suite', court: 'Suite', zone: 'ortho' }
 ] as const;
@@ -34,6 +35,13 @@ const reduireMouvement = (): boolean => globalThis.matchMedia?.('(prefers-reduce
 
 /** « 7 nov. 2026, 10:12 » : le moment de la dernière saisie, dans la langue de l'appareil. */
 const quand = (iso: string): string => new Date(iso).toLocaleString('fr-BE', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+/** Barre d'enregistrement : jamais cachée dans les premiers pixels de la page ni près du bas ; un défilement de moins de quelques pixels ne compte pas. */
+const DISTANCE_HAUT_BARRE_PX = 150;
+const DISTANCE_BAS_BARRE_PX = 240;
+const SEUIL_DEFILEMENT_BARRE_PX = 12;
+/** Durée pendant laquelle un défilement suit un changement de rubrique (repli, défilement animé, seconde visée) : il ne cache pas la barre. */
+const DUREE_DEFILEMENT_PROGRAMME_MS = 1800;
 
 export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Aller }) {
   const eleves = useMagasin(magasin, (e) => e.eleves);
@@ -79,16 +87,67 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
 
   const eleve = eleves.find((e) => e.id === s.eleveId);
   const precedentes = useMemo(() => seances.filter((x) => x.eleveId === s.eleveId), [seances, s.eleveId]);
-  const etats = etatsEtapes(s);
-  const resumes = resumesEtapes(s);
+  /** Rubrique Compétence cachée au choix de la personne ; jamais quand la séance contient déjà une compétence (aucune donnée cachée). */
+  const [competenceMasquee, setCompetenceMasquee] = useState(competenceMasqueeEnregistree);
+  const masquer = competenceMasquee && !aCompetenceSaisie(s);
+  const basculerCompetence = () => {
+    retenirCompetenceMasquee(!competenceMasquee);
+    setCompetenceMasquee(!competenceMasquee);
+    setOuvert(0);
+  };
+  /** Rubriques affichées, avec leur place d'origine (les tableaux de `brouillon.ts` gardent les cinq places). */
+  const visibles = ETAPES.map((e, origine) => ({ ...e, origine })).filter((e) => !(masquer && e.origine === INDEX_COMPETENCE));
+  const tousEtats = etatsEtapes(s, masquer);
+  const tousResumes = resumesEtapes(s, masquer);
+  const etats = visibles.map((e) => tousEtats[e.origine] ?? 'vide');
   const notes = s.observations.length + s.competences.length + s.aides.length;
 
   /** Seconde visée en attente : annulée dès qu'une autre navigation commence (sinon elle tirerait la page vers une ancienne rubrique). */
-  const correction = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(correction.current), []);
+  useEffect(() => annulerCorrection, []);
+
+  /**
+   * Tablette et téléphone : la barre fixe recouvre des champs au milieu de la page. Elle s'efface quand on descend et revient dès qu'on remonte,
+   * en haut de page et près du bas (là où l'on enregistre). Un attribut sur la page la cache (seance.css, écrans tactiles seulement).
+   */
+  const defilementProgrammeJusqua = useRef(0);
+  useEffect(() => {
+    const racine = document.documentElement;
+    let derniere = window.scrollY;
+    const surDefilement = () => {
+      const y = window.scrollY;
+      // Le défilement lancé par le changement de rubrique n'est pas une descente voulue : la barre reste visible.
+      if (Date.now() < defilementProgrammeJusqua.current) { derniere = y; racine.removeAttribute('data-barre-cachee'); return; }
+      const presDuBas = y + window.innerHeight >= document.documentElement.scrollHeight - DISTANCE_BAS_BARRE_PX;
+      if (y < DISTANCE_HAUT_BARRE_PX || presDuBas || y < derniere - SEUIL_DEFILEMENT_BARRE_PX) racine.removeAttribute('data-barre-cachee');
+      else if (y > derniere + SEUIL_DEFILEMENT_BARRE_PX) racine.setAttribute('data-barre-cachee', '');
+      if (Math.abs(y - derniere) > SEUIL_DEFILEMENT_BARRE_PX) derniere = y;
+    };
+    window.addEventListener('scroll', surDefilement, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', surDefilement);
+      racine.removeAttribute('data-barre-cachee');
+    };
+  }, []);
+
+  /** Pendant la saisie dans un champ, le clavier virtuel d'une tablette fait remonter la barre fixe au milieu de l'écran : un attribut sur la page la fait cacher (seance.css). */
+  useEffect(() => {
+    const racine = document.documentElement;
+    const estChampDeSaisie = (cible: EventTarget | null): boolean =>
+      cible instanceof HTMLTextAreaElement || cible instanceof HTMLSelectElement || (cible instanceof HTMLInputElement && !['checkbox', 'radio', 'button', 'submit'].includes(cible.type));
+    const entrer = (e: FocusEvent) => { if (estChampDeSaisie(e.target)) racine.setAttribute('data-saisie', ''); };
+    const sortir = () => racine.removeAttribute('data-saisie');
+    document.addEventListener('focusin', entrer);
+    document.addEventListener('focusout', sortir);
+    return () => {
+      document.removeEventListener('focusin', entrer);
+      document.removeEventListener('focusout', sortir);
+      sortir();
+    };
+  }, []);
 
   const aller = (i: number) => {
-    window.clearTimeout(correction.current);
+    annulerCorrection();
+    defilementProgrammeJusqua.current = Date.now() + DUREE_DEFILEMENT_PROGRAMME_MS;
     // Une rubrique ouverte AU-DESSUS de la cible se referme : on attend la fin du repli, sinon la cible bouge pendant le défilement.
     const precedente = ouvert >= 0 && ouvert < i ? document.getElementById(`etape-corps-${ouvert + 1}`) : null;
     setOuvert(i);
@@ -98,9 +157,9 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
         // Sur une machine chargée (WebKit sur la CI), le repli peut ne pas être fini quand la position est calculée : la cible
         // remonte ensuite et le titre se retrouve hors de l'écran. Une seconde visée, sans animation, rattrape l'écart ;
         // si la position est déjà bonne, elle ne change rien.
-        correction.current = window.setTimeout(() => {
+        programmerCorrection(() => {
           document.getElementById(`etape-${i + 1}`)?.scrollIntoView({ block: 'start', behavior: 'auto' });
-        }, DELAI_CORRECTION_DEFILEMENT_MS);
+        });
       });
     });
   };
@@ -149,8 +208,8 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
 
   const formulaires = [
     <FormulaireCreneau key="1" s={s} maj={maj} eleves={eleves} ecoles={ecoles} erreurs={erreurs} />,
-    <FormulaireFonctionnement key="2" s={s} maj={maj} />,
-    <FormulaireCompetence key="3" s={s} maj={maj} eleve={eleve} />,
+    <FormulaireCompetence key="2" s={s} maj={maj} eleve={eleve} />,
+    <FormulaireFonctionnement key="3" s={s} maj={maj} />,
     <FormulaireAides key="4" s={s} maj={maj} />,
     <FormulaireSuite key="5" s={s} maj={maj} />
   ];
@@ -175,17 +234,25 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
       ) : null}
       {erreurBrouillon ? <p className="field-hint" role="alert">Votre saisie n’a pas pu être gardée sur cet appareil : {erreurBrouillon}</p> : null}
 
-      <BarreEtapes etapes={ETAPES} etats={etats} ouvert={ouvert} progression={progression(s)} onAller={aller} />
+      <p className="seance-reglage">
+        <Button variante="secondaire" onClick={basculerCompetence}>
+          {competenceMasquee ? 'Afficher la rubrique Compétence' : 'Masquer la rubrique Compétence'}
+        </Button>
+        <span className="field-hint">Ce réglage vaut pour cet appareil. Une séance qui contient déjà une compétence garde la rubrique visible.</span>
+      </p>
+
+      <BarreEtapes etapes={visibles} etats={etats} ouvert={ouvert} progression={progression(s, masquer)} onAller={aller}
+        groupes={visibles[ouvert]?.court === 'Fonctionnement' ? GROUPES_FONCTIONNEMENT : []} />
 
       <div className="seance-colonnes">
         <div className="seance-formulaire">
-          {ETAPES.map((e, i) => (
-            <Etape key={e.titre} numero={i + 1} titre={e.titre} zone={e.zone} etat={etats[i] ?? 'vide'} resume={resumes[i] ?? null}
+          {visibles.map((e, i) => (
+            <Etape key={e.titre} numero={i + 1} titre={e.titre} zone={e.zone} etat={etats[i] ?? 'vide'} resume={tousResumes[e.origine] ?? null}
               ouvert={ouvert === i} onBascule={() => (ouvert === i ? setOuvert(-1) : aller(i))}>
-              {formulaires[i]}
-              {i < ETAPES.length - 1 ? (
+              {formulaires[e.origine]}
+              {i < visibles.length - 1 ? (
                 <div className="etape-pied">
-                  <Button onClick={() => aller(i + 1)}>Étape suivante : {i + 2} {ETAPES[i + 1]?.titre} ↓</Button>
+                  <Button onClick={() => aller(i + 1)}>Étape suivante : {i + 2} {visibles[i + 1]?.titre} ↓</Button>
                 </div>
               ) : null}
             </Etape>

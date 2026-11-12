@@ -233,11 +233,11 @@ export function PiaPage({ magasin, onAller, parametres }: Props) {
 
           <div id="pia-panneau" role="tabpanel" aria-labelledby={`pia-onglet-${onglet}`} className="pia-panneau">
             {onglet === 'preparer' ? (
-              <Preparer eleve={eleve} pia={pia} changer={changer} seancesEleve={seancesEleve} filtre={{ ...filtre, annee }} onFiltre={setFiltre} onAller={onAller} onPv1={() => aller({ onglet: 'pv1' })} />
+              <Preparer eleve={eleve} pia={pia} changer={changer} seancesEleve={seancesEleve} filtre={{ ...filtre, annee }} onFiltre={setFiltre} onAller={onAller} onProfil={() => aller({ onglet: 'profil' })} />
             ) : null}
             {onglet === 'identite' ? <OngletIdentite eleve={eleve} pia={pia} seances={seancesAnnee} changer={changer} /> : null}
             {onglet === 'profil' ? <OngletProfil eleve={eleve} pia={pia} seances={seancesAnnee} changer={changer} /> : null}
-            {onglet === 'pv1' ? <OngletPv1 eleve={eleve} pia={pia} seances={seancesAnnee} changer={changer} /> : null}
+            {onglet === 'pv1' ? <OngletPv1 eleve={eleve} pia={pia} seances={seancesAnnee} changer={changer} onProfil={() => aller({ onglet: 'profil' })} /> : null}
             {onglet === 'pv2' ? <OngletPv2 eleve={eleve} pia={pia} seances={seancesAnnee} changer={changer} /> : null}
             {onglet === 'amenagements' ? <OngletAmenagements eleve={eleve} pia={pia} seances={seancesAnnee} changer={changer} /> : null}
           </div>

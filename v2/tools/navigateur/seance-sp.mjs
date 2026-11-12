@@ -40,7 +40,7 @@ for (const schema of ['light', 'dark']) {
   ok(await page.locator('#etape-2 .etape-bouton').getAttribute('aria-expanded') === 'true', `${schema} : … et ouvre la rubrique 2`);
   ok((await page.locator('#etape-1 .etape-resume').innerText()).startsWith('Français'), `${schema} : résumé d'une ligne sous la rubrique fermée`);
   ok(await page.locator('.barre-etape[data-etat="remplie"]').count() === 1, `${schema} : ✓ sur la rubrique faite dans la barre`);
-  ok(await page.locator('.barre-etape[aria-current="step"]').innerText().then((t) => t.includes('Fonctionnement')), `${schema} : la rubrique ouverte est marquée`);
+  ok(await page.locator('.barre-etape[aria-current="step"]').innerText().then((t) => t.includes('Compétence')), `${schema} : la rubrique ouverte est marquée`);
 
   await page.locator('.barre-etape', { hasText: 'Suite' }).click();
   await page.waitForTimeout(500);
@@ -49,9 +49,9 @@ for (const schema of ['light', 'dark']) {
   await page.locator('.barre-etape', { hasText: 'Fonctionnement' }).click();
   await page.waitForTimeout(500);
   ok(await page.getByText('Astuce : le micro du clavier de la tablette dicte directement dans ce champ.').isVisible(), `${schema} : astuce de dictée visible`);
-  const hauteur = await page.locator('#etape-corps-2 .textarea').evaluate((e) => e.getBoundingClientRect().height);
+  const hauteur = await page.locator('#etape-corps-3 .textarea').evaluate((e) => e.getBoundingClientRect().height);
   ok(hauteur >= 120, `${schema} : zone de texte d'au moins 120 px (${Math.round(hauteur)})`);
-  const haut = await page.locator('#etape-2 .etape-titre').evaluate((e) => e.getBoundingClientRect().top);
+  const haut = await page.locator('#etape-3 .etape-titre').evaluate((e) => e.getBoundingClientRect().top);
   const bas = await page.locator('.barre-etapes').evaluate((e) => e.getBoundingClientRect().bottom);
   ok(haut >= bas - 1, `${schema} : le titre de la rubrique n'est pas caché sous la barre collée`);
 

@@ -86,6 +86,23 @@
 .lexique dd { margin: 0; color: var(--ink-2); }
 .lexique-exemple { color: var(--ink-3); }
 .rubrique h3 { font-size: 0.92rem; color: var(--zone-ink); }
+/* Sous-parties nommées d'une rubrique (composant Groupe) : séparées par un filet et de l'espace, jamais par un cadre (pas de carte dans une carte). */
+.groupe { margin-top: var(--sp-3); padding-top: var(--sp-3); border-top: 1px solid var(--line); gap: var(--sp-3); }
+.groupe-entete { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); }
+.rubrique .groupe-titre { margin: 0; font-size: 1.02rem; font-weight: 600; }
+.groupe-titre .opt { font-weight: 400; font-size: 0.85rem; color: var(--ink-3); }
+.groupe-droite { display: inline-flex; align-items: baseline; gap: var(--sp-3); }
+/* Filet discret entre deux blocs d'une même rubrique (Créneau) : même trait que celui des groupes. */
+.separateur { margin: var(--sp-2) 0 0; border: 0; border-top: 1px solid var(--line); }
+/* Raccourcis des groupes : dans la barre d'étapes collée, sur une seule ligne qui défile (jamais sur téléphone : la barre y prendrait trop de place). */
+.raccourcis { display: flex; flex-wrap: nowrap; gap: var(--sp-2); overflow-x: auto; scrollbar-width: none; }
+.raccourcis::-webkit-scrollbar { display: none; }
+.raccourci { flex: none; }
+@media (max-width: 767.98px) { .raccourcis { display: none; } }
+.raccourci { font: inherit; font-size: 0.85rem; color: var(--ink-2); background: none; border: 1px solid var(--line-strong); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+@media (hover: hover) { .raccourci:hover { color: var(--ink); border-color: var(--ink-3); } }
+.raccourci:focus-visible { outline: 2px solid var(--focus, var(--ortho)); outline-offset: 2px; }
+.groupe-compte { font-size: 0.82rem; font-weight: 400; color: var(--ink-2); }
 .ajout { display: flex; gap: var(--sp-2); align-items: end; }
 .ajout > :first-child { flex: 1; }
 .ajout-champ { flex: 1; }
@@ -202,5 +219,22 @@
   scroll-padding-top: calc(var(--barre-haut, 0px) + 108px);
   scroll-padding-bottom: calc(var(--tabbar, 0px) + 112px);
 }
+/* Les raccourcis des groupes agrandissent la barre d'étapes (une ligne de plus : 34 px, 52 px au doigt). */
+@media (min-width: 768px) { :root:has(.page.seance .barre-etapes .raccourcis) { scroll-padding-top: calc(var(--barre-haut, 0px) + 160px); } }
 
 .apercu-outils { display: flex; justify-content: flex-end; }
+
+/* Réglage « Masquer la rubrique Compétence » : discret, sous le titre, avant la barre d'étapes. */
+.seance-reglage { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin: 0 0 var(--sp-3); }
+
+/* Séquence du programme dont viennent les pistes de la rubrique Compétence. */
+.sequence-programme { margin: 0 0 var(--sp-2); color: var(--ink-2); line-height: 1.4; }
+.sequence-titre { font-weight: 600; color: var(--ink); }
+
+/* Clavier virtuel ouvert sur tablette : une barre fixe remonterait au milieu de l'écran, au-dessus du clavier. On la cache pendant la saisie. */
+@media (pointer: coarse) {
+  :root[data-saisie] .barre-action { visibility: hidden; }
+  /* Descente dans la page : la barre s'efface (elle recouvrirait des champs) ; elle revient en remontant. */
+  .barre-action { transition: opacity var(--t-ui) ease-out, visibility 0s linear 0s; }
+  :root[data-barre-cachee] .barre-action { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity var(--t-ui) ease-out, visibility 0s linear var(--t-ui); }
+}

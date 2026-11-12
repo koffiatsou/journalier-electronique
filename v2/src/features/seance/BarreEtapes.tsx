@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { IconeCoche } from '../../ui/icons.tsx';
 import type { EtatEtape, Progression } from './brouillon.ts';
-import { debordements, positionCentree } from './defilement.ts';
+import { Raccourcis } from '../../ui/Groupe.tsx';
+import { annulerCorrection, debordements, positionCentree } from './defilement.ts';
 
 const reduireMouvement = (): boolean => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
@@ -11,10 +12,12 @@ interface Props {
   ouvert: number;
   progression: Progression;
   onAller: (i: number) => void;
+  /** Groupes de la rubrique ouverte, en raccourcis collés avec la barre (sans cela il faudrait remonter pour s'en servir). */
+  groupes?: readonly string[];
 }
 
 /** Barre collée en haut : où l'on en est dans la séance, et un clic pour sauter d'une rubrique à l'autre. */
-export function BarreEtapes({ etapes, etats, ouvert, progression, onAller }: Props) {
+export function BarreEtapes({ etapes, etats, ouvert, progression, onAller, groupes = [] }: Props) {
   const { faites, total } = progression;
   const liste = useRef<HTMLOListElement>(null);
   /** Côtés de la bande où il reste des rubriques cachées : sert à l'estompage de bord (indice de défilement). */
@@ -57,6 +60,7 @@ export function BarreEtapes({ etapes, etats, ouvert, progression, onAller }: Pro
           ))}
         </ol>
       </nav>
+      <Raccourcis groupes={groupes} avantDeDefiler={annulerCorrection} />
       <div className="jauge">
         <div className="progres" role="progressbar" aria-label="Rubriques renseignées" aria-valuemin={0} aria-valuemax={total} aria-valuenow={faites}
           aria-valuetext={`${faites} sur ${total}`}><span style={{ width: `${total ? (faites / total) * 100 : 0}%` }} /></div>

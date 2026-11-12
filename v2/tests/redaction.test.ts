@@ -180,3 +180,35 @@ test('aide saisie à la main : rangée à part, sans inventer de nature', () => 
   const t = texte(seance({ aides: [{ nom: 'Pause active', effet: 2 }, { nom: 'Reformulation', effet: 2 }] }));
   assert.ok(t.includes('Médiations mises en place') && t.includes('Autres aides mises en place'));
 });
+
+test('compétence gardée sans niveau : écrite telle quelle, sans parenthèses ni niveau', () => {
+  const t = texte(seance({ competences: [{ texte: 'Tracer le graphique d’une fonction de référence', niveau: null }] }));
+  assert.ok(t.includes(`Compétence travaillée${N}: Tracer le graphique d’une fonction de référence.`));
+  assert.ok(!/fonction de référence \(/.test(t));
+});
+
+test('climat de classe : une ligne en tête de la partie orthopédagogique, écrite comme les agents la notent', () => {
+  const t = texte(seance({ climat: 'serein' }));
+  assert.ok(t.includes(`Climat de classe${N}: Serein et propice aux apprentissages.`));
+  assert.ok(t.indexOf('Climat de classe') < t.indexOf('Fonctionnement observé'));
+});
+
+test('climat de classe avec précision : la précision suit, en phrase', () => {
+  const t = texte(seance({ climat: 'agite', precisionClimat: 'bruit de fond pendant les consignes' }));
+  assert.ok(t.includes(`Climat de classe${N}: Agité. Bruit de fond pendant les consignes.`));
+});
+
+test('climat de classe non renseigné (séances déjà enregistrées) : rien n’est écrit', () => {
+  assert.ok(!texte(seance()).includes('Climat de classe'));
+});
+
+test('élève absent : le climat n’est pas écrit même s’il avait été noté avant', () => {
+  assert.ok(!texte(seance({ presence: 'absent_eleve_coteach' as Presence, climat: 'tendu' })).includes('Climat de classe'));
+});
+
+test('renforcement positif : une aide proposée, rangée avec les médiations (ce que l’adulte fait pendant la tâche)', () => {
+  const t = texte(seance({ aides: [{ nom: 'Renforcement positif', effet: 2 }] }));
+  assert.ok(t.includes('Médiations mises en place'));
+  assert.ok(t.includes('renforcement positif'));
+  assert.ok(!t.includes('Autres aides mises en place'));
+});

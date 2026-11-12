@@ -22,6 +22,10 @@ interface Props {
   /** Retire le point (« Pas observé », « Retirer »). */
   onRetirer?: () => void;
   libelleRetirer?: string;
+  /** Garde le point sans choisir de niveau (compétences : un niveau est difficile à juger en une séance). */
+  onGarder?: () => void;
+  /** Le niveau peut rester vide : la pastille propose « Ajouter un niveau » au lieu de « Choisir un niveau ». */
+  niveauFacultatif?: boolean;
 }
 
 /**
@@ -29,7 +33,7 @@ interface Props {
  * Aucun niveau n'est présélectionné ; une fois choisi, seul le niveau reste affiché
  * et un appui rouvre les trois choix.
  */
-export function Point({ nom, libelles, valeurMin = 0, teintes, valeur, onChoisir, onRetirer, libelleRetirer = 'Retirer' }: Props) {
+export function Point({ nom, libelles, valeurMin = 0, teintes, valeur, onChoisir, onRetirer, libelleRetirer = 'Retirer', onGarder, niveauFacultatif = false }: Props) {
   const choisi = typeof valeur === 'number';
   const [ouvert, setOuvert] = useState(false);
   const premier = useRef<HTMLButtonElement>(null);
@@ -63,8 +67,11 @@ export function Point({ nom, libelles, valeurMin = 0, teintes, valeur, onChoisir
           <IconeCoche taille={14} />{libelles[valeur - valeurMin]}
         </button>
       ) : (
-        <button type="button" ref={pastille} className="pastille aucune" aria-label={`${nom} : choisir un niveau`}
-          onClick={() => { focus.current = 'choix'; setOuvert(true); }}>Choisir un niveau</button>
+        <div className="point-actions">
+          {onGarder ? <button type="button" className="pastille aucune" aria-label={`Garder : ${nom}`} onClick={onGarder}>Garder</button> : null}
+          <button type="button" ref={pastille} className="pastille aucune" aria-label={`${nom} : ${niveauFacultatif ? 'ajouter un niveau' : 'choisir un niveau'}`}
+            onClick={() => { focus.current = 'choix'; setOuvert(true); }}>{niveauFacultatif ? 'Ajouter un niveau' : 'Choisir un niveau'}</button>
+        </div>
       )}
     </li>
   );

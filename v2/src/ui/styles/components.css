@@ -53,6 +53,8 @@
 
 /* ---------- point à évaluer : même carte pour observations, compétences et aides ---------- */
 .points { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-3); align-items: start; }
+/* Les aides sont courtes et nombreuses : trois par ligne dès que la largeur le permet, pour une rubrique moins longue. */
+.points.points-trois { grid-template-columns: repeat(auto-fill, minmax(188px, 1fr)); }
 /* Cartes en colonnes équilibrées (ui/ListeColonnes.tsx) : chaque colonne garde sa propre hauteur, sans trou sous une carte courte. */
 .points-colonnes { display: flex; align-items: flex-start; gap: var(--sp-3); }
 .points-colonne { flex: 1 1 0; min-width: 0; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-3); }
@@ -117,3 +119,6 @@
 .dialog[open] { animation: dialog-in var(--t-panel) var(--ease-out) both; }
 @keyframes dialog-in { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: none; } }
 .dialog { max-height: 92dvh; overflow: auto; overscroll-behavior: contain; }
+
+/* Point : deux gestes possibles sur une piste non retenue (« Garder » / « Ajouter un niveau »). */
+.point-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }

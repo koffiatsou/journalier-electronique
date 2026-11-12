@@ -4,6 +4,19 @@ export const DELAI_SECOURS_REPLI_MS = 400;
 /** Délai avant la seconde visée du défilement : le défilement animé du navigateur dure moins d'une seconde. */
 export const DELAI_CORRECTION_DEFILEMENT_MS = 800;
 
+let correctionEnAttente: number | undefined;
+
+/** Seconde visée en attente après un changement de rubrique : programmée ici pour pouvoir être annulée par toute autre navigation. */
+export function programmerCorrection(faire: () => void): void {
+  window.clearTimeout(correctionEnAttente);
+  correctionEnAttente = window.setTimeout(faire, DELAI_CORRECTION_DEFILEMENT_MS);
+}
+
+/** Annule la seconde visée : à appeler avant tout défilement voulu par la personne (raccourcis), sinon la page serait tirée en arrière. */
+export function annulerCorrection(): void {
+  window.clearTimeout(correctionEnAttente);
+}
+
 /** Propriété animée par le repli d'une rubrique (`.etape-corps`, seance.css). */
 const PROPRIETE_REPLI = 'grid-template-rows';
 

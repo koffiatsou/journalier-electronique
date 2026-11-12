@@ -196,19 +196,6 @@ export const modifierObjectifPeriode = (p: Pia, id: string, champ: 'texte' | 'cr
 
 export const retirerObjectifPeriode = (p: Pia, id: string): Pia => avecObjectifs(p, p.pv1.objectifs.filter((o) => o.id !== id));
 
-/** Objectifs retenus à la réunion qui ne sont pas encore dans le procès-verbal. */
-export const retenusAReprendre = (p: Pia): ObjectifRetenu[] => {
-  const deja = new Set(p.pv1.objectifs.map((o) => o.source).filter(Boolean));
-  return p.retenus.filter((r) => r.texte.trim() && !deja.has(r.id));
-};
-
-/** Reprend les objectifs retenus à la réunion (une seule fois chacun), sans critères : l'agent les écrit. */
-export function reprendreRetenus(p: Pia): Pia {
-  let suite = p;
-  for (const r of retenusAReprendre(p)) suite = ajouterObjectifPeriode(suite, { matiere: r.matiere, texte: r.texte, source: r.id });
-  return suite;
-}
-
 /* ───────── Aménagements ───────── */
 
 const avecAmenagements = (p: Pia, amenagements: Amenagement[]): Pia => ({ ...p, amenagements });
