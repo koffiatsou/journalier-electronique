@@ -1,13 +1,18 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  ASPECTS, ASPECTS_RAPPROCHES, COLONNES, CONSIGNE_COLONNE, EXEMPLES, PHRASES, ajouterLigne, contientLigne, modifierCase,
-  rapprochementsDe, rapprocher, retirerLigne
+  ASPECTS, ASPECTS_RAPPROCHES, COLONNES, CONSIGNE_COLONNE, EXEMPLES, PHRASES, ajouterLigne, ajouterRetenuAuProfil, aspectPropose, contientLigne,
+  ligneDeProfil, modifierCase, rapprochementsDe, rapprocher, retenusHorsProfil, retirerLigne
 } from '../../domain/pia/index.ts';
-import { Textarea } from '../../ui/Field.tsx';
+import type { Aspect } from '../../domain/pia/index.ts';
+import { Button } from '../../ui/Button.tsx';
+import { Select, Textarea } from '../../ui/Field.tsx';
 import type { PropsOnglet } from './contexte.ts';
 
 export function OngletProfil({ pia, seances, changer }: PropsOnglet) {
   const rapprochements = useMemo(() => rapprocher(seances), [seances]);
+  const aAjouter = retenusHorsProfil(pia);
+  /** Aspect choisi pour chaque objectif retenu ; à défaut, celui qu'on propose d'après l'observation d'où il vient. */
+  const [aspects, setAspects] = useState<Record<string, Aspect>>({});
 
   return (
     <section className="liste-carte pia-section" aria-labelledby="pia-profil-titre">
@@ -16,6 +21,26 @@ export function OngletProfil({ pia, seances, changer }: PropsOnglet) {
         Rien n’est rempli à votre place. Sous chaque case, « Idées » propose des phrases à cliquer ; vous gardez la main sur ce qui est écrit.
         Ressources : {CONSIGNE_COLONNE.ressources.toLowerCase()}
       </p>
+      {aAjouter.length ? (
+        <div className="pia-retenus" role="group" aria-labelledby="pia-retenus-titre">
+          <h3 id="pia-retenus-titre">Objectifs retenus au Préparer</h3>
+          <p className="field-hint">Choisissez l’aspect de chaque objectif, puis ajoutez-le aux « Objectifs à poursuivre ». Le procès-verbal 1 reprendra ce qui est écrit dans le profil.</p>
+          <ul className="pia-liste-idees">
+            {aAjouter.map((r) => {
+              const aspect = aspects[r.id] ?? aspectPropose(r);
+              return (
+                <li key={r.id} className="pia-retenu">
+                  <span className="reunion-proposition">{ligneDeProfil(r)}</span>
+                  <Select aria-label={`Aspect de l’objectif : ${r.texte}`} value={aspect} onChange={(ev) => setAspects((x) => ({ ...x, [r.id]: ev.target.value as Aspect }))}>
+                    {ASPECTS.map((a) => <option key={a.id} value={a.id}>{a.libelle}</option>)}
+                  </Select>
+                  <Button onClick={() => changer((p) => ajouterRetenuAuProfil(p, r, aspect))}>Ajouter au profil</Button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
       {ASPECTS.map((a) => (
         <fieldset key={a.id} className="pia-aspect">
           <legend>{a.libelle}</legend>

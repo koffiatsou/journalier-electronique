@@ -107,6 +107,9 @@ await premierePhrase.click();
 ok(await premierePhrase.getAttribute('aria-pressed') === 'true', 'profil : phrase toute faite cliquée');
 await premierePhrase.click();
 ok(await premierePhrase.getAttribute('aria-pressed') === 'false', 'profil : phrase décliquée, elle est retirée');
+ok(await page.locator('.pia-retenu').count() === 3, 'profil : les trois objectifs retenus au Préparer sont proposés');
+for (let i = 0; i < 3; i++) await page.locator('.pia-retenu').first().getByRole('button', { name: 'Ajouter au profil' }).click();
+ok(await page.locator('.pia-retenu').count() === 0, 'profil : une fois ajoutés au profil, ils ne sont plus proposés');
 
 // Procès-verbal 1
 await page.getByRole('tab', { name: 'Procès-verbal 1' }).click();
@@ -115,9 +118,12 @@ await page.getByRole('button', { name: 'Ajouter une personne' }).click();
 await page.getByLabel('Personne présente 1').fill('Mme Dupont, titulaire');
 await page.getByRole('button', { name: 'Aspects du profil' }).count();
 await page.getByRole('button', { name: 'Comportemental et affectif' }).click();
-await page.getByRole('button', { name: /Reprendre les objectifs retenus \(3\)/ }).click();
-ok(await page.locator('.pia-objectif').count() === 3, 'PV 1 : les trois objectifs retenus sont repris');
-ok(await page.getByRole('button', { name: /Reprendre les objectifs retenus/ }).count() === 0, 'PV 1 : reprise une seule fois');
+const boutonReprise = page.getByRole('button', { name: /Reprendre les objectifs du profil \(\d+\)/ });
+const nombreReprise = Number(/\((\d+)\)/.exec(await boutonReprise.textContent())?.[1]);
+ok(nombreReprise >= 3, 'PV 1 : les objectifs du profil (dont les trois retenus) sont à reprendre');
+await boutonReprise.click();
+ok(await page.locator('.pia-objectif').count() === nombreReprise, 'PV 1 : tous les objectifs du profil sont repris');
+ok(await page.getByRole('button', { name: /Reprendre les objectifs du profil/ }).count() === 0, 'PV 1 : reprise une seule fois');
 await page.getByLabel('Critères d’évaluation de l’objectif 1').fill('Contrôle seul 4 productions sur 5.');
 await page.getByLabel('Retour de l’élève').fill('Dit que les exemples l’aident.');
 

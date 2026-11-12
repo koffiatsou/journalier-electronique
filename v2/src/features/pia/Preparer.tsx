@@ -72,14 +72,14 @@ interface Props extends Pick<PropsOnglet, 'eleve' | 'pia' | 'changer'> {
   filtre: FiltrePreparer;
   onFiltre: (f: FiltrePreparer) => void;
   onAller: Aller;
-  onPv1: () => void;
+  onProfil: () => void;
 }
 
 /**
  * Onglet « Préparer » (ancien écran Réunion) : résumé par matière, objectifs à valider, texte à copier.
  * Les objectifs retenus sont enregistrés dans le PIA de l'élève.
  */
-export function Preparer({ eleve, pia, changer, seancesEleve, filtre: f, onFiltre, onAller, onPv1 }: Props) {
+export function Preparer({ eleve, pia, changer, seancesEleve, filtre: f, onFiltre, onAller, onProfil }: Props) {
   const { annoncer } = useToast();
   const aujourdhui = aujourdhuiISO();
   const maj = (p: Partial<FiltrePreparer>) => onFiltre({ ...f, ...p });
@@ -215,8 +215,8 @@ export function Preparer({ eleve, pia, changer, seancesEleve, filtre: f, onFiltr
                   </Field>
                   <Button type="submit" disabled={!libre.trim()}>Ajouter</Button>
                 </form>
-                <p className="field-hint">Les objectifs retenus sont enregistrés dans le PIA de l’élève. Au procès-verbal 1, vous pourrez les reprendre et ajouter leurs critères d’évaluation.</p>
-                {retenus.some((r) => r.texte.trim()) ? <div><Button onClick={onPv1}>Passer au procès-verbal 1</Button></div> : null}
+                <p className="field-hint">Les objectifs retenus sont enregistrés dans le PIA de l’élève. Dans l’onglet Profil, vous les ajouterez aux « Objectifs à poursuivre » ; le procès-verbal 1 reprend ensuite les objectifs du profil et leur ajoute des critères d’évaluation.</p>
+                {retenus.some((r) => r.texte.trim()) ? <div><Button onClick={onProfil}>Passer au profil</Button></div> : null}
               </div>
             </div>
           </section>

@@ -1,6 +1,7 @@
 import {
   EXEMPLES_RETOURS, EXEMPLE_AXE, EXEMPLE_CRITERES, EXEMPLE_OBJECTIF, EXEMPLE_RESSOURCES, ASPECTS, ajouterObjectifPeriode, ajouterPresent,
-  changerPresent, modifierObjectifPeriode, modifierPv1, modifierRetour, reprendreRetenus, retenusAReprendre, retirerObjectifPeriode, retirerPresent
+  changerPresent, matieresDuPia, modifierObjectifPeriode, modifierPv1, modifierRetour, objectifsDuProfil, objectifsDuProfilAReprendre,
+  reprendreObjectifsDuProfil, retenusHorsProfil, retirerObjectifPeriode, retirerPresent
 } from '../../domain/pia/index.ts';
 import type { CleRetour } from '../../domain/pia/index.ts';
 import { Button } from '../../ui/Button.tsx';
@@ -16,9 +17,12 @@ const RETOURS: { cle: CleRetour; libelle: string }[] = [
   { cle: 'autres', libelle: 'Autres retours' }
 ];
 
-export function OngletPv1({ pia, changer }: PropsOnglet) {
+export function OngletPv1({ eleve, pia, seances, changer, onProfil }: PropsOnglet & { onProfil: () => void }) {
   const { pv1 } = pia;
-  const aReprendre = retenusAReprendre(pia).length;
+  const matieres = matieresDuPia(eleve.matieres, seances, pia);
+  const aReprendre = objectifsDuProfilAReprendre(pia, matieres).length;
+  const auProfil = objectifsDuProfil(pia, matieres).length;
+  const horsProfil = retenusHorsProfil(pia).length;
   const axes = ASPECTS.map((a) => a.libelle);
   const axeChoisi = (a: string): boolean => pv1.axe.split('\n').includes(a);
   const basculerAxe = (a: string) => changer((p) => {
@@ -65,8 +69,20 @@ export function OngletPv1({ pia, changer }: PropsOnglet) {
         <p className="field-hint">{EXEMPLE_OBJECTIF} {EXEMPLE_CRITERES}</p>
         {aReprendre ? (
           <div>
-            <Button variante="primaire" onClick={() => changer((p) => reprendreRetenus(p))}>Reprendre les objectifs retenus ({aReprendre})</Button>
+            <Button variante="primaire" onClick={() => changer((p) => reprendreObjectifsDuProfil(p, matieres))}>Reprendre les objectifs du profil ({aReprendre})</Button>
           </div>
+        ) : null}
+        {!auProfil && !pv1.objectifs.length ? (
+          <p className="field-hint">
+            Les objectifs viennent du profil : écrivez-les dans la colonne « Objectifs à poursuivre » de l’onglet Profil, puis reprenez-les ici.{' '}
+            <Button variante="discret" onClick={onProfil}>Aller au profil</Button>
+          </p>
+        ) : null}
+        {horsProfil ? (
+          <p className="field-hint">
+            {horsProfil === 1 ? '1 objectif retenu au Préparer n’est pas encore dans le profil.' : `${horsProfil} objectifs retenus au Préparer ne sont pas encore dans le profil.`}{' '}
+            <Button variante="discret" onClick={onProfil}>Les ajouter au profil</Button>
+          </p>
         ) : null}
         {pv1.objectifs.length ? (
           <ol className="pia-objectifs">

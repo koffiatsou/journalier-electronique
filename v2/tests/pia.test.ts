@@ -6,8 +6,8 @@ import {
   ASPECTS, COLONNES, MAX_PROPOSITIONS, MAX_RAPPROCHEMENTS, PHRASES, ajouterAmenagement, ajouterLigne, ajouterObjectifPeriode,
   ajouterPresent, basculerType, changerPresent, contientLigne, definirRetenus, idPia, modifierAmenagement, modifierCase,
   modifierIdentite, modifierObjectifPeriode, modifierPv1, modifierRetour, normaliserPia, piaVierge, proposerAmenagements,
-  rapprocher, reprendreRetenus, retenusAReprendre, retirerAmenagement, retirerLigne, retirerObjectifPeriode, retirerPresent, typeDeAide,
-  EXEMPLES
+  rapprocher, retirerAmenagement, retirerLigne, retirerObjectifPeriode, retirerPresent, typeDeAide,
+  EXEMPLES, ajouterRetenuAuProfil, aspectPropose, ligneDeProfil, objectifsDuProfil, objectifsDuProfilAReprendre, reprendreObjectifsDuProfil, retenusHorsProfil, separerMatiere
 } from '../src/domain/pia/index.ts';
 import type { Pia } from '../src/domain/pia/index.ts';
 import { creerMagasin } from '../src/state/store.ts';
@@ -127,24 +127,57 @@ describe('PIA : modifications', () => {
     assert.equal(p.pv1.objectifs[0]?.criteres, '');
   });
 
-  it('reprend les objectifs retenus à la réunion une seule fois chacun', () => {
-    let p = definirRetenus(neuf(), [
-      { id: 'Mathématiques|progresser|x', matiere: 'Mathématiques', texte: 'Faire progresser : x.', libre: false },
-      { id: 'libre-1', matiere: '', texte: 'Revoir le matériel', libre: true },
-      { id: 'libre-2', matiere: '', texte: '   ', libre: true }
-    ]);
-    assert.equal(retenusAReprendre(p).length, 2);
-    p = reprendreRetenus(p);
-    assert.deepEqual(p.pv1.objectifs.map((o) => [o.matiere, o.texte, o.criteres, o.source]), [
-      ['Mathématiques', 'Faire progresser : x.', '', 'Mathématiques|progresser|x'],
-      ['', 'Revoir le matériel', '', 'libre-1']
-    ]);
-    assert.equal(retenusAReprendre(p).length, 0);
-    const encore = reprendreRetenus(p);
-    assert.equal(encore.pv1.objectifs.length, 2);
-    // Un objectif retiré du procès-verbal peut être repris : l'agent garde la main.
-    const sans = retirerObjectifPeriode(p, 'objectif-2');
-    assert.equal(retenusAReprendre(sans).length, 1);
+  describe('parcours des objectifs : Préparer → Profil → procès-verbal 1', () => {
+    const MATIERES = ['Mathématiques', 'Sciences'];
+    const retenu = (id: string, matiere: string, texte: string, libre = false) => ({ id, matiere, texte, libre });
+
+    it('un objectif retenu au Préparer s’ajoute au profil avec sa matière, puis se reprend au PV 1 avec sa matière', () => {
+      let p = definirRetenus(neuf(), [retenu('Mathématiques|progresser|Maintient son attention', 'Mathématiques', 'Faire progresser : maintient son attention.', false)]);
+      assert.equal(retenusHorsProfil(p).length, 1);
+      assert.equal(aspectPropose(p.retenus[0]!), 'autonomie');
+      p = ajouterRetenuAuProfil(p, p.retenus[0]!, 'autonomie');
+      assert.equal(p.profil.autonomie.objectifs, 'Faire progresser : maintient son attention (Mathématiques)');
+      assert.equal(retenusHorsProfil(p).length, 0);
+      p = reprendreObjectifsDuProfil(p, MATIERES);
+      assert.deepEqual(p.pv1.objectifs.map((o) => [o.matiere, o.texte, o.criteres]), [['Mathématiques', 'Faire progresser : maintient son attention', '']]);
+    });
+
+    it('un objectif écrit directement au profil, sans passer par le Préparer, est repris lui aussi', () => {
+      let p = modifierCase(neuf(), 'comportement', 'objectifs', 'Renforcer la persévérance\nOser demander de l’aide');
+      p = modifierCase(p, 'cognitif', 'objectifs', 'Reformuler une consigne (Sciences)');
+      assert.equal(objectifsDuProfilAReprendre(p, MATIERES).length, 3);
+      p = reprendreObjectifsDuProfil(p, MATIERES);
+      assert.deepEqual(p.pv1.objectifs.map((o) => [o.matiere, o.texte]), [
+        ['', 'Renforcer la persévérance'],
+        ['', 'Oser demander de l’aide'],
+        ['Sciences', 'Reformuler une consigne']
+      ]);
+    });
+
+    it('chaque objectif n’est repris qu’une fois ; un objectif retiré du PV 1 peut être repris', () => {
+      let p = modifierCase(neuf(), 'autonomie', 'objectifs', 'Utiliser seul son agenda');
+      p = reprendreObjectifsDuProfil(p, MATIERES);
+      assert.equal(reprendreObjectifsDuProfil(p, MATIERES).pv1.objectifs.length, 1);
+      const sans = retirerObjectifPeriode(p, 'objectif-1');
+      assert.equal(objectifsDuProfilAReprendre(sans, MATIERES).length, 1);
+    });
+
+    it('une parenthèse qui n’est pas une matière du PIA reste dans le texte', () => {
+      assert.deepEqual(separerMatiere('Utiliser le clavier (en dictée)', MATIERES), { texte: 'Utiliser le clavier (en dictée)', matiere: '' });
+      assert.deepEqual(separerMatiere('Revoir les tables (mathematiques)', MATIERES), { texte: 'Revoir les tables', matiere: 'Mathématiques' });
+    });
+
+    it('l’aspect proposé suit le rangement des observations ; un objectif libre ou inconnu est cognitif', () => {
+      assert.equal(aspectPropose(retenu('Sciences|progresser|Demande de l’aide', 'Sciences', 'x')), 'comportement');
+      assert.equal(aspectPropose(retenu('Sciences|vigilance|Se désengage / évite la tâche', 'Sciences', 'x')), 'comportement');
+      assert.equal(aspectPropose(retenu('Sciences|competence|Tracer un graphique', 'Sciences', 'x')), 'cognitif');
+      assert.equal(aspectPropose(retenu('libre-1', '', 'x', true)), 'cognitif');
+    });
+
+    it('la ligne du profil porte la matière sans point final ; les lignes vides sont ignorées', () => {
+      assert.equal(ligneDeProfil({ texte: 'Revoir le matériel. ', matiere: 'Sciences' }), 'Revoir le matériel (Sciences)');
+      assert.equal(objectifsDuProfil(modifierCase(neuf(), 'physique', 'objectifs', '\n  \n'), MATIERES).length, 0);
+    });
   });
 
   it('aménagements : types toujours dans l’ordre P, O, M ; description modifiable ; retrait', () => {

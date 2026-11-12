@@ -5,7 +5,7 @@ export type {
 export {
   ajouterAmenagement, ajouterLigne, ajouterObjectifPeriode, ajouterPresent, basculerType, changerPresent, contientLigne,
   definirRetenus, idPia, modifierAmenagement, modifierCase, modifierIdentite, modifierObjectifPeriode, modifierPv1,
-  modifierRetour, normaliserPia, piaVierge, reprendreRetenus, retenusAReprendre, retirerAmenagement, retirerObjectifPeriode,
+  modifierRetour, normaliserPia, piaVierge, retirerAmenagement, retirerObjectifPeriode,
   retirerLigne, retirerPresent,
   ajouterAmenagementPv2, ajouterPresentPv2, basculerTypePv2, changerPresentPv2, choisirResultat, commenterObjectif, evaluationDe,
   modifierAmenagementPv2, modifierDatePv2, modifierRetourPv2, objectifsAEvaluer, reprendreAmenagementsPourRentree,
@@ -20,3 +20,8 @@ export { MAX_PROPOSITIONS, TYPE_DE_AIDE, proposerAmenagements, typeDeAide } from
 export type { PropositionAmenagement } from './amenagements.ts';
 export { rappelDepuisPv1 } from './rappel.ts';
 export type { Rappel } from './rappel.ts';
+export {
+  ajouterRetenuAuProfil, aspectPropose, ligneDeProfil, matieresDuPia, normeObjectif, objectifsDuProfil, objectifsDuProfilAReprendre,
+  reprendreObjectifsDuProfil, retenusHorsProfil, separerMatiere
+} from './objectifsProfil.ts';
+export type { ObjectifDuProfil } from './objectifsProfil.ts';
