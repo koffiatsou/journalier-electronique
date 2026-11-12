@@ -9,6 +9,7 @@ import { LEXIQUE_ACCOMPAGNEMENTS, LEXIQUE_AIDES, LEXIQUE_NIVEAUX } from '../../d
 import { Button } from '../../ui/Button.tsx';
 import { BoutonLexique } from '../../ui/Lexique.tsx';
 import { Chips } from '../../ui/Chip.tsx';
+import { Groupe, compteDe } from '../../ui/Groupe.tsx';
 import { ChampSuggestions } from '../../ui/ChampSuggestions.tsx';
 import { Field, Input, Select, Textarea } from '../../ui/Field.tsx';
 import { anneeDeNiveau, cibleDeSeance, defautsSeance, formeDeFiliere, rentreeDeDate } from '../../domain/referentiel/index.ts';
@@ -75,6 +76,7 @@ export function FormulaireCreneau({ s, maj, eleves, ecoles = [], erreurs = {} }:
         <p className="field-hint presence-aide">{choisi.aide}</p>
       </fieldset>
 
+      <hr className="separateur" />
       <div className="champs champs-3">
         <Field label="Élève accompagné" {...(erreurs.eleve ? { erreur: erreurs.eleve } : {})}>
           {(id, champ) => (
@@ -129,6 +131,7 @@ export function FormulaireCreneau({ s, maj, eleves, ecoles = [], erreurs = {} }:
 
       {!classeSeule ? (
         <>
+          <hr className="separateur" />
           {coteach ? (
             <Field label="Contenu vu en classe" aide="L’élève est absent : notez ce qui a été travaillé en classe.">
               {(id) => <Textarea id={id} value={s.contenuClasse} onChange={(e) => maj({ contenuClasse: e.target.value })} />}
@@ -141,19 +144,17 @@ export function FormulaireCreneau({ s, maj, eleves, ecoles = [], erreurs = {} }:
           <Field label="Mon objectif">
             {(id) => <Input id={id} value={s.monObjectif} placeholder="Ce que vous visez durant cette séance" onChange={(e) => maj({ monObjectif: e.target.value })} />}
           </Field>
-          <div className="field">
-            <div className="rubrique-entete"><span className="field-label">Mon intervention</span><BoutonLexique titre="Lexique des types d’accompagnement" entrees={LEXIQUE_ACCOMPAGNEMENTS} /></div>
+          <Groupe titre="Mon intervention" compte={compteDe(s.interventions.length, 'choisi')} actions={<BoutonLexique titre="Lexique des types d’accompagnement" entrees={LEXIQUE_ACCOMPAGNEMENTS} />}>
             <Chips options={interventionsAffichees(s.interventions)} valeurs={s.interventions} onChange={(interventions) => maj({ interventions })} />
-          </div>
+          </Groupe>
           {!coteach ? (
-            <div className="field">
-              <span className="field-label">Climat de classe <span className="opt">facultatif</span></span>
+            <Groupe titre="Climat de classe" mention="facultatif">
               <p className="field-hint">L’ambiance générale pendant la séance : elle aide à comprendre ce qui a été observé.</p>
               <Chips unique options={CLIMATS} valeurs={s.climat ? [CLIMAT_LIBELLES[s.climat]] : []} onChange={(v) => choisirClimat(v[0])} />
               {s.climat ? (
                 <Input aria-label="Précision sur le climat de classe" value={s.precisionClimat ?? ''} placeholder="Précision (facultatif)" onChange={(e) => maj({ precisionClimat: e.target.value })} />
               ) : null}
-            </div>
+            </Groupe>
           ) : null}
         </>
       ) : null}
@@ -162,6 +163,9 @@ export function FormulaireCreneau({ s, maj, eleves, ecoles = [], erreurs = {} }:
 }
 
 /* ───────── 2. Fonctionnement observé ───────── */
+/** Groupes de la rubrique, dans l'ordre d'affichage : la barre d'étapes (collée en haut) en fait des raccourcis. */
+export const GROUPES_FONCTIONNEMENT: readonly string[] = [...OBSERVATIONS_SUGGEREES.map((g) => g.rubrique), 'Points de vigilance'];
+
 export function FormulaireFonctionnement({ s, maj }: PropsFormulaire) {
   const [libre, setLibre] = useState('');
   const [libreVigilance, setLibreVigilance] = useState('');
@@ -193,22 +197,25 @@ export function FormulaireFonctionnement({ s, maj }: PropsFormulaire) {
         <p className="etape-aide">Pour chaque point observé, choisissez le niveau. Laissez de côté ce qui n’a pas été observé.</p>
         <BoutonLexique titre="Lexique des niveaux" entrees={LEXIQUE_NIVEAUX} />
       </div>
-      {OBSERVATIONS_SUGGEREES.map((g) => (
-        <div key={g.rubrique} className="rubrique">
-          <h3>{g.rubrique}</h3>
-          <ul className="points">{g.items.map((i) => carte(i))}</ul>
-        </div>
-      ))}
-      <div className="rubrique">
-        <h3>Autre observation</h3>
-        {perso.length ? <ul className="points">{perso.map((o) => carte(o.texte, true))}</ul> : null}
-        <form className="ajout" onSubmit={(e) => { e.preventDefault(); ajouterLibre(libre, false, () => setLibre('')); }}>
-          <Input value={libre} placeholder="Une observation qui n’est pas dans la liste" aria-label="Autre observation" onChange={(e) => setLibre(e.target.value)} />
-          <Button type="submit">Ajouter</Button>
-        </form>
-      </div>
-      <div className="rubrique">
-        <h3>Points de vigilance</h3>
+      {OBSERVATIONS_SUGGEREES.map((g, rang) => {
+        const dernier = rang === OBSERVATIONS_SUGGEREES.length - 1;
+        const observes = g.items.filter((i) => trouve(i)).length + (dernier ? perso.length : 0);
+        return (
+          <Groupe key={g.rubrique} titre={g.rubrique} compte={compteDe(observes, 'observé')}>
+            <ul className="points">
+              {g.items.map((i) => carte(i))}
+              {dernier ? perso.map((o) => carte(o.texte, true)) : null}
+            </ul>
+            {dernier ? (
+              <form className="ajout" onSubmit={(e) => { e.preventDefault(); ajouterLibre(libre, false, () => setLibre('')); }}>
+                <Input value={libre} placeholder="Une autre observation qui n’est pas dans la liste" aria-label="Autre observation" onChange={(e) => setLibre(e.target.value)} />
+                <Button type="submit">Ajouter</Button>
+              </form>
+            ) : null}
+          </Groupe>
+        );
+      })}
+      <Groupe titre="Points de vigilance" compte={compteDe(s.observations.filter((o) => estVigilance(o)).length, 'noté')}>
         <p className="etape-aide">Une difficulté observée : indiquez à quelle fréquence, et non si c’est acquis.</p>
         <ul className="points">
           {VIGILANCES_SUGGEREES.map((v) => carte(v, false, true))}
@@ -218,7 +225,7 @@ export function FormulaireFonctionnement({ s, maj }: PropsFormulaire) {
           <Input value={libreVigilance} placeholder="Une autre difficulté observée" aria-label="Autre point de vigilance" onChange={(e) => setLibreVigilance(e.target.value)} />
           <Button type="submit">Ajouter</Button>
         </form>
-      </div>
+      </Groupe>
       <Field label="Remarque" optionnel aide="Astuce : le micro du clavier de la tablette dicte directement dans ce champ.">
         {(id) => <Textarea id={id} value={s.remarque} placeholder="Ce qui a été observé, en quelques mots" onChange={(e) => maj({ remarque: e.target.value })} />}
       </Field>
@@ -283,8 +290,7 @@ export function FormulaireCompetence({ s, maj, eleve }: PropsFormulaire & { elev
         <p className="field-hint">Cet élève suit plusieurs langues : choisissez la langue précise (Anglais, Néerlandais…) comme matière à l’étape 1 pour voir des pistes.</p>
       ) : null}
       {pistes.length ? (
-        <div className="rubrique">
-          <h3>Pistes d’après l’objectif de la leçon</h3>
+        <Groupe titre="Pistes d’après l’objectif de la leçon">
           {sequence ? (
             <p className="sequence-programme">
               <span className="sequence-titre">{sequence.titre}</span>
@@ -300,7 +306,7 @@ export function FormulaireCompetence({ s, maj, eleve }: PropsFormulaire & { elev
             </>
           ) : null}
           {!plus ? <Button type="button" variante="secondaire" onClick={() => setPlus(true)}>Voir d’autres pistes</Button> : null}
-        </div>
+        </Groupe>
       ) : null}
       <form className="ajout" onSubmit={(e) => { e.preventDefault(); ajouter(); }}>
         <Field label="Compétence travaillée" className="ajout-champ">
@@ -335,17 +341,15 @@ export function FormulaireAides({ s, maj }: PropsFormulaire) {
 
   return (
     <>
-      <div className="field">
-        <span className="field-label">Ces aides sont…</span>
+      <Groupe titre="Ces aides sont…">
         <div className="chips" role="radiogroup" aria-label="Statut des aides">
           {(Object.keys(SITUATION_AIDE_LIBELLES) as SituationAide[]).map((k) => (
             <button key={k} type="button" role="radio" aria-checked={s.situationAide === k} className="chip"
               onClick={() => maj({ situationAide: k })}>{SITUATION_AIDE_LIBELLES[k]}</button>
           ))}
         </div>
-      </div>
-      <div className="rubrique">
-        <div className="rubrique-entete"><h3>Aides utilisées</h3><BoutonLexique titre="Lexique des aides" entrees={LEXIQUE_AIDES} /></div>
+      </Groupe>
+      <Groupe titre="Aides utilisées" compte={compteDe(s.aides.length, 'utilisée')} actions={<BoutonLexique titre="Lexique des aides" entrees={LEXIQUE_AIDES} />}>
         <p className="etape-aide">Pour chaque aide utilisée, choisissez son effet. Laissez de côté ce qui n’a pas servi.</p>
         <ul className="points">
           {[...AIDES_SUGGEREES, ...autres.map((a) => a.nom)].map((nom) => (
@@ -353,7 +357,7 @@ export function FormulaireAides({ s, maj }: PropsFormulaire) {
               onChoisir={(n) => fixe(nom, n)} onRetirer={() => retire(nom)} libelleRetirer="Pas utilisée" />
           ))}
         </ul>
-      </div>
+      </Groupe>
       <Field label="Précision" optionnel>
         {(id) => <Textarea id={id} value={s.precisionAide} placeholder="Ce qui a été fait et ce qui a été observé ensuite" onChange={(e) => maj({ precisionAide: e.target.value })} />}
       </Field>
@@ -367,10 +371,9 @@ export function FormulaireSuite({ s, maj }: PropsFormulaire) {
   const set = (patch: Partial<Seance['suite']>) => maj({ suite: { ...suite, ...patch } });
   return (
     <>
-      <div className="field">
-        <span className="field-label">Suite de l’accompagnement</span>
+      <Groupe titre="Suite de l’accompagnement" compte={compteDe(suite.actions.length, 'choisie')}>
         <Chips options={ACTIONS_SUITE_SUGGEREES} valeurs={suite.actions} onChange={(actions) => set({ actions })} />
-      </div>
+      </Groupe>
       <Field label="Format de la prochaine séance" optionnel>
         {(id) => (
           <Select id={id} value={suite.modalite} onChange={(e) => set({ modalite: e.target.value })}>
@@ -382,10 +385,9 @@ export function FormulaireSuite({ s, maj }: PropsFormulaire) {
       <Field label="Objectif pour la prochaine séance" optionnel>
         {(id) => <Input id={id} value={suite.objectif} onChange={(e) => set({ objectif: e.target.value })} />}
       </Field>
-      <div className="field">
-        <span className="field-label">Collaboration et concertation <span className="opt">si nécessaire</span></span>
+      <Groupe titre="Collaboration et concertation" mention="si nécessaire" compte={compteDe(suite.collaborations.length, 'choisie')}>
         <Chips options={COLLABORATIONS_SUGGEREES} valeurs={suite.collaborations} onChange={(collaborations) => set({ collaborations })} />
-      </div>
+      </Groupe>
       <Field label="Précision" optionnel>
         {(id) => <Textarea id={id} value={suite.precision} onChange={(e) => set({ precision: e.target.value })} />}
       </Field>

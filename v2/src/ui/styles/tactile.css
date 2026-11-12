@@ -10,6 +10,7 @@
     min-height: var(--cible-tactile);
   }
   :is(.btn, .chip, .bascule button, .mois-jour, .mois-ajout) { min-width: var(--cible-tactile); }
+  .raccourci { min-height: var(--cible-tactile); }
   /* Pastilles de couleur : le dessin garde ses 28 px, seule la zone à toucher passe à 44 px. */
   .pastilles-couleur button:not(.auto), .pastilles-couleur button:not(.auto)[aria-pressed='true'] {
     position: relative; width: var(--cible-tactile); height: var(--cible-tactile); border: 0; background: none; box-shadow: none;
