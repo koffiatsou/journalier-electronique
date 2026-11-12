@@ -22,6 +22,12 @@ export interface EntreeReferentiel {
   r: string;
   /** Langue concernée (grammaire propre à une langue) ; absente = commun à toutes. */
   l?: string;
+  /** Code de la séquence du programme (« 4UAA4 ») : présent seulement sur les lignes des compétences terminales de maths S4–S6 ; seul, il n'est pas unique (voir `cleSequence`). */
+  q?: string;
+  /** Compétence à développer de la séquence, en casse normale. */
+  cd?: string;
+  /** Module et section du programme du tronc commun (« La géométrie plane / Les angles »), d'après le programme WBE S1–S3 ; sert à regrouper les tâches d'une même séquence. */
+  sq?: string;
 }
 
 export const ANNEES = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6'] as const;
@@ -39,9 +45,19 @@ export interface Contexte {
   rentree?: number | undefined;
 }
 
+/** Séquence du programme (unité d'acquis d'apprentissage) à laquelle appartient une piste. */
+export interface SequenceProgramme {
+  /** Titre de la séquence (« Fonctions de référence »). */
+  titre: string;
+  /** Compétence à développer (« S'approprier différents modèles fonctionnels »). */
+  competence: string;
+}
+
 export interface Piste {
   entree: EntreeReferentiel;
   score: number;
   /** Année du référentiel quand elle diffère de celle de l'élève. */
   ecartAnnee: Annee | null;
+  /** Renseignée quand la piste vient d'une séquence du programme : toutes les pistes proposées sont alors de la même séquence. */
+  sequence?: SequenceProgramme;
 }
