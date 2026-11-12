@@ -3,7 +3,8 @@ import {
   ACTIONS_SUITE_SUGGEREES, AIDES_SUGGEREES, COLLABORATIONS_SUGGEREES, EFFETS_LIBELLES,
   FILIERES_LIBELLES, interventionsAffichees, modalitesAffichees, NIVEAUX_LIBELLES, NIVEAUX_VIGILANCE, NIVEAU_MIN, OBSERVATIONS_SUGGEREES, PERIODES_DEFAUT, PRESENCE_LIBELLES, PRESENCE_PROF_ABSENT_VU, SITUATION_AIDE_LIBELLES, VIGILANCES_SUGGEREES, estVigilance
 } from '../../domain/types.ts';
-import type { Aide, Eleve, Effet, Niveau, Observation, Presence, Seance, SituationAide } from '../../domain/types.ts';
+import { CLIMAT_LIBELLES } from '../../domain/types.ts';
+import type { Aide, ClimatClasse, Eleve, Effet, Niveau, Observation, Presence, Seance, SituationAide } from '../../domain/types.ts';
 import { LEXIQUE_ACCOMPAGNEMENTS, LEXIQUE_AIDES, LEXIQUE_NIVEAUX } from '../../domain/lexique.ts';
 import { Button } from '../../ui/Button.tsx';
 import { BoutonLexique } from '../../ui/Lexique.tsx';
@@ -40,6 +41,9 @@ const CHOIX_PRESENCE: { cle: string; presence: Presence; profAbsent: boolean; ti
   })
 ];
 
+/** Choix du climat de classe, dans l'ordre d'affichage. */
+const CLIMATS: readonly string[] = Object.values(CLIMAT_LIBELLES);
+
 export function FormulaireCreneau({ s, maj, eleves, ecoles = [], erreurs = {} }: PropsCreneau) {
   const eleve = eleves.find((e) => e.id === s.eleveId);
   // Les périodes proposées sont celles de l'école de l'élève (neuf au plus) ; on garde toujours celles déjà choisies.
@@ -52,6 +56,11 @@ export function FormulaireCreneau({ s, maj, eleves, ecoles = [], erreurs = {} }:
   const absent = s.presence !== 'present';
   const coteach = s.presence === 'absent_eleve_coteach';
   const classeSeule = absent && !coteach;
+  /** Un seul climat à la fois ; retoucher le choix actif l'efface (et sa précision avec lui). */
+  const choisirClimat = (libelle: string | undefined) => {
+    const cle = (Object.keys(CLIMAT_LIBELLES) as ClimatClasse[]).find((k) => CLIMAT_LIBELLES[k] === libelle);
+    maj(cle ? { climat: cle } : { climat: undefined, precisionClimat: '' });
+  };
   const choisi = CHOIX_PRESENCE.find((c) => c.presence === s.presence && c.profAbsent === (s.profAbsent === true)) ?? CHOIX_PRESENCE[0]!;
 
   return (
@@ -136,6 +145,16 @@ export function FormulaireCreneau({ s, maj, eleves, ecoles = [], erreurs = {} }:
             <div className="rubrique-entete"><span className="field-label">Mon intervention</span><BoutonLexique titre="Lexique des types d’accompagnement" entrees={LEXIQUE_ACCOMPAGNEMENTS} /></div>
             <Chips options={interventionsAffichees(s.interventions)} valeurs={s.interventions} onChange={(interventions) => maj({ interventions })} />
           </div>
+          {!coteach ? (
+            <div className="field">
+              <span className="field-label">Climat de classe <span className="opt">facultatif</span></span>
+              <p className="field-hint">L’ambiance générale pendant la séance : elle aide à comprendre ce qui a été observé.</p>
+              <Chips unique options={CLIMATS} valeurs={s.climat ? [CLIMAT_LIBELLES[s.climat]] : []} onChange={(v) => choisirClimat(v[0])} />
+              {s.climat ? (
+                <Input aria-label="Précision sur le climat de classe" value={s.precisionClimat ?? ''} placeholder="Précision (facultatif)" onChange={(e) => maj({ precisionClimat: e.target.value })} />
+              ) : null}
+            </div>
+          ) : null}
         </>
       ) : null}
     </>

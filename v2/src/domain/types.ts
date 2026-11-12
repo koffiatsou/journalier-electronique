@@ -82,6 +82,15 @@ export interface Aide {
   effet: Effet | null;
 }
 
+/** Climat de classe observé pendant la séance (contexte, pas un niveau de l'élève) : une phrase d'ouverture des notes des agents. */
+export type ClimatClasse = 'serein' | 'peu_engage' | 'agite' | 'tendu';
+export const CLIMAT_LIBELLES: Readonly<Record<ClimatClasse, string>> = {
+  serein: 'Serein et propice aux apprentissages',
+  peu_engage: 'Calme, mais peu engagé',
+  agite: 'Agité',
+  tendu: 'Tendu'
+};
+
 export interface Seance {
   id: string;
   eleveId: string;
@@ -96,6 +105,9 @@ export interface Seance {
   /** Professeur absent mais élève vu en individuel : la séance a lieu (présence « normale »), l'absence du professeur est seulement notée. */
   profAbsent?: boolean;
   interventions: string[];
+  /** Facultatif : absent tant que l'agent ne l'a pas renseigné (les séances déjà enregistrées n'en ont pas). */
+  climat?: ClimatClasse;
+  precisionClimat?: string;
 
   /* Partie pédagogique */
   objectifLecon: string;

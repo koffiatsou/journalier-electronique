@@ -44,9 +44,9 @@ export function normaliserBrouillonSeance(brut: unknown): BrouillonSeance | null
  * et le choix d'un élève préremplit tout seul la forme d'enseignement (`forme`) : un brouillon « vide » ne doit ni s'écrire ni être proposé.
  */
 export function contenuSaisi(s: Seance): boolean {
-  const textes = [s.matiere, s.objectifLecon, s.contenuClasse, s.monObjectif, s.remarque, s.precisionCompetence, s.precisionAide, s.suite.modalite, s.suite.objectif, s.suite.precision];
+  const textes = [s.matiere, s.objectifLecon, s.contenuClasse, s.monObjectif, s.remarque, s.precisionCompetence, s.precisionAide, s.suite.modalite, s.suite.objectif, s.suite.precision, s.precisionClimat ?? ''];
   const listes = [s.interventions, s.observations, s.competences, s.aides, s.suite.actions, s.suite.collaborations];
-  return textes.some((t) => t.trim() !== '') || listes.some((l) => l.length > 0) || s.presence !== 'present' || s.situationAide !== 'none';
+  return textes.some((t) => t.trim() !== '') || listes.some((l) => l.length > 0) || s.presence !== 'present' || s.situationAide !== 'none' || s.climat !== undefined;
 }
 
 /* ───────── Brouillons des formulaires « nouvel élève » et « nouvelle activité » (lot 6.0, même principe que la séance) ───────── */

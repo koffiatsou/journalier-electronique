@@ -13,6 +13,9 @@ import { DUREE_TOAST_ACTION_MS, DUREE_TOAST_MS } from '../src/ui/Toast.tsx';
 const memo = (id: string): Memo => ({ id, texte: `mémo ${id}`, fait: false, creeLe: '2026-11-06T08:00:00.000Z' });
 
 describe('contenuSaisi : quand une séance vaut la peine d’être gardée', () => {
+  it('un climat de classe choisi suffit à garder la séance', () => {
+    assert.equal(contenuSaisi({ ...seanceVide(), climat: 'serein' }), true);
+  });
   it('une séance vierge, ou avec seulement l’élève et la date, ne compte pas', () => {
     assert.equal(contenuSaisi(seanceVide()), false);
     assert.equal(contenuSaisi(seanceVide('alpha', '2026-11-06')), false);

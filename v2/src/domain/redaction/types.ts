@@ -10,6 +10,9 @@ export interface Faits {
   presence: Presence;
   profAbsent: boolean;
   interventions: string[];
+  /** Libellé du climat de classe (vide si non renseigné) et sa précision. */
+  climat: string;
+  precisionClimat: string;
   objectifLecon: string;
   contenuClasse: string;
   monObjectif: string;
