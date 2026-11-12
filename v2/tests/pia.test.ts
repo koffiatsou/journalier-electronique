@@ -7,7 +7,7 @@ import {
   ajouterPresent, basculerType, changerPresent, contientLigne, definirRetenus, idPia, modifierAmenagement, modifierCase,
   modifierIdentite, modifierObjectifPeriode, modifierPv1, modifierRetour, normaliserPia, piaVierge, proposerAmenagements,
   rapprocher, retirerAmenagement, retirerLigne, retirerObjectifPeriode, retirerPresent, typeDeAide,
-  EXEMPLES, ajouterRetenuAuProfil, aspectPropose, ligneDeProfil, objectifsDuProfil, objectifsDuProfilAReprendre, reprendreObjectifsDuProfil, retenusHorsProfil, separerMatiere
+  EXEMPLES, ajouterRetenuAuProfil, aspectDesMots, aspectPropose, ligneDeProfil, objectifsDuProfil, objectifsDuProfilAReprendre, reprendreObjectifsDuProfil, retenusHorsProfil, separerMatiere
 } from '../src/domain/pia/index.ts';
 import type { Pia } from '../src/domain/pia/index.ts';
 import { creerMagasin } from '../src/state/store.ts';
@@ -172,6 +172,24 @@ describe('PIA : modifications', () => {
       assert.equal(aspectPropose(retenu('Sciences|vigilance|Se désengage / évite la tâche', 'Sciences', 'x')), 'comportement');
       assert.equal(aspectPropose(retenu('Sciences|competence|Tracer un graphique', 'Sciences', 'x')), 'cognitif');
       assert.equal(aspectPropose(retenu('libre-1', '', 'x', true)), 'cognitif');
+    });
+
+    it('un objectif libre est rangé d’après ses mots : les phrases du profil retrouvent leur aspect', () => {
+      for (const a of ASPECTS) {
+        for (const t of [...PHRASES[a.id].objectifs, EXEMPLES[a.id].objectifs]) assert.equal(aspectDesMots(t), a.id, `${a.id} : ${t}`);
+      }
+    });
+
+    it('des phrases nouvelles sont devinées ; sans mot reconnu, ou à égalité, on ne devine pas (cognitif par défaut)', () => {
+      const attendus: [string, string][] = [
+        ['Écrire plus lisiblement', 'physique'], ['Ranger son cartable chaque soir', 'autonomie'], ['Gérer sa frustration face à l’erreur', 'comportement'],
+        ['Participer à l’oral devant la classe', 'communication'], ['Retenir les tables de multiplication', 'cognitif'], ['Planifier son travail de la semaine', 'autonomie'],
+        ['Rester calme quand une consigne est difficile', 'comportement']
+      ];
+      for (const [t, aspect] of attendus) assert.equal(aspectDesMots(t), aspect, t);
+      assert.equal(aspectDesMots('Contrôler sa production avant de la rendre'), null);
+      assert.equal(aspectPropose(retenu('libre-9', '', 'Contrôler sa production avant de la rendre', true)), 'cognitif');
+      assert.equal(aspectPropose(retenu('libre-8', '', 'Utiliser seul son agenda', true)), 'autonomie');
     });
 
     it('la ligne du profil porte la matière sans point final ; les lignes vides sont ignorées', () => {

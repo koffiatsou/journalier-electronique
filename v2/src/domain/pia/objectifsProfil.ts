@@ -17,7 +17,7 @@ import type { Aspect, Pia } from './types.ts';
 export const normeObjectif = (t: string): string =>
   t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
-/** Aspect proposé quand l'agent ne sait pas : la plupart des objectifs d'apprentissage sont cognitifs. */
+/** Aspect proposé quand rien ne permet de deviner : la plupart des objectifs d'apprentissage sont cognitifs. */
 const ASPECT_PAR_DEFAUT: Aspect = 'cognitif';
 /** Une difficulté de vigilance (« Se désengage ») relève du comportement et de l'affectif. */
 const ASPECT_DES_VIGILANCES: Aspect = 'comportement';
@@ -80,15 +80,47 @@ export function reprendreObjectifsDuProfil(p: Pia, matieresConnues: readonly str
   return suite;
 }
 
-/** Aspect proposé pour un objectif retenu au Préparer, d'après l'observation dont il vient ; modifiable par l'agent. */
+/**
+ * Mots (début de mot, sans accents) qui orientent un objectif vers un aspect du profil. Aide à deviner, jamais à décider : l'agent corrige.
+ * « consigne » n'y est pas : on y reformule (communication) autant qu'on l'identifie (cognitif).
+ */
+const MOTS_PAR_ASPECT: Readonly<Record<Aspect, readonly string[]>> = {
+  physique: ['ecriture', 'ecrire lisible', 'lisib', 'motric', 'graphis', 'clavier', 'dactylo', 'posture', 'alterner', 'geste', 'coordination', 'lateralit', 'tonus', 'equilibre', 'fatig', 'crayon'],
+  autonomie: ['agenda', 'autonom', 'seul', 'materiel', 'ranger', 'rangement', 'etapes', 'planif', 'organis', 'devoir', 'cartable', 'anticip', 'bon moment', 'sans rappel'],
+  comportement: ['persever', 'confiance', 'reussite', 'valoris', 'motivation', 'emotion', 'frustr', 'stress', 'anxi', 'coler', 'calme', 'attitude', 'comportement', 'engag', 'estime', 'respect', 'regle', 'relation', 'decourag', 'attention', 'concentr', 'demander une pause'],
+  communication: ['question', 'reformul', 'vocabulaire', 'exprim', 'oral', 'parole', 'dialogue', 'echang', 'ecoute', 'communiq', 'verbalis', 'besoins', 'presenter', 'oser'],
+  cognitif: ['identifi', 'repere', 'comprend', 'memor', 'raisonn', 'calcul', 'lire', 'lecture', 'resum', 'strategie', 'notion', 'problem', 'analys', 'compar', 'exercice', 'retenir', 'consolid', 'base', 'orthograph', 'methode', 'table']
+};
+
+/** Aspect que les mots de l'objectif désignent le plus ; null s'il n'y en a pas, ou si deux aspects sont à égalité. */
+export function aspectDesMots(texte: string): Aspect | null {
+  const norme = normeObjectif(texte);
+  const mots = norme.split(' ');
+  const notes = ASPECTS.map(({ id }) => ({
+    id,
+    note: MOTS_PAR_ASPECT[id].filter((m) => (m.includes(' ') ? ` ${norme} `.includes(` ${m}`) : mots.some((x) => x.startsWith(m)))).length
+  }));
+  const meilleure = Math.max(...notes.map((n) => n.note));
+  const gagnantes = notes.filter((n) => n.note === meilleure);
+  return meilleure > 0 && gagnantes.length === 1 ? (gagnantes[0]?.id ?? null) : null;
+}
+
+/**
+ * Aspect proposé pour un objectif retenu au Préparer ; modifiable par l'agent. D'abord le rangement connu des observations
+ * (vigilance, rubrique d'observation, compétence), sinon les mots de l'objectif, sinon cognitif.
+ */
 export function aspectPropose(r: ObjectifRetenu): Aspect {
-  if (r.libre) return ASPECT_PAR_DEFAUT;
-  const parties = r.id.split('|');
-  const genre = parties[INDEX_GENRE];
-  const source = normeObjectif(parties.slice(INDEX_SOURCE).join('|'));
-  if (genre === 'vigilance' || VIGILANCES_SUGGEREES.some((v) => normeObjectif(v) === source)) return ASPECT_DES_VIGILANCES;
-  const rubrique = OBSERVATIONS_SUGGEREES.find((g) => g.items.some((i) => normeObjectif(i) === source))?.rubrique;
-  return (rubrique ? ASPECT_DE_RUBRIQUE[rubrique] : undefined) ?? ASPECT_PAR_DEFAUT;
+  if (!r.libre) {
+    const parties = r.id.split('|');
+    const genre = parties[INDEX_GENRE];
+    const source = normeObjectif(parties.slice(INDEX_SOURCE).join('|'));
+    if (genre === 'competence') return ASPECT_PAR_DEFAUT;
+    if (genre === 'vigilance' || VIGILANCES_SUGGEREES.some((v) => normeObjectif(v) === source)) return ASPECT_DES_VIGILANCES;
+    const rubrique = OBSERVATIONS_SUGGEREES.find((g) => g.items.some((i) => normeObjectif(i) === source))?.rubrique;
+    const connu = rubrique ? ASPECT_DE_RUBRIQUE[rubrique] : undefined;
+    if (connu) return connu;
+  }
+  return aspectDesMots(r.texte) ?? ASPECT_PAR_DEFAUT;
 }
 
 /** Objectifs retenus au Préparer qui ne sont pas encore dans la colonne « Objectifs à poursuivre » du Profil. */
