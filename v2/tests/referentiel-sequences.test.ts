@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { IndexReferentiel } from '../src/domain/referentiel/index.ts';
 import type { EntreeReferentiel, Piste } from '../src/domain/referentiel/index.ts';
+import { groupesSansTypes, processusDuVerbe } from '../src/domain/referentiel/processus.ts';
 
 /** Vraies données de maths : les objectifs ci-dessous sont ceux d'une enseignante de maths (leçons, pas des élèves). */
 const lignes = JSON.parse(readFileSync(new URL('../src/data/referentiel/mathematiques.json', import.meta.url), 'utf8')) as EntreeReferentiel[];
@@ -157,5 +158,41 @@ describe('moteur : thèmes du programme de sciences (tronc commun S1 à S3)', ()
   it('« la reproduction humaine » (S1) tombe sur son thème, sans caractère parasite dans le titre', () => {
     const titre = proposerSciences('La reproduction humaine', 'S1', RENTREE)[0]?.sequence?.titre ?? '';
     assert.equal(titre, 'La reproduction humaine et des moyens de prévention');
+  });
+});
+
+describe('processus par le verbe (matières dont les types ne distinguent rien)', () => {
+  it('identifier = Connaître, construire = Appliquer, résoudre un problème = Transférer', () => {
+    assert.equal(processusDuVerbe('Identifier les structures de textes.'), 's');
+    assert.equal(processusDuVerbe('Construire un triangle à la latte et au compas.'), 'f');
+    assert.equal(processusDuVerbe('Résoudre un problème faisant intervenir des volumes.'), 'c');
+    assert.equal(processusDuVerbe('Calculer une aire dans un problème de la vie courante.'), 'c');
+    assert.equal(processusDuVerbe('Évaluer la pertinence d’une source.'), 'c');
+  });
+  const ligne = (t: 's' | 'f' | 'c', a: string): EntreeReferentiel => ({ m: 'Arts', f: 'HGT', t, a, r: 'test arts', n: 'S3' });
+  it('un groupe où presque toutes les lignes ont le même type est repéré ; un groupe varié non', () => {
+    const uniformes = Array.from({ length: 20 }, (_, k) => ligne('c', `Décrire l’œuvre ${k}`));
+    const varies = Array.from({ length: 20 }, (_, k) => ({ ...ligne(['s', 'f', 'c'][k % 3] as 's' | 'f' | 'c', `Tâche ${k}`), r: 'test varié' }));
+    const sans = groupesSansTypes([...uniformes, ...varies]);
+    assert.ok(sans.has('test arts|S3'));
+    assert.ok(!sans.has('test varié|S3'));
+  });
+  it('dans un tel groupe, les pistes d’un module sont rangées par le verbe, non par le type unique', () => {
+    const lignes = ['Construire une maquette de la scène', 'Identifier les éléments de la scène', 'Résoudre un problème de mise en scène', 'Nommer les éléments du décor', 'Concevoir un décor pour une scène']
+      .map((a): EntreeReferentiel => ({ m: 'Arts', f: 'TC', t: 'c', a, r: 'test arts', n: 'S1', u: 'La scène et le décor' }));
+    const fond = Array.from({ length: 20 }, (_, k): EntreeReferentiel => ({ m: 'Arts', f: 'TC', t: 'c', a: `Autre tâche ${k}`, r: 'test arts', n: 'S1', u: `Autre thème ${k}` }));
+    const r = new IndexReferentiel([...lignes, ...fond]).suggerer({ objectif: 'scène décor', annee: 'S1', rentree: RENTREE }, NOMBRE_PISTES_PLUS);
+    const dumodule = r.filter((p) => p.sequence);
+    assert.ok(dumodule.length >= 4);
+    assert.ok(dumodule[0]?.entree.a.startsWith('Identifier') || dumodule[0]?.entree.a.startsWith('Nommer'));
+    assert.equal(r[0]?.sequence?.titre, 'La scène et le décor');
+  });
+});
+
+describe('moteur : thème du référentiel quand le programme n’a pas de modules (français)', () => {
+  it('« reconnaitre les structures de textes » (S1) tombe sur son thème, ses tâches rangées Connaître avant Appliquer', () => {
+    const r = charger('francais').suggerer({ objectif: 'Reconnaitre les structures de textes narratif argumentatif', annee: 'S1', forme: 'G', rentree: RENTREE });
+    assert.equal(r[0]?.sequence?.titre, 'Orienter sa prise de parole, son écoute, sa lecture, son écrit');
+    assert.equal(r[0]?.sequence?.competence, '');
   });
 });

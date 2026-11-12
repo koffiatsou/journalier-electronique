@@ -40,6 +40,8 @@ def annee_du_fichier(nom: str):
 
 # Une compétence est une courte phrase : pas un en-tête de tableau (« Contenus | Savoirs… », « Savoir-faire (liés aux démarches… »), que certaines disciplines mettent à cet endroit.
 COMPETENCE_ACCEPTABLE = re.compile(r'^(?!Contenus?|Savoirs?|Savoir-faire).{1,160}$')
+# Page de la « clé de lecture » qui décrit un encadré de séquence : ce n'est pas une séquence.
+PAGE_DE_PRESENTATION = 'Titre de la séquence'
 LIGNE_DE_DOMAINE = re.compile(r'\s[I|]\s*$')
 
 
@@ -47,9 +49,11 @@ def titre_et_competence(encadre: str) -> tuple:
     """Titre de la séquence (lignes entre le domaine, « DES OBJETS DE L'ESPACE… I », et « Le dispositif amène… ») et compétence (« Au niveau disciplinaire »)."""
     avant, _, apres = encadre.partition(DEBUT_DE_ENCADRE)
     lignes_avant = [x.strip() for x in avant.split('\n') if x.strip()]
-    domaines = [i for i, x in enumerate(lignes_avant) if LIGNE_DE_DOMAINE.search(x)]
     entetes = [i for i, x in enumerate(lignes_avant) if 'SÉQUENCES DIDACTIQUES' in x]
-    debut_du_titre = max(domaines[-1:] + entetes[-1:], default=len(lignes_avant) - 1) + 1
+    debut_du_titre = (entetes[-1] + 1) if entetes else max(len(lignes_avant) - 1, 0)
+    # Le domaine (« DES GRANDEURS À LA RELATION ENTRE VARIABLES », parfois suivi d'un « I ») est écrit en capitales : il ne fait pas partie du titre.
+    while debut_du_titre < len(lignes_avant) - 1 and (LIGNE_DE_DOMAINE.search(lignes_avant[debut_du_titre]) or lignes_avant[debut_du_titre].isupper()):
+        debut_du_titre += 1
     lignes_du_titre = lignes_avant[debut_du_titre:]
     titre = nettoyer_titre(' '.join(lignes_du_titre))
     titre = titre[:1].upper() + titre[1:]
@@ -79,7 +83,7 @@ def sequences_de_la_discipline(pages: dict, annee, mot_de_discipline: str) -> li
             extrait = pages.get(suivante, '')
             corps += '\n' + (extrait[:extrait.index(FIN_DE_ENCADRE)] if FIN_DE_ENCADRE in extrait else extrait)
         titre, competence = titre_et_competence(corps)
-        if not titre:
+        if not titre or titre.startswith(PAGE_DE_PRESENTATION):
             continue
         de_la_page = ANNEE_EN_HAUT_DE_PAGE.search(texte[:300])
         annee_de_l_unite = annee or (f'P{de_la_page.group(1)}' if de_la_page else None)
