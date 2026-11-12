@@ -265,6 +265,7 @@ export const AIDES_SUGGEREES = [
   'Outil numérique',
   'Matériel',
   'Environnement',
+  'Renforcement positif',
   'Autre'
 ] as const;
 
@@ -286,7 +287,8 @@ export const NATURE_AIDES: Readonly<Record<string, NatureAide>> = {
   'Explicitation / verbalisation': 'mediation',
   'Décomposition': 'adaptation',
   'Modélisation': 'mediation',
-  'Guidage verbal': 'mediation'
+  'Guidage verbal': 'mediation',
+  'Renforcement positif': 'mediation'
 };
 
 export const natureAide = (nom: string): NatureAide | null => NATURE_AIDES[nom.trim()] ?? null;

@@ -205,3 +205,10 @@ test('climat de classe non renseigné (séances déjà enregistrées) : rien n�
 test('élève absent : le climat n’est pas écrit même s’il avait été noté avant', () => {
   assert.ok(!texte(seance({ presence: 'absent_eleve_coteach' as Presence, climat: 'tendu' })).includes('Climat de classe'));
 });
+
+test('renforcement positif : une aide proposée, rangée avec les médiations (ce que l’adulte fait pendant la tâche)', () => {
+  const t = texte(seance({ aides: [{ nom: 'Renforcement positif', effet: 2 }] }));
+  assert.ok(t.includes('Médiations mises en place'));
+  assert.ok(t.includes('renforcement positif'));
+  assert.ok(!t.includes('Autres aides mises en place'));
+});

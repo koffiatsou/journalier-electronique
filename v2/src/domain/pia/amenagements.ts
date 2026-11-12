@@ -17,6 +17,7 @@ export const TYPE_DE_AIDE: Readonly<Record<string, TypeAmenagement>> = {
   'décomposition': 'P',
   'modélisation': 'P',
   'guidage verbal': 'P',
+  'renforcement positif': 'P',
   'support visuel': 'P',
   'aide organisation': 'O',
   'environnement': 'O',
