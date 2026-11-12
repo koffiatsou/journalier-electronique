@@ -234,8 +234,24 @@ export function FormulaireCompetence({ s, maj, eleve }: PropsFormulaire & { elev
   const [plus, setPlus] = useState(false);
   const { pistes: brutes, langueAmbigue } = usePistes(s, eleve, plus ? 8 : 4);
   const pistes = brutes.filter((p) => !s.competences.some((c) => c.texte === p.entree.a));
-  const prendre = (p: Piste, n: number) =>
-    maj({ competences: [...s.competences, { texte: p.entree.a, niveau: niveau(n) }] });
+  /** Séquence ou module du programme dont viennent les premières pistes (le reste, s'il y en a, n'est pas de ce module). */
+  const sequence = brutes[0]?.sequence;
+  /** Pistes qui ne sont pas du module nommé au-dessus : proposées après lui, sans titre. */
+  const autresPistes = sequence ? pistes.filter((p) => !p.sequence) : [];
+  const listeDePistes = (liste: Piste[]) => (
+    <ListeColonnes elements={liste.map((p) => {
+      const nom = p.ecartAnnee ? `${p.entree.a} (programme de ${p.ecartAnnee})` : p.entree.a;
+      return {
+        cle: `${p.entree.n ?? ''}${p.entree.a}`,
+        longueur: nom.length,
+        noeud: <Point nom={nom} libelles={NIVEAUX_LIBELLES} valeurMin={NIVEAU_MIN} teintes={TEINTES_NIVEAU} valeur={null} niveauFacultatif
+          onGarder={() => prendre(p)} onChoisir={(n) => prendre(p, n)} />
+      };
+    })} />
+  );
+  /** `n` absent : la piste est gardée sans niveau (le niveau reste facultatif pour une compétence). */
+  const prendre = (p: Piste, n?: number) =>
+    maj({ competences: [...s.competences, { texte: p.entree.a, niveau: n === undefined ? null : niveau(n) }] });
   const ajouter = () => {
     const t = texte.trim();
     if (!t || s.competences.some((c) => c.texte === t)) return;
@@ -250,15 +266,20 @@ export function FormulaireCompetence({ s, maj, eleve }: PropsFormulaire & { elev
       {pistes.length ? (
         <div className="rubrique">
           <h3>Pistes d’après l’objectif de la leçon</h3>
-          <p className="etape-aide">Choisissez le niveau pour garder une piste, ou ignorez-les et saisissez la vôtre.</p>
-          <ListeColonnes elements={pistes.map((p) => {
-            const nom = p.ecartAnnee ? `${p.entree.a} (programme de ${p.ecartAnnee})` : p.entree.a;
-            return {
-              cle: `${p.entree.n ?? ''}${p.entree.a}`,
-              longueur: nom.length,
-              noeud: <Point nom={nom} libelles={NIVEAUX_LIBELLES} valeurMin={NIVEAU_MIN} teintes={TEINTES_NIVEAU} valeur={null} onChoisir={(n) => prendre(p, n)} />
-            };
-          })} />
+          {sequence ? (
+            <p className="sequence-programme">
+              <span className="sequence-titre">{sequence.titre}</span>
+              {sequence.competence ? <span className="sequence-competence"> : {sequence.competence}</span> : null}
+            </p>
+          ) : null}
+          <p className="etape-aide">Touchez « Garder » pour retenir une piste (le niveau est facultatif), ou saisissez la vôtre.</p>
+          {listeDePistes(sequence ? pistes.filter((p) => p.sequence) : pistes)}
+          {sequence && autresPistes.length ? (
+            <>
+              <p className="etape-aide">Autres pistes proches de l’objectif</p>
+              {listeDePistes(autresPistes)}
+            </>
+          ) : null}
           {!plus ? <Button type="button" variante="secondaire" onClick={() => setPlus(true)}>Voir d’autres pistes</Button> : null}
         </div>
       ) : null}
@@ -266,12 +287,12 @@ export function FormulaireCompetence({ s, maj, eleve }: PropsFormulaire & { elev
         <Field label="Compétence travaillée" className="ajout-champ">
           {(id) => <Input id={id} value={texte} placeholder="Ex. : résoudre un problème à une opération" onChange={(e) => setTexte(e.target.value)} />}
         </Field>
-        <Button type="submit">Ajouter</Button>
+        <Button type="submit">Garder</Button>
       </form>
       {s.competences.length ? (
         <ul className="points">
           {s.competences.map((c) => (
-            <Point key={c.texte} nom={c.texte} libelles={NIVEAUX_LIBELLES} valeurMin={NIVEAU_MIN} teintes={TEINTES_NIVEAU} valeur={c.niveau}
+            <Point key={c.texte} nom={c.texte} libelles={NIVEAUX_LIBELLES} valeurMin={NIVEAU_MIN} teintes={TEINTES_NIVEAU} valeur={c.niveau} niveauFacultatif
               onChoisir={(n) => maj({ competences: s.competences.map((x) => (x.texte === c.texte ? { ...x, niveau: niveau(n) } : x)) })}
               onRetirer={() => maj({ competences: s.competences.filter((x) => x.texte !== c.texte) })} />
           ))}

@@ -204,3 +204,10 @@
 }
 
 .apercu-outils { display: flex; justify-content: flex-end; }
+
+/* Réglage « Masquer la rubrique Compétence » : discret, sous le titre, avant la barre d'étapes. */
+.seance-reglage { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin: 0 0 var(--sp-3); }
+
+/* Séquence du programme dont viennent les pistes de la rubrique Compétence. */
+.sequence-programme { margin: 0 0 var(--sp-2); color: var(--ink-2); line-height: 1.4; }
+.sequence-titre { font-weight: 600; color: var(--ink); }

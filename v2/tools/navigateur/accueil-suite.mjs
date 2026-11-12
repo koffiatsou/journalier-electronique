@@ -25,9 +25,9 @@ await page.getByLabel('Élève accompagné').selectOption({ label: 'Élève Bêt
 await page.getByLabel('Date', { exact: true }).fill('2026-10-26');
 await page.getByLabel('Matière').fill('Sciences');
 await page.getByLabel('Mon objectif').fill('Retenir le vocabulaire du cycle de l’eau');
-await page.locator('#etape-2 .etape-bouton').click();
-await page.locator('#etape-corps-2').getByRole('button', { name: 'Maintient son attention' }).click();
-await page.locator('#etape-corps-2 li', { hasText: 'Maintient son attention' }).getByRole('radio', { name: 'Un peu' }).click();
+await page.locator('#etape-3 .etape-bouton').click();
+await page.locator('#etape-corps-3').getByRole('button', { name: 'Maintient son attention' }).click();
+await page.locator('#etape-corps-3 li', { hasText: 'Maintient son attention' }).getByRole('radio', { name: 'Un peu' }).click();
 await page.locator('#etape-4 .etape-bouton').click();
 await page.locator('#etape-corps-4 li', { hasText: 'Support visuel' }).getByRole('button', { name: 'choisir un niveau' }).click();
 await page.locator('#etape-corps-4 li', { hasText: 'Support visuel' }).getByRole('radio', { name: 'Effet positif' }).click();

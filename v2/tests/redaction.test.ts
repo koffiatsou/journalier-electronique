@@ -180,3 +180,9 @@ test('aide saisie à la main : rangée à part, sans inventer de nature', () => 
   const t = texte(seance({ aides: [{ nom: 'Pause active', effet: 2 }, { nom: 'Reformulation', effet: 2 }] }));
   assert.ok(t.includes('Médiations mises en place') && t.includes('Autres aides mises en place'));
 });
+
+test('compétence gardée sans niveau : écrite telle quelle, sans parenthèses ni niveau', () => {
+  const t = texte(seance({ competences: [{ texte: 'Tracer le graphique d’une fonction de référence', niveau: null }] }));
+  assert.ok(t.includes(`Compétence travaillée${N}: Tracer le graphique d’une fonction de référence.`));
+  assert.ok(!/fonction de référence \(/.test(t));
+});

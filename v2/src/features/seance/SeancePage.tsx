@@ -16,16 +16,17 @@ import { ConfirmerAbandon } from '../../ui/ConfirmerAbandon.tsx';
 import { Dialog } from '../../ui/Dialog.tsx';
 import { attendreFinRepli, DELAI_CORRECTION_DEFILEMENT_MS } from './defilement.ts';
 import { BarreEtapes } from './BarreEtapes.tsx';
-import { champsEnErreur, etatsEtapes, progression, resumesEtapes, seanceVide, verifier } from './brouillon.ts';
+import { aCompetenceSaisie, champsEnErreur, etatsEtapes, INDEX_COMPETENCE, progression, resumesEtapes, seanceVide, verifier } from './brouillon.ts';
+import { competenceMasqueeEnregistree, retenirCompetenceMasquee } from '../../ui/competenceMasquee.ts';
 import {
   FormulaireAides, FormulaireCompetence, FormulaireCreneau, FormulaireFonctionnement, FormulaireSuite
 } from './formulaires.tsx';
 
-/** `zone` : bleu = partie pédagogique (1 et 3), vert-bleu = partie orthopédagogique (2, 4 et 5) ; `court` : nom dans la barre d'étapes. */
+/** `zone` : bleu = partie pédagogique (1 et 2), vert-bleu = partie orthopédagogique (3, 4 et 5) ; `court` : nom dans la barre d'étapes. */
 const ETAPES = [
   { titre: 'Créneau et partie pédagogique', court: 'Créneau', zone: 'peda' },
-  { titre: 'Fonctionnement observé', court: 'Fonctionnement', zone: 'ortho' },
   { titre: 'Compétence travaillée', court: 'Compétence', zone: 'peda' },
+  { titre: 'Fonctionnement observé', court: 'Fonctionnement', zone: 'ortho' },
   { titre: 'Ce qui a aidé', court: 'Ce qui a aidé', zone: 'ortho' },
   { titre: 'Suite', court: 'Suite', zone: 'ortho' }
 ] as const;
@@ -79,8 +80,19 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
 
   const eleve = eleves.find((e) => e.id === s.eleveId);
   const precedentes = useMemo(() => seances.filter((x) => x.eleveId === s.eleveId), [seances, s.eleveId]);
-  const etats = etatsEtapes(s);
-  const resumes = resumesEtapes(s);
+  /** Rubrique Compétence cachée au choix de la personne ; jamais quand la séance contient déjà une compétence (aucune donnée cachée). */
+  const [competenceMasquee, setCompetenceMasquee] = useState(competenceMasqueeEnregistree);
+  const masquer = competenceMasquee && !aCompetenceSaisie(s);
+  const basculerCompetence = () => {
+    retenirCompetenceMasquee(!competenceMasquee);
+    setCompetenceMasquee(!competenceMasquee);
+    setOuvert(0);
+  };
+  /** Rubriques affichées, avec leur place d'origine (les tableaux de `brouillon.ts` gardent les cinq places). */
+  const visibles = ETAPES.map((e, origine) => ({ ...e, origine })).filter((e) => !(masquer && e.origine === INDEX_COMPETENCE));
+  const tousEtats = etatsEtapes(s, masquer);
+  const tousResumes = resumesEtapes(s, masquer);
+  const etats = visibles.map((e) => tousEtats[e.origine] ?? 'vide');
   const notes = s.observations.length + s.competences.length + s.aides.length;
 
   /** Seconde visée en attente : annulée dès qu'une autre navigation commence (sinon elle tirerait la page vers une ancienne rubrique). */
@@ -149,8 +161,8 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
 
   const formulaires = [
     <FormulaireCreneau key="1" s={s} maj={maj} eleves={eleves} ecoles={ecoles} erreurs={erreurs} />,
-    <FormulaireFonctionnement key="2" s={s} maj={maj} />,
-    <FormulaireCompetence key="3" s={s} maj={maj} eleve={eleve} />,
+    <FormulaireCompetence key="2" s={s} maj={maj} eleve={eleve} />,
+    <FormulaireFonctionnement key="3" s={s} maj={maj} />,
     <FormulaireAides key="4" s={s} maj={maj} />,
     <FormulaireSuite key="5" s={s} maj={maj} />
   ];
@@ -175,17 +187,24 @@ export function SeancePage({ magasin, onAller }: { magasin: Magasin; onAller: Al
       ) : null}
       {erreurBrouillon ? <p className="field-hint" role="alert">Votre saisie n’a pas pu être gardée sur cet appareil : {erreurBrouillon}</p> : null}
 
-      <BarreEtapes etapes={ETAPES} etats={etats} ouvert={ouvert} progression={progression(s)} onAller={aller} />
+      <p className="seance-reglage">
+        <Button variante="secondaire" onClick={basculerCompetence}>
+          {competenceMasquee ? 'Afficher la rubrique Compétence' : 'Masquer la rubrique Compétence'}
+        </Button>
+        <span className="field-hint">Ce réglage vaut pour cet appareil. Une séance qui contient déjà une compétence garde la rubrique visible.</span>
+      </p>
+
+      <BarreEtapes etapes={visibles} etats={etats} ouvert={ouvert} progression={progression(s, masquer)} onAller={aller} />
 
       <div className="seance-colonnes">
         <div className="seance-formulaire">
-          {ETAPES.map((e, i) => (
-            <Etape key={e.titre} numero={i + 1} titre={e.titre} zone={e.zone} etat={etats[i] ?? 'vide'} resume={resumes[i] ?? null}
+          {visibles.map((e, i) => (
+            <Etape key={e.titre} numero={i + 1} titre={e.titre} zone={e.zone} etat={etats[i] ?? 'vide'} resume={tousResumes[e.origine] ?? null}
               ouvert={ouvert === i} onBascule={() => (ouvert === i ? setOuvert(-1) : aller(i))}>
-              {formulaires[i]}
-              {i < ETAPES.length - 1 ? (
+              {formulaires[e.origine]}
+              {i < visibles.length - 1 ? (
                 <div className="etape-pied">
-                  <Button onClick={() => aller(i + 1)}>Étape suivante : {i + 2} {ETAPES[i + 1]?.titre} ↓</Button>
+                  <Button onClick={() => aller(i + 1)}>Étape suivante : {i + 2} {visibles[i + 1]?.titre} ↓</Button>
                 </div>
               ) : null}
             </Etape>
