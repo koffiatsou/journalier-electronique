@@ -110,7 +110,7 @@ export function FormulaireCreneau({ s, maj, eleves, ecoles = [], erreurs = {} }:
       <div className="champs champs-3">
         <Field label="Matière" aide={matieres.length ? 'Les matières du dossier de l’élève sont proposées en priorité.' : undefined} {...(erreurs.matiere ? { erreur: erreurs.matiere } : {})}>
           {(id, champ) => (
-            <ChampSuggestions id={id} {...champ} value={s.matiere} placeholder="Choisir ou écrire" suggestions={matieres} onChange={(matiere) => maj({ matiere })} />
+            <ChampSuggestions id={id} {...champ} value={s.matiere} placeholder="Choisir ou écrire" suggestions={matieres} pastille onChange={(matiere) => maj({ matiere })} />
           )}
         </Field>
         <Field label="Enseignant du cours" optionnel aide="Laissez vide : le nom du dossier de l’élève sera gardé. Écrivez un nom pour un remplacement.">

@@ -174,7 +174,7 @@ export function Panneau({ occurrence, ecoles, nouveau, eleves, onChanger, onFerm
           {!eleveId ? <Field label="Nom saisi librement">{(id) => <Input id={id} value={nomLibre} onChange={(e) => setNomLibre(e.target.value)} placeholder="Prénom ou initiales" />}</Field> : null}
           {plusieurs ? <p className="field-hint">École : {ecole.nom} (celle du dossier de l’élève).</p> : null}
           <Field label="Matière" optionnel>
-            {(id) => <ChampSuggestions id={id} value={matiere} onChange={setMatiere} suggestions={matieres} placeholder="Choisir ou saisir" />}
+            {(id) => <ChampSuggestions id={id} value={matiere} onChange={setMatiere} suggestions={matieres} pastille placeholder="Choisir ou saisir" />}
           </Field>
         </>
       ) : null}
