@@ -108,9 +108,10 @@
 /* ───────── Jours fériés et vacances (semaine, jour, mois) ───────── */
 .marque-jour { display: block; font-size: .75rem; line-height: 1.25; font-weight: 400; color: var(--ink-3); margin-top: 2px; pointer-events: none; }
 .grille-entete .marque-jour { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.grille-entete .jour-ferie, .mois-case.jour-ferie { background: color-mix(in srgb, var(--line-strong) 26%, var(--surface-2)); }
+.grille-entete .jour-ferie, .mois-case.jour-ferie { background: var(--ferie-fond); box-shadow: inset 0 3px 0 var(--ferie-trait); }
+.grille-entete .jour-ferie .marque-jour, .mois-case.jour-ferie .marque-jour { color: var(--ink-2); font-weight: 600; }
 .grille-entete .jour-vacances, .mois-case.jour-vacances { background: repeating-linear-gradient(135deg, transparent 0 8px, color-mix(in srgb, var(--line-strong) 40%, transparent) 8px 9px), var(--surface-2); }
-.colonne.jour-ferie { background: color-mix(in srgb, var(--line-strong) 14%, transparent); }
+.colonne.jour-ferie { background: var(--ferie-colonne); }
 .colonne.jour-vacances { background: repeating-linear-gradient(135deg, transparent 0 10px, color-mix(in srgb, var(--line-strong) 24%, transparent) 10px 11px); }
 .agenda-note { margin: 0; padding: var(--sp-2) var(--sp-3); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-s); font-size: .875rem; color: var(--ink-2); }
 
