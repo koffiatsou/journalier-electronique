@@ -24,9 +24,9 @@ describe('Points de vigilance : un niveau « Tout à fait » n’est jamais un a
 
   it('Journalier : échelle de fréquence, bloc à part, jamais « Tout à fait »', () => {
     const t = texte(s('2026-10-01', [[DESENGAGE, 2], ['Maintient son attention', 2]]));
-    assert.ok(t.includes(`• Tout à fait${N}: maintient son attention.`));
-    assert.ok(t.includes(`• Point de vigilance, tout au long${N}: se désengage / évite la tâche.`));
-    assert.ok(!t.includes(`Tout à fait${N}: se désengage`));
+    assert.ok(t.includes(`• Maintient son attention${N}| tout à fait`));
+    assert.ok(t.includes(`• Se désengage / évite la tâche${N}| point de vigilance, tout au long`));
+    assert.ok(!t.includes(`se désengage / évite la tâche${N}| tout à fait`));
   });
 
   it('évolution : moins fréquent = progression, plus fréquent = à surveiller', () => {

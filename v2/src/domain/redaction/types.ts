@@ -1,4 +1,5 @@
 import type { Effet, NatureAide, Niveau, Presence } from '../types.ts';
+import type { Appreciation } from './appreciation.ts';
 
 /** Séance nettoyée (textes rognés, valeurs vides retirées) : la seule entrée des règles de rédaction. */
 export interface Faits {
@@ -45,6 +46,11 @@ export interface LigneOrtho {
   lignes?: string[];
   /** Ton de chaque ligne (même ordre que `lignes`), pour colorer l'écran ; Word reste sans couleur. */
   tons?: (TonLigne | null)[];
+  /**
+   * Appréciation écrite en fin de ligne (« … | tout à fait »), même ordre que `lignes`, `null` pour une ligne sans appréciation.
+   * Ne porte que le mot et sa teinte : le texte des éléments reste dans `lignes` (seul texte dé-identifié).
+   */
+  appreciations?: (Appreciation | null)[];
 }
 
 /** Sens d'un changement de niveau dans l'évolution : progression ou point à consolider. */

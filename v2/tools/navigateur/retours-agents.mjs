@@ -93,7 +93,7 @@ await telechargement.saveAs(fichier);
 const xml = lireXmlDocx(fichier);
 ok(xml.includes('w:fill="D9C3E6"'), 'le Journalier Word colore les en-têtes avec la couleur choisie (violet)');
 ok(/Mathématiques \(professeur absent\)/.test(xml), 'la case « Cours » dit « professeur absent »');
-ok(/Pas du tout/.test(xml), 'le niveau « Pas du tout » est écrit dans le Journalier');
+ok(/\| +pas du tout/.test(xml.replace(/<[^>]+>/g, '').replace(/\u00a0/g, ' ')), 'le niveau « Pas du tout » est écrit dans le Journalier');
 
 // Le choix est retenu sur l'appareil.
 await page.reload();

@@ -22,7 +22,7 @@ describe('quatre niveaux : Pas du tout / Un peu / Assez / Tout à fait', () => {
 
   it('Journalier : un niveau par puce, du plus fort au plus faible', () => {
     const t = texte(s('2026-10-01', [['A', 2], ['B', 1], ['C', 0], ['D', PAS_DU_TOUT]]));
-    const i = ['Tout à fait', 'Assez', 'Un peu', 'Pas du tout'].map((m) => t.indexOf(`• ${m}${N}:`));
+    const i = ['tout à fait', 'assez', 'un peu', 'pas du tout'].map((m) => t.indexOf(`${N}| ${m}`));
     assert.ok(i.every((x) => x >= 0), t);
     assert.deepEqual([...i].sort((a, b) => a - b), i);
   });

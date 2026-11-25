@@ -89,7 +89,7 @@ export function Apercu({ seance, eleve, precedentes, tiroirOuvert, onFermer }: P
               {b.lignes ? (
                 <>
                   <p className="etiquette">{b.label}</p>
-                  <ul>{b.lignes.map((l, k) => <li key={l}>{texteLigne(l.replace(/^•\s*/, ''), b.tons?.[k])}</li>)}</ul>
+                  <ul>{b.lignes.map((l, k) => <li key={l}>{texteLigne(l.replace(/^•\s*/, ''), b.tons?.[k], b.appreciations?.[k])}</li>)}</ul>
                 </>
               ) : (
                 <p>{b.label ? <span className="etiquette">{b.label} : </span> : null}{b.texte}</p>

@@ -16,7 +16,7 @@ import { Badge } from '../../ui/Badge.tsx';
 import { texteLigne } from '../../ui/LigneEvolution.tsx';
 import { Button } from '../../ui/Button.tsx';
 import { Dialog } from '../../ui/Dialog.tsx';
-import { couleursEnregistrees, retenirCouleurs } from '../../ui/couleursExport.ts';
+import { appreciationsEnregistrees, couleursEnregistrees, retenirAppreciations, retenirCouleurs } from '../../ui/couleursExport.ts';
 import type { ReglageCouleurs } from '../../domain/export/couleurs.ts';
 import { CouleursExport } from './CouleursExport.tsx';
 import { Field, Input, Select } from '../../ui/Field.tsx';
@@ -73,7 +73,7 @@ function ApercuSeance({ seance, eleve, precedentes }: { seance: Seance; eleve: E
           o.lignes ? (
             <div key={i}>
               {o.label ? <p><strong>{o.label}</strong></p> : null}
-              {o.lignes.map((l, k) => <p key={l} className="apercu-ligne">{texteLigne(l, o.tons?.[k])}</p>)}
+              {o.lignes.map((l, k) => <p key={l} className="apercu-ligne">{texteLigne(l, o.tons?.[k], o.appreciations?.[k])}</p>)}
             </div>
           ) : <p key={i}>{o.label ? <strong>{o.label} : </strong> : null}{o.texte}</p>
         ))}
@@ -99,6 +99,8 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
   const [enCours, setEnCours] = useState(false);
   const [couleursWord, setCouleursWord] = useState(couleursEnregistrees);
   const changerCouleursWord = (r: ReglageCouleurs) => { setCouleursWord(r); retenirCouleurs(r); };
+  const [appreciationsWord, setAppreciationsWord] = useState(appreciationsEnregistrees);
+  const changerAppreciationsWord = (actif: boolean) => { const r = { actif }; setAppreciationsWord(r); retenirAppreciations(r); };
 
   const periode = construirePeriode(f);
   const resultat = bornes(periode, aujourdhui);
@@ -116,7 +118,7 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
   const exporter = async () => {
     if (!liste.length) return;
     setEnCours(true);
-    const options = { deidentifie: f.anonyme, periode: libellePeriode(periode, aujourdhui, true), couleurs: couleursWord };
+    const options = { deidentifie: f.anonyme, periode: libellePeriode(periode, aujourdhui, true), couleurs: couleursWord, appreciations: appreciationsWord };
     try {
       if (eleve) {
         annoncer(`${await telechargerJournalier(eleve, liste, options)} téléchargé`);
@@ -197,6 +199,7 @@ export function JournalierPage({ magasin, onAller, eleveInitial }: { magasin: Ma
           </p>
           <label className="case-anonyme"><input type="checkbox" checked={f.anonyme} onChange={(ev) => maj({ anonyme: ev.target.checked })} /> Sans nom ni titulaire (pour partager)</label>
           <CouleursExport matieres={matieresExportees} reglage={couleursWord} onChange={changerCouleursWord} />
+          <label className="case-anonyme"><input type="checkbox" checked={appreciationsWord.actif} onChange={(ev) => changerAppreciationsWord(ev.target.checked)} /> Colorer les appréciations dans le Word</label>
           <Button variante="primaire" disabled={!liste.length || enCours} onClick={() => { void exporter(); }}>
             {enCours ? 'Préparation…' : 'Exporter le Journalier (Word)'}
           </Button>

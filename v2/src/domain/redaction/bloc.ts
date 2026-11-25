@@ -9,6 +9,8 @@
  *  - module pur : ne lit ni le DOM, ni le stockage, ni le réseau.
  */
 import { NIVEAUX_VIGILANCE, NIVEAU_MIN, libelleNiveau } from '../types.ts';
+import { SEPARATEUR_APPRECIATION, teinteDEffet, teinteDeNiveau, teinteDeVigilance } from './appreciation.ts';
+import type { Appreciation } from './appreciation.ts';
 import type { Seance } from '../types.ts';
 import { versFaits } from './faits.ts';
 import {
@@ -60,18 +62,34 @@ function evolution(faits: Faits, precedentes: readonly Faits[]): Evolution[] {
 }
 
 /* ---------- réalisation en français ---------- */
-const puces = (groupes: ReturnType<typeof grouperParNiveau>, libelle: (n: number | null) => string): string[] =>
-  groupes.map((g) => `• ${libelle(g.niveau)}${NBSP}: ${enumeration(g.items.map((i) => min(i.texte)))}.`);
+/** Lignes « • éléments | appréciation » et, dans le même ordre, l'appréciation de chacune (teinte pour l'écran). */
+interface LignesApprecies { lignes: string[]; appreciations: Appreciation[] }
+
+/**
+ * Éléments évalués d'abord, puis leur appréciation après un trait : « • Se concentre ; participe | tout à fait ».
+ * Le trait dit que l'appréciation vaut pour tous les éléments de la ligne, qui sont regroupés par appréciation.
+ */
+function puces(groupes: ReturnType<typeof grouperParNiveau>, appreciation: (n: number | null) => Appreciation): LignesApprecies {
+  const appreciations = groupes.map((g) => appreciation(g.niveau));
+  const lignes = groupes.map((g, i) => `• ${Maj(enumeration(g.items.map((x) => min(x.texte))))}${SEPARATEUR_APPRECIATION}${appreciations[i]!.libelle}`);
+  return { lignes, appreciations };
+}
+
+const appreciationDeNiveau = (n: number | null): Appreciation =>
+  n === null ? { libelle: 'observé', teinte: 'neutre' } : { libelle: min(libelleNiveau(n)) || 'observé', teinte: teinteDeNiveau(n) };
+const appreciationDeVigilance = (n: number | null): Appreciation =>
+  n === null
+    ? { libelle: 'point de vigilance', teinte: 'neutre' }
+    : { libelle: `point de vigilance, ${min(NIVEAUX_VIGILANCE[n] ?? '')}`, teinte: teinteDeVigilance(n) };
+const appreciationDEffet = (n: number | null): Appreciation =>
+  n === null || !EFFETS[n] ? { libelle: 'effet non précisé', teinte: 'neutre' } : { libelle: min(EFFETS[n]), teinte: teinteDEffet(n) };
 
 /** Acquis d'abord (par niveau), puis les points de vigilance (par fréquence) : jamais mélangés. */
-function ligneFonctionnement(f: Faits): string[] | null {
+function ligneFonctionnement(f: Faits): LignesApprecies | null {
   if (!f.observations.length) return null;
-  const acquis = f.observations.filter((o) => !o.vigilance);
-  const vigilances = f.observations.filter((o) => o.vigilance);
-  return [
-    ...puces(grouperParNiveau(acquis), (n) => (n === null ? 'Observé' : libelleNiveau(n) || 'Observé')),
-    ...puces(grouperParNiveau(vigilances), (n) => `Point de vigilance${n === null ? '' : `, ${min(NIVEAUX_VIGILANCE[n] ?? '')}`}`)
-  ];
+  const acquis = puces(grouperParNiveau(f.observations.filter((o) => !o.vigilance)), appreciationDeNiveau);
+  const vigilances = puces(grouperParNiveau(f.observations.filter((o) => o.vigilance)), appreciationDeVigilance);
+  return { lignes: [...acquis.lignes, ...vigilances.lignes], appreciations: [...acquis.appreciations, ...vigilances.appreciations] };
 }
 
 function ligneCompetence(f: Faits): string | null {
@@ -81,20 +99,20 @@ function ligneCompetence(f: Faits): string | null {
   return `${Maj(enumeration(parts))}.`;
 }
 
-/** Aides d'une même nature, regroupées par effet : « • Effet positif : support visuel ; guidage verbal. » */
-function lignesAidesDe(aides: Faits['aides']): string[] {
+/** Aides d'une même nature, regroupées par effet : « • Support visuel ; guidage verbal | effet positif ». */
+function lignesAidesDe(aides: Faits['aides']): LignesApprecies {
   const items = aides.map((a) => ({ texte: a.texte, niveau: a.effet as number | null }));
-  return puces(grouperParNiveau(items), (n) => (n === null ? 'Effet non précisé' : EFFETS[n] ?? 'Effet non précisé'));
+  return puces(grouperParNiveau(items), appreciationDEffet);
 }
 
 /** Adaptations et médiations sont présentées séparément ; les aides sans nature connue restent à part. */
-function blocsAides(f: Faits): { label: string; lignes: string[] }[] {
+function blocsAides(f: Faits): LigneOrtho[] {
   const parNature = (n: Faits['aides'][number]['nature']) => f.aides.filter((a) => a.nature === n);
   const adaptations = parNature('adaptation');
   const mediations = parNature('mediation');
   const autres = parNature(null);
   const seulType = [adaptations, mediations, autres].filter((x) => x.length).length === 1;
-  const bloc = (label: string, liste: Faits['aides']) => (liste.length ? [{ label, lignes: lignesAidesDe(liste) }] : []);
+  const bloc = (label: string, liste: Faits['aides']): LigneOrtho[] => (liste.length ? [{ label, ...lignesAidesDe(liste) }] : []);
   return [
     ...bloc('Adaptations mises en place', adaptations),
     ...bloc('Médiations mises en place', mediations),
@@ -200,9 +218,13 @@ export function construireBloc(seance: Seance, contexte: ContexteBloc = {}): Blo
   if (climat) l.push({ label: 'Climat de classe', texte: climat });
   const fonct = ligneFonctionnement(faits);
   if (fonct || faits.remarque) {
-    const lignes = fonct ? [...fonct] : [];
-    if (faits.remarque) lignes.push(`Remarque${NBSP}: ${finPhrase(faits.remarque)}`);
-    l.push({ label: 'Fonctionnement observé', lignes });
+    const lignes = fonct ? [...fonct.lignes] : [];
+    const appreciations: (Appreciation | null)[] = fonct ? [...fonct.appreciations] : [];
+    if (faits.remarque) {
+      lignes.push(`Remarque${NBSP}: ${finPhrase(faits.remarque)}`);
+      appreciations.push(null);
+    }
+    l.push({ label: 'Fonctionnement observé', lignes, appreciations });
   }
   const comp = ligneCompetence(faits);
   if (comp) l.push({ label: 'Compétence travaillée', texte: comp });

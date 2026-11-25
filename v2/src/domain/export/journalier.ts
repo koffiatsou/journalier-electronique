@@ -4,7 +4,8 @@
  * ici, on ne rédige rien. Fonctions pures (testables sans navigateur).
  */
 import { enseignantDeSeance } from '../eleves/enseignants.ts';
-import { construireBloc } from '../redaction/index.ts';
+import { COULEURS_APPRECIATION } from './appreciations.ts';
+import { SEPARATEUR_APPRECIATION, construireBloc, couperAppreciation } from '../redaction/index.ts';
 import { deIdentifier } from '../redaction/deidentifier.ts';
 import type { Bloc } from '../redaction/index.ts';
 import type { Eleve, Seance } from '../types.ts';
@@ -17,6 +18,9 @@ export const esc = (s: string): string => s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F
 
 /* ───────── constructeurs OpenXML ───────── */
 const run = (t: string, gras = false): string => (t === '' ? '' : `<w:r>${gras ? '<w:rPr><w:b/></w:rPr>' : ''}<w:t xml:space="preserve">${esc(t)}</w:t></w:r>`);
+/** Texte en gras sur un fond de couleur (appréciation) : espaces insécables autour pour que le fond déborde un peu du mot. */
+const runAppreciation = (t: string, fond: string, encre: string): string =>
+  `<w:r><w:rPr><w:b/><w:color w:val="${encre}"/><w:shd w:val="clear" w:color="auto" w:fill="${fond}"/></w:rPr><w:t xml:space="preserve">${NBSP}${esc(t)}${NBSP}</w:t></w:r>`;
 const para = (runs: string, opts: { puce?: boolean; retrait?: number } = {}): string => {
   const ppr: string[] = [];
   if (opts.puce) ppr.push('<w:pStyle w:val="ListParagraph"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr>');
@@ -49,12 +53,20 @@ const remplacerCellule = (tr: string, i: number, nouveau: string): string => {
 };
 
 /* ───────── bloc d'une séance ───────── */
-function paragraphesOrtho(bloc: Bloc): string {
+/** Ligne « éléments | appréciation » : l'appréciation prend sa couleur quand le réglage est actif, sinon tout reste du texte. */
+function ligneXml(texte: string, appreciation: Parameters<typeof couperAppreciation>[1], colorer: boolean): string {
+  const coupee = colorer ? couperAppreciation(texte, appreciation) : null;
+  if (!coupee || !appreciation) return run(texte);
+  const { fond, encre } = COULEURS_APPRECIATION[appreciation.teinte];
+  return run(`${coupee.elements}${SEPARATEUR_APPRECIATION}`) + runAppreciation(coupee.appreciation, fond, encre);
+}
+
+function paragraphesOrtho(bloc: Bloc, colorerAppreciations: boolean): string {
   const out = [para(run(`Mes observations, remarques, besoins,…${NBSP}: `, true))];
   for (const b of bloc.ortho) {
     if (b.lignes) {
       if (b.label) out.push(para(run(b.label, true)));
-      b.lignes.forEach((l) => out.push(para(run(l), { retrait: 284 })));
+      b.lignes.forEach((l, k) => out.push(para(ligneXml(l, b.appreciations?.[k], colorerAppreciations), { retrait: 284 })));
     } else if (b.label) out.push(etiquette(b.label, b.texte ?? ''));
     else out.push(para(run(b.texte ?? '')));
   }
@@ -72,7 +84,7 @@ function colorerLigne(tr: string, fond: string): string {
   });
 }
 
-function tableBloc(proto: string, bloc: Bloc, fond: string | null = null): string {
+function tableBloc(proto: string, bloc: Bloc, fond: string | null = null, colorerAppreciations = false): string {
   const rows = lignes(proto);
   // 0 « Partie pédagogique » | 1 Date / Cours / Titulaire | 2 Objectif / Mon objectif / Intervention | 3 « Partie orthopédagogique » | 4 Observations
   const [modele0, r1, r2, modele3, r4] = rows;
@@ -101,7 +113,7 @@ function tableBloc(proto: string, bloc: Bloc, fond: string | null = null): strin
   l2 = remplacerCellule(l2, 0, remplirCellule(c2[0] ?? '', objectif));
   l2 = remplacerCellule(l2, 1, remplirCellule(c2[1] ?? '', etiquette('Mon objectif', p?.monObjectif ?? '')));
   l2 = remplacerCellule(l2, 2, remplirCellule(c2[2] ?? '', intervention));
-  const l4 = r4.replace(cellObs, () => remplirCellule(cellObs, paragraphesOrtho(bloc)));
+  const l4 = r4.replace(cellObs, () => remplirCellule(cellObs, paragraphesOrtho(bloc, colorerAppreciations)));
   return refaire(r0 + l1 + l2 + r3 + l4);
 }
 
@@ -133,14 +145,14 @@ function remplirIdentite(tbl: string, id: Identite): string {
 /** Couleur de fond de l'en-tête d'un bloc (hexadécimal), ou `null` pour garder le gris du modèle. */
 export type CouleurDeBloc = (bloc: Bloc) => string | null;
 
-export function remplirDocument(docXml: string, blocs: Bloc[], identite: Identite, couleurDe: CouleurDeBloc = () => null): string {
+export function remplirDocument(docXml: string, blocs: Bloc[], identite: Identite, couleurDe: CouleurDeBloc = () => null, colorerAppreciations = false): string {
   const tables = decouperTables(docXml);
   const premiere = tables[0];
   const prototype = tables[1];
   const derniere = tables[tables.length - 1];
   if (!premiere || !prototype || !derniere) throw new Error('Le modèle Journalier est inattendu (tableaux introuvables).');
   const separateur = '<w:p><w:pPr><w:rPr><w:sz w:val="10"/><w:szCs w:val="10"/></w:rPr></w:pPr></w:p>';
-  const corps = blocs.map((b) => tableBloc(prototype.xml, b, couleurDe(b))).join(separateur);
+  const corps = blocs.map((b) => tableBloc(prototype.xml, b, couleurDe(b), colorerAppreciations)).join(separateur);
   return docXml.slice(0, premiere.debut) + remplirIdentite(premiere.xml, identite) + docXml.slice(premiere.fin, prototype.debut) + corps + docXml.slice(derniere.fin);
 }
 

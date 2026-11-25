@@ -1,6 +1,7 @@
 import { lireZip, ecrireZip } from './zip.ts';
 import { couleurDeMatiere } from './couleurs.ts';
 import type { ReglageCouleurs } from './couleurs.ts';
+import type { ReglageAppreciations } from './appreciations.ts';
 import { identiteDe, nomFichier, preparerBlocs, remplirDocument } from './journalier.ts';
 import { deIdentifierPia, identiteAnonyme, nomFichierPia, remplirEntete, remplirPia } from './pia.ts';
 import type { OptionsPia } from './pia.ts';
@@ -25,17 +26,19 @@ export interface OptionsExport {
   precision?: string;
   /** « Colorer par matière » : en-têtes colorés selon la matière de chaque séance. Absent ou `actif: false` : gris du modèle. */
   couleurs?: ReglageCouleurs;
+  /** « Colorer les appréciations » : l'appréciation de chaque ligne prend sa couleur. Absent ou `actif: false` : texte sans couleur. */
+  appreciations?: ReglageAppreciations;
 }
 
 /** Construit le Journalier Word d'un élève à partir du modèle papier (octets du .docx). */
 export async function construireJournalier(modele: Uint8Array, eleve: Eleve, seances: readonly Seance[], options: OptionsExport | boolean = {}): Promise<{ octets: Uint8Array; nom: string }> {
-  const { deidentifie = false, periode = '', precision = '', couleurs } = typeof options === 'boolean' ? { deidentifie: options } : options;
+  const { deidentifie = false, periode = '', precision = '', couleurs, appreciations } = typeof options === 'boolean' ? { deidentifie: options } : options;
   const entrees = await lireZip(modele);
   const doc = entrees['word/document.xml'];
   if (!doc) throw new Error('Modèle Journalier invalide.');
   const dec = new TextDecoder();
   const enc = new TextEncoder();
-  entrees['word/document.xml'] = enc.encode(remplirDocument(dec.decode(doc), preparerBlocs(seances, eleve, deidentifie), identiteDe(eleve, deidentifie), couleurs?.actif ? (b) => (b.matiere.trim() ? couleurDeMatiere(b.matiere, couleurs.choix).fond : null) : undefined));
+  entrees['word/document.xml'] = enc.encode(remplirDocument(dec.decode(doc), preparerBlocs(seances, eleve, deidentifie), identiteDe(eleve, deidentifie), couleurs?.actif ? (b) => (b.matiere.trim() ? couleurDeMatiere(b.matiere, couleurs.choix).fond : null) : undefined, appreciations?.actif === true));
   signerPole(entrees);
   return { octets: ecrireZip(entrees), nom: nomFichier(eleve, seances, deidentifie, periode, precision) };
 }
