@@ -27,6 +27,11 @@
   --ortho-ink: #0a5951;
   --attention: #9a580a;
   --attention-soft: #fbeccd;
+  --attention-fort-bg: #f6d58c; /* « Pas du tout » : l'ambre d'attention, plus soutenu que « Un peu » */
+  --attention-fort-ink: #5e3204;
+  --vigilance-1-bg: #f1ebfa; --vigilance-1-ink: #5b3a96; --vigilance-1-line: #8a6cc4; /* point de vigilance : teinte propre, plus soutenue quand c'est plus fréquent */
+  --vigilance-2-bg: #e2d6f6; --vigilance-2-ink: #4a2a86; --vigilance-2-line: #7a58b8;
+  --vigilance-3-bg: #cfbaf0; --vigilance-3-ink: #3a1d73; --vigilance-3-line: #6b46ad;
   --danger: #b93a30;
   --danger-soft: #fbe9e5;
   --ok: #1f7a41;
@@ -97,6 +102,11 @@
     --ortho-ink: #a4ebe2;
     --attention: #f0b54e;
     --attention-soft: #3a2d12;
+    --attention-fort-bg: #6a4a12;
+    --attention-fort-ink: #ffe3a8;
+    --vigilance-1-bg: #2d2548; --vigilance-1-ink: #d6c6f5; --vigilance-1-line: #8a76c0;
+    --vigilance-2-bg: #3b2f60; --vigilance-2-ink: #e0d3f8; --vigilance-2-line: #9a85d0;
+    --vigilance-3-bg: #4c3b7a; --vigilance-3-ink: #eadffb; --vigilance-3-line: #ab96e0;
     --danger: #ff8077;
     --danger-soft: #3d1d1c;
     --ok: #5bd68b;
@@ -129,6 +139,11 @@
     --ortho-ink: #a4ebe2;
     --attention: #f0b54e;
     --attention-soft: #3a2d12;
+    --attention-fort-bg: #6a4a12;
+    --attention-fort-ink: #ffe3a8;
+    --vigilance-1-bg: #2d2548; --vigilance-1-ink: #d6c6f5; --vigilance-1-line: #8a76c0;
+    --vigilance-2-bg: #3b2f60; --vigilance-2-ink: #e0d3f8; --vigilance-2-line: #9a85d0;
+    --vigilance-3-bg: #4c3b7a; --vigilance-3-ink: #eadffb; --vigilance-3-line: #ab96e0;
     --danger: #ff8077;
     --danger-soft: #3d1d1c;
     --ok: #5bd68b;
