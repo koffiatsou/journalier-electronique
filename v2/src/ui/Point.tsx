@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
+import { TEINTES_EFFET, TEINTES_NIVEAU, TEINTES_VIGILANCE } from '../domain/redaction/appreciation.ts';
+import type { TeinteAppreciation } from '../domain/redaction/appreciation.ts';
 import { IconeCoche } from './icons.tsx';
 
-export type Teinte = 'faible' | 'moyen' | 'fort' | 'neutre' | 'attention-fort' | 'vigilance-1' | 'vigilance-2' | 'vigilance-3';
+export type Teinte = TeinteAppreciation;
 
-/** Teintes de l'échelle d'observation et de celle de l'effet d'une aide. */
-export const TEINTES_NIVEAU: readonly Teinte[] = ['attention-fort', 'faible', 'moyen', 'fort'];
-export const TEINTES_EFFET: readonly Teinte[] = ['neutre', 'faible', 'fort'];
-/** Points de vigilance : une teinte à part (violet), plus soutenue quand c'est plus fréquent ; jamais celles des niveaux d'acquisition. */
-export const TEINTES_VIGILANCE: readonly Teinte[] = ['vigilance-1', 'vigilance-2', 'vigilance-3'];
+/** Teintes de l'échelle d'observation, de celle de l'effet d'une aide et du point de vigilance (définies avec la rédaction du Journalier, qui les reprend). */
+export { TEINTES_EFFET, TEINTES_NIVEAU, TEINTES_VIGILANCE };
 
 interface Props {
   /** Texte du point (observation, compétence, aide…). */

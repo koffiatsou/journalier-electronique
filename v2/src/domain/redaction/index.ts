@@ -9,3 +9,5 @@ export type { Synthese, SyntheseMatiere, SuiviAide, SuiviCompetence, SuiviObserv
 export { versFaits } from './faits.ts';
 export type { Bloc, Faits, LigneOrtho, Peda } from './types.ts';
 export { dateFR, dateCourte, NBSP } from './langue.ts';
+export { SEPARATEUR_APPRECIATION, couperAppreciation, teinteDEffet, teinteDeNiveau, teinteDeVigilance } from './appreciation.ts';
+export type { Appreciation, TeinteAppreciation } from './appreciation.ts';

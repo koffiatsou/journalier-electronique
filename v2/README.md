@@ -22,6 +22,7 @@ npm run check      # typecheck + tests + build (utilisé par la CI)
 npm run navigateur # rejoue TOUS les parcours dans un vrai navigateur (Playwright à installer : voir ci-dessous) ; utilisé par la CI
 LANG=C.UTF-8 node tools/navigateur/accessibilite.mjs # audit d'accessibilité de tous les écrans (clavier, contrastes, mouvement réduit…) (lot Q)
 LANG=C.UTF-8 node tools/navigateur/journalier.mjs   # parcours dans un vrai navigateur (Playwright, serveur sur le port 5199)
+LANG=C.UTF-8 node tools/navigateur/appreciation-apres.mjs  # idem pour l'appréciation après les éléments (aperçu coloré, Word sobre ou coloré, dé-identifié)
 LANG=C.UTF-8 node tools/navigateur/eleves.mjs       # idem pour l'écran Élèves (cartes, archivage, passage d'année, suppression)
 LANG=C.UTF-8 node tools/navigateur/avatars.mjs      # idem pour les avatars dessinés
 LANG=C.UTF-8 node tools/navigateur/pia.mjs          # idem pour l'écran PIA (onglets, enregistrement, export Word)

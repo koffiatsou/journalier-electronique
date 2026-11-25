@@ -75,16 +75,19 @@
 .pastille:active { transform: scale(0.97); }
 .pastille.aucune { border-style: dashed; border-color: var(--ink-3); background: transparent; }
 @media (hover: hover) and (pointer: fine) { .pastille:hover { border-color: var(--ink-2); } }
-.pastille[data-teinte="faible"] { --t-bg: var(--attention-soft); --t-ink: var(--attention); --t-line: var(--attention); }
-.pastille[data-teinte="moyen"] { --t-bg: var(--peda-soft); --t-ink: var(--peda-ink); --t-line: var(--peda); }
-.pastille[data-teinte="fort"] { --t-bg: var(--ortho-soft); --t-ink: var(--ortho-ink); --t-line: var(--ortho); }
-.pastille[data-teinte="neutre"] { --t-bg: var(--surface-2); --t-ink: var(--ink-2); --t-line: var(--line-strong); }
+[data-teinte="faible"] { --t-bg: var(--attention-soft); --t-ink: var(--attention); --t-line: var(--attention); }
+[data-teinte="moyen"] { --t-bg: var(--peda-soft); --t-ink: var(--peda-ink); --t-line: var(--peda); }
+[data-teinte="fort"] { --t-bg: var(--ortho-soft); --t-ink: var(--ortho-ink); --t-line: var(--ortho); }
+[data-teinte="neutre"] { --t-bg: var(--surface-2); --t-ink: var(--ink-2); --t-line: var(--line-strong); }
 /* « Pas du tout » : même ambre que « Un peu », en plus soutenu (une difficulté se voit, jamais un gris qui ressemble à « rien à signaler »). */
-.pastille[data-teinte="attention-fort"] { --t-bg: var(--attention-fort-bg); --t-ink: var(--attention-fort-ink); --t-line: var(--attention); }
+[data-teinte="attention-fort"] { --t-bg: var(--attention-fort-bg); --t-ink: var(--attention-fort-ink); --t-line: var(--attention); }
 /* Point de vigilance : violet à trois intensités (ponctuellement, souvent, tout au long), distinct des niveaux d'acquisition. */
-.pastille[data-teinte="vigilance-1"] { --t-bg: var(--vigilance-1-bg); --t-ink: var(--vigilance-1-ink); --t-line: var(--vigilance-1-line); }
-.pastille[data-teinte="vigilance-2"] { --t-bg: var(--vigilance-2-bg); --t-ink: var(--vigilance-2-ink); --t-line: var(--vigilance-2-line); }
-.pastille[data-teinte="vigilance-3"] { --t-bg: var(--vigilance-3-bg); --t-ink: var(--vigilance-3-ink); --t-line: var(--vigilance-3-line); }
+[data-teinte="vigilance-1"] { --t-bg: var(--vigilance-1-bg); --t-ink: var(--vigilance-1-ink); --t-line: var(--vigilance-1-line); }
+[data-teinte="vigilance-2"] { --t-bg: var(--vigilance-2-bg); --t-ink: var(--vigilance-2-ink); --t-line: var(--vigilance-2-line); }
+[data-teinte="vigilance-3"] { --t-bg: var(--vigilance-3-bg); --t-ink: var(--vigilance-3-ink); --t-line: var(--vigilance-3-line); }
+/* Appréciation en fin de ligne du Journalier (« … | tout à fait ») : la teinte vient des mêmes règles que les pastilles. */
+.appreciation-trait { display: inline-block; width: 1px; height: 1.05em; margin: 0 8px 0 2px; vertical-align: -0.2em; background: var(--line-strong); }
+.appreciation { display: inline-block; padding: 0 10px; border-radius: 999px; border: 1px solid var(--t-line, var(--line-strong)); background: var(--t-bg, var(--surface-2)); color: var(--t-ink, var(--ink-2)); font-size: 0.875em; font-weight: 600; line-height: 1.5; }
 .pastille.choisie { background: var(--t-bg); color: var(--t-ink); border-color: var(--t-line); }
 @media (hover: hover) and (pointer: fine) { .point-choix .pastille[data-teinte]:hover { background: var(--t-bg); color: var(--t-ink); border-color: var(--t-line); } }
 .pastille[aria-checked="true"] { background: var(--t-bg); color: var(--t-ink); border-color: var(--t-line); }

@@ -14,3 +14,19 @@ const LIRE_DOCUMENT = 'import zipfile,sys;sys.stdout.buffer.write(zipfile.ZipFil
 export function lireXmlDocx(chemin) {
   return execFileSync('python3', ['-c', LIRE_DOCUMENT, chemin], { maxBuffer: OCTETS_MAX }).toString('utf8');
 }
+
+/**
+ * Texte brut d'un XML Word : balises retirées jusqu'à ce qu'il n'en reste plus (une seule passe laisserait passer
+ * « <<b>b> » reconstitué), espaces insécables ramenés à des espaces.
+ * @param {string} xml Le XML du document.
+ * @returns {string} Le texte seul.
+ */
+export function texteDocx(xml) {
+  let texte = xml;
+  let avant;
+  do {
+    avant = texte;
+    texte = texte.replace(/<[^>]+>/g, '');
+  } while (texte !== avant);
+  return texte.replace(/\u00a0/g, ' ');
+}

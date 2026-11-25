@@ -10,12 +10,12 @@ const texte = (s = seance(), opts = {}) => blocEnTexte(construireBloc(s, opts));
 
 test('séance complète : niveaux et effets groupés, points nommés', () => {
   const t = texte();
-  assert.ok(t.includes(`• Tout à fait${N}: entre dans la tâche${N}; maintient son attention.`));
-  assert.ok(t.includes(`• Assez${N}: repère les informations pertinentes.`));
-  assert.ok(t.includes(`• Un peu${N}: contrôle sa production.`));
+  assert.ok(t.includes(`• Entre dans la tâche${N}; maintient son attention${N}| tout à fait`));
+  assert.ok(t.includes(`• Repère les informations pertinentes${N}| assez`));
+  assert.ok(t.includes(`• Contrôle sa production${N}| un peu`));
   assert.ok(t.includes(`Remarque${N}: Se fatigue en fin de période.`));
-  assert.ok(t.includes(`• Effet positif${N}: support visuel.`));
-  assert.ok(t.includes(`• Effet partiel${N}: guidage verbal.`));
+  assert.ok(t.includes(`• Support visuel${N}| effet positif`));
+  assert.ok(t.includes(`• Guidage verbal${N}| effet partiel`));
   assert.ok(t.includes(`Maintenir l’accompagnement${N}; favoriser l’autonomie.`));
 });
 
@@ -45,12 +45,12 @@ test('l’ancien transfert n’est plus écrit dans le Journalier, quelle que so
 
 test('aide sans effet renseigné : ligne « Effet non précisé », pas de parenthèse vide', () => {
   const t = texte(seance({ aides: [{ nom: 'Matériel', effet: null }] }));
-  assert.ok(t.includes('Effet non précisé') && t.includes('matériel.') && !t.includes('()'));
+  assert.ok(t.includes(`• Matériel${N}| effet non précisé`) && !t.includes('()'));
 });
 
-test('observation sans niveau : regroupée sous « Observé »', () => {
+test('observation sans niveau : appréciation « observé »', () => {
   const t = texte(seance({ observations: [{ texte: 'Comprend la consigne', niveau: null }], remarque: '' }));
-  assert.ok(t.includes(`• Observé${N}: comprend la consigne.`));
+  assert.ok(t.includes(`• Comprend la consigne${N}| observé`));
 });
 
 test('évolution : même point, même matière, niveau différent', () => {
@@ -172,7 +172,7 @@ test('aides : adaptations et médiations présentées séparément, chacune grou
   const t = texte(seance({ aides: [{ nom: 'Support visuel', effet: 2 }, { nom: 'Guidage verbal', effet: 1 }, { nom: 'Matériel', effet: 2 }] }));
   assert.ok(t.includes('Adaptations mises en place'));
   assert.ok(t.includes('Médiations mises en place'));
-  assert.ok(t.includes(`• Effet positif${N}: support visuel`) && t.includes(`• Effet partiel${N}: guidage verbal`));
+  assert.ok(t.includes('• Support visuel') && t.includes(`${N}| effet positif`) && t.includes(`• Guidage verbal${N}| effet partiel`));
   assert.ok(!t.includes('Autres aides'));
 });
 
@@ -209,6 +209,6 @@ test('élève absent : le climat n’est pas écrit même s’il avait été not
 test('renforcement positif : une aide proposée, rangée avec les médiations (ce que l’adulte fait pendant la tâche)', () => {
   const t = texte(seance({ aides: [{ nom: 'Renforcement positif', effet: 2 }] }));
   assert.ok(t.includes('Médiations mises en place'));
-  assert.ok(t.includes('renforcement positif'));
+  assert.ok(t.includes(`• Renforcement positif${N}| effet positif`));
   assert.ok(!t.includes('Autres aides mises en place'));
 });
