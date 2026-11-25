@@ -11,6 +11,9 @@
   --surface-2: #f8f5ef;
   --line: #e3ddd2;
   --line-strong: #cfc7b8;
+  --ferie-fond: #e4dccb; /* en-tête et case d'un jour férié */
+  --ferie-colonne: #f3eee2; /* colonne d'un jour férié dans la grille */
+  --ferie-trait: #8a7a55; /* filet du haut : repère qui ne dépend pas de la teinte du fond */
   --contour-champ: #948c7b; /* bordure d'un champ de saisie : 3:1 au moins sur --surface (WCAG 1.4.11) */
   --ink: #1c2740;
   --ink-2: #4b5670;
@@ -79,6 +82,9 @@
     --surface-2: #212636;
     --line: #2d3347;
     --line-strong: #3d445e;
+    --ferie-fond: #38405c;
+    --ferie-colonne: #2b3148;
+    --ferie-trait: #9aa6cf;
     --contour-champ: #6a7088;
     --ink: #ece9e2;
     --ink-2: #b9bdcb;
@@ -108,6 +114,9 @@
     --surface-2: #212636;
     --line: #2d3347;
     --line-strong: #3d445e;
+    --ferie-fond: #38405c;
+    --ferie-colonne: #2b3148;
+    --ferie-trait: #9aa6cf;
     --contour-champ: #6a7088;
     --ink: #ece9e2;
     --ink-2: #b9bdcb;
