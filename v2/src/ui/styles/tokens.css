@@ -12,7 +12,7 @@
   --line: #e3ddd2;
   --line-strong: #cfc7b8;
   --ferie-fond: #e4dccb; /* en-tête et case d'un jour férié */
-  --ferie-colonne: #eee8da; /* colonne d'un jour férié dans la grille */
+  --ferie-colonne: #f3eee2; /* colonne d'un jour férié dans la grille */
   --ferie-trait: #8a7a55; /* filet du haut : repère qui ne dépend pas de la teinte du fond */
   --contour-champ: #948c7b; /* bordure d'un champ de saisie : 3:1 au moins sur --surface (WCAG 1.4.11) */
   --ink: #1c2740;
