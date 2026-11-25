@@ -111,7 +111,7 @@
 .grille-entete .jour-ferie, .mois-case.jour-ferie { background: var(--ferie-fond); box-shadow: inset 0 3px 0 var(--ferie-trait); }
 .grille-entete .jour-ferie .marque-jour, .mois-case.jour-ferie .marque-jour { color: var(--ink-2); font-weight: 600; }
 .grille-entete .jour-vacances, .mois-case.jour-vacances { background: repeating-linear-gradient(135deg, transparent 0 8px, color-mix(in srgb, var(--line-strong) 40%, transparent) 8px 9px), var(--surface-2); }
-.colonne.jour-ferie { background: var(--ferie-colonne); }
+.colonne.jour-ferie { background: repeating-linear-gradient(45deg, transparent 0 14px, color-mix(in srgb, var(--ferie-trait) 20%, transparent) 14px 17px), var(--ferie-colonne); }
 .colonne.jour-vacances { background: repeating-linear-gradient(135deg, transparent 0 10px, color-mix(in srgb, var(--line-strong) 24%, transparent) 10px 11px); }
 .agenda-note { margin: 0; padding: var(--sp-2) var(--sp-3); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-s); font-size: .875rem; color: var(--ink-2); }
 
