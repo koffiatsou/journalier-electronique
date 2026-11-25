@@ -8,7 +8,7 @@ import { mkdirSync } from 'node:fs';
 import os from 'node:os';
 
 import { ajouterElevesFictifs, aller, ecrireBase, recharger } from './_coffre.mjs';
-import { lireXmlDocx } from './_docx.mjs';
+import { lireXmlDocx, texteDocx } from './_docx.mjs';
 
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const URL_APP = process.env.URL_APP ?? 'http://localhost:5199/';
@@ -18,7 +18,7 @@ const erreurs = [];
 const ok = (cond, msg) => { if (!cond) throw new Error(`ÉCHEC : ${msg}`); console.log(`✓ ${msg}`); };
 const FOND_FORT = 'D9F2EE';
 const FOND_VIGILANCE = ['F1EBFA', 'E2D6F6', 'CFBAF0'];
-const sansBalises = (xml) => xml.replace(/<[^>]+>/g, '').replace(/ /g, ' ');
+const sansBalises = texteDocx;
 const fonds = (xml) => [...xml.matchAll(/<w:shd [^>]*w:fill="([0-9A-F]{6})"/g)].map((m) => m[1]);
 
 const nav = await chromium.launch();

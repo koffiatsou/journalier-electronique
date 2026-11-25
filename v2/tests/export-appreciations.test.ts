@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { COULEURS_APPRECIATION, normaliserReglageAppreciations } from '../src/domain/export/appreciations.ts';
 import { construireJournalier, lireZip } from '../src/domain/export/index.ts';
+import { sansBalises } from '../src/domain/export/journalier.ts';
 import type { Eleve } from '../src/domain/types.ts';
 import { seance } from './fabrique.ts';
 
@@ -10,7 +11,7 @@ const modele = new Uint8Array(readFileSync(new URL('../public/modeles/Journalier
 const eleve: Eleve = { id: 'alpha', nom: 'Dupont', prenom: 'Léa', classe: '3CB', ecole: 'École test', titulaire: 'M. Test', dateNaissance: '2012-05-04', matieres: [] };
 const lire = async (o: Uint8Array) => new TextDecoder().decode((await lireZip(o))['word/document.xml']);
 const fonds = (xml: string): string[] => [...xml.matchAll(/<w:shd [^>]*w:fill="([0-9A-F]{6})"/g)].map((m) => m[1]!);
-const texteBrut = (xml: string): string => xml.replace(/<[^>]+>/g, '').replace(/\u00a0/g, ' ');
+const texteBrut = (xml: string): string => sansBalises(xml).replace(/\u00a0/g, ' ');
 
 describe('Journalier Word : appréciation après les éléments', () => {
   it('par défaut : le trait et le mot sont écrits, sans aucune couleur', async () => {
