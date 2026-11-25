@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { IconeCoche } from './icons.tsx';
 
-export type Teinte = 'faible' | 'moyen' | 'fort' | 'neutre';
+export type Teinte = 'faible' | 'moyen' | 'fort' | 'neutre' | 'attention-fort' | 'vigilance-1' | 'vigilance-2' | 'vigilance-3';
 
 /** Teintes de l'échelle d'observation et de celle de l'effet d'une aide. */
-export const TEINTES_NIVEAU: readonly Teinte[] = ['neutre', 'faible', 'moyen', 'fort'];
+export const TEINTES_NIVEAU: readonly Teinte[] = ['attention-fort', 'faible', 'moyen', 'fort'];
 export const TEINTES_EFFET: readonly Teinte[] = ['neutre', 'faible', 'fort'];
-/** Points de vigilance : plus c'est fréquent, plus la teinte d'attention est marquée (jamais la teinte « réussi »). */
-export const TEINTES_VIGILANCE: readonly Teinte[] = ['neutre', 'faible', 'faible'];
+/** Points de vigilance : une teinte à part (violet), plus soutenue quand c'est plus fréquent ; jamais celles des niveaux d'acquisition. */
+export const TEINTES_VIGILANCE: readonly Teinte[] = ['vigilance-1', 'vigilance-2', 'vigilance-3'];
 
 interface Props {
   /** Texte du point (observation, compétence, aide…). */
